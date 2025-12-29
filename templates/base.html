@@ -120,15 +120,31 @@
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
-                    <li class="nav-item d-flex align-items-center">
-                        <span class="navbar-text me-2" data-testid="user-display">
-                            <i class="fas fa-user"></i> {{ user.username }}
-                        </span>
-                        <a class="btn btn-sm btn-outline-light" href="{% url 'logout' %}" data-testid="logout-link"
-                           data-bs-toggle="tooltip" data-bs-placement="bottom"
-                           title="Sign out of your Mimir session">
-                            <i class="fas fa-sign-out-alt"></i> Logout
+                    <li class="nav-item dropdown" data-testid="user-menu">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" 
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                           data-testid="user-menu-toggle">
+                            <span class="me-2">
+                                <i class="fas fa-user-circle"></i> {{ user.username }}
+                            </span>
                         </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" data-testid="user-dropdown">
+                            <li class="dropdown-header px-3 py-2 text-muted small">
+                                Signed in as <strong>{{ user.username }}</strong>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'settings' %}" data-testid="settings-link">
+                                    <i class="fas fa-cog me-2"></i> Settings
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'logout' %}" data-testid="logout-link">
+                                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     {% else %}
                     <li class="nav-item">

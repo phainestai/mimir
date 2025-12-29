@@ -9,6 +9,24 @@ from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from accounts.models import mark_onboarding_completed
+from django.contrib.auth.decorators import login_required
+
+
+def settings_view(request):
+    """
+    Display user settings page.
+    
+    Scenario: NAV-05 Access settings
+    
+    Template: accounts/settings.html
+    Context: None
+    
+    :param request: Django request object
+    :return: Rendered settings template
+    """
+    logger.info("[NAV-05] User %s accessed settings page", request.user.username)
+    return render(request, 'accounts/settings.html')
+
 
 logger = logging.getLogger(__name__)
 

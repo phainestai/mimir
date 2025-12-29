@@ -67,7 +67,7 @@ class TestNavbarLinks:
             "Navbar should use /auth/user/logout/ URL"
     
     def test_navbar_shows_user_info_when_authenticated(self):
-        """Test navbar displays user information correctly."""
+        """Test navbar displays user information correctly with dropdown menu."""
         client = Client()
         user = User.objects.create_user(username='maria', password='testpass')
         client.login(username='maria', password='testpass')
@@ -75,10 +75,41 @@ class TestNavbarLinks:
         response = client.get('/')
         html = response.content.decode('utf-8')
         
-        # Should show username
-        assert 'maria' in html
-        assert 'data-testid="user-display"' in html
+        # Should have user menu toggle with username
+        assert 'data-testid="user-menu-toggle"' in html
+        assert 'maria' in html  # Username should be visible
         
-        # Should show logout, not login
+        # Should have dropdown menu with user info
+        assert 'data-testid="user-dropdown"' in html
+        
+        # Should have settings and logout links in dropdown
+        assert 'data-testid="settings-link"' in html
         assert 'data-testid="logout-link"' in html
+        assert '/auth/user/settings/' in html
+        assert '/auth/user/logout/' in html
+        
+        # Should not show login link when authenticated
         assert 'data-testid="login-link"' not in html
+        
+    def test_settings_link_in_profile_menu(self):
+        """
+        Test that the settings link is present in the profile menu when user is authenticated.
+        
+        When: User is authenticated
+        Then: Profile dropdown shows settings link with /auth/user/settings/
+        """
+        client = Client()
+        user = User.objects.create_user(username='testuser', password='testpass')
+        client.login(username='testuser', password='testpass')
+        
+        response = client.get('/')
+        assert response.status_code == 200
+        html = response.content.decode('utf-8')
+        
+        # Should have user menu toggle
+        assert 'data-testid="user-menu-toggle"' in html
+        
+        # Should have settings link with correct URL
+        assert 'data-testid="settings-link"' in html
+        assert 'href="/auth/user/settings/"' in html, \
+            "Profile menu should have settings link to /auth/user/settings/"

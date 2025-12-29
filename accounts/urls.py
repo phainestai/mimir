@@ -8,6 +8,7 @@ from .views import (
     password_reset_request,
     password_reset_confirm,
     skip_onboarding,
+    settings_view,
 )
 
 # URL convention: /auth/user/{action}/
@@ -19,4 +20,5 @@ urlpatterns = [
     path('user/onboarding/skip/', skip_onboarding, name='onboarding_skip'),
     path('user/password-reset/', password_reset_request, name='password_reset'),
     path('user/password-reset-confirm/<uidb64>/<token>/', password_reset_confirm, name='password_reset_confirm'),
+    path('user/settings/', settings_view, name='settings'),
 ]

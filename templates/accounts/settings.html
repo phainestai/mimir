@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}User Settings - Mimir{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h5 mb-0">
+                        <i class="fas fa-cog me-2"></i>User Settings
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Settings page is under construction. More options will be available soon.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h3 class="h6 text-muted">Account Information</h3>
+                        <dl class="row">
+                            <dt class="col-sm-3">Username:</dt>
+                            <dd class="col-sm-9">{{ user.username }}</dd>
+                            
+                            <dt class="col-sm-3">Email:</dt>
+                            <dd class="col-sm-9">{{ user.email }}</dd>
+                            
+                            <dt class="col-sm-3">Member since:</dt>
+                            <dd class="col-sm-9">{{ user.date_joined|date:"F j, Y" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
