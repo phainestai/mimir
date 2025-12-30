@@ -3,6 +3,7 @@ import logging
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
+from methodology.services.global_search_service import GlobalSearchService
 logger = logging.getLogger(__name__)
 
 
@@ -125,8 +126,20 @@ def global_search(request):
 
     Delegates search logic to GlobalSearchService and renders consolidated
     results across Playbooks, Workflows, and Activities.
+    
+    Template: search/results.html
+    Context:
+        query: str - Search query entered by user
+        playbooks: List[Playbook] - Matching playbooks
+        workflows: List[Workflow] - Matching workflows
+        activities: List[Activity] - Matching activities
+        type_filter: str - Active type filter (playbooks/workflows/activities)
+        status_filter: str - Active status filter (draft/active/released/disabled)
+        source_filter: str - Active source filter (owned/downloaded)
+    
+    :param request: Django HttpRequest with GET parameters q, type, status, source
+    :return: HttpResponse with rendered search results template
     """
-    from methodology.services.global_search_service import GlobalSearchService
 
     query = request.GET.get("q", "").strip()
     type_filter = request.GET.get("type") or ""
@@ -180,8 +193,17 @@ def global_search_suggestions(request):
     """Return HTML fragment with live global search suggestions.
 
     Designed for HTMX / AJAX usage from the navbar search input.
+    
+    Template: search/partials/suggestions.html
+    Context:
+        query: str - Search query entered by user
+        playbooks: List[Playbook] - Top 5 matching playbooks
+        workflows: List[Workflow] - Top 5 matching workflows
+        activities: List[Activity] - Top 5 matching activities
+    
+    :param request: Django HttpRequest with GET parameter q
+    :return: HttpResponse with rendered suggestions fragment
     """
-    from methodology.services.global_search_service import GlobalSearchService
 
     query = (request.GET.get("q", "") or "").strip()
     if not query:
