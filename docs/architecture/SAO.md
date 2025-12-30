@@ -2264,3 +2264,80 @@ Unit tests verify:
 - Proactive suggestion before failures occur
 - Automated A/B testing of methodology variants
 - Transfer learning across methodology families
+### GlobalSearchService
+
+**Purpose**: Provides unified search across Playbooks, Workflows, and Activities for NAV-06 Global Search feature.
+
+**Pattern**: Service-layer search with user-scoped filtering and type-based result aggregation.
+
+**Implementation**:
+
+```python
+# methodology/services/global_search_service.py
+class GlobalSearchService:
+    def search(self, query: str, user, filters: Optional[Dict[str, Any]] = None) -> Dict[str, List[Any]]:
+        """
+        Search across playbooks, workflows, and activities.
+        
+        :param query: Free-text query. Example: "Component"
+        :param user: Django user performing search. Example: User(username="maria")
+        :param filters: Optional filters dict. Example: {"type": "playbooks", "status": "active"}
+        :return: Dict with entity lists. Example: {"playbooks": [...], "workflows": [...], "activities": [...]}
+        """
+        # Search playbooks owned by user
+        playbooks = self._search_playbooks(query, user, filters)
+        # Search workflows in user's playbooks
+        workflows = self._search_workflows(query, user, filters)
+        # Search activities in user's workflows
+        activities = self._search_activities(query, user, filters)
+        
+        # Apply type filter at aggregation layer
+        if filters.get("type") == "playbooks":
+            workflows, activities = [], []
+        elif filters.get("type") == "workflows":
+            playbooks, activities = [], []
+        elif filters.get("type") == "activities":
+            playbooks, workflows = [], []
+            
+        return {
+            "playbooks": playbooks,
+            "workflows": workflows,
+            "activities": activities
+        }
+```
+
+**Features**:
+- **User-scoped search**: Only searches entities owned by/accessible to the user
+- **Multi-entity search**: Searches across Playbooks, Workflows, and Activities in single call
+- **Filter support**: Type filter (playbooks/workflows/activities), status filter (draft/active/released), source filter (owned/downloaded)
+- **Case-insensitive matching**: Uses Django's `icontains` for name/description/guidance fields
+- **Ordered results**: Playbooks by updated_at DESC, Workflows/Activities by order ASC
+
+**Usage in Views**:
+```python
+# methodology/views.py
+from methodology.services.global_search_service import GlobalSearchService
+
+@login_required
+def global_search(request):
+    service = GlobalSearchService()
+    results = service.search(
+        query=request.GET.get("q", "").strip(),
+        user=request.user,
+        filters={
+            "type": request.GET.get("type"),
+            "status": request.GET.get("status"),
+            "source": request.GET.get("source")
+        }
+    )
+    return render(request, "search/results.html", {
+        "playbooks": results["playbooks"],
+        "workflows": results["workflows"],
+        "activities": results["activities"]
+    })
+```
+
+**Testing**:
+- Unit tests: `tests/unit/test_global_search_service.py` (3 scenarios)
+- Integration tests: `tests/integration/test_global_search.py` (7 scenarios)
+- Feature coverage: NAV-06 Global Search from `docs/features/act-0-auth/navigation.feature`
