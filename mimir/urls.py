@@ -27,6 +27,8 @@ urlpatterns = [
     path("dashboard/", methodology_views.dashboard, name="dashboard"),
     path("dashboard/activities/", methodology_views.dashboard_activities, name="dashboard_activities"),
     path("", methodology_views.index, name="index"),
+    path("search/", methodology_views.global_search, name="global_search"),
+    path("search/suggestions/", methodology_views.global_search_suggestions, name="global_search_suggestions"),
     path("playbooks/", include("methodology.playbook_urls")),
     path("playbooks/", include("methodology.workflow_urls")),  # Workflow URLs scoped to playbook
     path("playbooks/<int:playbook_pk>/workflows/<int:workflow_pk>/activities/", include("methodology.activity_urls")),  # Activity URLs scoped to workflow

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Search results - Mimir{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4" data-testid="global-search-results-page">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h4 mb-0">
+                <i class="fas fa-search me-2"></i>
+                Search results
+            </h1>
+            {% if query %}
+            <span class="text-muted">Query: "{{ query }}"</span>
+            {% else %}
+            <span class="text-muted">No query provided</span>
+            {% endif %}
+        </div>
+        <div class="col-12">
+            <form class="row g-2 align-items-end" method="get" action="{% url 'global_search' %}" data-testid="global-search-filters-form">
+                <input type="hidden" name="q" value="{{ query }}" />
+                <div class="col-12 col-md-4">
+                    <label for="filter-type" class="form-label form-label-sm">Type</label>
+                    <select id="filter-type" name="type" class="form-select form-select-sm">
+                        <option value="">All types</option>
+                        <option value="playbooks" {% if type_filter == 'playbooks' %}selected{% endif %}>Playbooks only</option>
+                        <option value="workflows" {% if type_filter == 'workflows' %}selected{% endif %}>Workflows only</option>
+                        <option value="activities" {% if type_filter == 'activities' %}selected{% endif %}>Activities only</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label for="filter-status" class="form-label form-label-sm">Status</label>
+                    <select id="filter-status" name="status" class="form-select form-select-sm">
+                        <option value="">All statuses</option>
+                        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="released" {% if status_filter == 'released' %}selected{% endif %}>Released</option>
+                        <option value="disabled" {% if status_filter == 'disabled' %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label for="filter-source" class="form-label form-label-sm">Source</label>
+                    <select id="filter-source" name="source" class="form-select form-select-sm">
+                        <option value="">All sources</option>
+                        <option value="owned" {% if source_filter == 'owned' %}selected{% endif %}>Owned</option>
+                        <option value="downloaded" {% if source_filter == 'downloaded' %}selected{% endif %}>Downloaded</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-2 d-grid">
+                    <button type="submit" class="btn btn-sm btn-primary">Apply filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if not playbooks and not workflows and not activities %}
+    <div class="alert alert-info" role="alert" data-testid="global-search-empty-state">
+        <i class="fas fa-circle-info me-2"></i>
+        No results found.
+        {% if query %}
+        Try adjusting your search for "{{ query }}".
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-4">
+            <h2 class="h5 d-flex align-items-center mb-3">
+                <i class="fas fa-book-sparkles text-primary me-2"></i>
+                Playbooks
+                <span class="badge bg-secondary ms-2">{{ playbooks|length }}</span>
+            </h2>
+            <ul class="list-group" data-testid="global-search-playbooks">
+                {% for playbook in playbooks %}
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 me-auto">
+                        <div class="fw-bold">
+                            <a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a>
+                        </div>
+                        <small class="text-muted">{{ playbook.description }}</small>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">No playbooks found.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <h2 class="h5 d-flex align-items-center mb-3">
+                <i class="fas fa-diagram-project text-success me-2"></i>
+                Workflows
+                <span class="badge bg-secondary ms-2">{{ workflows|length }}</span>
+            </h2>
+            <ul class="list-group" data-testid="global-search-workflows">
+                {% for workflow in workflows %}
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 me-auto">
+                        <div class="fw-bold">
+                            <a href="{% url 'workflow_detail' workflow.playbook.pk workflow.pk %}">{{ workflow.name }}</a>
+                        </div>
+                        <small class="text-muted">{{ workflow.description }}</small>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">No workflows found.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <h2 class="h5 d-flex align-items-center mb-3">
+                <i class="fas fa-list-check text-info me-2"></i>
+                Activities
+                <span class="badge bg-secondary ms-2">{{ activities|length }}</span>
+            </h2>
+            <ul class="list-group" data-testid="global-search-activities">
+                {% for activity in activities %}
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 me-auto">
+                        <div class="fw-bold">
+                            <a href="{% url 'activity_detail' activity.workflow.playbook.pk activity.workflow.pk activity.pk %}">{{ activity.name }}</a>
+                        </div>
+                        <small class="text-muted">{{ activity.guidance|truncatechars:80 }}</small>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">No activities found.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

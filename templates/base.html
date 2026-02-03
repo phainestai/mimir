@@ -120,6 +120,28 @@
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
+                    <li class="nav-item d-flex align-items-center me-3 position-relative">
+                        <form class="d-flex" method="get" action="{% url 'global_search' %}"
+                              data-testid="global-search-form"
+                              hx-get="{% url 'global_search_suggestions' %}"
+                              hx-trigger="keyup changed delay:300ms from:#global-search-input"
+                              hx-target="#global-search-suggestions-container"
+                              hx-include="closest form">
+                            <input
+                                class="form-control form-control-sm me-2"
+                                type="search"
+                                name="q"
+                                placeholder="Search..."
+                                aria-label="Global search"
+                                data-testid="global-search-input"
+                                id="global-search-input"
+                            />
+                            <button class="btn btn-sm btn-outline-light" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </form>
+                        <div id="global-search-suggestions-container"></div>
+                    </li>
                     <li class="nav-item d-flex align-items-center">
                         <span class="navbar-text me-2" data-testid="user-display">
                             <i class="fas fa-user"></i> {{ user.username }}

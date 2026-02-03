@@ -1,0 +1,62 @@
+{% if playbooks or workflows or activities %}
+<div class="card position-absolute mt-2 shadow" style="min-width: 320px; z-index: 1050;">
+    <div class="card-body p-2" data-testid="global-search-suggestions">
+        {% if query %}
+        <div class="small text-muted mb-2">
+            Suggestions for "{{ query }}"
+        </div>
+        {% endif %}
+
+        <div class="mb-2">
+            <div class="fw-semibold small mb-1">
+                <i class="fas fa-book-sparkles text-primary me-1"></i> Playbooks
+            </div>
+            <ul class="list-unstyled mb-0">
+                {% for playbook in playbooks %}
+                <li class="small">
+                    <a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a>
+                </li>
+                {% empty %}
+                <li class="small text-muted">No playbooks found.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="mb-2">
+            <div class="fw-semibold small mb-1">
+                <i class="fas fa-diagram-project text-success me-1"></i> Workflows
+            </div>
+            <ul class="list-unstyled mb-0">
+                {% for workflow in workflows %}
+                <li class="small">
+                    <a href="{% url 'workflow_detail' workflow.playbook.pk workflow.pk %}">{{ workflow.name }}</a>
+                </li>
+                {% empty %}
+                <li class="small text-muted">No workflows found.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="mb-2">
+            <div class="fw-semibold small mb-1">
+                <i class="fas fa-list-check text-info me-1"></i> Activities
+            </div>
+            <ul class="list-unstyled mb-0">
+                {% for activity in activities %}
+                <li class="small">
+                    <a href="{% url 'activity_detail' activity.workflow.playbook.pk activity.workflow.pk activity.pk %}">{{ activity.name }}</a>
+                </li>
+                {% empty %}
+                <li class="small text-muted">No activities found.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {% if query %}
+        <div class="mt-2 text-end">
+            <a href="{% url 'global_search' %}?q={{ query|urlencode }}" class="small">See all results</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
