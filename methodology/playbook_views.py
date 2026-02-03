@@ -292,7 +292,8 @@ def playbook_detail(request, pk):
         'playbook': playbook,
         'workflows': playbook.workflows.all(),
         'versions': playbook.versions.all()[:5],  # Latest 5 versions
-        'can_edit': playbook.can_edit(request.user)
+        'can_edit': playbook.can_edit(request.user),
+        'quick_stats': playbook.get_quick_stats()
     }
     
     return render(request, 'playbooks/detail.html', context)
