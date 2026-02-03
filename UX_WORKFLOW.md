@@ -6,6 +6,73 @@ This workflow defines the complete UX design-to-development process for Mimir, f
 
 ---
 
+## Screen ID Convention (Traceability)
+
+**All screens must follow a consistent naming pattern for end-to-end traceability.**
+
+### Format: `FOB-{ENTITY}-{OPERATION}-{VERSION}`
+
+**Components**:
+- `FOB` = Forward Operating Base (the web UI)
+- `{ENTITY}` = Uppercase entity name (PLAYBOOKS, WORKFLOWS, ACTIVITIES, etc.)
+- `{OPERATION}` = Screen operation type (see CRUDLF patterns below)
+- `{VERSION}` = Version number (usually `-1` for MVP)
+
+### CRUDLF Operations
+
+**Standard CRUD + List/Find pattern**:
+- `LIST+FIND` - Entry point screen for entity (list view with search/filter)
+- `CREATE_{ENTITY}` - Creation form screen
+- `VIEW_{ENTITY}` - Detail/read-only view screen
+- `EDIT_{ENTITY}` - Edit form screen
+- `DELETE_{ENTITY}` - Deletion confirmation screen
+
+**Examples**:
+- `FOB-PLAYBOOKS-LIST+FIND-1` → Playbooks list with search/filter
+- `FOB-PLAYBOOKS-CREATE_PLAYBOOK-1` → Create new playbook form
+- `FOB-PLAYBOOKS-VIEW_PLAYBOOK-1` → View playbook details
+- `FOB-PLAYBOOKS-EDIT_PLAYBOOK-1` → Edit playbook form
+- `FOB-PLAYBOOKS-DELETE_PLAYBOOK-1` → Delete playbook confirmation
+- `FOB-WORKFLOWS-LIST+FIND-1` → Workflows list (within playbook)
+- `FOB-HOWTOS-CREATE_HOWTO-1` → Create howto form
+
+### Traceability Chain
+
+**Every Screen ID must appear in ALL of these artifacts**:
+
+1. **User Journey** (`docs/features/user_journey.md`)
+   - Format: `#### Screen: FOB-{ENTITY}-{OPERATION}-{VERSION}`
+   - Describes layout, actions, user flow
+
+2. **Screen Flow Diagram** (`docs/ux/2_dialogue-maps/screen-flow.drawio`)
+   - Box label: `FOB-{ENTITY}-{OPERATION}-{VERSION}`
+   - Bold border for LIST+FIND entry points
+   - Navigation arrows between screens
+
+3. **Feature File** (`docs/features/act-X-{entity}/{entity}-{operation}.feature`)
+   - Feature title: `Feature: FOB-{ENTITY}-{OPERATION}-{VERSION} {Description}`
+   - Scenario IDs: `FOB-{ENTITY}-{OPERATION}-{NN}` (01, 02, 03...)
+   - File naming: `{entity}-{operation}.feature` (kebab-case)
+
+4. **Template** (`templates/{entity}/{operation}.html`)
+   - HTML comment: `<!-- Screen: FOB-{ENTITY}-{OPERATION}-{VERSION} -->`
+   - Hidden div: `<div data-testid="{entity}-{operation}-loaded" style="display: none;">{SCREEN_ID}</div>`
+   - Enables grep discovery: `grep -r "FOB-PLAYBOOKS-LIST+FIND-1" .`
+
+5. **Tests** (`tests/integration/test_{entity}_{operation}.py`)
+   - Test names reference Screen ID
+   - Docstrings include Screen ID
+
+### Benefits
+
+✅ **Bidirectional Traceability**: Navigate from code → design or design → code  
+✅ **Quick Discovery**: `grep -r "FOB-PLAYBOOKS-LIST+FIND-1" .` finds all related artifacts  
+✅ **Consistency Validation**: Verify all screens have complete documentation  
+✅ **Onboarding**: New developers can trace any screen to design intent  
+✅ **Gap Detection**: Missing Screen IDs indicate incomplete UX work
+
+---
+
 ## Workflow Steps
 
 ### Step 1: Define User Journey
@@ -307,9 +374,10 @@ This workflow defines the complete UX design-to-development process for Mimir, f
 
 **Deliverables**:
 - ✅ Complete user journey with all Acts documented
-- ✅ IA guidelines with design system specifications
-- ✅ Navigation structure defined
-- ✅ Layout patterns documented
+- ✅ **Each screen uses Screen ID format**: `#### Screen: FOB-{ENTITY}-{OPERATION}-{VERSION}`
+- ✅ **Screen IDs follow CRUDLF pattern**: LIST+FIND, CREATE_{ENTITY}, VIEW_{ENTITY}, EDIT_{ENTITY}, DELETE_{ENTITY}
+- ✅ **Entry point screens (LIST+FIND) clearly marked**
+- ✅ **Screen IDs are unique and traceable**
 
 ---
 
@@ -449,6 +517,11 @@ This workflow defines the complete UX design-to-development process for Mimir, f
 **Deliverables**:
 - ✅ Domain model diagram
 - ✅ Complete MVP flow with all Acts
+- ✅ **Each screen box labeled with Screen ID**: `FOB-{ENTITY}-{OPERATION}-{VERSION}`
+- ✅ **LIST+FIND screens have bold borders** (entry points)
+- ✅ **Screen IDs match User Journey exactly**
+- ✅ **Navigation arrows show screen-to-screen flow**
+- ✅ **Grep-able**: Can find screen in diagram by ID
 - ✅ Screen state documentation
 - ✅ Navigation flow clarity
 
@@ -697,6 +770,12 @@ This workflow defines the complete UX design-to-development process for Mimir, f
 
 **Deliverables**:
 - ✅ Complete feature files for all CRUDLF operations
+- ✅ **Feature title includes Screen ID**: `Feature: FOB-{ENTITY}-{OPERATION}-{VERSION} {Description}`
+- ✅ **File naming matches operation**: `{entity}-{operation}.feature` (kebab-case)
+- ✅ **Scenario IDs extend Screen ID**: `FOB-{ENTITY}-{OPERATION}-{NN}` (01, 02, etc.)
+- ✅ **Feature file location**: `docs/features/act-X-{entity}/`
+- ✅ **Each scenario references Screen ID from Step 3**
+- ✅ **Grep-able**: `grep -r "FOB-PLAYBOOKS-LIST+FIND-1" docs/features/`
 - ✅ Navbar integration scenarios
 - ✅ Error handling scenarios
 - ✅ Edge case coverage
@@ -1000,6 +1079,11 @@ This workflow defines the complete UX design-to-development process for Mimir, f
 
 **Deliverables**:
 - ✅ Functional mockup templates for all screens
+- ✅ **Template file comment includes Screen ID**: `<!-- Screen: FOB-{ENTITY}-{OPERATION}-{VERSION} -->`
+- ✅ **Hidden div with screen ID**: `<div data-testid="{entity}-{operation}-loaded" style="display: none;">{SCREEN_ID}</div>`
+- ✅ **Template location**: `templates/{entity}/{operation}.html`
+- ✅ **Grep-able**: `grep -r "FOB-PLAYBOOKS-LIST+FIND-1" templates/`
+- ✅ **Screen ID enables quick discovery of implementation**
 - ✅ Mock views returning templates
 - ✅ All UI states represented
 - ✅ Proper accessibility attributes
@@ -1284,11 +1368,6 @@ These principles apply to **every step** of the UX workflow:
 - `.windsurf/rules/` - Project-specific rules
 - `.cursor/rules/` - Additional rules
 
-### Workflows
-- `.windsurf/workflows/dev-1-plan-feature.md` - Feature planning
-- `.windsurf/workflows/dev-2-implement-backend.md` - Backend implementation
-- `.windsurf/workflows/dev-3-implement-frontend.md` - Frontend implementation
-
 ---
 
 ## Success Criteria
@@ -1328,10 +1407,15 @@ A feature is considered **implementation-complete** when:
 8. ✅ Form validation and error handling added (Step 5)
 9. ✅ **100% test pass rate achieved** (Step 5)
 10. ✅ All UI attributes maintained from mockups (Step 5)
-11. ✅ Commits follow Angular convention (Step 5)
-12. ✅ GitHub issue updated with progress (Step 5)
-13. ✅ Feature merged to main (Step 5)
-14. ✅ Navbar link activated (if applicable) (Step 5)
+11. ✅ **Screen ID traceability complete**: Screen ID appears in User Journey, Screen Flow, Feature File, Template, and Tests
+12. ✅ **Implementation references Screen ID in commits**
+13. ✅ **Tests use Screen ID in test names**: `test_{screen_id_snake_case}`
+14. ✅ **View functions documented with Screen ID**
+15. ✅ **Grep-able across entire codebase**: `grep -r "FOB-{ENTITY}-{OPERATION}-{VERSION}" .`
+16. ✅ Commits follow Angular convention (Step 5)
+17. ✅ GitHub issue updated with progress (Step 5)
+18. ✅ Feature merged to main (Step 5)
+19. ✅ Navbar link activated (if applicable) (Step 5)
 
 ---
 
