@@ -15,7 +15,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | activities |                     24 |
       | artifacts  |                     12 |
 
-  Scenario: PB-VIEW-01 Open playbook detail page
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-01 Open playbook detail page
     Given Maria is on FOB-PLAYBOOKS-LIST+FIND-1
     And "React Frontend Development" is in the list
     When she clicks [View] in the Actions menu
@@ -23,7 +23,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     And she sees the playbook detail page
     And the breadcrumb shows "Playbooks > React Frontend Development > Overview"
 
-  Scenario: PB-VIEW-02 View header information
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-02 View header information
     Given Maria is on the playbook detail page for "React Frontend Development"
     Then the header displays:
       | element       | value                        |
@@ -33,7 +33,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | Author        | Mike Chen (Usability family) |
       | Last modified |                  2 weeks ago |
 
-  Scenario: PB-VIEW-03 View Overview tab content (default)
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-03 View Overview tab content (default)
     Given Maria is on the playbook detail page
     Then the Overview tab is selected by default
     And she sees the full playbook description
@@ -47,7 +47,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | Howtos     |                 24 |
       | Goals      | Coming soon (v2.1) |
 
-  Scenario: PB-VIEW-04 View metadata in Overview
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-04 View metadata in Overview
     Given Maria is on the Overview tab
     Then she sees Metadata section with:
       | field    | value                                   |
@@ -56,7 +56,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | Created  |                            3 months ago |
       | Source   | Downloaded from Usability family        |
 
-  Scenario: PB-VIEW-05 View workflows list in Overview ✅ IMPLEMENTED
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-05 View workflows list in Overview ✅ IMPLEMENTED
     Given Maria is on the Overview tab
     Then she sees Workflows Section
     And each workflow displays: Name, Description, Activity count
@@ -67,14 +67,19 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     # Clickable links to workflow detail pages
     # Quick edit button for each workflow
 
-  Scenario: PB-VIEW-06 Navigate to Workflows tab
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-06 Navigate to Workflows tab ✅ IMPLEMENTED
     Given Maria is on the playbook detail page
     When she clicks the "Workflows" tab
     Then she sees the full list of workflows
     And workflows show dependency visualization (if any)
     And she sees workflow filtering options
+    # Implemented: Workflows tab with embedded workflows list
+    # Client-side filtering by name (search) and phase presence
+    # Activity dependencies shown in individual workflow detail pages
+    # 13 integration tests covering all aspects
+    # Empty states for no workflows and filtered results
 
-  Scenario: PB-VIEW-07 Add workflow button (editable playbooks only) ✅ IMPLEMENTED
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-07 Add workflow button (editable playbooks only) ✅ IMPLEMENTED
     Given Maria owns the playbook "Product Discovery Framework"
     And she is on the Workflows tab
     Then she sees [Add Workflow] button
@@ -85,7 +90,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     # Only visible if can_edit (owned playbooks)
     # Empty state with 'Create First Workflow' button
 
-  Scenario: PB-VIEW-08 Navigate to History tab
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-08 Navigate to History tab
     Given Maria is on the playbook detail page
     When she clicks the "History" tab
     Then she sees the version timeline
@@ -98,14 +103,14 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | Change summary |
     And each version has [View This Version] and [Compare with Current] buttons
 
-  Scenario: PB-VIEW-09 View specific version from History
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-09 View specific version from History
     Given Maria is on the History tab
     When she clicks [View This Version] for v1.0
     Then she sees the playbook as it was in v1.0
     And a notice displays "You are viewing version v1.0 (not current)"
     And she sees [Return to Current Version] button
 
-  Scenario: PB-VIEW-10 Compare versions
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-10 Compare versions
     Given Maria is on the History tab
     When she clicks [Compare with Current] for v1.0
     Then she sees the Version Comparison View
@@ -118,13 +123,13 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | red    | Removed  |
       | yellow | Modified |
 
-  Scenario: PB-VIEW-11 View PIP history in History tab
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-11 View PIP history in History tab
     Given Maria is on the History tab
     Then she sees "PIP History" section
     And PIPs that led to new versions are listed
     And each PIP shows: Title, Submitter, Status, Related version
 
-  Scenario: PB-VIEW-12 Navigate to Settings tab (owned playbooks only)
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-12 Navigate to Settings tab (owned playbooks only)
     Given Maria owns the playbook "Product Discovery Framework"
     And she is on the playbook detail page
     When she clicks the "Settings" tab
@@ -135,12 +140,12 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | Sharing options     |
       | Transfer Ownership  |
 
-  Scenario: PB-VIEW-13 Settings tab not visible for downloaded playbooks
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-13 Settings tab not visible for downloaded playbooks
     Given Maria is viewing downloaded playbook "React Frontend Development"
     Then the "Settings" tab is not visible
     And only tabs shown are: Overview, Workflows, History
 
-  Scenario: PB-VIEW-14 Top actions for owned playbooks
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-14 Top actions for owned playbooks
     Given Maria owns the playbook "Product Discovery Framework"
     And she is on the playbook detail page
     Then she sees top action buttons:
@@ -152,7 +157,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | Disable/Enable |
       | ...More        |
 
-  Scenario: PB-VIEW-15 Top actions for downloaded playbooks
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-15 Top actions for downloaded playbooks
     Given Maria is viewing downloaded playbook "React Frontend Development"
     Then she sees limited action buttons:
       | button    |
@@ -160,7 +165,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | ...More   |
     And Edit, Delete, Export JSON buttons are not visible
 
-  Scenario: PB-VIEW-16 Click Edit button ✅ IMPLEMENTED
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-16 Click Edit button ✅ IMPLEMENTED
     Given Maria owns the playbook
     And she is on the playbook detail page
     When she clicks [Edit]
@@ -170,14 +175,14 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     # Full edit form with all fields pre-populated
     # Tests: 11 integration tests passing
 
-  Scenario: PB-VIEW-17 Click Delete button
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-17 Click Delete button
     Given Maria owns the playbook
     And she is on the playbook detail page
     When she clicks [Delete]
     Then the FOB-PLAYBOOKS-DELETE_PLAYBOOK-1 modal appears
     And she sees deletion confirmation
 
-  Scenario: PB-VIEW-18 Export playbook to JSON ✅ IMPLEMENTED
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-18 Export playbook to JSON ✅ IMPLEMENTED
     Given Maria owns the playbook "Product Discovery Framework"
     And she is on the playbook detail page
     When she clicks [Export JSON]
@@ -187,7 +192,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     # JSON download with metadata
     # Filename format: name-vX.json
 
-  Scenario: PB-VIEW-19 Duplicate playbook ✅ IMPLEMENTED
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-19 Duplicate playbook ✅ IMPLEMENTED
     Given Maria is on the playbook detail page
     When she clicks [Duplicate]
     Then a modal appears "Duplicate playbook?"
@@ -199,7 +204,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     # Creates shallow copy (metadata only)
     # Sets source='owned', status='draft'
 
-  Scenario: PB-VIEW-20 Disable/Enable toggle ✅ IMPLEMENTED
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-20 Disable/Enable toggle ✅ IMPLEMENTED
     Given Maria owns an Active playbook
     And she is on the playbook detail page
     When she clicks [Disable]
@@ -212,42 +217,41 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     # Toggles active <-> disabled
     # Draft status stays draft
 
-  Scenario: PB-VIEW-21 Back to playbooks list
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-21 Back to playbooks list
     Given Maria is on the playbook detail page
     When she clicks [Back to Playbooks List] link
     Then she returns to FOB-PLAYBOOKS-LIST+FIND-1
 
-  Scenario: PB-VIEW-22 Breadcrumb navigation
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-22 Breadcrumb navigation
     Given Maria is on the playbook detail page
     And the breadcrumb shows "Playbooks > React Frontend Development > Overview"
     When she clicks "Playbooks" in the breadcrumb
     Then she returns to FOB-PLAYBOOKS-LIST+FIND-1
 
-  Scenario: PB-VIEW-23 View playbook with optional Phases
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-23 View playbook with optional Phases
     Given Maria is viewing a playbook with optional Phases
     Then the Quick Stats shows Phases count: 8
     When she is viewing a playbook without Phases
     Then the Quick Stats shows Phases: "N/A" or "0"
 
-  Scenario: PB-VIEW-24 Status badge colors
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-24 Status badge colors
     Given Maria views playbooks with different statuses
     Then she sees status badges with correct colors:
       | status   | color  |
       | Active   | green  |
       | Disabled | gray   |
       | Draft    | yellow |
-
 # =============================================================================
 # IMPLEMENTATION STATUS (as of 2025-11-28)
 # =============================================================================
 #
 # COMPLETED SCENARIOS:
-# - PB-VIEW-05: Workflows list in Overview ✅
-# - PB-VIEW-07: Add workflow button ✅
-# - PB-VIEW-16: Edit button ✅
-# - PB-VIEW-18: Export to JSON ✅
-# - PB-VIEW-19: Duplicate playbook ✅
-# - PB-VIEW-20: Toggle status ✅
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-05: Workflows list in Overview ✅
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-07: Add workflow button ✅
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-16: Edit button ✅
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-18: Export to JSON ✅
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-19: Duplicate playbook ✅
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-20: Toggle status ✅
 #
 # INTEGRATION ENHANCEMENTS (Not in original spec):
 # - Workflows are clickable (link to workflow_detail)
@@ -268,11 +272,11 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
 # ⚠️  Should implement tests from playbooks-list-find.feature
 #
 # DEFERRED SCENARIOS (Future Implementation):
-# - PB-VIEW-03: Quick Stats (phases, activities, artifacts, roles counts)
-# - PB-VIEW-04: Tags display
-# - PB-VIEW-06: Workflows tab (separate from Overview)
-# - PB-VIEW-08-11: History tab and version comparison
-# - PB-VIEW-12-13: Settings tab
-# - PB-VIEW-17: Delete button (Issue #31)
-# - PB-VIEW-23: Phases integration (when Phase model exists)
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-03: Quick Stats (phases, activities, artifacts, roles counts)
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-04: Tags display
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-06: Workflows tab (separate from Overview)
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-08-11: History tab and version comparison
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-12-13: Settings tab
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-17: Delete button (Issue #31)
+# - FOB-PLAYBOOKS-VIEW_PLAYBOOK-23: Phases integration (when Phase model exists)
 #
