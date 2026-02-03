@@ -1,0 +1,103 @@
+<!-- Workflows Tab Content Partial -->
+<!-- Used in playbooks/detail.html Workflows tab -->
+
+<!-- Search and Filter Section -->
+<div class="mb-3" data-testid="workflows-filter-section">
+    <div class="row">
+        <div class="col-md-6">
+            <input type="text" 
+                   id="workflow-search" 
+                   class="form-control" 
+                   placeholder="Search workflows by name..."
+                   data-testid="workflow-search-input">
+        </div>
+        <div class="col-md-6">
+            <select id="filter-has-phases" 
+                    class="form-select"
+                    data-testid="workflow-phase-filter">
+                <option value="all">All Workflows</option>
+                <option value="with-phases">With Phases</option>
+                <option value="no-phases">No Phases</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Workflows Table -->
+{% if workflows %}
+<div class="table-responsive">
+    <table class="table table-hover" id="workflows-table" data-testid="workflows-table">
+        <thead>
+            <tr>
+                <th>Order</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Activities</th>
+                <th>Phases</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for workflow in workflows %}
+            <tr data-testid="workflow-row-{{ workflow.pk }}" data-workflow-row>
+                <td>{{ workflow.order }}</td>
+                <td>
+                    <a href="{% url 'workflow_detail' playbook.pk workflow.pk %}" data-workflow-name>
+                        {{ workflow.name }}
+                    </a>
+                </td>
+                <td>{{ workflow.description|truncatewords:10 }}</td>
+                <td>{{ workflow.get_activity_count }}</td>
+                <td data-phase-count>{{ workflow.get_phase_count }}</td>
+                <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="{% url 'workflow_detail' playbook.pk workflow.pk %}" 
+                           class="btn btn-outline-primary"
+                           data-bs-toggle="tooltip"
+                           data-bs-placement="top"
+                           title="View workflow details and activity graph"
+                           data-testid="view-workflow-{{ workflow.pk }}">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                        {% if can_edit %}
+                        <a href="{% url 'workflow_edit' playbook.pk workflow.pk %}" 
+                           class="btn btn-outline-secondary"
+                           data-bs-toggle="tooltip"
+                           data-bs-placement="top"
+                           title="Edit workflow name and description"
+                           data-testid="edit-workflow-{{ workflow.pk }}">
+                            <i class="fa-solid fa-edit"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Empty State (filtered results) -->
+<div id="empty-state" class="text-center py-5" style="display: none;" data-testid="workflows-empty-state">
+    <i class="fa-solid fa-filter fa-3x text-muted mb-3"></i>
+    <h5>No workflows match your filters</h5>
+    <p class="text-muted">Try adjusting your search or filter criteria</p>
+</div>
+
+{% else %}
+<!-- Empty State (no workflows) -->
+<div class="text-center py-5" data-testid="workflows-no-data">
+    <i class="fa-solid fa-diagram-project fa-4x text-muted mb-3"></i>
+    <h4>No workflows yet</h4>
+    <p class="text-muted">Create your first workflow to organize activities</p>
+    {% if can_edit %}
+    <a href="{% url 'workflow_create' playbook.pk %}" 
+       class="btn btn-primary"
+       data-bs-toggle="tooltip"
+       data-bs-placement="top"
+       title="Create a new workflow in this playbook">
+        <i class="fa-solid fa-plus"></i> Create Workflow
+    </a>
+    {% endif %}
+</div>
+{% endif %}

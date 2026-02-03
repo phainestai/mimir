@@ -1,7 +1,65 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ playbook.name }} - Playbook{% endblock %}
+{% block title %}{{ playbook.name }} - Playbook
+<script>
+// Workflow search and filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('workflow-search');
+    const filterPhases = document.getElementById('filter-has-phases');
+    const table = document.getElementById('workflows-table');
+    const rows = table ? table.querySelectorAll('tbody tr[data-workflow-row]') : [];
+    const emptyState = document.getElementById('empty-state');
+    
+    function filterWorkflows() {
+        if (!searchInput || !filterPhases || rows.length === 0) return;
+        
+        const searchTerm = searchInput.value.toLowerCase();
+        const phaseFilter = filterPhases.value;
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const nameElement = row.querySelector('[data-workflow-name]');
+            const phaseElement = row.querySelector('[data-phase-count]');
+            
+            const name = nameElement ? nameElement.textContent.toLowerCase() : '';
+            const phaseCount = phaseElement ? parseInt(phaseElement.textContent) : 0;
+            
+            // Search filter
+            const matchesSearch = name.includes(searchTerm);
+            
+            // Phase filter
+            let matchesPhase = true;
+            if (phaseFilter === 'with-phases') matchesPhase = phaseCount > 0;
+            if (phaseFilter === 'no-phases') matchesPhase = phaseCount === 0;
+            
+            // Show/hide row
+            if (matchesSearch && matchesPhase) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Show/hide empty state
+        if (emptyState && table) {
+            if (visibleCount === 0 && rows.length > 0) {
+                emptyState.style.display = 'block';
+                table.style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                table.style.display = '';
+            }
+        }
+    }
+    
+    if (searchInput) searchInput.addEventListener('input', filterWorkflows);
+    if (filterPhases) filterPhases.addEventListener('change', filterWorkflows);
+});
+</script>
+
+{% endblock %}
 
 {% block content %}
 <div class="container mt-4" data-testid="playbook-detail">
@@ -274,7 +332,7 @@
 
         <!-- Workflows Tab (placeholder) -->
         <div class="tab-pane fade" id="workflows-content" role="tabpanel">
-            <p class="text-muted">Workflows tab content (to be implemented)</p>
+            {% include "methodology/partials/workflows_tab_content.html" %}
         </div>
 
         <!-- History Tab (placeholder) -->
@@ -357,4 +415,119 @@
     .badge.bg-draft { background-color: #6c757d !important; }
     .badge.bg-disabled { background-color: #dc3545 !important; }
 </style>
+
+<script>
+// Workflow search and filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('workflow-search');
+    const filterPhases = document.getElementById('filter-has-phases');
+    const table = document.getElementById('workflows-table');
+    const rows = table ? table.querySelectorAll('tbody tr[data-workflow-row]') : [];
+    const emptyState = document.getElementById('empty-state');
+    
+    function filterWorkflows() {
+        if (!searchInput || !filterPhases || rows.length === 0) return;
+        
+        const searchTerm = searchInput.value.toLowerCase();
+        const phaseFilter = filterPhases.value;
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const nameElement = row.querySelector('[data-workflow-name]');
+            const phaseElement = row.querySelector('[data-phase-count]');
+            
+            const name = nameElement ? nameElement.textContent.toLowerCase() : '';
+            const phaseCount = phaseElement ? parseInt(phaseElement.textContent) : 0;
+            
+            // Search filter
+            const matchesSearch = name.includes(searchTerm);
+            
+            // Phase filter
+            let matchesPhase = true;
+            if (phaseFilter === 'with-phases') matchesPhase = phaseCount > 0;
+            if (phaseFilter === 'no-phases') matchesPhase = phaseCount === 0;
+            
+            // Show/hide row
+            if (matchesSearch && matchesPhase) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Show/hide empty state
+        if (emptyState && table) {
+            if (visibleCount === 0 && rows.length > 0) {
+                emptyState.style.display = 'block';
+                table.style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                table.style.display = '';
+            }
+        }
+    }
+    
+    if (searchInput) searchInput.addEventListener('input', filterWorkflows);
+    if (filterPhases) filterPhases.addEventListener('change', filterWorkflows);
+});
+</script>
+
+<script>
+// Workflow search and filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('workflow-search');
+    const filterPhases = document.getElementById('filter-has-phases');
+    const table = document.getElementById('workflows-table');
+    const rows = table ? table.querySelectorAll('tbody tr[data-workflow-row]') : [];
+    const emptyState = document.getElementById('empty-state');
+    
+    function filterWorkflows() {
+        if (!searchInput || !filterPhases || rows.length === 0) return;
+        
+        const searchTerm = searchInput.value.toLowerCase();
+        const phaseFilter = filterPhases.value;
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const nameElement = row.querySelector('[data-workflow-name]');
+            const phaseElement = row.querySelector('[data-phase-count]');
+            
+            const name = nameElement ? nameElement.textContent.toLowerCase() : '';
+            const phaseCount = phaseElement ? parseInt(phaseElement.textContent) : 0;
+            
+            // Search filter
+            const matchesSearch = name.includes(searchTerm);
+            
+            // Phase filter
+            let matchesPhase = true;
+            if (phaseFilter === 'with-phases') matchesPhase = phaseCount > 0;
+            if (phaseFilter === 'no-phases') matchesPhase = phaseCount === 0;
+            
+            // Show/hide row
+            if (matchesSearch && matchesPhase) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Show/hide empty state
+        if (emptyState && table) {
+            if (visibleCount === 0 && rows.length > 0) {
+                emptyState.style.display = 'block';
+                table.style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                table.style.display = '';
+            }
+        }
+    }
+    
+    if (searchInput) searchInput.addEventListener('input', filterWorkflows);
+    if (filterPhases) filterPhases.addEventListener('change', filterWorkflows);
+});
+</script>
+
 {% endblock %}
