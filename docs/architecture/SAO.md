@@ -1807,11 +1807,11 @@ Each domain entity must:
 3. **Define access rules** - Filter by user ownership/permissions
 4. **Specify ordering** - Default sort order for results
 
-**Example: Adding new entity type "Howto"**:
+**Example: Adding new entity type "Skill"**:
 
 ```python
 # 1. Domain object declares searchable fields (implicit via implementation)
-class Howto(models.Model):
+class Skill(models.Model):
     name = models.CharField(max_length=200)          # Searchable
     content = models.TextField()                      # Searchable
     tool_specific = models.CharField(max_length=100)  # Not searchable
@@ -1821,22 +1821,22 @@ class Howto(models.Model):
 class GlobalSearchService:
     def search(self, query, user, filters=None):
         # ... existing code ...
-        howtos = self._search_howtos(normalized_query, user, filters)
-        
+        skills = self._search_skills(normalized_query, user, filters)
+
         return {
             "playbooks": list(playbooks),
             "workflows": list(workflows),
             "activities": list(activities),
-            "howtos": list(howtos),  # New entity type
+            "skills": list(skills),  # New entity type
         }
-    
-    def _search_howtos(self, query: str, user, filters: Dict[str, Any]) -> QuerySet[Howto]:
-        """Search howtos by name and content.
-        
-        Domain object registration: Howto declares searchable fields.
+
+    def _search_skills(self, query: str, user, filters: Dict[str, Any]) -> QuerySet[Skill]:
+        """Search skills by name and content.
+
+        Domain object registration: Skill declares searchable fields.
         """
-        base_qs = Howto.objects.filter(author=user)
-        
+        base_qs = Skill.objects.filter(author=user)
+
         # Search across declared fields: name, content
         return base_qs.filter(
             Q(name__icontains=query) | Q(content__icontains=query)
