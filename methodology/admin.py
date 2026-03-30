@@ -1,7 +1,7 @@
 """Admin configuration for methodology models."""
 
 from django.contrib import admin
-from methodology.models import Playbook, PlaybookVersion, Workflow, Activity, Artifact, ArtifactInput, Skill
+from methodology.models import Playbook, PlaybookVersion, Workflow, Activity, Artifact, ArtifactInput, Skill, Agent
 
 
 @admin.register(Playbook)
@@ -82,3 +82,13 @@ class SkillAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     readonly_fields = ('created_at', 'updated_at')
     raw_id_fields = ('activity',)
+
+
+@admin.register(Agent)
+class AgentAdmin(admin.ModelAdmin):
+    """Admin configuration for Agent model."""
+    list_display = ('name', 'playbook', 'created_at', 'updated_at')
+    search_fields = ('name', 'description', 'playbook__name')
+    list_filter = ('created_at', 'playbook')
+    readonly_fields = ('created_at', 'updated_at')
+    raw_id_fields = ('playbook',)

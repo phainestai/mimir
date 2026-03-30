@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Agents{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="agents-list">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2><i class="fa-solid fa-brain me-2"></i>Agents</h2>
+            <p class="text-muted">AI assistants configured to perform activities within playbooks</p>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" action="{% url 'agent_list' %}" role="search">
+                <div class="input-group">
+                    <input type="text"
+                           class="form-control"
+                           name="q"
+                           value="{{ query }}"
+                           placeholder="Search agents by name or description…"
+                           data-testid="agent-search">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="fa-solid fa-magnifying-glass me-2"></i>Search
+                    </button>
+                    {% if query %}
+                    <a href="{% url 'agent_list' %}" class="btn btn-outline-danger">
+                        <i class="fa-solid fa-times me-2"></i>Clear
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if agents %}
+    <!-- Agents table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fa-solid fa-list me-2"></i>Agents
+                <span class="badge bg-secondary ms-2">{{ agents|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0" data-testid="agents-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Playbook</th>
+                        <th style="width: 10%">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for agent in agents %}
+                    <tr data-testid="agent-row-{{ agent.id }}">
+                        <td>
+                            <i class="fa-solid fa-brain text-primary me-2"></i>
+                            <strong>{{ agent.name }}</strong>
+                        </td>
+                        <td class="text-muted small">
+                            {{ agent.description|truncatewords:20 }}
+                        </td>
+                        <td class="text-muted small">{{ agent.playbook.name }}</td>
+                        <td>
+                            <a href="#"
+                               class="btn btn-outline-primary btn-sm"
+                               data-testid="view-agent-{{ agent.id }}"
+                               data-bs-toggle="tooltip"
+                               title="View agent">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="card border-0 shadow-sm" data-testid="empty-state">
+        <div class="card-body text-center py-5">
+            <i class="fa-solid fa-brain fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No agents yet</h4>
+            {% if query %}
+            <p class="text-muted">No agents match "<strong>{{ query }}</strong>".</p>
+            <a href="{% url 'agent_list' %}" class="btn btn-outline-secondary mt-2">
+                <i class="fa-solid fa-times me-2"></i>Clear search
+            </a>
+            {% else %}
+            <p class="text-muted">Agents are created from playbook detail pages.</p>
+            <a href="{% url 'playbook_list' %}"
+               class="btn btn-primary mt-3"
+               data-testid="create-first-agent-btn">
+                <i class="fa-solid fa-plus me-2"></i>Create First Agent
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

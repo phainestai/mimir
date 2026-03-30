@@ -21,6 +21,7 @@ from methodology import views as methodology_views
 from methodology import workflow_views
 from methodology import activity_views
 from methodology import skill_views
+from methodology import agent_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -37,4 +38,5 @@ urlpatterns = [
     path("workflows/", workflow_views.workflow_global_list, name="workflow_global_list"),  # Global workflows view
     path("activities/", activity_views.activity_global_list, name="activity_global_list"),  # Global activities view
     path("skills/", skill_views.skill_list_global, name="skill_list"),  # Global skills view
+    path("agents/", agent_views.agent_list_global, name="agent_list"),  # Global agents view
 ]

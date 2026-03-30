@@ -64,6 +64,17 @@ class PlaybookService:
                 source=source
             )
             
+            # Create initial version record for active/released playbooks
+            if status in ['released', 'active']:
+                from methodology.models import PlaybookVersion
+                PlaybookVersion.objects.create(
+                    playbook=playbook,
+                    version_number=1,
+                    snapshot_data={'name': playbook.name, 'version': str(playbook.version)},
+                    change_summary='Initial version',
+                    created_by=author,
+                )
+            
             logger.info(f"Created playbook '{name}' (id={playbook.id}, version={playbook.version})")
             return playbook
             
@@ -244,8 +255,9 @@ class PlaybookService:
         old_version = playbook.version
         old_status = playbook.status
         
-        # Call model method
+        # Call model method and persist
         playbook.release()
+        playbook.save()
         
         logger.info(f"Playbook '{playbook.name}' released: {old_status} v{old_version} → {playbook.status} v{playbook.version}")
         return playbook
