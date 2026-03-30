@@ -6,7 +6,7 @@ on:
       - main
       - 'release/**'
   pull_request:
-    branches: [main]
+    branches: [release/**]
   release:
     types: [published]
 

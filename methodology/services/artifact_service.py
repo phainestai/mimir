@@ -168,6 +168,67 @@ class ArtifactService:
         return Artifact.objects.filter(produced_by=activity).order_by("name")
 
     @staticmethod
+    def search_artifacts(
+        playbook, search_query=None, type_filter=None, required_filter=None, activity_filter=None
+    ):
+        """
+        Search and filter artifacts in a playbook.
+
+        :param playbook: Playbook instance
+        :param search_query: Search term as str or None. Example: "API"
+        :param type_filter: Type as str or None. Example: "Document"
+        :param required_filter: Required flag as bool or None
+        :param activity_filter: Activity ID as int or None
+        :returns: QuerySet of Artifact instances
+
+        Example:
+            >>> ArtifactService.search_artifacts(playbook, search_query="API", type_filter="Document")
+            <QuerySet [<Artifact: API Specification>]>
+        """
+        from django.db.models import Q
+
+        logger.info(
+            f"Searching artifacts in playbook {playbook.id}: "
+            f"query='{search_query}', type='{type_filter}', "
+            f"required={required_filter}, activity={activity_filter}"
+        )
+
+        # Start with all artifacts in playbook
+        qs = (
+            Artifact.objects.filter(playbook=playbook)
+            .select_related("produced_by", "produced_by__workflow")
+            .prefetch_related("inputs")
+        )
+
+        # Apply search query (search in name and description)
+        if search_query:
+            search_query = search_query.strip()
+            qs = qs.filter(
+                Q(name__icontains=search_query) | Q(description__icontains=search_query)
+            )
+            logger.info(f"Applied search filter: '{search_query}'")
+
+        # Apply type filter
+        if type_filter:
+            qs = qs.filter(type=type_filter)
+            logger.info(f"Applied type filter: '{type_filter}'")
+
+        # Apply required filter
+        if required_filter is not None:
+            qs = qs.filter(is_required=required_filter)
+            logger.info(f"Applied required filter: {required_filter}")
+
+        # Apply activity filter
+        if activity_filter:
+            qs = qs.filter(produced_by_id=activity_filter)
+            logger.info(f"Applied activity filter: {activity_filter}")
+
+        result_count = qs.count()
+        logger.info(f"Search returned {result_count} artifacts")
+
+        return qs.order_by("produced_by__order", "name")
+
+    @staticmethod
     def update_artifact(artifact_id, **kwargs):
         """
         Update artifact fields.
@@ -242,20 +303,57 @@ class ArtifactService:
     @staticmethod
     def delete_artifact(artifact_id):
         """
-        Delete artifact.
+        Delete artifact and its template file.
 
-        :param artifact_id: Artifact primary key
+        :param artifact_id: Artifact primary key or Artifact instance
+        :returns: Dict with deletion info
         :raises Artifact.DoesNotExist: If artifact not found
 
         Example:
-            >>> ArtifactService.delete_artifact(123)
+            >>> result = ArtifactService.delete_artifact(123)
+            >>> result
+            {'deleted': True, 'template_deleted': True, 'consumers_cleared': 3}
         """
-        artifact = Artifact.objects.get(pk=artifact_id)
+        # Accept either an ID or an Artifact instance
+        if isinstance(artifact_id, Artifact):
+            artifact = artifact_id
+        else:
+            artifact = Artifact.objects.get(pk=artifact_id)
+
         playbook_id = artifact.playbook.id
         name = artifact.name
+        
+        # Count consumers before deletion
+        consumer_count = ArtifactInput.objects.filter(artifact=artifact).count()
+        
+        # Check if has template file
+        has_template = bool(artifact.template_file)
+        template_deleted = False
+        
+        # Delete template file if exists
+        if has_template:
+            try:
+                if artifact.template_file:
+                    # Delete the actual file from storage
+                    artifact.template_file.delete(save=False)
+                    template_deleted = True
+                    logger.info(f"Deleted template file for artifact '{name}'")
+            except Exception as e:
+                logger.warning(f"Failed to delete template file: {str(e)}")
 
+        # Delete artifact (cascades to ArtifactInput relationships)
         artifact.delete()
-        logger.info(f"Deleted artifact '{name}' from playbook {playbook_id}")
+        
+        logger.info(
+            f"Deleted artifact '{name}' from playbook {playbook_id} "
+            f"(consumers_cleared={consumer_count}, template_deleted={template_deleted})"
+        )
+        
+        return {
+            'deleted': True,
+            'template_deleted': template_deleted,
+            'consumers_cleared': consumer_count,
+        }
 
     @staticmethod
     def add_artifact_input(artifact, activity, is_required=True):

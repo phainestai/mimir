@@ -1,0 +1,125 @@
+{% load static %}
+
+{% if artifacts %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Produced by</th>
+                        <th>Required</th>
+                        <th>Consumers</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for artifact in artifacts %}
+                    <tr>
+                        <!-- Name -->
+                        <td>
+                            <a href="{% url 'artifact_detail' pk=artifact.pk %}" 
+                               class="text-decoration-none">
+                                <i class="fa-solid fa-file"></i> {{ artifact.name }}
+                            </a>
+                        </td>
+
+                        <!-- Type -->
+                        <td>
+                            <span class="badge bg-secondary">{{ artifact.type }}</span>
+                        </td>
+
+                        <!-- Produced by -->
+                        <td>
+                            <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=artifact.produced_by.workflow.pk activity_pk=artifact.produced_by.pk %}" 
+                               class="text-decoration-none small">
+                                {{ artifact.produced_by.name }}
+                            </a>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fa-solid fa-folder"></i> {{ artifact.produced_by.workflow.name }}
+                            </small>
+                        </td>
+
+                        <!-- Required -->
+                        <td>
+                            {% if artifact.is_required %}
+                                <span class="badge bg-danger">Required</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Optional</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Consumers -->
+                        <td>
+                            {% with consumer_count=artifact.inputs.count %}
+                            {% if consumer_count > 0 %}
+                                <span class="badge bg-info">{{ consumer_count }}</span>
+                            {% else %}
+                                <span class="text-muted">0</span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'artifact_detail' pk=artifact.pk %}" 
+                                   class="btn btn-outline-primary"
+                                   data-bs-toggle="tooltip"
+                                   title="View artifact">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                                <a href="{% url 'artifact_edit' pk=artifact.pk %}" 
+                                   class="btn btn-outline-secondary"
+                                   data-bs-toggle="tooltip"
+                                   title="Edit artifact">
+                                    <i class="fa-solid fa-edit"></i>
+                                </a>
+                                <button type="button" 
+                                        class="btn btn-outline-danger"
+                                        data-bs-toggle="tooltip"
+                                        title="Delete artifact"
+                                        hx-get="{% url 'artifact_delete' pk=artifact.pk %}"
+                                        hx-target="#delete-modal-container"
+                                        hx-swap="innerHTML">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Empty State -->
+<div class="card">
+    <div class="card-body text-center py-5">
+        <div class="mb-4">
+            <i class="fa-solid fa-gift fa-4x text-muted"></i>
+        </div>
+        <h4 class="text-muted mb-3">No artifacts yet</h4>
+        <p class="text-muted mb-4">
+            {% if search_query or type_filter or required_filter is not None or activity_filter %}
+                No artifacts match your search criteria. Try adjusting your filters.
+            {% else %}
+                Get started by creating your first artifact.
+            {% endif %}
+        </p>
+        {% if not search_query and not type_filter and required_filter is None and not activity_filter %}
+        <a href="{% url 'artifact_create' playbook_pk=playbook.pk %}" 
+           class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Create First Artifact
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Container for Delete Confirmation -->
+<div id="delete-modal-container"></div>
