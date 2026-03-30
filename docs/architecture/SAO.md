@@ -1709,6 +1709,158 @@ def query_view(request):
     return JsonResponse(result)
 ```
 
+### Global Search Service Pattern
+
+**Purpose**: Provide unified search across all domain entities (Playbooks, Workflows, Activities, etc.) with consistent behavior and extensibility.
+
+**MVP Implementation**: Basic text search using case-insensitive substring matching (`icontains`).
+
+**Pattern**:
+
+```python
+# methodology/services/global_search_service.py
+class GlobalSearchService:
+    """Service for global search across methodology entities.
+    
+    Each domain object type registers itself by implementing search methods
+    that define which fields are searchable.
+    """
+    
+    def search(self, query: str, user, filters: Optional[Dict[str, Any]] = None) -> Dict[str, List[Any]]:
+        """Search across all registered entity types.
+        
+        :param query: Free-text search query. Example: "Component"
+        :param user: User performing search. Example: User(username="maria")
+        :param filters: Optional filters (type, status, source). Example: {"type": "playbooks", "status": "draft"}
+        :return: Dict with entity type as key, list of results as value.
+                 Example: {"playbooks": [Playbook(...)], "workflows": [...], "activities": [...]}
+        """
+        # Normalize query
+        normalized_query = (query or "").strip()
+        if not normalized_query:
+            return {"playbooks": [], "workflows": [], "activities": []}
+        
+        # Search each entity type
+        playbooks = self._search_playbooks(normalized_query, user, filters)
+        workflows = self._search_workflows(normalized_query, user, filters)
+        activities = self._search_activities(normalized_query, user, filters)
+        
+        # Apply type filter at aggregation layer
+        type_filter = filters.get("type")
+        if type_filter:
+            return self._apply_type_filter(type_filter, playbooks, workflows, activities)
+        
+        return {
+            "playbooks": list(playbooks),
+            "workflows": list(workflows),
+            "activities": list(activities),
+        }
+    
+    def _search_playbooks(self, query: str, user, filters: Dict[str, Any]) -> QuerySet[Playbook]:
+        """Search playbooks by name and description.
+        
+        Domain object registration: Playbook declares searchable fields.
+        """
+        base_qs = Playbook.objects.filter(author=user)
+        
+        # Apply entity-specific filters
+        if filters.get("status"):
+            base_qs = base_qs.filter(status=filters["status"])
+        if filters.get("source"):
+            base_qs = base_qs.filter(source=filters["source"])
+        
+        # Search across declared fields: name, description
+        return base_qs.filter(
+            Q(name__icontains=query) | Q(description__icontains=query)
+        ).order_by("-updated_at")
+    
+    def _search_workflows(self, query: str, user, filters: Dict[str, Any]) -> QuerySet[Workflow]:
+        """Search workflows by name and description.
+        
+        Domain object registration: Workflow declares searchable fields.
+        """
+        base_qs = Workflow.objects.filter(playbook__author=user)
+        
+        # Search across declared fields: name, description
+        return base_qs.filter(
+            Q(name__icontains=query) | Q(description__icontains=query)
+        ).order_by("playbook", "order")
+    
+    def _search_activities(self, query: str, user, filters: Dict[str, Any]) -> QuerySet[Activity]:
+        """Search activities by name and guidance.
+        
+        Domain object registration: Activity declares searchable fields.
+        """
+        base_qs = Activity.objects.filter(workflow__playbook__author=user)
+        
+        # Search across declared fields: name, guidance
+        return base_qs.filter(
+            Q(name__icontains=query) | Q(guidance__icontains=query)
+        ).order_by("workflow", "order")
+```
+
+**Domain Object Registration Pattern**:
+
+Each domain entity must:
+1. **Declare searchable fields** - Which fields should be searched (name, description, guidance, etc.)
+2. **Implement search method** - `_search_{entity_type}()` method in GlobalSearchService
+3. **Define access rules** - Filter by user ownership/permissions
+4. **Specify ordering** - Default sort order for results
+
+**Example: Adding new entity type "Howto"**:
+
+```python
+# 1. Domain object declares searchable fields (implicit via implementation)
+class Howto(models.Model):
+    name = models.CharField(max_length=200)          # Searchable
+    content = models.TextField()                      # Searchable
+    tool_specific = models.CharField(max_length=100)  # Not searchable
+    author = models.ForeignKey(User)                  # Access control
+
+# 2. Register in GlobalSearchService
+class GlobalSearchService:
+    def search(self, query, user, filters=None):
+        # ... existing code ...
+        howtos = self._search_howtos(normalized_query, user, filters)
+        
+        return {
+            "playbooks": list(playbooks),
+            "workflows": list(workflows),
+            "activities": list(activities),
+            "howtos": list(howtos),  # New entity type
+        }
+    
+    def _search_howtos(self, query: str, user, filters: Dict[str, Any]) -> QuerySet[Howto]:
+        """Search howtos by name and content.
+        
+        Domain object registration: Howto declares searchable fields.
+        """
+        base_qs = Howto.objects.filter(author=user)
+        
+        # Search across declared fields: name, content
+        return base_qs.filter(
+            Q(name__icontains=query) | Q(content__icontains=query)
+        ).order_by("name")
+```
+
+**Future Enhancement: Semantic Search**:
+
+The MVP uses basic substring matching (`icontains`). Future versions can upgrade to semantic search:
+
+1. **Add embeddings** - Generate vector embeddings for searchable fields
+2. **Vector database** - Store embeddings in pgvector, Pinecone, or similar
+3. **Semantic matching** - Use cosine similarity instead of substring matching
+4. **Hybrid search** - Combine keyword and semantic search with ranking
+
+The service interface remains the same - only internal implementation changes.
+
+**Benefits**:
+- ✅ Consistent search behavior across all entity types
+- ✅ Easy to add new searchable entities
+- ✅ Respects user ownership and permissions
+- ✅ Extensible to semantic search without API changes
+- ✅ Type filtering at aggregation layer (can be optimized to DB level)
+
 ## Methodology Ontology
 
 ### Core Concepts
