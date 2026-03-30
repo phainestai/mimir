@@ -15,7 +15,7 @@
                 <div class="small">
                     <span class="fw-medium">{{ activity.description }}</span>
                     {% if activity.playbook %}
-                    <a href="/playbooks/playbook/view/{{ activity.playbook.id }}/" 
+                    <a href="{% url 'playbook_detail' activity.playbook.id %}" 
                        class="text-decoration-none"
                        data-testid="activity-playbook-link-{{ forloop.counter }}">
                         {{ activity.playbook.name }}

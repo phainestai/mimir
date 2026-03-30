@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Skill - {{ activity.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="skill-create">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'workflow_detail' playbook_pk=playbook.pk pk=workflow.pk %}">{{ workflow.name }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}">{{ activity.name }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'skill_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}">Skill</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Create</li>
+        </ol>
+    </nav>
+
+    <h2><i class="fa-solid fa-plus"></i> Create Skill</h2>
+    <p class="text-muted">Add step-by-step guidance for <strong>{{ activity.name }}</strong></p>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post"
+                  action="{% url 'skill_create' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                  data-testid="skill-form">
+                {% csrf_token %}
+
+                <!-- Title -->
+                <div class="mb-3">
+                    <label for="title" class="form-label">
+                        Title <span class="text-danger">*</span>
+                    </label>
+                    <input type="text"
+                           class="form-control {% if errors.title %}is-invalid{% endif %}"
+                           id="title"
+                           name="title"
+                           maxlength="200"
+                           value="{{ form_data.title|default:'' }}"
+                           data-testid="title-input"
+                           required>
+                    {% if errors.title %}
+                    <div class="invalid-feedback" data-testid="title-error">{{ errors.title }}</div>
+                    {% endif %}
+                    <small class="form-text text-muted">Short descriptive title (max 200 characters)</small>
+                </div>
+
+                <!-- Content -->
+                <div class="mb-3">
+                    <label for="content" class="form-label">
+                        Content
+                        <i class="fa-solid fa-info-circle text-muted"
+                           data-bs-toggle="tooltip"
+                           title="Supports Markdown: steps, code blocks, lists, headings, tables, Mermaid diagrams"></i>
+                    </label>
+                    <textarea class="form-control"
+                              id="content"
+                              name="content"
+                              rows="12"
+                              data-testid="content-input"
+                              placeholder="## Prerequisites&#10;&#10;- Node.js 18+&#10;&#10;## Steps&#10;&#10;1. Install dependencies&#10;2. Create component file&#10;&#10;## Examples&#10;&#10;```jsx&#10;// example code&#10;```">{{ form_data.content|default:'' }}</textarea>
+                    <small class="form-text text-muted">
+                        <i class="fa-brands fa-markdown"></i> Markdown supported
+                    </small>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-2">
+                    <button type="submit"
+                            class="btn btn-primary"
+                            data-testid="save-btn">
+                        <i class="fa-solid fa-save"></i> Create Skill
+                    </button>
+                    <a href="{% url 'skill_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                       class="btn btn-outline-secondary"
+                       data-testid="cancel-btn">
+                        <i class="fa-solid fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

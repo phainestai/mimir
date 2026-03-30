@@ -982,7 +982,7 @@ class GraphService:
         
         # Add activity nodes
         for activity in activities:
-            label = f"{activity.name}\\n({activity.role.name})"
+            label = f"{activity.name}\\n({activity.agent.name})"
             dot.node(
                 str(activity.id), 
                 label,
@@ -1089,7 +1089,7 @@ def activity_detail(request, activity_id):
         'skills': activity.skills.all(),
         'artifacts_produced': activity.artifacts_produced.all(),
         'artifacts_consumed': activity.artifacts_consumed.all(),
-        'role': activity.role
+        'agent': activity.agent
     }
     
     return render(request, 'methodology/partials/activity_detail.html', context)
@@ -1316,7 +1316,7 @@ docs/features/
 ├── act-4-phases/            # Phases CRUDLF (5 files) - OPTIONAL entity
 ├── act-5-activities/        # Activities CRUDLF (5 files)
 ├── act-6-artifacts/         # Artifacts CRUDLF (5 files)
-├── act-7-roles/             # Roles CRUDLF (5 files)
+├── act-7-agents/            # Agents CRUDLF (5 files)
 ├── act-8-skills/            # Skills CRUDLF (5 files)
 ├── act-9-pips/              # PIPs Create & Manage (2 files)
 ├── act-10-import-export/    # Import/Export (1 file)
@@ -1407,7 +1407,7 @@ class Node(models.Model):
     id = models.UUIDField(primary_key=True)
     type = models.CharField(max_length=50)
     # 7 Core Entities: 'playbook', 'workflow', 'phase', 'activity', 
-    # 'artifact', 'role', 'skill'
+    # 'artifact', 'agent', 'skill'
     # Note: 'phase' is OPTIONAL for grouping activities within workflows
     version = models.ForeignKey('Version', on_delete=models.CASCADE)
     attributes = models.JSONField()
@@ -1424,7 +1424,7 @@ class Edge(models.Model):
     to_node = models.ForeignKey(Node, related_name='incoming')
     relationship_type = models.CharField(max_length=50)
     # 'has_predecessor', 'has_successor', 'produces_artifact', 
-    # 'requires_artifact', 'performed_by_role', 'guided_by_skill', 
+    # 'requires_artifact', 'performed_by_agent', 'guided_by_skill', 
     # 'belongs_to_phase', 'part_of_workflow'
     version = models.ForeignKey('Version', on_delete=models.CASCADE)
     attributes = models.JSONField(default=dict)
@@ -1887,9 +1887,10 @@ The service interface remains the same - only internal implementation changes.
 - Properties: name, type, format, acceptance criteria, required status
 - Purpose: Connect activities (output → input)
 
-**Role**: Who performs activities
-- Example: "Frontend Engineer", "UX Designer"
-- Can be: Human, AI agent, or hybrid
+**Agent**: AI assistant that performs activities
+- Example: "Cautious Developer (drdobbs-v2)", "UX Researcher Agent"
+- Each agent has specific capabilities, guidelines, and behavioral patterns
+- Reference: .github/agents/ for agent definitions
 
 **Goal**: What an activity aims to achieve
 - Example: "Ensure component meets design system"
@@ -1967,7 +1968,7 @@ Improved PIP proposals next time
 - FastMCP tools module with `@mcp.tool()` decorators
 - MCP server management command: `mcp.run()`
 - Implement `query_methodology` tool
-- Simple web UI for viewing Playbooks, Workflows, Activities, Skills, Artifacts, Roles
+- Simple web UI for viewing Playbooks, Workflows, Activities, Skills, Artifacts, Agents
 
 ### Phase 2: Evolution Workflow
 - PIP creation interface (manual)

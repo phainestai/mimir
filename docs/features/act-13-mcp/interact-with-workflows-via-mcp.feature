@@ -17,7 +17,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
   # CREATE WORKFLOW (IN DRAFT PLAYBOOK)
   # ============================================================================
 
-  Scenario: MCP-WORKFLOWS-CREATE_WORKFLOW
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-CREATE_WORKFLOW
     Given draft playbook "React Dev" (id=1, version=0.1) exists
     When Cascade calls MCP tool "create_workflow" with:
       | playbook_id |                                   1 |
@@ -31,7 +31,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
     And parent playbook version is incremented from "0.1" to "0.2"
     And workflow is assigned auto-incremented order number
 
-  Scenario: MCP-WORKFLOWS-CREATE_WORKFLOW-1 Second workflow gets order=2
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-CREATE_WORKFLOW-1 Second workflow gets order=2
     Given draft playbook (id=1) has 1 workflow with order=1
     When Cascade calls "create_workflow" with:
       | playbook_id |              1 |
@@ -40,7 +40,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
     Then workflow is created with order=2
     And parent playbook version increments to "0.3"
 
-  Scenario: MCP-WORKFLOWS-CREATE_WORKFLOW-2 Released playbook raises error
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-CREATE_WORKFLOW-2 Released playbook raises error
     Given released playbook (id=1, status=released, version=1.0) exists
     When Cascade calls "create_workflow" with:
       | playbook_id |            1 |
@@ -50,7 +50,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
     And no workflow is created
     And playbook version remains "1.0"
 
-  Scenario: MCP-WORKFLOWS-CREATE_WORKFLOW-3 Duplicate name raises error
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-CREATE_WORKFLOW-3 Duplicate name raises error
     Given draft playbook (id=1) has workflow "Design Phase"
     When Cascade calls "create_workflow" with:
       | playbook_id |            1 |
@@ -58,7 +58,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
       | description | Duplicate    |
     Then MCP returns error "ValidationError: Workflow 'Design Phase' already exists in this playbook"
 
-  Scenario: MCP-WORKFLOWS-CREATE_WORKFLOW-4 Non-existent playbook raises error
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-CREATE_WORKFLOW-4 Non-existent playbook raises error
     When Cascade calls "create_workflow" with:
       | playbook_id |       999 |
       | name        | Test      |
@@ -68,7 +68,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
   # LIST WORKFLOWS
   # ============================================================================
 
-  Scenario: MCP-WORKFLOWS-LIST+FIND
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-LIST+FIND
     Given draft playbook (id=1) has 3 workflows:
       | name         | description       | order |
       | Design Phase | Planning          |     1 |
@@ -79,7 +79,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
     Then MCP returns list of 3 workflows ordered by order number
     And each workflow includes: id, name, description, order, playbook_id
 
-  Scenario: MCP-WORKFLOWS-LIST+FIND-1 Non-existent playbook raises error
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-LIST+FIND-1 Non-existent playbook raises error
     When Cascade calls "list_workflows" with:
       | playbook_id | 999 |
     Then MCP returns error "ValueError: Playbook 999 not found"
@@ -87,7 +87,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
   # GET WORKFLOW DETAIL
   # ============================================================================
 
-  Scenario: MCP-WORKFLOWS-GET_WORKFLOW
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-GET_WORKFLOW
     Given workflow (id=1) exists with 3 activities:
       | name            | order |
       | Define Props    |     1 |
@@ -101,12 +101,12 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
       | activities | [array of 3] |
     And activities array contains activity names
 
-  Scenario: MCP-WORKFLOWS-GET_WORKFLOW-1 Non-existent workflow raises error
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-GET_WORKFLOW-1 Non-existent workflow raises error
     When Cascade calls "get_workflow" with:
       | workflow_id | 999 |
     Then MCP returns error "ValueError: Workflow 999 not found"
 
-  Scenario: MCP-WORKFLOWS-GET_WORKFLOW-2 Wrong user raises error
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-GET_WORKFLOW-2 Wrong user raises error
     Given workflow (id=1) belongs to playbook owned by "alice"
     And current user context is "maria"
     When Cascade calls "get_workflow" with:
@@ -116,7 +116,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
   # UPDATE WORKFLOW (IN DRAFT PLAYBOOK)
   # ============================================================================
 
-  Scenario: MCP-WORKFLOWS-UPDATE_WORKFLOW
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-UPDATE_WORKFLOW
     Given draft playbook (id=1, version=0.2) has workflow (id=1, name="Old Name")
     When Cascade calls "update_workflow" with:
       | workflow_id |        1 |
@@ -124,7 +124,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
     Then workflow name is updated to "New Name"
     And parent playbook version is incremented to "0.3"
 
-  Scenario: MCP-WORKFLOWS-UPDATE_WORKFLOW-1 Update description
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-UPDATE_WORKFLOW-1 Update description
     Given draft playbook (id=1, version=0.1) has workflow (id=1)
     When Cascade calls "update_workflow" with:
       | workflow_id |                   1 |
@@ -132,7 +132,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
     Then workflow description is updated
     And parent playbook version increments to "0.2"
 
-  Scenario: MCP-WORKFLOWS-UPDATE_WORKFLOW-2 Update order
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-UPDATE_WORKFLOW-2 Update order
     Given draft playbook (id=1) has workflows with orders 1, 2, 3
     When Cascade calls "update_workflow" with:
       | workflow_id | 2 |
@@ -140,7 +140,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
     Then workflow order is updated to 1
     And parent playbook version increments
 
-  Scenario: MCP-WORKFLOWS-UPDATE_WORKFLOW-3 Released playbook raises error
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-UPDATE_WORKFLOW-3 Released playbook raises error
     Given released playbook (id=1, status=released) has workflow (id=1)
     When Cascade calls "update_workflow" with:
       | workflow_id |        1 |
@@ -148,7 +148,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
     Then MCP returns error "PermissionError: Cannot modify released playbook \"[name]\". Use create_pip instead."
     And workflow is not modified
 
-  Scenario: MCP-WORKFLOWS-UPDATE_WORKFLOW-4 Duplicate name raises error
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-UPDATE_WORKFLOW-4 Duplicate name raises error
     Given draft playbook (id=1) has workflows:
       | id | name         |
       |  1 | Design Phase |
@@ -161,7 +161,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
   # DELETE WORKFLOW (IN DRAFT PLAYBOOK)
   # ============================================================================
 
-  Scenario: MCP-WORKFLOWS-DELETE_WORKFLOW
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-DELETE_WORKFLOW
     Given draft playbook (id=1, version=0.5) has workflow (id=1) with 4 activities
     When Cascade calls "delete_workflow" with:
       | workflow_id | 1 |
@@ -172,14 +172,14 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
     And all 4 activities are deleted (cascade)
     And parent playbook version is incremented to "0.6"
 
-  Scenario: MCP-WORKFLOWS-DELETE_WORKFLOW-1 Released playbook raises error
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-DELETE_WORKFLOW-1 Released playbook raises error
     Given released playbook (id=1, status=released) has workflow (id=1)
     When Cascade calls "delete_workflow" with:
       | workflow_id | 1 |
     Then MCP returns error "PermissionError: Cannot modify released playbook \"[name]\". Use create_pip instead."
     And workflow is not deleted
 
-  Scenario: MCP-WORKFLOWS-DELETE_WORKFLOW-2 Non-existent workflow raises error
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-DELETE_WORKFLOW-2 Non-existent workflow raises error
     When Cascade calls "delete_workflow" with:
       | workflow_id | 999 |
     Then MCP returns error "ValueError: Workflow 999 not found"
@@ -187,7 +187,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
   # END-TO-END WORKFLOW
   # ============================================================================
 
-  Scenario: MCP-WORKFLOWS-CREATE_WORKFLOW-5 Build complete methodology
+  Scenario: FOB-MCP-CONFIG-WORKFLOWS-CREATE_WORKFLOW-5 Build complete methodology
     Given user requests "Create a React methodology with 3 phases"
     When Cascade creates playbook (version=0.1)
     And Cascade creates workflow "Design Phase" (version=0.2)

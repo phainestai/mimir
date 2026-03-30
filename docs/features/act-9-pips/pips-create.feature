@@ -7,7 +7,7 @@ Feature: FOB-PIPS-CREATE_PIP-1 Create Playbook Improvement Proposal
     Given Maria is authenticated in FOB
     And she is viewing playbook "React Frontend v1.2"
 
-  Scenario: PIP-CREATE-01 AI-suggested PIP
+  Scenario: FOB-PIPS-CREATE_PIP-01 AI-suggested PIP
     Given Maria is viewing a playbook
     When the AI detects improvement opportunity
     Then she sees PIP suggestion notification
@@ -15,20 +15,20 @@ Feature: FOB-PIPS-CREATE_PIP-1 Create Playbook Improvement Proposal
     Then she sees FOB-PIPS-CREATE_PIP-1 modal
     And the form is pre-filled with AI suggestion
 
-  Scenario: PIP-CREATE-02 Manual PIP creation
+  Scenario: FOB-PIPS-CREATE_PIP-02 Manual PIP creation
     Given Maria is on playbook view
     When she clicks [+ New PIP]
     Then she sees FOB-PIPS-CREATE_PIP-1 modal
     And she can enter: Title, Description, Type, Priority
 
-  Scenario: PIP-CREATE-03 Create PIP with type
+  Scenario: FOB-PIPS-CREATE_PIP-03 Create PIP with type
     Given Maria is creating a PIP
     When she selects type "Add Activity"
     And she enters details
     And she clicks [Create PIP]
     Then the PIP is created with status "Proposed"
 
-  Scenario: PIP-CREATE-04 PIP types available
+  Scenario: FOB-PIPS-CREATE_PIP-04 PIP types available
     Given Maria is creating a PIP
     Then she sees type options:
       | Type                 |
@@ -40,6 +40,6 @@ Feature: FOB-PIPS-CREATE_PIP-1 Create Playbook Improvement Proposal
       | Documentation Update |
       | Other                |
 
-  Scenario: PIP-CREATE-05 Set PIP priority
+  Scenario: FOB-PIPS-CREATE_PIP-05 Set PIP priority
     Given Maria is creating a PIP
     Then she can set priority: Low, Medium, High, Critical

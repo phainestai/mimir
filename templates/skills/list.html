@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Skills{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="skills-list">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2><i class="fa-solid fa-graduation-cap"></i> Skills</h2>
+            <p class="text-muted">Step-by-step guidance documents linked to activities</p>
+        </div>
+        <div>
+            <a href="{% url 'activity_global_list' %}"
+               class="btn btn-outline-secondary"
+               data-testid="back-to-activities-btn">
+                <i class="fa-solid fa-arrow-left"></i> Activities
+            </a>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" action="{% url 'skill_list' %}">
+                <div class="input-group">
+                    <input type="text"
+                           class="form-control"
+                           name="q"
+                           value="{{ query }}"
+                           placeholder="Search skills by title or content…"
+                           data-testid="skill-search">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="fa-solid fa-search"></i> Search
+                    </button>
+                    {% if query %}
+                    <a href="{% url 'skill_list' %}" class="btn btn-outline-danger">
+                        <i class="fa-solid fa-times"></i> Clear
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if skills %}
+    <!-- Skills table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fa-solid fa-list"></i>
+                Skills
+                <span class="badge bg-secondary ms-2">{{ skills|length }}</span>
+            </h5>
+            {% comment %}Create button — points to activity-scoped URL when accessed from an activity{% endcomment %}
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0" data-testid="skills-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Title</th>
+                        <th>Activity</th>
+                        <th>Workflow</th>
+                        <th>Playbook</th>
+                        <th style="width: 10%">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for skill in skills %}
+                    <tr data-testid="skill-row-{{ skill.id }}">
+                        <td>
+                            <a href="{% url 'skill_detail' playbook_pk=skill.activity.workflow.playbook.pk workflow_pk=skill.activity.workflow.pk activity_pk=skill.activity.pk %}">
+                                <i class="fa-solid fa-graduation-cap text-primary"></i>
+                                <strong>{{ skill.title }}</strong>
+                            </a>
+                        </td>
+                        <td class="text-muted small">{{ skill.activity.name }}</td>
+                        <td class="text-muted small">{{ skill.activity.workflow.name }}</td>
+                        <td class="text-muted small">{{ skill.activity.workflow.playbook.name }}</td>
+                        <td>
+                            <a href="{% url 'skill_detail' playbook_pk=skill.activity.workflow.playbook.pk workflow_pk=skill.activity.workflow.pk activity_pk=skill.activity.pk %}"
+                               class="btn btn-outline-primary btn-sm"
+                               data-testid="view-skill-{{ skill.id }}"
+                               data-bs-toggle="tooltip" title="View skill">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="card border-0 shadow-sm" data-testid="empty-state">
+        <div class="card-body text-center py-5">
+            <i class="fa-solid fa-graduation-cap fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No skills yet</h4>
+            {% if query %}
+            <p class="text-muted">No skills match "<strong>{{ query }}</strong>".</p>
+            <a href="{% url 'skill_list' %}" class="btn btn-outline-secondary mt-2">
+                <i class="fa-solid fa-times"></i> Clear search
+            </a>
+            {% else %}
+            <p class="text-muted">Skills are created from activity detail pages.</p>
+            <a href="{% url 'activity_global_list' %}"
+               class="btn btn-primary mt-3"
+               data-testid="create-skill-btn">
+                <i class="fa-solid fa-tasks"></i> Go to Activities
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -40,7 +40,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
     Then MCP returns error "ValidationError: Playbook 'React Component Development' already exists"
     And no new playbook is created
 
-  Scenario: MCP-PLAYBOOKS-CREATE_PLAYBOOK-2 Empty name raises error
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-CREATE_PLAYBOOK-2 Empty name raises error
     When Cascade calls MCP tool "create_playbook" with:
       | name        |           |
       | description | Test desc |
@@ -50,7 +50,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
   # LIST PLAYBOOKS
   # ============================================================================
 
-  Scenario: MCP-PLAYBOOKS-LIST+FIND
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-LIST+FIND
     Given user "maria" has 3 playbooks:
       | name            | status   | version |
       | React Dev       | draft    |     0.3 |
@@ -61,14 +61,14 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
     Then MCP returns list of 3 playbooks
     And each playbook includes: id, name, description, category, status, version
 
-  Scenario: MCP-PLAYBOOKS-LIST+FIND-1 Filter by draft status
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-LIST+FIND-1 Filter by draft status
     Given user "maria" has playbooks with different statuses
     When Cascade calls MCP tool "list_playbooks" with:
       | status | draft |
     Then MCP returns only playbooks with status "draft"
     And released playbooks are excluded
 
-  Scenario: MCP-PLAYBOOKS-LIST+FIND-2 Filter by released status
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-LIST+FIND-2 Filter by released status
     Given user "maria" has playbooks with different statuses
     When Cascade calls MCP tool "list_playbooks" with:
       | status | released |
@@ -78,7 +78,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
   # GET PLAYBOOK DETAIL
   # ============================================================================
 
-  Scenario: MCP-PLAYBOOKS-GET_PLAYBOOK
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-GET_PLAYBOOK
     Given draft playbook "React Dev" (id=1) exists with 2 workflows:
       | name         | description      | order |
       | Design Phase | Component design |     1 |
@@ -93,12 +93,12 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
       | workflows | [array of 2 workflows] |
     And workflows array contains workflow names "Design Phase" and "Build Phase"
 
-  Scenario: MCP-PLAYBOOKS-GET_PLAYBOOK-1 Non-existent playbook raises error
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-GET_PLAYBOOK-1 Non-existent playbook raises error
     When Cascade calls MCP tool "get_playbook" with:
       | playbook_id | 999 |
     Then MCP returns error "ValueError: Playbook 999 not found"
 
-  Scenario: MCP-PLAYBOOKS-GET_PLAYBOOK-2 Wrong user raises error
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-GET_PLAYBOOK-2 Wrong user raises error
     Given playbook id=1 is owned by user "alice"
     And current user context is "maria"
     When Cascade calls MCP tool "get_playbook" with:
@@ -108,7 +108,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
   # UPDATE PLAYBOOK (DRAFT ONLY)
   # ============================================================================
 
-  Scenario: MCP-PLAYBOOKS-UPDATE_PLAYBOOK
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-UPDATE_PLAYBOOK
     Given draft playbook "Old Name" (id=1, version=0.1) exists
     When Cascade calls MCP tool "update_playbook" with:
       | playbook_id |        1 |
@@ -120,7 +120,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
     And playbook version is auto-incremented from "0.1" to "0.2"
     And updated_at timestamp is updated
 
-  Scenario: MCP-PLAYBOOKS-UPDATE_PLAYBOOK-1 Update description
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-UPDATE_PLAYBOOK-1 Update description
     Given draft playbook (id=1, version=0.2) exists
     When Cascade calls MCP tool "update_playbook" with:
       | playbook_id |                      1 |
@@ -128,7 +128,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
     Then playbook description is updated
     And version is incremented to "0.3"
 
-  Scenario: MCP-PLAYBOOKS-UPDATE_PLAYBOOK-2 Update category
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-UPDATE_PLAYBOOK-2 Update category
     Given draft playbook (id=1, version=0.1) exists
     When Cascade calls MCP tool "update_playbook" with:
       | playbook_id |       1 |
@@ -136,7 +136,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
     Then playbook category is updated to "backend"
     And version is incremented to "0.2"
 
-  Scenario: MCP-PLAYBOOKS-UPDATE_PLAYBOOK-3 Released playbook raises error
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-UPDATE_PLAYBOOK-3 Released playbook raises error
     Given released playbook (id=1, status=released, version=1.0) exists
     When Cascade calls MCP tool "update_playbook" with:
       | playbook_id |        1 |
@@ -145,7 +145,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
     And playbook is not modified
     And version remains "1.0"
 
-  Scenario: MCP-PLAYBOOKS-UPDATE_PLAYBOOK-4 Duplicate name raises error
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-UPDATE_PLAYBOOK-4 Duplicate name raises error
     Given draft playbooks exist:
       | id | name      | version |
       |  1 | React Dev |     0.1 |
@@ -159,7 +159,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
   # DELETE PLAYBOOK (DRAFT ONLY)
   # ============================================================================
 
-  Scenario: MCP-PLAYBOOKS-DELETE_PLAYBOOK
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-DELETE_PLAYBOOK
     Given draft playbook (id=1) exists with:
       | workflows  | 2 |
       | activities | 5 |
@@ -172,14 +172,14 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
     And all 2 workflows are deleted (cascade)
     And all 5 activities are deleted (cascade)
 
-  Scenario: MCP-PLAYBOOKS-DELETE_PLAYBOOK-1 Released playbook raises error
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-DELETE_PLAYBOOK-1 Released playbook raises error
     Given released playbook (id=1, status=released) exists
     When Cascade calls MCP tool "delete_playbook" with:
       | playbook_id | 1 |
     Then MCP returns error "PermissionError: Cannot delete released playbook \"[name]\""
     And playbook is not deleted
 
-  Scenario: MCP-PLAYBOOKS-DELETE_PLAYBOOK-2 Non-existent playbook raises error
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-DELETE_PLAYBOOK-2 Non-existent playbook raises error
     When Cascade calls MCP tool "delete_playbook" with:
       | playbook_id | 999 |
     Then MCP returns error "ValueError: Playbook 999 not found"
@@ -187,7 +187,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
   # ITERATIVE REFINEMENT
   # ============================================================================
 
-  Scenario: MCP-PLAYBOOKS-UPDATE_PLAYBOOK-5 Iterative refinement
+  Scenario: FOB-MCP-CONFIG-PLAYBOOKS-UPDATE_PLAYBOOK-5 Iterative refinement
     Given Cascade created draft playbook (id=1, version=0.1)
     When user says "Actually, change the name to 'Advanced React Patterns'"
     And Cascade calls "update_playbook" with new name

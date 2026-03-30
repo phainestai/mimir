@@ -4,5 +4,6 @@ from .workflow import Workflow
 from .activity import Activity
 from .artifact import Artifact
 from .artifact_input import ArtifactInput
+from .skill import Skill
 
-__all__ = ['Playbook', 'PlaybookVersion', 'Workflow', 'Activity', 'Artifact', 'ArtifactInput']
+__all__ = ['Playbook', 'PlaybookVersion', 'Workflow', 'Activity', 'Artifact', 'ArtifactInput', 'Skill']

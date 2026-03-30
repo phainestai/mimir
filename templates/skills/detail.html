@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+{% load markdown_filters %}
+
+{% block title %}{% if skill %}{{ skill.title }}{% else %}Skill{% endif %} - {{ activity.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="skill-detail">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'workflow_detail' playbook_pk=playbook.pk pk=workflow.pk %}">{{ workflow.name }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}">{{ activity.name }}</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {% if skill %}{{ skill.title }}{% else %}Skill{% endif %}
+            </li>
+        </ol>
+    </nav>
+
+    {% if skill %}
+    <!-- Skill header -->
+    <div class="d-flex justify-content-between align-items-start mb-4" data-testid="skill-header">
+        <div>
+            <h2 data-testid="skill-title">
+                <i class="fa-solid fa-graduation-cap"></i> {{ skill.title }}
+            </h2>
+            <p class="text-muted small">
+                <i class="fa-solid fa-tasks"></i> {{ activity.name }}
+                &middot;
+                <i class="fa-solid fa-sitemap"></i> {{ workflow.name }}
+                &middot;
+                <i class="fa-solid fa-book"></i> {{ playbook.name }}
+            </p>
+            <p class="text-muted small">
+                <i class="fa-solid fa-clock"></i> Updated {{ skill.updated_at|timesince }} ago
+            </p>
+        </div>
+        {% if can_edit %}
+        <div class="btn-group">
+            <a href="{% url 'skill_edit' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+               class="btn btn-primary"
+               data-testid="edit-skill-btn">
+                <i class="fa-solid fa-edit"></i> Edit Skill
+            </a>
+            <button type="button"
+                    class="btn btn-outline-danger"
+                    data-testid="delete-skill-btn"
+                    hx-get="{% url 'skill_delete_confirm' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                    hx-target="#skill-delete-modal-container"
+                    hx-swap="innerHTML">
+                <i class="fa-solid fa-trash"></i> Delete
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Skill content -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fa-solid fa-file-lines"></i> Content</h5>
+        </div>
+        <div class="card-body markdown-content" data-testid="skill-content">
+            {% if skill.content %}
+                {{ skill.content|markdown }}
+            {% else %}
+                <p class="text-muted">No content yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Metadata -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fa-solid fa-info-circle"></i> Metadata</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Activity:</dt>
+                <dd class="col-sm-9">
+                    <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}">
+                        {{ activity.name }}
+                    </a>
+                </dd>
+                <dt class="col-sm-3">Created:</dt>
+                <dd class="col-sm-9">{{ skill.created_at|timesince }} ago</dd>
+                <dt class="col-sm-3">Updated:</dt>
+                <dd class="col-sm-9">{{ skill.updated_at|timesince }} ago</dd>
+            </dl>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- No skill yet — create CTA -->
+    <div class="card border-0 shadow-sm" data-testid="create-skill-cta">
+        <div class="card-body text-center py-5">
+            <i class="fa-solid fa-graduation-cap fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No skill guide yet</h4>
+            <p class="text-muted">Add step-by-step guidance for "{{ activity.name }}".</p>
+            {% if can_edit %}
+            <a href="{% url 'skill_create' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+               class="btn btn-primary mt-3">
+                <i class="fa-solid fa-plus"></i> Create Skill Guide
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div id="skill-delete-modal-container"></div>
+
+<style>
+.markdown-content { line-height: 1.7; }
+.markdown-content h1, .markdown-content h2, .markdown-content h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+.markdown-content pre { background: #f8f9fa; padding: 1rem; border-radius: 4px; }
+.markdown-content code { background: #f8f9fa; padding: 0.2em 0.4em; border-radius: 3px; }
+.markdown-content pre code { background: none; padding: 0; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });</script>
+{% endblock %}

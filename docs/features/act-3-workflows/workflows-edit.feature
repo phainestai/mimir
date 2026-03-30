@@ -8,52 +8,52 @@ Feature: FOB-WORKFLOWS-EDIT_WORKFLOW-1 Edit Workflow
     And she owns playbook "React Frontend Development"
     And the playbook has workflow "Component Development"
 
-  Scenario: WF-EDIT-01 Open edit form
+  Scenario: FOB-WORKFLOWS-EDIT_WORKFLOW-01 Open edit form
     Given Maria is viewing workflow "Component Development"
     When she clicks [Edit Workflow]
     Then she is redirected to FOB-WORKFLOWS-EDIT_WORKFLOW-1
     And all fields are pre-populated
 
-  Scenario: WF-EDIT-02 Edit workflow name
+  Scenario: FOB-WORKFLOWS-EDIT_WORKFLOW-02 Edit workflow name
     Given Maria is on the edit form
     When she changes Name to "Advanced Component Development"
     And she clicks [Save Changes]
     Then the workflow is updated
     And she sees success notification
 
-  Scenario: WF-EDIT-03 Edit workflow description
+  Scenario: FOB-WORKFLOWS-EDIT_WORKFLOW-03 Edit workflow description
     Given Maria is on the edit form
     When she updates the Description
     And she clicks [Save Changes]
     Then the description is updated
 
-  Scenario: WF-EDIT-04 Change workflow order
+  Scenario: FOB-WORKFLOWS-EDIT_WORKFLOW-04 Change workflow order
     Given the workflow is at order #1
     When she changes Order to "3"
     And she clicks [Save Changes]
     Then the workflow moves to position 3
     And other workflows are reordered
 
-  Scenario: WF-EDIT-05 Toggle phase organization
+  Scenario: FOB-WORKFLOWS-EDIT_WORKFLOW-05 Toggle phase organization
     Given the workflow has no phases
     When she selects "Use phases"
     And she saves
     Then phase support is enabled
 
-  Scenario: WF-EDIT-06 Validate required fields
+  Scenario: FOB-WORKFLOWS-EDIT_WORKFLOW-06 Validate required fields
     Given Maria is on the edit form
     When she clears the Name field
     And she clicks [Save Changes]
     Then she sees validation error "Name is required"
 
-  Scenario: WF-EDIT-07 Cancel editing
+  Scenario: FOB-WORKFLOWS-EDIT_WORKFLOW-07 Cancel editing
     Given Maria has made changes
     When she clicks [Cancel]
     Then she sees "Discard changes?" confirmation
     When she confirms
     Then changes are discarded
 
-  Scenario: WF-EDIT-08 Save and continue editing
+  Scenario: FOB-WORKFLOWS-EDIT_WORKFLOW-08 Save and continue editing
     Given Maria makes changes
     When she clicks [Save & Continue]
     Then changes are saved

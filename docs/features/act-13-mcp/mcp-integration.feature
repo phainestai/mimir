@@ -7,35 +7,35 @@ Feature: FOB-MCP-1 MCP Integration and Tools
     Given Maria is authenticated in FOB
     And she has MCP server configured
 
-  Scenario: MCP-01 Configure MCP connection
+  Scenario: FOB-MCP-CONFIG-01 Configure MCP connection
     Given Maria is in settings
     When she navigates to MCP Configuration
     And she enters server URL and credentials
     Then MCP connection is established
 
-  Scenario: MCP-02 Use MCP tool on activity
+  Scenario: FOB-MCP-CONFIG-02 Use MCP tool on activity
     Given Maria is viewing an activity
     When she clicks [Use MCP Tool]
     Then she sees available MCP tools
     And she can select and execute a tool
 
-  Scenario: MCP-03 AI-generated content
+  Scenario: FOB-MCP-CONFIG-03 AI-generated content
     Given Maria creates a new activity
     When she clicks [Generate with AI]
     Then MCP suggests activity details
     And she can accept or modify suggestions
 
-  Scenario: MCP-04 MCP tool results
+  Scenario: FOB-MCP-CONFIG-04 MCP tool results
     Given Maria executes an MCP tool
     Then she sees tool output
     And she can save output to activity/artifact
 
-  Scenario: MCP-05 MCP history
+  Scenario: FOB-MCP-CONFIG-05 MCP history
     Given Maria used MCP tools
     When she views MCP History
     Then she sees all tool executions with results
 
-  Scenario: MCP-06 Disconnect MCP
+  Scenario: FOB-MCP-CONFIG-06 Disconnect MCP
     Given MCP is connected
     When Maria disables MCP
     Then connection is terminated

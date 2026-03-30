@@ -1,0 +1,49 @@
+<!-- Delete Skill Confirmation Modal (loaded via HTMX) -->
+<div class="modal fade show d-block"
+     id="skillDeleteModal"
+     tabindex="-1"
+     role="dialog"
+     aria-labelledby="skillDeleteModalLabel"
+     data-testid="delete-confirm-modal"
+     style="background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="skillDeleteModalLabel">
+                    <i class="fa-solid fa-trash text-danger"></i> Delete Skill?
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        onclick="document.getElementById('skill-delete-modal-container').innerHTML = ''">
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    You are about to permanently delete skill
+                    <strong>"{{ skill.title }}"</strong>.
+                </p>
+                <div class="alert alert-warning">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    This action cannot be undone. The skill guidance will be permanently deleted.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        onclick="document.getElementById('skill-delete-modal-container').innerHTML = ''">
+                    <i class="fa-solid fa-times"></i> Cancel
+                </button>
+                <form method="post"
+                      action="{{ delete_url }}"
+                      style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-danger"
+                            data-testid="confirm-delete-btn">
+                        <i class="fa-solid fa-trash"></i> Delete Skill
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

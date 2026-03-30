@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit Skill - {{ skill.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="skill-edit">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'workflow_detail' playbook_pk=playbook.pk pk=workflow.pk %}">{{ workflow.name }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}">{{ activity.name }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'skill_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}">{{ skill.title }}</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol>
+    </nav>
+
+    <h2><i class="fa-solid fa-edit"></i> Edit Skill</h2>
+    <p class="text-muted">Editing skill for <strong>{{ activity.name }}</strong></p>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post"
+                  action="{% url 'skill_edit' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                  data-testid="skill-form">
+                {% csrf_token %}
+
+                <!-- Title -->
+                <div class="mb-3">
+                    <label for="title" class="form-label">
+                        Title <span class="text-danger">*</span>
+                    </label>
+                    <input type="text"
+                           class="form-control {% if errors.title %}is-invalid{% endif %}"
+                           id="title"
+                           name="title"
+                           maxlength="200"
+                           value="{{ form_data.title|default:'' }}"
+                           data-testid="title-input"
+                           required>
+                    {% if errors.title %}
+                    <div class="invalid-feedback" data-testid="title-error">{{ errors.title }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Content -->
+                <div class="mb-3">
+                    <label for="content" class="form-label">
+                        Content
+                        <i class="fa-solid fa-info-circle text-muted"
+                           data-bs-toggle="tooltip"
+                           title="Supports Markdown: steps, code blocks, lists, headings, tables, Mermaid diagrams"></i>
+                    </label>
+                    <textarea class="form-control"
+                              id="content"
+                              name="content"
+                              rows="12"
+                              data-testid="content-input">{{ form_data.content|default:'' }}</textarea>
+                    <small class="form-text text-muted">
+                        <i class="fa-brands fa-markdown"></i> Markdown supported
+                    </small>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-2">
+                    <button type="submit"
+                            class="btn btn-primary"
+                            data-testid="save-btn">
+                        <i class="fa-solid fa-save"></i> Save Changes
+                    </button>
+                    <a href="{% url 'skill_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                       class="btn btn-outline-secondary"
+                       data-testid="cancel-btn">
+                        <i class="fa-solid fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

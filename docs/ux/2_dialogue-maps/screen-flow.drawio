@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram name="README - Start Here!" id="readme-first">
-        <mxGraphModel dx="857" dy="797" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
+        <mxGraphModel dx="1332" dy="644" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
             <root>
                 <mxCell id="readme-root-0"/>
                 <mxCell id="readme-root-1" parent="readme-root-0"/>
@@ -346,7 +346,7 @@
         </mxGraphModel>
     </diagram>
     <diagram name="MVP Flow - Local FOB" id="mvp-flow-v2">
-        <mxGraphModel dx="857" dy="797" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3600" pageHeight="4500" math="0" shadow="0">
+        <mxGraphModel dx="1332" dy="644" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3600" pageHeight="4500" math="0" shadow="0">
             <root>
                 <mxCell id="v2-root-0"/>
                 <mxCell id="v2-root-1" parent="v2-root-0"/>
@@ -729,46 +729,46 @@
                 <mxCell id="v2-extends-wf-edit-view" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-workflows-edit" target="v2-fob-workflows-view" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-mcp-wf-export-import-label" value="MCP Workflow Export/Import" style="text;html=1;strokeColor=#9370DB;fillColor=#e1d5e7;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=1;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-mcp-wf-export-import-label" value="MCP Workflow Export/Import" style="text;html=1;strokeColor=#9370DB;fillColor=#e1d5e7;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=1;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="1060" y="900" width="180" height="25" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-mcp-wf-export" value="MCP-WORKFLOWS-&#10;EXPORT_TO_LOCAL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9370DB;strokeColor=#9370DB;fontSize=9;fontColor=#ffffff;strokeWidth=2;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-mcp-wf-export" value="✅ MCP-WORKFLOWS-&#10;EXPORT_TO_LOCAL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9370DB;strokeColor=#22c55e;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="730" y="900" width="140" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-mcp-wf-import" value="MCP-WORKFLOWS-&#10;IMPORT_FROM_LOCAL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9370DB;strokeColor=#9370DB;fontSize=9;fontColor=#ffffff;strokeWidth=2;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-mcp-wf-import" value="✅ MCP-WORKFLOWS-&#10;IMPORT_FROM_LOCAL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9370DB;strokeColor=#22c55e;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="915" y="900" width="140" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-mcp-wf-apply-protocol" value="MCP-WORKFLOWS-&#10;APPLY_PROTOCOL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9370DB;strokeColor=#9370DB;fontSize=9;fontColor=#ffffff;strokeWidth=2;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-mcp-wf-apply-protocol" value="MCP-WORKFLOWS-&#10;APPLY_PROTOCOL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9370DB;strokeColor=#9370DB;fontSize=9;fontColor=#ffffff;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="745" y="1015" width="140" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-mcp-wf-create-pip" value="MCP-WORKFLOWS-&#10;CREATE_PIP_FROM_PROTOCOL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9370DB;strokeColor=#9370DB;fontSize=9;fontColor=#ffffff;strokeWidth=2;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-mcp-wf-create-pip" value="MCP-WORKFLOWS-&#10;CREATE_PIP_FROM_PROTOCOL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9370DB;strokeColor=#9370DB;fontSize=9;fontColor=#ffffff;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="915" y="1015" width="140" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-mcp-wf-ai-suggest" value="MCP-WORKFLOWS-&#10;AI_SUGGEST_IMPROVEMENTS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9370DB;strokeColor=#9370DB;fontSize=9;fontColor=#ffffff;strokeWidth=2;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-mcp-wf-ai-suggest" value="MCP-WORKFLOWS-&#10;AI_SUGGEST_IMPROVEMENTS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9370DB;strokeColor=#9370DB;fontSize=9;fontColor=#ffffff;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="830" y="1095" width="140" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-export-workflow" value="@export_workflow_to_local" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#9370DB;fontSize=8;fontColor=#000000;strokeWidth=2;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-tool-export-workflow" value="@export_workflow_to_local" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="670" y="970" width="130" height="25" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-import-workflow" value="@import_workflow_from_local" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#9370DB;fontSize=8;fontColor=#000000;strokeWidth=2;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-tool-import-workflow" value="@import_workflow_from_local" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="840" y="970" width="140" height="25" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-apply-protocol" value="@apply_upload_protocol" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#9370DB;fontSize=8;fontColor=#000000;strokeWidth=2;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-tool-apply-protocol" value="@apply_upload_protocol" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#9370DB;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="695" y="1085" width="130" height="25" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-create-pip-protocol" value="@create_pip_from_protocol" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#9370DB;fontSize=8;fontColor=#000000;strokeWidth=2;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-tool-create-pip-protocol" value="@create_pip_from_protocol" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#9370DB;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="980" y="1110" width="140" height="25" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-arrow-wf-export-import" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9370DB;" edge="1" parent="v2-root-1" source="v2-mcp-wf-export" target="v2-mcp-wf-import">
+                <mxCell id="v2-arrow-wf-export-import" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9370DB;" parent="v2-root-1" source="v2-mcp-wf-export" target="v2-mcp-wf-import" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-arrow-wf-import-apply" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9370DB;" edge="1" parent="v2-root-1" source="v2-mcp-wf-import" target="v2-mcp-wf-apply-protocol">
+                <mxCell id="v2-arrow-wf-import-apply" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9370DB;" parent="v2-root-1" source="v2-mcp-wf-import" target="v2-mcp-wf-apply-protocol" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-arrow-wf-import-pip" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9370DB;" edge="1" parent="v2-root-1" source="v2-mcp-wf-import" target="v2-mcp-wf-create-pip">
+                <mxCell id="v2-arrow-wf-import-pip" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9370DB;" parent="v2-root-1" source="v2-mcp-wf-import" target="v2-mcp-wf-create-pip" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-wf-sync-note" value="💡 Export workflows to .windsurf/workflows&#10;Edit with AI assistant&#10;Import back with change tracking&#10;Draft: Apply directly | Released: Create PIP" style="text;html=1;strokeColor=#9370DB;fillColor=#e1d5e7;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=7;fontStyle=2;" vertex="1" parent="v2-root-1">
+                <mxCell id="v2-wf-sync-note" value="💡 Export workflows to .windsurf/workflows&#10;Edit with AI assistant&#10;Import back with change tracking&#10;Draft: Apply directly | Released: Create PIP" style="text;html=1;strokeColor=#9370DB;fillColor=#e1d5e7;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=7;fontStyle=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="745" y="1165" width="310" height="35" as="geometry"/>
                 </mxCell>
                 <mxCell id="v2-act4-label" value="ACT 4: PHASES" style="text;html=1;strokeColor=#ff8f00;fillColor=#fff3e0;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=1;" parent="v2-root-1" vertex="1">
@@ -924,19 +924,19 @@
                 <mxCell id="v2-act6-label" value="ACT 6: ARTIFACTS" style="text;html=1;strokeColor=#ff8f00;fillColor=#fff3e0;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=1;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="40" y="1950" width="220" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-fob-artifacts-list" value="FOB-ARTIFACTS-&#10;LIST+FIND" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-fob-artifacts-list" value="✅ FOB-ARTIFACTS-&#10;LIST+FIND" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#22c55e;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="100" y="2000" width="150" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-fob-artifacts-create" value="FOB-ARTIFACTS-&#10;CREATE_ARTIFACT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-fob-artifacts-create" value="✅ FOB-ARTIFACTS-&#10;CREATE_ARTIFACT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#22c55e;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="320" y="2000" width="150" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-fob-artifacts-view" value="FOB-ARTIFACTS-&#10;VIEW_ARTIFACT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-fob-artifacts-view" value="✅ FOB-ARTIFACTS-&#10;VIEW_ARTIFACT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#22c55e;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="100" y="2100" width="150" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-fob-artifacts-edit" value="FOB-ARTIFACTS-&#10;EDIT_ARTIFACT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-fob-artifacts-edit" value="✅ FOB-ARTIFACTS-&#10;EDIT_ARTIFACT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#22c55e;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="320" y="2100" width="150" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-fob-artifacts-delete" value="FOB-ARTIFACTS-&#10;DELETE_ARTIFACT&#10;(modal)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-fob-artifacts-delete" value="✅ FOB-ARTIFACTS-&#10;DELETE_ARTIFACT&#10;(modal)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#22c55e;fontSize=9;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="540" y="2100" width="150" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="v2-tool-artifacts-label" value="@tools" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=2;" parent="v2-root-1" vertex="1">
@@ -1029,58 +1029,58 @@
                 <mxCell id="v2-extends-ht-edit-view" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-skills-edit" target="v2-fob-skills-view" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-act8-label" value="ACT 8: ROLES" style="text;html=1;strokeColor=#ff8f00;fillColor=#fff3e0;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=1;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-act7-label" value="ACT 7: AGENTS" style="text;html=1;strokeColor=#ff8f00;fillColor=#fff3e0;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=1;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="40" y="2650" width="220" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-fob-roles-list" value="FOB-ROLES-&#10;LIST+FIND" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-fob-agents-list" value="FOB-AGENTS-&#10;LIST+FIND" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="100" y="2700" width="150" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-fob-roles-create" value="FOB-ROLES-&#10;CREATE_ROLE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-fob-agents-create" value="FOB-AGENTS-&#10;CREATE_AGENT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="320" y="2700" width="150" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-fob-roles-view" value="FOB-ROLES-&#10;VIEW_ROLE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-fob-agents-view" value="FOB-AGENTS-&#10;VIEW_AGENT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="100" y="2800" width="150" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-fob-roles-edit" value="FOB-ROLES-&#10;EDIT_ROLE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-fob-agents-edit" value="FOB-AGENTS-&#10;EDIT_AGENT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#1565c0;fontSize=9;fontColor=#ffffff;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="320" y="2800" width="150" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-fob-roles-delete" value="FOB-ROLES-&#10;DELETE_ROLE&#10;(modal)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-fob-agents-delete" value="FOB-AGENTS-&#10;DELETE_AGENT&#10;(modal)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="540" y="2800" width="150" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-roles-label" value="@tools" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-agents-label" value="@tools" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="100" y="2900" width="50" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-create-role" value="@create_role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-create-agent" value="@create_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="170" y="2900" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-get-role" value="@get_role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-get-agent" value="@get_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="290" y="2900" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-update-role" value="@update_role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-update-agent" value="@update_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="410" y="2900" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-delete-role" value="@delete_role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-delete-agent" value="@delete_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="530" y="2900" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-list-roles" value="@list_roles" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-list-agents" value="@list_agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="170" y="2940" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-find-roles" value="@find_roles" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-find-agents" value="@find_agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="290" y="2940" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-extends-ro-create" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-roles-list" target="v2-fob-roles-create" edge="1">
+                <mxCell id="v2-extends-ag-create" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-agents-list" target="v2-fob-agents-create" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-extends-ro-view" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-roles-list" target="v2-fob-roles-view" edge="1">
+                <mxCell id="v2-extends-ag-view" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-agents-list" target="v2-fob-agents-view" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-extends-ro-edit" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-roles-list" target="v2-fob-roles-edit" edge="1">
+                <mxCell id="v2-extends-ag-edit" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-agents-list" target="v2-fob-agents-edit" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-extends-ro-delete" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-roles-list" target="v2-fob-roles-delete" edge="1">
+                <mxCell id="v2-extends-ag-delete" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-agents-list" target="v2-fob-agents-delete" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-extends-ro-edit-view" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-roles-edit" target="v2-fob-roles-view" edge="1">
+                <mxCell id="v2-extends-ag-edit-view" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-agents-edit" target="v2-fob-agents-view" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="v2-act9-label" value="ACT 9: PIPS (Process Improvement Proposals)" style="text;html=1;strokeColor=#ff6f00;fillColor=#fff3e0;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=1;" parent="v2-root-1" vertex="1">
@@ -1211,7 +1211,7 @@
                 <mxCell id="v2-flow-act7-create" value="Create for Next Act" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=4;strokeColor=#000000;fontSize=10;fontStyle=1;" parent="v2-root-1" source="v2-fob-skills-list" target="v2-fob-skills-create" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-flow-act8-create" value="Create for Next Act" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=4;strokeColor=#000000;fontSize=10;fontStyle=1;" parent="v2-root-1" source="v2-fob-roles-list" target="v2-fob-roles-create" edge="1">
+                <mxCell id="v2-flow-act7-agents-create" value="Create for Next Act" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=4;strokeColor=#000000;fontSize=10;fontStyle=1;" parent="v2-root-1" source="v2-fob-agents-list" target="v2-fob-agents-create" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="v2-flow-act2-act3" value="Proceed to Workflows" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=4;strokeColor=#000000;fontSize=10;fontStyle=1;" parent="v2-root-1" source="v2-fob-playbooks-create" target="v2-fob-workflows-list" edge="1">
@@ -1300,7 +1300,7 @@
                 <mxCell id="v2-summary-next" value="🚀 WHAT'S NEXT:&#10;&#10;• Phase 2: Add Goal entity&#10;• Phase 3: Homebase sync&#10;• Phase 4: Community features&#10;• Phase 5: Advanced settings&#10;&#10;See: mvp-v2-reconstruction-plan.md" style="text;html=1;strokeColor=#ff8f00;fillColor=#fff3e0;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=10;spacingLeft=10;spacingTop=10;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="650" y="3400" width="280" height="180" as="geometry"/>
                 </mxCell>
-                <mxCell id="6tNcRuE9wxYF4Utpi-iC-0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9370DB;dashed=1;dashPattern=4 4;entryX=0;entryY=0.4;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="v2-root-1" target="v2-mcp-wf-export">
+                <mxCell id="6tNcRuE9wxYF4Utpi-iC-0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#9370DB;dashed=1;dashPattern=4 4;entryX=0;entryY=0.4;entryDx=0;entryDy=0;entryPerimeter=0;" parent="v2-root-1" target="v2-mcp-wf-export" edge="1">
                     <mxGeometry relative="1" as="geometry">
                         <mxPoint x="1410" y="645" as="sourcePoint"/>
                         <mxPoint x="1310" y="960" as="targetPoint"/>
