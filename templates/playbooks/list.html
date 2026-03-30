@@ -40,10 +40,19 @@
                                 <small class="text-muted">v{{ playbook.version }}</small>
                             </div>
                         </div>
-                        <div class="card-footer bg-light">
+                        <div class="card-footer bg-light d-flex justify-content-between align-items-center">
                             <small class="text-muted">
                                 Updated {{ playbook.updated_at|timesince }} ago
                             </small>
+                            {% if playbook.source == 'owned' and playbook.author == request.user %}
+                                <form method="post" action="{% url 'playbook_delete' pk=playbook.pk %}" class="d-inline mb-0">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger">
+                                        <i class="fa-solid fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

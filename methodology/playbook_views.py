@@ -299,6 +299,69 @@ def playbook_detail(request, pk):
     return render(request, 'playbooks/detail.html', context)
 
 
+# ==================== DELETE ====================
+
+@login_required
+@transaction.atomic
+def playbook_delete(request, pk):
+    """Delete an owned playbook and redirect to list (core backend for Issue #31)."""
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method for delete operation.')
+        return redirect('playbook_detail', pk=pk)
+
+    playbook = get_object_or_404(Playbook, pk=pk)
+
+    if playbook.source != 'owned' or playbook.author != request.user:
+        logger.warning(
+            "User %s attempted to delete playbook %s they do not own",
+            request.user.username,
+            pk,
+        )
+        messages.error(request, "You don't have permission to delete this playbook.")
+        return redirect('playbook_detail', pk=pk)
+
+    logger.info(
+        "User %s deleting playbook %s ('%s')", 
+        request.user.username,
+        playbook.pk,
+        playbook.name,
+    )
+
+    playbook.delete()
+    messages.success(request, f"Playbook '{playbook.name}' deleted successfully.")
+    return redirect('playbook_list')
+
+
+@login_required
+def playbook_delete_confirm(request, pk):
+    """Render delete confirmation modal fragment for an owned playbook (GET only)."""
+    if request.method != 'GET':
+        messages.error(request, 'Invalid request method for delete confirmation.')
+        return redirect('playbook_detail', pk=pk)
+
+    playbook = get_object_or_404(Playbook, pk=pk)
+
+    if playbook.source != 'owned' or playbook.author != request.user:
+        logger.warning(
+            "User %s attempted to open delete modal for playbook %s they do not own",
+            request.user.username,
+            pk,
+        )
+        messages.error(request, "You don't have permission to delete this playbook.")
+        return redirect('playbook_detail', pk=pk)
+
+    logger.info(
+        "User %s opened delete confirmation modal for playbook %s ('%s')",
+        request.user.username,
+        playbook.pk,
+        playbook.name,
+    )
+
+    return render(request, 'playbooks/delete_modal.html', {
+        'playbook': playbook,
+    })
+
+
 # ==================== LEGACY STUBS ====================
 
 @login_required

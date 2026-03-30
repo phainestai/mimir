@@ -91,14 +91,14 @@ document.addEventListener('DOMContentLoaded', function() {
             {% if playbook.source == 'owned' and playbook.author == request.user %}
                 {% if playbook.is_draft %}
                     <!-- Edit button for draft playbooks -->
-                    <a href="{% url 'playbook_edit' pk=playbook.pk %}" 
+                    <a href="{% url 'playbook_edit' pk=playbook.pk %}"
                        class="btn btn-primary"
                        data-bs-toggle="tooltip"
                        title="Edit this playbook (v{{ playbook.version }})">
                         <i class="fa-solid fa-edit"></i> Edit
                     </a>
                     <!-- Release button for draft playbooks -->
-                    <button type="button" 
+                    <button type="button"
                             class="btn btn-success"
                             data-bs-toggle="tooltip"
                             title="Release this playbook to v1.0 (makes it read-only, changes require PIP)">
@@ -106,15 +106,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                 {% elif playbook.is_released %}
                     <!-- Edit button disabled for released playbooks -->
-                    <button type="button" 
-                            class="btn btn-secondary" 
+                    <button type="button"
+                            class="btn btn-secondary"
                             disabled
                             data-bs-toggle="tooltip"
                             title="Released playbooks cannot be edited directly. Please submit a PIP (Process Improvement Proposal) to make changes.">
                         <i class="fa-solid fa-edit"></i> Edit
                     </button>
                     <!-- Submit PIP button for released playbooks -->
-                    <a href="#" 
+                    <a href="#"
                        class="btn btn-primary"
                        data-bs-toggle="tooltip"
                        title="Submit a Process Improvement Proposal to change this playbook">
@@ -122,22 +122,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     </a>
                 {% else %}
                     <!-- Active/Disabled status - legacy, allow edit -->
-                    <a href="{% url 'playbook_edit' pk=playbook.pk %}" 
+                    <a href="{% url 'playbook_edit' pk=playbook.pk %}"
                        class="btn btn-primary"
                        data-bs-toggle="tooltip"
                        title="Edit this playbook">
                         <i class="fa-solid fa-edit"></i> Edit
                     </a>
                 {% endif %}
-            {% endif %}
-            {% if playbook.source == 'owned' and playbook.author == request.user %}
-                <!-- Delete button -->
-                <button type="button" 
+                <!-- Delete button (HTMX modal) -->
+                <button type="button"
                         class="btn btn-outline-danger"
-                        data-bs-toggle="modal"
-                        data-bs-target="#deleteModal"
                         data-testid="delete-button"
-                        title="Delete this playbook (cannot be undone)">
+                        data-bs-toggle="tooltip"
+                        title="Delete this playbook"
+                        hx-get="{% url 'playbook_delete_confirm' pk=playbook.pk %}"
+                        hx-target="#playbook-delete-modal-container"
+                        hx-swap="innerHTML">
                     <i class="fa-solid fa-trash"></i> Delete
                 </button>
             {% endif %}
@@ -424,30 +424,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const table = document.getElementById('workflows-table');
     const rows = table ? table.querySelectorAll('tbody tr[data-workflow-row]') : [];
     const emptyState = document.getElementById('empty-state');
-    
+
     function filterWorkflows() {
         if (!searchInput || !filterPhases || rows.length === 0) return;
-        
+
         const searchTerm = searchInput.value.toLowerCase();
         const phaseFilter = filterPhases.value;
         let visibleCount = 0;
-        
+
         rows.forEach(row => {
             const nameElement = row.querySelector('[data-workflow-name]');
             const phaseElement = row.querySelector('[data-phase-count]');
-            
+
             const name = nameElement ? nameElement.textContent.toLowerCase() : '';
             const phaseCount = phaseElement ? parseInt(phaseElement.textContent) : 0;
-            
-            // Search filter
+
             const matchesSearch = name.includes(searchTerm);
-            
-            // Phase filter
+
             let matchesPhase = true;
             if (phaseFilter === 'with-phases') matchesPhase = phaseCount > 0;
             if (phaseFilter === 'no-phases') matchesPhase = phaseCount === 0;
-            
-            // Show/hide row
+
             if (matchesSearch && matchesPhase) {
                 row.style.display = '';
                 visibleCount++;
@@ -455,8 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.style.display = 'none';
             }
         });
-        
-        // Show/hide empty state
+
         if (emptyState && table) {
             if (visibleCount === 0 && rows.length > 0) {
                 emptyState.style.display = 'block';
@@ -467,67 +463,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
+
     if (searchInput) searchInput.addEventListener('input', filterWorkflows);
     if (filterPhases) filterPhases.addEventListener('change', filterWorkflows);
 });
 </script>
 
-<script>
-// Workflow search and filter functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('workflow-search');
-    const filterPhases = document.getElementById('filter-has-phases');
-    const table = document.getElementById('workflows-table');
-    const rows = table ? table.querySelectorAll('tbody tr[data-workflow-row]') : [];
-    const emptyState = document.getElementById('empty-state');
-    
-    function filterWorkflows() {
-        if (!searchInput || !filterPhases || rows.length === 0) return;
-        
-        const searchTerm = searchInput.value.toLowerCase();
-        const phaseFilter = filterPhases.value;
-        let visibleCount = 0;
-        
-        rows.forEach(row => {
-            const nameElement = row.querySelector('[data-workflow-name]');
-            const phaseElement = row.querySelector('[data-phase-count]');
-            
-            const name = nameElement ? nameElement.textContent.toLowerCase() : '';
-            const phaseCount = phaseElement ? parseInt(phaseElement.textContent) : 0;
-            
-            // Search filter
-            const matchesSearch = name.includes(searchTerm);
-            
-            // Phase filter
-            let matchesPhase = true;
-            if (phaseFilter === 'with-phases') matchesPhase = phaseCount > 0;
-            if (phaseFilter === 'no-phases') matchesPhase = phaseCount === 0;
-            
-            // Show/hide row
-            if (matchesSearch && matchesPhase) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Show/hide empty state
-        if (emptyState && table) {
-            if (visibleCount === 0 && rows.length > 0) {
-                emptyState.style.display = 'block';
-                table.style.display = 'none';
-            } else {
-                emptyState.style.display = 'none';
-                table.style.display = '';
-            }
-        }
-    }
-    
-    if (searchInput) searchInput.addEventListener('input', filterWorkflows);
-    if (filterPhases) filterPhases.addEventListener('change', filterWorkflows);
-});
-</script>
-
+<div id="playbook-delete-modal-container"></div>
 {% endblock %}
