@@ -37,7 +37,7 @@ def agent_list_global(request):
 
     logger.info(
         f"User {request.user.username} viewing global agent list"
-        f"{f', query={query!r}' if query else ''}"
+        + (f", query={query!r}" if query else "")
     )
 
     context = {
