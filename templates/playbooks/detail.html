@@ -349,66 +349,6 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true" data-testid="delete-modal">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteModalLabel">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Delete Playbook?
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger" role="alert">
-                    <strong><i class="fa-solid fa-exclamation-triangle"></i> Warning:</strong> This action cannot be undone.
-                </div>
-                
-                <p class="mb-3">You are about to delete:</p>
-                
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h6 class="card-title text-danger">{{ playbook.name }}</h6>
-                        <p class="card-text mb-2">
-                            <small class="text-muted">
-                                <i class="fa-solid fa-code-branch"></i> Version: v{{ playbook.version }}<br>
-                                <i class="fa-solid fa-list"></i> Workflows: {{ playbook.workflows.count }}<br>
-                                <i class="fa-solid fa-clock"></i> Last modified: {{ playbook.updated_at|timesince }} ago
-                            </small>
-                        </p>
-                    </div>
-                </div>
-                
-                <p class="mb-0"><strong>All of the following data will be permanently lost:</strong></p>
-                <ul class="mb-3">
-                    <li>All workflows and their activities</li>
-                    <li>All artifacts and documentation</li>
-                    <li>All roles and assignments</li>
-                    <li>All howtos and guides</li>
-                    <li>Version history</li>
-                </ul>
-                
-                <p class="mb-3">
-                    <i class="fa-solid fa-lightbulb text-warning"></i> 
-                    <strong>Tip:</strong> Consider 
-                    <a href="{% url 'playbook_export' pk=playbook.pk %}" data-testid="export-link">exporting this playbook</a> 
-                    before deleting.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-testid="cancel-delete">
-                    <i class="fa-solid fa-times"></i> Cancel
-                </button>
-                <form method="post" action="{% url 'playbook_delete' pk=playbook.pk %}" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger" data-testid="confirm-delete">
-                        <i class="fa-solid fa-trash"></i> Delete Playbook
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
     .badge.bg-active { background-color: #28a745 !important; }

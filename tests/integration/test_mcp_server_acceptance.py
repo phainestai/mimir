@@ -218,7 +218,7 @@ def test_list_tools(mcp_server):
     assert "tools" in response["result"]
     
     tools = response["result"]["tools"]
-    assert len(tools) == 16, f"Expected 16 tools, got {len(tools)}"
+    assert len(tools) == 20, f"Expected 20 tools, got {len(tools)}"
     
     tool_names = [tool["name"] for tool in tools]
     logger.info(f"✓ Found {len(tools)} tools: {tool_names}")
