@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 
-from methodology.models import Playbook
+from methodology.models import Activity, Agent, Playbook
 from methodology.services.agent_service import AgentService
 
 logger = logging.getLogger(__name__)
@@ -159,7 +159,6 @@ def agent_detail(request, pk):
     :return: Rendered detail template
     :raises Http404: If agent not found
     """
-    from methodology.models import Agent
     agent = get_object_or_404(
         Agent.objects.select_related('playbook', 'playbook__author'),
         pk=pk,
@@ -192,7 +191,6 @@ def _get_activities_for_agent(agent):
     :returns: QuerySet of Activity instances
     :rtype: QuerySet
     """
-    from methodology.models import Activity
     return (
         Activity.objects
         .filter(agent=agent)
@@ -224,7 +222,6 @@ def agent_edit(request, pk):
     :return: Rendered edit form template or redirect
     :raises Http404: If agent not found
     """
-    from methodology.models import Agent
     agent = get_object_or_404(
         Agent.objects.select_related('playbook', 'playbook__author'),
         pk=pk,
@@ -327,7 +324,6 @@ def agent_delete(request, pk):
     :return: Rendered modal partial (GET) or redirect (POST)
     :raises Http404: If agent not found
     """
-    from methodology.models import Agent
     agent = get_object_or_404(
         Agent.objects.select_related('playbook', 'playbook__author'),
         pk=pk,
