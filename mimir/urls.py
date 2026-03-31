@@ -38,5 +38,5 @@ urlpatterns = [
     path("workflows/", workflow_views.workflow_global_list, name="workflow_global_list"),  # Global workflows view
     path("activities/", activity_views.activity_global_list, name="activity_global_list"),  # Global activities view
     path("skills/", skill_views.skill_list_global, name="skill_list"),  # Global skills view
-    path("agents/", agent_views.agent_list_global, name="agent_list"),  # Global agents view
+    path("agents/", include("methodology.agent_urls")),  # Agent views (list, create, detail)
 ]

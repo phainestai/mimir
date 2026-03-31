@@ -175,6 +175,20 @@ document.addEventListener('DOMContentLoaded', function() {
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link"
+                    data-testid="tab-agents"
+                    id="agents-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#agents-content"
+                    type="button"
+                    role="tab">
+                <i class="fa-solid fa-brain"></i> Agents
+                {% if quick_stats.agents %}
+                <span class="badge bg-secondary ms-1">{{ quick_stats.agents }}</span>
+                {% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" 
                     data-testid="tab-history"
                     id="history-tab" 
@@ -340,6 +354,49 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Workflows Tab (placeholder) -->
         <div class="tab-pane fade" id="workflows-content" role="tabpanel">
             {% include "methodology/partials/workflows_tab_content.html" %}
+        </div>
+
+        <!-- Agents Tab -->
+        <div class="tab-pane fade" id="agents-content" role="tabpanel" data-testid="agents-tab-content">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="fa-solid fa-brain me-2"></i>Agents</h5>
+                {% if can_edit %}
+                <a href="{% url 'agent_create' playbook_pk=playbook.pk %}"
+                   class="btn btn-primary btn-sm"
+                   data-testid="create-agent-btn"
+                   data-bs-toggle="tooltip"
+                   title="Create a new agent for this playbook">
+                    <i class="fa-solid fa-plus"></i> Create New Agent
+                </a>
+                {% endif %}
+            </div>
+            {% if agents %}
+            <div class="list-group" data-testid="agents-list-tab">
+                {% for agent in agents %}
+                <a href="{% url 'agent_detail' pk=agent.pk %}"
+                   class="list-group-item list-group-item-action"
+                   data-testid="agent-tab-row-{{ agent.pk }}">
+                    <i class="fa-solid fa-brain text-primary me-2"></i>
+                    <strong>{{ agent.name }}</strong>
+                    {% if agent.description %}
+                    <p class="mb-0 text-muted small">{{ agent.description|truncatewords:20 }}</p>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4" data-testid="agents-tab-empty">
+                <i class="fa-solid fa-brain fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No agents in this playbook yet.</p>
+                {% if can_edit %}
+                <a href="{% url 'agent_create' playbook_pk=playbook.pk %}"
+                   class="btn btn-primary mt-2"
+                   data-testid="create-first-agent-tab-btn">
+                    <i class="fa-solid fa-plus"></i> Create First Agent
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
 
         <!-- History Tab (placeholder) -->

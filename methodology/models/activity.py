@@ -23,6 +23,14 @@ class Activity(models.Model):
         related_name='activities',
         help_text="Parent workflow containing this activity"
     )
+    agent = models.ForeignKey(
+        'Agent',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='activities',
+        help_text="Optional AI agent assigned to perform this activity"
+    )
     
     # Core fields
     name = models.CharField(
