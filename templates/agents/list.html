@@ -68,7 +68,7 @@
                         </td>
                         <td class="text-muted small">{{ agent.playbook.name }}</td>
                         <td>
-                            <a href="#"
+                            <a href="{% url 'agent_detail' pk=agent.id %}"
                                class="btn btn-outline-primary btn-sm"
                                data-testid="view-agent-{{ agent.id }}"
                                data-bs-toggle="tooltip"

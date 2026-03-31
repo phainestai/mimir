@@ -172,6 +172,9 @@ def playbook_detail(request, pk):
     quick_stats = playbook.get_quick_stats()
     can_edit = playbook.can_edit(request.user)
 
+    from methodology.services.agent_service import AgentService
+    agents = AgentService.list_agents_for_playbook(playbook.pk)
+
     logger.info(f"User {request.user.username} viewing playbook '{playbook.name}' (id={pk})")
 
     context = {
@@ -179,6 +182,7 @@ def playbook_detail(request, pk):
         'workflows': workflows,
         'quick_stats': quick_stats,
         'can_edit': can_edit,
+        'agents': agents,
     }
     return render(request, 'playbooks/detail.html', context)
 

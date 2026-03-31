@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ agent.name }} - Agent{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="agent-detail">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'agent_list' %}">Agents</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ agent.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4" data-testid="agent-header">
+        <div>
+            <h2 data-testid="agent-name">
+                <i class="fa-solid fa-brain"></i> {{ agent.name }}
+            </h2>
+            <p class="text-muted small">
+                <i class="fa-solid fa-book"></i>
+                <a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a>
+                &middot;
+                <span class="badge bg-secondary">v{{ playbook.version }}</span>
+            </p>
+            <p class="text-muted small">
+                <i class="fa-solid fa-clock"></i> Updated {{ agent.updated_at|timesince }} ago
+                &middot;
+                <i class="fa-solid fa-calendar"></i> Created {{ agent.created_at|timesince }} ago
+            </p>
+        </div>
+        {% if can_edit %}
+        <div class="btn-group">
+            <a href="#"
+               class="btn btn-primary"
+               data-testid="edit-agent-btn"
+               data-bs-toggle="tooltip"
+               title="Edit this agent">
+                <i class="fa-solid fa-pen-to-square"></i> Edit Agent
+            </a>
+            <button type="button"
+                    class="btn btn-outline-danger"
+                    data-testid="delete-agent-btn"
+                    data-bs-toggle="tooltip"
+                    title="Delete this agent">
+                <i class="fa-solid fa-trash-can"></i> Delete
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Description -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fa-solid fa-align-left"></i> Description</h5>
+        </div>
+        <div class="card-body" data-testid="agent-description">
+            {% if agent.description %}
+                <p>{{ agent.description }}</p>
+            {% else %}
+                <p class="text-muted">No description provided.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Activities using this agent -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fa-solid fa-tasks"></i> Used in Activities</h5>
+        </div>
+        <div class="card-body" data-testid="agent-activities">
+            {% if activities %}
+                <ul class="list-group list-group-flush">
+                    {% for activity in activities %}
+                    <li class="list-group-item">
+                        <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=activity.workflow.pk activity_pk=activity.pk %}"
+                           data-testid="activity-link-{{ activity.id }}">
+                            <i class="fa-solid fa-tasks text-primary me-2"></i>
+                            <strong>{{ activity.name }}</strong>
+                        </a>
+                        <span class="text-muted small ms-2">
+                            <i class="fa-solid fa-sitemap"></i> {{ activity.workflow.name }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="text-center py-3" data-testid="agent-activities-empty">
+                    <i class="fa-solid fa-tasks fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No activities are using this agent yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
