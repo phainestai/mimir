@@ -83,6 +83,19 @@ class Agent(models.Model):
         """
         return self.playbook.can_edit(user)
 
+    def get_activity_count(self):
+        """
+        Return the number of activities assigned to this agent.
+
+        :returns: Count of activities using this agent
+        :rtype: int
+
+        Example:
+            >>> agent.get_activity_count()
+            3
+        """
+        return self.activities.count()
+
     def to_dict(self):
         """
         Serialise agent to a plain dictionary.

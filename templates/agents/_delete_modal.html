@@ -1,0 +1,78 @@
+<!-- Delete Agent Confirmation Modal (loaded via HTMX) -->
+<div class="modal fade show d-block"
+     id="agentDeleteModal"
+     tabindex="-1"
+     role="dialog"
+     aria-labelledby="agentDeleteModalLabel"
+     data-testid="delete-modal"
+     style="background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="agentDeleteModalLabel">
+                    <i class="fa-solid fa-trash-can text-danger"></i> Delete Agent?
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        onclick="document.getElementById('agent-delete-modal-container').innerHTML = ''">
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>You are about to delete:</p>
+                <p data-testid="agent-name-display"><strong>{{ agent.name }}</strong></p>
+                <p class="text-muted small">
+                    <i class="fa-solid fa-book"></i> {{ agent.playbook.name }}
+                </p>
+
+                {% if activity_count > 0 %}
+                <div class="alert alert-warning" data-testid="activity-count">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <strong>Used in {{ activity_count }} activities</strong>
+                </div>
+                <ul class="list-unstyled ms-2" data-testid="activity-list">
+                    {% for activity in activities %}
+                    <li><i class="fa-solid fa-tasks text-muted me-1"></i>{{ activity.name }}</li>
+                    {% endfor %}
+                    {% if activity_count > 5 %}
+                    <li class="text-muted">…and {{ activity_count|add:"-5" }} more</li>
+                    {% endif %}
+                </ul>
+                <p class="text-muted small">
+                    <i class="fa-solid fa-info-circle"></i>
+                    Agent assignments will be removed from these activities.
+                </p>
+                {% else %}
+                <p class="text-muted small" data-testid="no-activities-msg">
+                    <i class="fa-solid fa-info-circle"></i>
+                    This agent is not currently assigned to any activities.
+                </p>
+                {% endif %}
+
+                <div class="alert alert-danger mt-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    This action cannot be undone.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-testid="cancel-delete-btn"
+                        onclick="document.getElementById('agent-delete-modal-container').innerHTML = ''">
+                    <i class="fa-solid fa-xmark"></i> Cancel
+                </button>
+                <form method="post"
+                      action="{% url 'agent_delete' pk=agent.pk %}"
+                      style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-danger"
+                            data-testid="confirm-delete-btn"
+                            data-bs-toggle="tooltip"
+                            title="Permanently delete this agent">
+                        <i class="fa-solid fa-trash-can"></i> Delete Agent
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

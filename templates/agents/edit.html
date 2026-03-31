@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit Agent - {{ agent.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="agent-edit">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'agent_list' %}">Agents</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'agent_detail' pk=agent.pk %}">{{ agent.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol>
+    </nav>
+
+    <h2><i class="fa-solid fa-pen-to-square"></i> Edit Agent</h2>
+    <p class="text-muted">Editing agent in <strong>{{ playbook.name }}</strong></p>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post"
+                  action="{% url 'agent_edit' pk=agent.pk %}"
+                  data-testid="agent-edit-form">
+                {% csrf_token %}
+
+                <!-- Name -->
+                <div class="mb-3">
+                    <label for="name" class="form-label">
+                        Name <span class="text-danger">*</span>
+                    </label>
+                    <input type="text"
+                           class="form-control {% if errors.name %}is-invalid{% endif %}"
+                           id="name"
+                           name="name"
+                           maxlength="200"
+                           value="{{ form_data.name|default:'' }}"
+                           data-testid="agent-name-input"
+                           required>
+                    {% if errors.name %}
+                    <div class="invalid-feedback" data-testid="name-error">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        {{ errors.name }}
+                    </div>
+                    {% endif %}
+                    <small class="form-text text-muted">Short descriptive name (max 200 characters)</small>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-3">
+                    <label for="description" class="form-label">
+                        Description
+                        <i class="fa-solid fa-info-circle text-muted"
+                           data-bs-toggle="tooltip"
+                           title="Describe what this agent does and when to use it"></i>
+                    </label>
+                    <textarea class="form-control"
+                              id="description"
+                              name="description"
+                              rows="4"
+                              data-testid="agent-description-input"
+                              placeholder="Describe what this agent does and when to use it…">{{ form_data.description|default:'' }}</textarea>
+                    <small class="form-text text-muted">Optional. What this agent does and when to use it.</small>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex gap-2">
+                    <button type="submit"
+                            class="btn btn-primary"
+                            data-testid="save-changes-btn"
+                            data-bs-toggle="tooltip"
+                            title="Save changes to this agent">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                    </button>
+                    <a href="{% url 'agent_detail' pk=agent.pk %}"
+                       class="btn btn-outline-secondary"
+                       data-testid="cancel-btn"
+                       data-bs-toggle="tooltip"
+                       title="Cancel and return to agent detail">
+                        <i class="fa-solid fa-xmark"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

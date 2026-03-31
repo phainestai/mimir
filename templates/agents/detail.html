@@ -35,7 +35,7 @@
         </div>
         {% if can_edit %}
         <div class="btn-group">
-            <a href="#"
+            <a href="{% url 'agent_edit' pk=agent.pk %}"
                class="btn btn-primary"
                data-testid="edit-agent-btn"
                data-bs-toggle="tooltip"
@@ -46,7 +46,10 @@
                     class="btn btn-outline-danger"
                     data-testid="delete-agent-btn"
                     data-bs-toggle="tooltip"
-                    title="Delete this agent">
+                    title="Delete this agent"
+                    hx-get="{% url 'agent_delete' pk=agent.pk %}"
+                    hx-target="#agent-delete-modal-container"
+                    hx-swap="innerHTML">
                 <i class="fa-solid fa-trash-can"></i> Delete
             </button>
         </div>
@@ -96,5 +99,8 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- Delete modal container (populated via HTMX) -->
+    <div id="agent-delete-modal-container"></div>
 </div>
 {% endblock %}

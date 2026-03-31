@@ -199,3 +199,165 @@ def _get_activities_for_agent(agent):
         .select_related('workflow', 'workflow__playbook')
         .order_by('workflow__order', 'order')
     )
+
+
+# ==================== EDIT ====================
+
+
+@login_required
+def agent_edit(request, pk):
+    """
+    Edit existing agent.
+
+    GET: Display edit form with pre-populated data.
+    POST: Validate and update agent, redirect to detail view on success.
+
+    Template: agents/edit.html
+    Template Context:
+        - agent: Agent instance being edited
+        - form_data: Dict with current field values (GET) or user input (POST on error)
+        - errors: Dict with field-level error messages (empty on GET, populated on POST error)
+        - playbook: Playbook instance for breadcrumbs
+
+    :param request: Django request object
+    :param pk: Agent primary key
+    :return: Rendered edit form template or redirect
+    :raises Http404: If agent not found
+    """
+    from methodology.models import Agent
+    agent = get_object_or_404(
+        Agent.objects.select_related('playbook', 'playbook__author'),
+        pk=pk,
+    )
+
+    if not agent.can_edit(request.user):
+        logger.warning(
+            f"User {request.user.username} attempted to edit agent {pk} without permission"
+        )
+        messages.error(request, "You don't have permission to edit this agent.")
+        return redirect('agent_detail', pk=pk)
+
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        form_data = {'name': name, 'description': description}
+
+        try:
+            updated_agent = AgentService.update_agent(pk, name=name, description=description)
+            logger.info(
+                f"User {request.user.username} updated agent {pk} '{updated_agent.name}'"
+            )
+            messages.success(request, f'Agent "{updated_agent.name}" updated successfully.')
+            return redirect('agent_detail', pk=pk)
+        except ValidationError as e:
+            errors = _extract_validation_errors(e)
+            return _render_edit_form(request, agent, form_data, errors)
+
+    form_data = {'name': agent.name, 'description': agent.description}
+    logger.info(f"User {request.user.username} opening agent edit form for agent {pk}")
+    return _render_edit_form(request, agent, form_data, {})
+
+
+def _extract_validation_errors(exc):
+    """
+    Extract field-level errors from a ValidationError into a flat dict.
+
+    :param exc: ValidationError raised by AgentService
+    :returns: Dict mapping field name to first error message string
+    :rtype: dict
+
+    Example:
+        >>> # exc.message_dict = {'name': ['Agent already exists']}
+        >>> _extract_validation_errors(exc)
+        {'name': 'Agent already exists'}
+        >>> # exc with plain message: "Agent name cannot be empty"
+        >>> _extract_validation_errors(exc)
+        {'name': 'Agent name cannot be empty'}
+    """
+    if hasattr(exc, 'message_dict'):
+        return {field: msgs[0] if isinstance(msgs, list) else msgs
+                for field, msgs in exc.message_dict.items()}
+    if hasattr(exc, 'messages') and exc.messages:
+        return {'name': exc.messages[0]}
+    return {'name': str(exc)}
+
+
+def _render_edit_form(request, agent, form_data, errors):
+    """
+    Render agent edit form with context.
+
+    :param request: Django request object
+    :param agent: Agent instance being edited
+    :param form_data: Dict with current or user-submitted field values
+    :param errors: Dict mapping field names to error message strings
+    :returns: Rendered agents/edit.html response
+    :rtype: HttpResponse
+
+    Example:
+        >>> return _render_edit_form(request, agent, {'name': 'Reviewer'}, {'name': 'Required'})
+    """
+    context = {
+        'agent': agent,
+        'form_data': form_data,
+        'errors': errors,
+        'playbook': agent.playbook,
+    }
+    return render(request, 'agents/edit.html', context)
+
+
+# ==================== DELETE ====================
+
+
+@login_required
+def agent_delete(request, pk):
+    """
+    Delete agent with HTMX confirmation modal.
+
+    GET: Render delete confirmation modal partial with cascade warnings.
+    POST: Delete agent (activities retain NULL agent), redirect to playbook detail.
+
+    Template: agents/_delete_modal.html (GET only)
+    Template Context:
+        - agent: Agent instance to delete
+        - activity_count: int total activities using this agent
+        - activities: QuerySet of first 5 activities (for display)
+
+    :param request: Django request object
+    :param pk: Agent primary key
+    :return: Rendered modal partial (GET) or redirect (POST)
+    :raises Http404: If agent not found
+    """
+    from methodology.models import Agent
+    agent = get_object_or_404(
+        Agent.objects.select_related('playbook', 'playbook__author'),
+        pk=pk,
+    )
+
+    if not agent.can_edit(request.user):
+        logger.warning(
+            f"User {request.user.username} attempted to delete agent {pk} without permission"
+        )
+        messages.error(request, "You don't have permission to delete this agent.")
+        return redirect('agent_detail', pk=pk)
+
+    if request.method == 'POST':
+        playbook_id = agent.playbook_id
+        agent_name = agent.name
+        AgentService.delete_agent(pk)
+        logger.info(
+            f"User {request.user.username} deleted agent '{agent_name}' (id={pk})"
+        )
+        messages.success(request, f'Agent "{agent_name}" deleted successfully.')
+        return redirect('playbook_detail', pk=playbook_id)
+
+    activities = agent.activities.select_related('workflow').order_by('name')[:5]
+    activity_count = agent.get_activity_count()
+    logger.info(
+        f"User {request.user.username} opening delete modal for agent {pk}"
+    )
+    context = {
+        'agent': agent,
+        'activity_count': activity_count,
+        'activities': activities,
+    }
+    return render(request, 'agents/_delete_modal.html', context)
