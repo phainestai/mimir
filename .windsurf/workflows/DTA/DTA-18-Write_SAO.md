@@ -100,6 +100,27 @@ Structure:
 ## 16. Documentation Strategy
 [Decision from DTA-17]
 
+## Technology Stack Table
+Machine-readable table consumed by Bootstrap Project (BSP) for automated provisioning.
+
+| Layer       | Tool       | Version | Install Command (macOS)  | Install Command (Linux)      | Verify Command        |
+|-------------|------------|---------|--------------------------|------------------------------|-----------------------|
+| Language    | Python     | 3.12+   | brew install python@3.12 | apt install python3.12       | python3 --version     |
+| Framework   | Django     | 5.1+    | pip install django       | pip install django           | django-admin version  |
+| Runtime     | Node.js    | 20 LTS  | brew install node@20     | apt install nodejs           | node --version        |
+| Package Mgr | pip        | 24+     | (bundled)                | (bundled)                    | pip --version         |
+| Package Mgr | npm        | 10+     | (bundled with node)      | (bundled with node)          | npm --version         |
+| DB          | PostgreSQL | 16+     | brew install postgresql  | apt install postgresql       | psql --version        |
+| Test        | pytest     | 8+      | pip install pytest       | pip install pytest           | pytest --version      |
+| E2E         | Playwright | 1.x     | npx playwright install   | npx playwright install       | npx playwright -V     |
+| Linter      | ruff       | 0.6+    | pip install ruff         | pip install ruff             | ruff --version        |
+| Formatter   | ruff       | 0.6+    | (same as linter)         | (same as linter)             | ruff format --version |
+| VCS         | git        | 2.x     | brew install git         | apt install git              | git --version         |
+| Build       | make       | 4+      | (bundled on macOS)       | apt install make             | make --version        |
+| ...         | ...        | ...     | ...                      | ...                          | ...                   |
+
+> **Note**: Populate this table from decisions made in DTA-02 through DTA-17. Each row must have install + verify commands so BSP can automate provisioning.
+
 ## Skill Coverage Report
 [Coverage matrix: which domains are covered by Skills, which have gaps]
 
