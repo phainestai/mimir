@@ -1,15 +1,15 @@
 """
-Integration tests for Skill CREATE operation.
+Integration tests for Skill CREATE operation (playbook-scoped).
 
-Tests skill creation form, validation, and success scenarios.
-Covers scenarios: FOB-SKILLS-CREATE_SKILL-01 through FOB-SKILLS-CREATE_SKILL-05.
+Tests skill creation form with capability_domain and technology_stack,
+validation, and success scenarios.
 """
 
 import pytest
 from django.test import Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from methodology.models import Playbook, Workflow, Activity
+from methodology.models import Playbook, Workflow, Skill
 
 User = get_user_model()
 
@@ -37,24 +37,10 @@ class TestSkillCreate:
             source='owned',
             author=self.user
         )
-        self.workflow = Workflow.objects.create(
-            name='Component Development',
-            description='Develop React components',
-            playbook=self.playbook,
-            order=1
-        )
-        self.activity = Activity.objects.create(
-            name='Setup React Environment',
-            guidance='Guide for setting up React',
-            workflow=self.workflow,
-            order=1
-        )
 
     def _url(self):
         return reverse('skill_create', kwargs={
             'playbook_pk': self.playbook.pk,
-            'workflow_pk': self.workflow.pk,
-            'activity_pk': self.activity.pk,
         })
 
     def test_skill_create_01_open_create_form(self):
@@ -66,34 +52,38 @@ class TestSkillCreate:
         assert b'data-testid="skill-form"' in response.content
         assert b'data-testid="title-input"' in response.content
         assert b'data-testid="content-input"' in response.content
+        assert b'data-testid="domain-input"' in response.content
+        assert b'data-testid="stack-input"' in response.content
 
     def test_skill_create_02_create_skill_successfully(self):
-        """FOB-SKILLS-CREATE_SKILL-02: Skill is created with valid data."""
-        from methodology.models import Skill
+        """FOB-SKILLS-CREATE_SKILL-02: Skill is created with valid data including metadata."""
         data = {
-            'title': 'Setup React Component',
-            'content': 'Step-by-step guide to create a new React component',
+            'title': 'React Form Component',
+            'content': 'Step-by-step guide to create a form',
+            'capability_domain': 'GUI_FORM',
+            'technology_stack': 'React+Redux',
         }
         response = self.client.post(self._url(), data)
 
         assert response.status_code == 302
-        skill = Skill.objects.get(activity=self.activity)
-        assert skill.title == 'Setup React Component'
+        skill = Skill.objects.get(playbook=self.playbook, title='React Form Component')
+        assert skill.capability_domain == 'GUI_FORM'
+        assert skill.technology_stack == 'React+Redux'
         assert 'Step-by-step' in skill.content
 
     def test_skill_create_02_redirects_to_detail_on_success(self):
         """FOB-SKILLS-CREATE_SKILL-02: Success redirects to skill detail page."""
         data = {
-            'title': 'Setup React Component',
+            'title': 'React Form Component',
             'content': 'Step-by-step guide',
         }
         response = self.client.post(self._url(), data)
 
         assert response.status_code == 302
+        skill = Skill.objects.get(playbook=self.playbook)
         expected_url = reverse('skill_detail', kwargs={
             'playbook_pk': self.playbook.pk,
-            'workflow_pk': self.workflow.pk,
-            'activity_pk': self.activity.pk,
+            'skill_pk': skill.pk,
         })
         assert response.url == expected_url
 
@@ -108,22 +98,20 @@ class TestSkillCreate:
         assert response.status_code == 200
         assert b'data-testid="title-error"' in response.content
 
-    def test_skill_create_03_prevent_duplicate_for_activity(self):
-        """Cannot create a second skill for the same activity."""
-        from methodology.models import Skill
-        Skill.objects.create(
-            activity=self.activity,
-            title='Existing Skill',
-            content='Already exists'
-        )
+    def test_skill_create_04_metadata_optional(self):
+        """FOB-SKILLS-CREATE_SKILL-04: Skill can be created without metadata."""
         data = {
-            'title': 'Another Skill',
-            'content': 'Duplicate attempt',
+            'title': 'Minimal Skill',
+            'content': '',
+            'capability_domain': '',
+            'technology_stack': '',
         }
         response = self.client.post(self._url(), data)
 
-        assert response.status_code == 200
-        assert Skill.objects.filter(activity=self.activity).count() == 1
+        assert response.status_code == 302
+        skill = Skill.objects.get(title='Minimal Skill')
+        assert skill.capability_domain == ''
+        assert skill.technology_stack == ''
 
     def test_skill_create_requires_authentication(self):
         """Skill create requires login."""
@@ -134,7 +122,7 @@ class TestSkillCreate:
         assert '/auth/' in response.url
 
     def test_skill_create_requires_ownership(self):
-        """Non-owner cannot create skill for another user's activity."""
+        """Non-owner cannot create skill for another user's playbook."""
         other_user = User.objects.create_user(username='other', password='pass123')
         self.client.login(username='other', password='pass123')
 

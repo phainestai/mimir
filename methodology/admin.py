@@ -77,11 +77,11 @@ class ArtifactInputAdmin(admin.ModelAdmin):
 @admin.register(Skill)
 class SkillAdmin(admin.ModelAdmin):
     """Admin configuration for Skill model."""
-    list_display = ('title', 'activity', 'created_at', 'updated_at')
-    search_fields = ('title', 'content', 'activity__name')
+    list_display = ('title', 'playbook', 'capability_domain', 'technology_stack', 'created_at')
+    search_fields = ('title', 'content', 'capability_domain', 'technology_stack')
     list_filter = ('created_at',)
     readonly_fields = ('created_at', 'updated_at')
-    raw_id_fields = ('activity',)
+    raw_id_fields = ('playbook',)
 
 
 @admin.register(Agent)

@@ -1,15 +1,14 @@
 """
-Integration tests for Skill VIEW operation.
+Integration tests for Skill VIEW operation (playbook-scoped).
 
-Tests skill detail page display and navigation.
-Covers scenarios: FOB-SKILLS-VIEW_SKILL-01 through FOB-SKILLS-VIEW_SKILL-06.
+Tests skill detail page with metadata badges and activity references.
 """
 
 import pytest
 from django.test import Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from methodology.models import Playbook, Workflow, Activity
+from methodology.models import Playbook, Workflow, Activity, Skill
 
 User = get_user_model()
 
@@ -43,25 +42,19 @@ class TestSkillView:
             playbook=self.playbook,
             order=1
         )
-        self.activity = Activity.objects.create(
-            name='Setup React Environment',
-            guidance='Guide for setting up React',
-            workflow=self.workflow,
-            order=1
-        )
 
-        from methodology.models import Skill
         self.skill = Skill.objects.create(
-            activity=self.activity,
+            playbook=self.playbook,
             title='Setup React Component',
-            content='## Steps\n\n1. Install dependencies\n2. Create component'
+            capability_domain='GUI_FORM',
+            technology_stack='React+Redux',
+            content='## Steps\n\n1. Install dependencies\n2. Create component',
         )
 
     def _url(self):
         return reverse('skill_detail', kwargs={
             'playbook_pk': self.playbook.pk,
-            'workflow_pk': self.workflow.pk,
-            'activity_pk': self.activity.pk,
+            'skill_pk': self.skill.pk,
         })
 
     def test_skill_view_01_page_loads(self):
@@ -73,7 +66,7 @@ class TestSkillView:
         assert b'data-testid="skill-detail"' in response.content
 
     def test_skill_view_01_breadcrumb_contains_playbook(self):
-        """FOB-SKILLS-VIEW_SKILL-01: Breadcrumb shows playbook and activity names."""
+        """FOB-SKILLS-VIEW_SKILL-01: Breadcrumb shows playbook name."""
         response = self.client.get(self._url())
 
         assert response.status_code == 200
@@ -89,11 +82,21 @@ class TestSkillView:
         assert b'data-testid="skill-title"' in response.content
 
     def test_skill_view_03_shows_skill_content(self):
-        """FOB-SKILLS-VIEW_SKILL-03: Skill content is rendered (Markdown)."""
+        """FOB-SKILLS-VIEW_SKILL-03: Skill content section is rendered."""
         response = self.client.get(self._url())
 
         assert response.status_code == 200
         assert b'data-testid="skill-content"' in response.content
+
+    def test_skill_view_04_shows_metadata_badges(self):
+        """FOB-SKILLS-VIEW_SKILL-04: Metadata badges shown for domain and stack."""
+        response = self.client.get(self._url())
+
+        assert response.status_code == 200
+        assert b'data-testid="domain-badge"' in response.content
+        assert b'GUI_FORM' in response.content
+        assert b'data-testid="stack-badge"' in response.content
+        assert b'React+Redux' in response.content
 
     def test_skill_view_05_edit_button_present_for_owner(self):
         """FOB-SKILLS-VIEW_SKILL-05: Edit button is visible for the skill owner."""
@@ -109,14 +112,21 @@ class TestSkillView:
         assert response.status_code == 200
         assert b'data-testid="delete-skill-btn"' in response.content
 
-    def test_skill_view_no_skill_shows_create_cta(self):
-        """When activity has no skill, detail page shows create CTA."""
-        from methodology.models import Skill
-        self.skill.delete()
+    def test_skill_view_07_shows_activities_section(self):
+        """FOB-SKILLS-VIEW_SKILL-07: Activities section shows linked activities."""
+        activity = Activity.objects.create(
+            name='Build Login Form',
+            guidance='Use the form skill',
+            workflow=self.workflow,
+            order=1,
+            skill=self.skill,
+        )
         response = self.client.get(self._url())
 
         assert response.status_code == 200
-        assert b'data-testid="create-skill-cta"' in response.content
+        assert b'data-testid="activities-section"' in response.content
+        assert b'Build Login Form' in response.content
+        assert b'data-testid="activity-count"' in response.content
 
     def test_skill_view_requires_authentication(self):
         """Skill detail requires login."""

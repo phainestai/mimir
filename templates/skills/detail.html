@@ -2,7 +2,7 @@
 {% load static %}
 {% load markdown_filters %}
 
-{% block title %}{% if skill %}{{ skill.title }}{% else %}Skill{% endif %} - {{ activity.name }}{% endblock %}
+{% block title %}{{ skill.title }} - {{ playbook.name }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4" data-testid="skill-detail">
@@ -11,47 +11,50 @@
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
             <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'workflow_detail' playbook_pk=playbook.pk pk=workflow.pk %}">{{ workflow.name }}</a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}">{{ activity.name }}</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">
-                {% if skill %}{{ skill.title }}{% else %}Skill{% endif %}
-            </li>
+            <li class="breadcrumb-item"><a href="{% url 'skill_list_playbook' playbook_pk=playbook.pk %}">Skills</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ skill.title }}</li>
         </ol>
     </nav>
 
-    {% if skill %}
     <!-- Skill header -->
     <div class="d-flex justify-content-between align-items-start mb-4" data-testid="skill-header">
         <div>
             <h2 data-testid="skill-title">
                 <i class="fa-solid fa-graduation-cap"></i> {{ skill.title }}
             </h2>
+            <div class="mb-2">
+                {% if skill.capability_domain %}
+                <span class="badge bg-info text-dark me-1" data-testid="domain-badge">
+                    <i class="fa-solid fa-cubes"></i> {{ skill.capability_domain }}
+                </span>
+                {% endif %}
+                {% if skill.technology_stack %}
+                <span class="badge bg-success me-1" data-testid="stack-badge">
+                    <i class="fa-solid fa-layer-group"></i> {{ skill.technology_stack }}
+                </span>
+                {% endif %}
+            </div>
             <p class="text-muted small">
-                <i class="fa-solid fa-tasks"></i> {{ activity.name }}
-                &middot;
-                <i class="fa-solid fa-sitemap"></i> {{ workflow.name }}
-                &middot;
                 <i class="fa-solid fa-book"></i> {{ playbook.name }}
-            </p>
-            <p class="text-muted small">
+                &middot;
                 <i class="fa-solid fa-clock"></i> Updated {{ skill.updated_at|timesince }} ago
             </p>
         </div>
         {% if can_edit %}
         <div class="btn-group">
-            <a href="{% url 'skill_edit' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+            <a href="{% url 'skill_edit' playbook_pk=playbook.pk skill_pk=skill.pk %}"
                class="btn btn-primary"
-               data-testid="edit-skill-btn">
+               data-testid="edit-skill-btn"
+               data-bs-toggle="tooltip"
+               title="Edit this skill's title, metadata, and content">
                 <i class="fa-solid fa-edit"></i> Edit Skill
             </a>
             <button type="button"
                     class="btn btn-outline-danger"
                     data-testid="delete-skill-btn"
-                    hx-get="{% url 'skill_delete_confirm' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                    data-bs-toggle="tooltip"
+                    title="Delete this skill permanently"
+                    hx-get="{% url 'skill_delete_confirm' playbook_pk=playbook.pk skill_pk=skill.pk %}"
                     hx-target="#skill-delete-modal-container"
                     hx-swap="innerHTML">
                 <i class="fa-solid fa-trash"></i> Delete
@@ -74,6 +77,36 @@
         </div>
     </div>
 
+    <!-- Activities referencing this skill -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fa-solid fa-tasks"></i> Activities Using This Skill
+                <span class="badge bg-secondary ms-2" data-testid="activity-count">{{ activities|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body" data-testid="activities-section">
+            {% if activities %}
+            <ul class="list-group list-group-flush">
+                {% for act in activities %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=act.workflow.pk activity_pk=act.pk %}">
+                            <i class="fa-solid fa-tasks text-primary"></i> {{ act.name }}
+                        </a>
+                        <small class="text-muted ms-2">
+                            <i class="fa-solid fa-sitemap"></i> {{ act.workflow.name }}
+                        </small>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted mb-0">No activities are currently linked to this skill.</p>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Metadata -->
     <div class="card mb-4">
         <div class="card-header">
@@ -81,12 +114,10 @@
         </div>
         <div class="card-body">
             <dl class="row mb-0">
-                <dt class="col-sm-3">Activity:</dt>
-                <dd class="col-sm-9">
-                    <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}">
-                        {{ activity.name }}
-                    </a>
-                </dd>
+                <dt class="col-sm-3">Capability Domain:</dt>
+                <dd class="col-sm-9">{{ skill.capability_domain|default:"—" }}</dd>
+                <dt class="col-sm-3">Technology Stack:</dt>
+                <dd class="col-sm-9">{{ skill.technology_stack|default:"—" }}</dd>
                 <dt class="col-sm-3">Created:</dt>
                 <dd class="col-sm-9">{{ skill.created_at|timesince }} ago</dd>
                 <dt class="col-sm-3">Updated:</dt>
@@ -94,23 +125,6 @@
             </dl>
         </div>
     </div>
-
-    {% else %}
-    <!-- No skill yet — create CTA -->
-    <div class="card border-0 shadow-sm" data-testid="create-skill-cta">
-        <div class="card-body text-center py-5">
-            <i class="fa-solid fa-graduation-cap fa-4x text-muted mb-3"></i>
-            <h4 class="text-muted">No skill guide yet</h4>
-            <p class="text-muted">Add step-by-step guidance for "{{ activity.name }}".</p>
-            {% if can_edit %}
-            <a href="{% url 'skill_create' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
-               class="btn btn-primary mt-3">
-                <i class="fa-solid fa-plus"></i> Create Skill Guide
-            </a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 <div id="skill-delete-modal-container"></div>

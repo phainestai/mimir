@@ -10,33 +10,28 @@
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
             <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'skill_list_playbook' playbook_pk=playbook.pk %}">Skills</a></li>
             <li class="breadcrumb-item">
-                <a href="{% url 'workflow_detail' playbook_pk=playbook.pk pk=workflow.pk %}">{{ workflow.name }}</a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}">{{ activity.name }}</a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="{% url 'skill_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}">{{ skill.title }}</a>
+                <a href="{% url 'skill_detail' playbook_pk=playbook.pk skill_pk=skill.pk %}">{{ skill.title }}</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">Edit</li>
         </ol>
     </nav>
 
     <h2><i class="fa-solid fa-edit"></i> Edit Skill</h2>
-    <p class="text-muted">Editing skill for <strong>{{ activity.name }}</strong></p>
+    <p class="text-muted">Editing skill in <strong>{{ playbook.name }}</strong></p>
 
     <div class="card">
         <div class="card-body">
             <form method="post"
-                  action="{% url 'skill_edit' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                  action="{% url 'skill_edit' playbook_pk=playbook.pk skill_pk=skill.pk %}"
                   data-testid="skill-form">
                 {% csrf_token %}
 
                 <!-- Title -->
                 <div class="mb-3">
                     <label for="title" class="form-label">
-                        Title <span class="text-danger">*</span>
+                        <strong>Title</strong> <span class="text-danger">*</span>
                     </label>
                     <input type="text"
                            class="form-control {% if errors.title %}is-invalid{% endif %}"
@@ -49,6 +44,54 @@
                     {% if errors.title %}
                     <div class="invalid-feedback" data-testid="title-error">{{ errors.title }}</div>
                     {% endif %}
+                </div>
+
+                <!-- Capability Domain -->
+                <div class="mb-3">
+                    <label for="capability_domain" class="form-label">
+                        Capability Domain
+                        <i class="fa-solid fa-info-circle text-muted"
+                           data-bs-toggle="tooltip"
+                           title="What capability this skill covers, e.g. GUI_FORM, API_CRUD, DB_MIGRATION"></i>
+                    </label>
+                    <input type="text"
+                           class="form-control"
+                           id="capability_domain"
+                           name="capability_domain"
+                           maxlength="100"
+                           value="{{ form_data.capability_domain|default:'' }}"
+                           list="domain-suggestions"
+                           data-testid="domain-input"
+                           placeholder="e.g. GUI_FORM">
+                    <datalist id="domain-suggestions">
+                        {% for d in domains %}
+                        <option value="{{ d }}">
+                        {% endfor %}
+                    </datalist>
+                </div>
+
+                <!-- Technology Stack -->
+                <div class="mb-3">
+                    <label for="technology_stack" class="form-label">
+                        Technology Stack
+                        <i class="fa-solid fa-info-circle text-muted"
+                           data-bs-toggle="tooltip"
+                           title="Technology used, e.g. React+Redux, Django+HTMX, FastAPI"></i>
+                    </label>
+                    <input type="text"
+                           class="form-control"
+                           id="technology_stack"
+                           name="technology_stack"
+                           maxlength="100"
+                           value="{{ form_data.technology_stack|default:'' }}"
+                           list="stack-suggestions"
+                           data-testid="stack-input"
+                           placeholder="e.g. React+Redux">
+                    <datalist id="stack-suggestions">
+                        {% for s in stacks %}
+                        <option value="{{ s }}">
+                        {% endfor %}
+                    </datalist>
                 </div>
 
                 <!-- Content -->
@@ -73,12 +116,16 @@
                 <div class="d-flex gap-2">
                     <button type="submit"
                             class="btn btn-primary"
-                            data-testid="save-btn">
+                            data-testid="save-btn"
+                            data-bs-toggle="tooltip"
+                            title="Save changes to this skill">
                         <i class="fa-solid fa-save"></i> Save Changes
                     </button>
-                    <a href="{% url 'skill_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                    <a href="{% url 'skill_detail' playbook_pk=playbook.pk skill_pk=skill.pk %}"
                        class="btn btn-outline-secondary"
-                       data-testid="cancel-btn">
+                       data-testid="cancel-btn"
+                       data-bs-toggle="tooltip"
+                       title="Discard changes and return to skill details">
                         <i class="fa-solid fa-times"></i> Cancel
                     </a>
                 </div>

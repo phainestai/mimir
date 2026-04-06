@@ -10,5 +10,5 @@ urlpatterns = [
     path('<int:activity_pk>/', activity_views.activity_detail, name='activity_detail'),
     path('<int:activity_pk>/edit/', activity_views.activity_edit, name='activity_edit'),
     path('<int:activity_pk>/delete/', activity_views.activity_delete, name='activity_delete'),
-    path('<int:activity_pk>/skill/', include('methodology.skill_urls')),
+
 ]

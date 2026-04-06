@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Skills - {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="skills-list">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Skills</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 data-testid="skills-header">
+                <i class="fa-solid fa-graduation-cap"></i> Skills in {{ playbook.name }}
+            </h2>
+            <p class="text-muted">Reusable tech-specific guidance for this playbook</p>
+        </div>
+        {% if can_edit %}
+        <a href="{% url 'skill_create' playbook_pk=playbook.pk %}"
+           class="btn btn-primary"
+           data-testid="create-skill-btn"
+           data-bs-toggle="tooltip"
+           title="Create a new skill in this playbook">
+            <i class="fa-solid fa-plus"></i> Create Skill
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Search + Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" action="{% url 'skill_list_playbook' playbook_pk=playbook.pk %}">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <input type="text"
+                               class="form-control"
+                               name="q"
+                               value="{{ query }}"
+                               placeholder="Search skills..."
+                               data-testid="skill-search">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="domain" data-testid="domain-filter">
+                            <option value="">All Domains</option>
+                            {% for d in domains %}
+                            <option value="{{ d }}" {% if d == domain_filter %}selected{% endif %}>{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="stack" data-testid="stack-filter">
+                            <option value="">All Stacks</option>
+                            {% for s in stacks %}
+                            <option value="{{ s }}" {% if s == stack_filter %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex gap-1">
+                        <button class="btn btn-outline-secondary flex-grow-1" type="submit"
+                                data-bs-toggle="tooltip" title="Apply filters">
+                            <i class="fa-solid fa-search"></i> Search
+                        </button>
+                        {% if query or domain_filter or stack_filter or unlinked_only %}
+                        <a href="{% url 'skill_list_playbook' playbook_pk=playbook.pk %}"
+                           class="btn btn-outline-danger"
+                           data-bs-toggle="tooltip" title="Clear all filters">
+                            <i class="fa-solid fa-times"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if skills %}
+    <!-- Skills table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fa-solid fa-list"></i> Skills
+                <span class="badge bg-secondary ms-2">{{ skills|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0" data-testid="skills-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Title</th>
+                        <th>Capability Domain</th>
+                        <th>Technology Stack</th>
+                        <th>Activities</th>
+                        <th style="width: 10%">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for skill in skills %}
+                    <tr data-testid="skill-row-{{ skill.id }}">
+                        <td>
+                            <a href="{% url 'skill_detail' playbook_pk=playbook.pk skill_pk=skill.pk %}">
+                                <i class="fa-solid fa-graduation-cap text-primary"></i>
+                                <strong>{{ skill.title }}</strong>
+                            </a>
+                        </td>
+                        <td>
+                            {% if skill.capability_domain %}
+                            <span class="badge bg-info text-dark" data-testid="domain-badge">{{ skill.capability_domain }}</span>
+                            {% else %}
+                            <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if skill.technology_stack %}
+                            <span class="badge bg-success" data-testid="stack-badge">{{ skill.technology_stack }}</span>
+                            {% else %}
+                            <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary" data-testid="activity-count">{{ skill.activity_count }}</span>
+                        </td>
+                        <td>
+                            <a href="{% url 'skill_detail' playbook_pk=playbook.pk skill_pk=skill.pk %}"
+                               class="btn btn-outline-primary btn-sm"
+                               data-testid="view-skill-{{ skill.id }}"
+                               data-bs-toggle="tooltip" title="View skill details">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Empty state -->
+    <div class="card border-0 shadow-sm" data-testid="empty-state">
+        <div class="card-body text-center py-5">
+            <i class="fa-solid fa-graduation-cap fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No skills yet</h4>
+            {% if query or domain_filter or stack_filter %}
+            <p class="text-muted">No skills match your filters.</p>
+            <a href="{% url 'skill_list_playbook' playbook_pk=playbook.pk %}" class="btn btn-outline-secondary mt-2">
+                <i class="fa-solid fa-times"></i> Clear filters
+            </a>
+            {% else %}
+            <p class="text-muted">Create reusable skills to provide tech-specific guidance for activities.</p>
+            {% if can_edit %}
+            <a href="{% url 'skill_create' playbook_pk=playbook.pk %}"
+               class="btn btn-primary mt-3"
+               data-testid="create-skill-btn">
+                <i class="fa-solid fa-plus"></i> Create First Skill
+            </a>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
