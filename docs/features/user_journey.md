@@ -1467,7 +1467,7 @@ From FOB-WORKFLOWS-VIEW_WORKFLOW-1, Maria clicks [View Activities]:
   - [View] → FOB-ACTIVITIES-VIEW_ACTIVITY
   - [Edit] → FOB-ACTIVITIES-EDIT_ACTIVITY
   - [Delete] → FOB-ACTIVITIES-DELETE_ACTIVITY
-  - [Add Skill] → ACT 8
+  - [Link Skill] → ACT 8 (select from playbook-scoped skills)
   - [Link Artifacts] → ACT 6
 - **Dependency Visualization**:
   - DAG showing activity flow
@@ -1513,17 +1513,17 @@ Maria clicks [Create New Activity]:
   - Can specify multiple artifacts
 - **Estimated Effort**: Optional
   - Hours or story points
-- **Create Skill**: Checkbox
-  - "Create detailed guide for this activity?"
-  - If checked: Redirects to ACT 8 after creation
+- **Link Skill**: Dropdown (optional)
+  - Shows skills from the same playbook
+  - "None" option if no skill applies
+  - [Create New Skill] link → ACT 8 if needed skill doesn't exist
 
 **Actions**: [Cancel] [Create Activity]
 
 **Success Flow**:
 - Activity created in workflow
 - Success: "Activity 'Design Token Integration' created"
-- If "Create Skill" checked: Redirects to FOB-SKILLS-CREATE_SKILL
-- Otherwise: Redirects to FOB-ACTIVITIES-VIEW_ACTIVITY-1
+- Redirects to FOB-ACTIVITIES-VIEW_ACTIVITY-1
 
 ---
 
@@ -1566,10 +1566,10 @@ Maria views activity details:
    - [Add New Artifact] [Link Existing] buttons
 
 4. **Skill Tab**:
-   - Detailed guide for performing this activity
-   - If no skill: "No detailed guide yet" with [Create Skill] button
-   - If exists: Full skill content (see ACT 8)
-   - [Edit Skill] button → ACT 8
+   - Shows linked skill (if any) with Capability Domain and Technology Stack badges
+   - If no skill linked: "No skill linked" with [Link Skill] dropdown
+   - If linked: Skill title, content preview, [View Skill] link → ACT 8
+   - [Change Skill] / [Unlink Skill] buttons
 
 5. **Work Items Tab**:
    - GitHub issues, Jira tickets linked via external MCP
@@ -1610,7 +1610,7 @@ Confirmation modal:
 **Impact Statement**:
 - "This will permanently delete the activity"
 - Shows affected items:
-  - ✗ 1 Skill guide
+  - ⚠️ Linked skill reference will be cleared (skill itself remains in playbook)
   - ⚠️ 2 Downstream activities will lose upstream dependency
   - ⚠️ 3 Artifacts may become orphaned
   - ⚠️ 5 GitHub issues will lose activity context
@@ -1869,124 +1869,122 @@ Confirmation:
 
 ---
 
-### Act 8: SKILLS - Complete CRUDLF
+### Act 8: SKILLS - Complete CRUDLF + Link
 
-**Context**: Skills are detailed guides for performing activities. Each activity can have one skill providing step-by-step instructions, best practices, and examples. This is 1:1 relationship with activities.
+**Context**: Skills are reusable, tech-specific guides that live at the **playbook level**. Each skill describes *how* to perform a capability (e.g., "Build a Form") using a specific technology (e.g., "React+Redux"). Activities reference skills via a nullable FK — one skill can serve many activities (1:N). Skills carry two metadata fields: `capability_domain` (what it does) and `technology_stack` (how it does it). This enables the "Define Architecture" workflow to scan available skills and recommend tech stacks based on coverage.
 
-**Pattern**: Standard CRUDLF. Skills are tightly coupled to activities (1:1).
+**Pattern**: Standard CRUDLF + Link. Skills are playbook-scoped and reusable across activities.
+
+**Relationship**: `Skill --FK--> Playbook`, `Activity --FK(nullable)--> Skill` (1:N)
 
 #### Screen: FOB-SKILLS-LIST+FIND-1
 
-Maria navigates to Skills:
+Maria navigates to Skills from the playbook detail page:
 
 **Layout**:
-- **Header**: "Skills" (Activity Guides)
-- **Scope**: Current workflow or all workflows
+- **Header**: "Skills in [Playbook Name]"
+- **Scope**: Playbook-scoped — shows all skills in the current playbook
 - **Filters**:
-  - Activities with skills / Activities without skills
-  - By workflow, by role
+  - By Capability Domain (autocomplete from existing values)
+  - By Technology Stack (autocomplete from existing values)
+  - Unlinked (skills with zero activity references)
+- **Search**: Matches title, capability_domain, technology_stack, and content
 - **Skills Table**:
-  - Activity Name | Skill Title | Last Updated | Completeness | Actions
-  - Completeness: Has steps, best practices, examples (badges)
+  - Title | Capability Domain | Technology Stack | Activities (count) | Actions
 - **Row Actions**: [View] [Edit] [Delete]
-- **Special View**:
-  - "Activities Without Skills" section
-  - Shows activities that need guides
-  - [Create Skill] button per activity
+- **Create**: [Create New Skill] button
 
 **Example Data**:
-- Activity: "Setup Component Structure" | Skill: "Component Setup Guide" | Complete ✓
-- Activity: "Implement State Management" | Skill: "Redux Integration Guide" | Missing examples ⚠️
+- "React Form Component" | GUI_FORM | React+Redux | 3 activities
+- "Django CRUD View" | API_CRUD | Django+HTMX | 5 activities
+- "DB Migration Script" | DB_MIGRATION | Alembic | 0 activities (unlinked)
 
 ---
 
 #### Screen: FOB-SKILLS-CREATE_SKILL-1
 
-Maria clicks [Create Skill] for an activity:
+Maria clicks [Create New Skill] from the playbook skills list:
 
 **Form**:
-- **Parent Activity**: Read-only (already selected)
-  - Shows: "Creating skill for: Setup Component Structure"
-- **Skill Title**: Text input
-  - Default: "[Activity Name] - Guide"
-  - Example: "Component Structure Setup - Complete Guide"
-- **Steps**: Rich text editor with numbered list
-  - Example:
-    1. Create /src/components directory
-    2. Set up component folder structure
-    3. Add index files for exports
-  - Supports: Markdown, code blocks, checkboxes
-- **Best Practices**: Rich text editor
-  - Tips and recommendations
-  - Common pitfalls to avoid
-- **Examples**: Rich text with code blocks
-  - Sample code, screenshots, references
-- **Prerequisites**: Text area
-  - What needs to be done before this activity
-- **Tools Required**: List
-  - Software, access, credentials needed
-- **References**: URLs
-  - Links to documentation, articles, videos
+- **Playbook Context**: Read-only badge showing parent playbook
+  - Shows: "Create Skill in [Playbook Name]"
+- **Title**: Text input (required)
+  - Example: "React Form Component"
+- **Capability Domain**: Text input with autocomplete from existing values
+  - Example: "GUI_FORM", "API_CRUD", "DB_MIGRATION"
+  - New values allowed (free-text tags)
+- **Technology Stack**: Text input with autocomplete from existing values
+  - Example: "React+Redux", "Django+HTMX", "FastAPI"
+  - New values allowed (free-text tags)
+- **Content**: Markdown editor
+  - Step-by-step guidance, code blocks, examples, best practices
+  - Supports: headings, bold, italic, lists, code blocks, links
 
 **Actions**: [Cancel] [Create Skill]
 
-**Success**: Skill created and linked to activity (1:1)
+**Success**: Skill created in playbook → redirects to FOB-SKILLS-VIEW_SKILL-1
 
 ---
 
 #### Screen: FOB-SKILLS-VIEW_SKILL-1
 
-View skill guide (also accessible from Activity view):
+View skill details:
 
 **Layout**:
 - **Header**: Skill title
-- **Parent Activity**: Link to FOB-ACTIVITIES-VIEW_ACTIVITY
-- **Content Sections**:
-  1. **Steps**: Numbered, detailed instructions
-  2. **Best Practices**: Tips and recommendations
-  3. **Examples**: Code samples, screenshots
-  4. **Prerequisites**: What's needed first
-  5. **Tools**: Required software/access
-  6. **References**: External links
+- **Metadata Badges**: Capability Domain, Technology Stack, parent Playbook
+- **Content**: Rendered Markdown (headings, code blocks, lists, etc.)
+- **Referenced by Activities (N)**: List of activity names with workflow context
+  - Each activity link navigates to FOB-ACTIVITIES-VIEW_ACTIVITY-1
 - **Actions**:
   - [Edit Skill]
-  - [Print/Export PDF]
-  - [Copy to Clipboard]
-  - [Share Link]
-- **Breadcrumb**: Playbooks > [Playbook] > Workflows > [Workflow] > Activities > [Activity] > Skill
+  - [Delete Skill]
+- **Breadcrumb**: Playbooks > [Playbook] > Skills > [Skill Title]
 
 ---
 
 #### Screen: FOB-SKILLS-EDIT_SKILL-1
 
-Edit skill: Full rich text editing of all sections
+Edit skill: All fields editable (Title, Capability Domain, Technology Stack, Content)
 
-**Auto-save**: Drafts saved automatically every 30 seconds
+**Pre-populated**: All fields filled with current values
 
-**Version History**: Track changes to skill over time
+**Autocomplete**: Capability Domain and Technology Stack suggest existing values from the playbook
 
 ---
 
 #### Screen: FOB-SKILLS-DELETE_SKILL-1
 
-Confirmation:
+Confirmation modal:
 
-**Impact**: "Activity 'Setup Component Structure' will no longer have a detailed guide"
+**Display**: Skill title, Capability Domain badge, Technology Stack badge
 
-**Note**: "Activity will remain, only the skill guide is deleted"
+**Impact**: "Referenced by N activities — these activities will have their skill reference cleared"
 
-**Confirmation**: Type skill title
+**Note**: "Activities will remain, only the skill and its references are removed"
+
+---
+
+#### Linking: Activity ↔ Skill (via Activity Edit)
+
+Skills are linked to activities through the Activity edit form:
+- **Skill dropdown**: Shows only skills from the same playbook
+- **Nullable**: Activities can have no skill linked ("None" option)
+- **Reusable**: Multiple activities can reference the same skill
+
+**See**: `skills-link.feature` for full scenarios.
 
 ---
 
 **Act 8 Summary**: Maria manages skills:
-- ✅ **LIST+FIND**: Browse activity guides, identify gaps
-- ✅ **CREATE**: Write detailed step-by-step guides
-- ✅ **VIEW**: Read complete activity instructions
-- ✅ **EDIT**: Update and improve guides
-- ✅ **DELETE**: Remove guides (activities remain)
+- ✅ **LIST+FIND**: Browse playbook skills with capability/tech filters
+- ✅ **CREATE**: Create reusable, tech-specific skill guides at playbook level
+- ✅ **VIEW**: Read skill content with metadata badges and activity references
+- ✅ **EDIT**: Update skill details including capability and tech stack metadata
+- ✅ **DELETE**: Remove skills (activities keep running, skill FK set to NULL)
+- ✅ **LINK**: Link/unlink skills to activities via Activity edit form
 
-**Key Point**: 1:1 relationship with activities - each activity has at most one skill.
+**Key Point**: 1:N relationship — one skill can serve many activities. Skills are playbook-scoped and carry `capability_domain` + `technology_stack` metadata for architecture advisory.
 
 ---
 
