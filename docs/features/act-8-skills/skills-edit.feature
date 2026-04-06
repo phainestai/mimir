@@ -3,6 +3,10 @@ Feature: FOB-SKILLS-EDIT_SKILL-1 Edit Skill
   I want to edit skill details including capability and tech stack metadata
   So that I can keep guidance documentation accurate and properly categorized
 
+  Status: ✅ DONE - GUI CRUD implemented
+  Branch: feature/skill-capability-metadata (merged to main)
+  Related: act-13-mcp/interact-with-skills-via-mcp
+
   Background:
     Given Maria is authenticated in FOB
     And she owns playbook "React Frontend v1.2"

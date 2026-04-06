@@ -3,6 +3,10 @@ Feature: FOB-AGENTS-VIEW_AGENT-1 View Agent Details
   I want to view agent details
   So that I can understand agent capabilities and guidelines
 
+  Status: ✅ DONE - GUI CRUD implemented
+  Branch: feature/skill-capability-metadata (merged to main)
+  Related: act-13-mcp/interact-with-agents-via-mcp
+
   Background:
     Given Maria is authenticated in FOB
     And she is viewing agent "Cautious Developer (drdobbs-v2)"

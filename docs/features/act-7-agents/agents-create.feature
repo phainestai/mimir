@@ -3,6 +3,10 @@ Feature: FOB-AGENTS-CREATE_AGENT-1 Create Agent
   I want to create agents within a playbook
   So that I can define AI assistants that perform activities
 
+  Status: ✅ DONE - GUI CRUD implemented
+  Branch: feature/skill-capability-metadata (merged to main)
+  Related: act-13-mcp/interact-with-agents-via-mcp
+
   Background:
     Given Maria is authenticated in FOB
     And she is viewing playbook "React Frontend v1.2"

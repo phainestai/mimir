@@ -3,6 +3,10 @@ Feature: FOB-SKILLS-CREATE_SKILL-1 Create Skill
   I want to create reusable, tech-specific skills within a playbook
   So that activities can reference them for step-by-step guidance
 
+  Status: ✅ DONE - GUI CRUD implemented
+  Branch: feature/skill-capability-metadata (merged to main)
+  Related: act-13-mcp/interact-with-skills-via-mcp
+
   Background:
     Given Maria is authenticated in FOB
     And she owns playbook "React Frontend v1.2"

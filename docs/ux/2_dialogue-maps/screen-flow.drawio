@@ -996,22 +996,22 @@
                 <mxCell id="v2-tool-skills-label" value="@tools" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="100" y="2550" width="50" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-create-skill" value="@create_skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-create-skill" value="✅ @create_skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="170" y="2550" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-get-skill" value="@get_skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-get-skill" value="✅ @get_skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="290" y="2550" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-update-skill" value="@update_skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-update-skill" value="✅ @update_skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="410" y="2550" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-delete-skill" value="@delete_skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-delete-skill" value="✅ @delete_skill" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="530" y="2550" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-list-skills" value="@list_skills" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-list-skills" value="✅ @list_skills" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="170" y="2590" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-find-skills" value="@find_skills" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-find-skills" value="✅ @find_skills" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="290" y="2590" width="110" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="v2-extends-ht-create" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-skills-list" target="v2-fob-skills-create" edge="1">
@@ -1050,22 +1050,22 @@
                 <mxCell id="v2-tool-agents-label" value="@tools" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="100" y="2900" width="50" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-create-agent" value="@create_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-create-agent" value="✅ @create_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="170" y="2900" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-get-agent" value="@get_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-get-agent" value="✅ @get_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="290" y="2900" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-update-agent" value="@update_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-update-agent" value="✅ @update_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="410" y="2900" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-delete-agent" value="@delete_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-delete-agent" value="✅ @delete_agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="530" y="2900" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-list-agents" value="@list_agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-list-agents" value="✅ @list_agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="170" y="2940" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-find-agents" value="@find_agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-find-agents" value="✅ @find_agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="290" y="2940" width="110" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="v2-extends-ag-create" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-agents-list" target="v2-fob-agents-create" edge="1">

@@ -3,6 +3,10 @@ Feature: FOB-SKILLS-LIST+FIND-1 Skills List and Search
   I want to view and search skills within a playbook
   So that I can manage reusable, tech-specific guidance and see which capabilities are covered
 
+  Status: ✅ DONE - GUI CRUD implemented
+  Branch: feature/skill-capability-metadata (merged to main)
+  Related: act-13-mcp/interact-with-skills-via-mcp
+
   Background:
     Given Maria is authenticated in FOB
     And she is viewing playbook "React Frontend v1.2"

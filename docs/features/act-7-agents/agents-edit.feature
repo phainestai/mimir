@@ -3,6 +3,10 @@ Feature: FOB-AGENTS-EDIT_AGENT-1 Edit Agent
   I want to edit agent details
   So that I can update agent capabilities and guidelines
 
+  Status: ✅ DONE - GUI CRUD implemented
+  Branch: feature/skill-capability-metadata (merged to main)
+  Related: act-13-mcp/interact-with-agents-via-mcp
+
   Background:
     Given Maria is authenticated in FOB
     And she owns playbook "React Frontend v1.2"

@@ -3,6 +3,8 @@ Feature: FOB-MCP-1 MCP Integration and Tools
   I want to use MCP tools with playbooks
   So that I can enhance methodology with AI assistance
 
+  Status: 🔮 FUTURE - GUI integration not yet implemented (MCP tools work via Windsurf only)
+
   Background:
     Given Maria is authenticated in FOB
     And she has MCP server configured

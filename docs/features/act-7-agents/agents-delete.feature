@@ -3,6 +3,10 @@ Feature: FOB-AGENTS-DELETE_AGENT-1 Delete Agent
   I want to delete agents
   So that I can remove obsolete AI assistant definitions
 
+  Status: ✅ DONE - GUI CRUD implemented
+  Branch: feature/skill-capability-metadata (merged to main)
+  Related: act-13-mcp/interact-with-agents-via-mcp
+
   Background:
     Given Maria is authenticated in FOB
     And she owns playbook "React Frontend v1.2"

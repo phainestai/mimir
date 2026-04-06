@@ -3,6 +3,10 @@ Feature: FOB-SKILLS-LINK_SKILL-1 Link and Unlink Skills to Activities
   I want to link reusable skills to activities
   So that each activity has tech-specific guidance and I can reuse skills across multiple activities
 
+  Status: ✅ DONE - Link/unlink via MCP implemented
+  Branch: feature/skill-capability-metadata (merged to main)
+  Related: act-13-mcp/interact-with-skills-via-mcp
+
   Background:
     Given Maria is authenticated in FOB
     And she owns playbook "React Frontend v1.2"

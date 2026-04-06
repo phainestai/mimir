@@ -3,6 +3,10 @@ Feature: FOB-SKILLS-DELETE_SKILL-1 Delete Skill
   I want to delete skills
   So that I can remove obsolete or replaced guidance
 
+  Status: ✅ DONE - GUI CRUD implemented
+  Branch: feature/skill-capability-metadata (merged to main)
+  Related: act-13-mcp/interact-with-skills-via-mcp
+
   Background:
     Given Maria is authenticated in FOB
     And she owns playbook "React Frontend v1.2"
