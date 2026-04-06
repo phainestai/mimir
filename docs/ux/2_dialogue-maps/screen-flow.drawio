@@ -945,23 +945,26 @@
                 <mxCell id="v2-tool-artifacts-label" value="@tools" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=9;fontStyle=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="100" y="2200" width="50" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-create-artifact" value="@create_artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-create-artifact" value="@create_artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="170" y="2200" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-get-artifact" value="@get_artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-get-artifact" value="@get_artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="290" y="2200" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-update-artifact" value="@update_artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-update-artifact" value="@update_artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="410" y="2200" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-delete-artifact" value="@delete_artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-delete-artifact" value="@delete_artifact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="530" y="2200" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-list-artifacts" value="@list_artifacts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-list-artifacts" value="@list_artifacts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="170" y="2240" width="110" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="v2-tool-find-artifacts" value="@find_artifacts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=8;fontColor=#000000;dashed=1;dashPattern=2 2;" parent="v2-root-1" vertex="1">
+                <mxCell id="v2-tool-link-artifact" value="@link_artifact_to_activity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="290" y="2240" width="110" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="v2-tool-unlink-artifact" value="@unlink_artifact_from_activity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#22c55e;fontSize=8;fontColor=#000000;strokeWidth=2;" parent="v2-root-1" vertex="1">
+                    <mxGeometry x="410" y="2240" width="110" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="v2-extends-ar-create" value="«extends»" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#666666;dashed=1;dashPattern=3 3;fontSize=9;fontColor=#666666;" parent="v2-root-1" source="v2-fob-artifacts-list" target="v2-fob-artifacts-create" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
