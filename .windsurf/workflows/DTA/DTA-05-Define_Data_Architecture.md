@@ -77,7 +77,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Data architecture decision (section for SAO.md)
+- Data architecture decision → contributes to `artifacts/sao_document_template.md` § "4. Data Architecture"
 
 ## Artifacts Consumed
 

@@ -84,7 +84,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Developer experience decision (section for SAO.md)
+- Developer experience decision → contributes to `artifacts/sao_document_template.md` § "15. Developer Experience"
 
 ## Artifacts Consumed
 

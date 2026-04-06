@@ -89,7 +89,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Code organization decision (section for SAO.md)
+- Code organization decision → contributes to `artifacts/sao_document_template.md` § "3. Code Organization"
 
 ## Artifacts Consumed
 

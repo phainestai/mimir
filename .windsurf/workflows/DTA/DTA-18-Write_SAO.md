@@ -126,6 +126,23 @@ Machine-readable table consumed by Bootstrap Project (BSP) for automated provisi
 
 ## Key Decisions with Rationale
 [Summary table of all major decisions with "why" for each]
+
+## Discovered Patterns & Lessons Learned
+[Reserved section — populated during and after implementation]
+
+### Critical Discoveries
+For each significant discovery during implementation:
+- **Context**: What was being built/integrated
+- **Problem**: What didn't work as expected
+- **Solution**: The pattern/workaround adopted
+- **Key Lessons**: Numbered list of takeaways
+
+### Retrospective Updates
+Track SAO sections that were updated post-implementation:
+- **Section**: Which SAO section was affected
+- **Original Decision**: What was decided during DTA
+- **What Changed**: How implementation reality differed
+- **Updated Decision**: The revised architectural stance
 ```
 
 ### 3. Skill Gap Analysis
@@ -147,6 +164,15 @@ For each gap: estimated impact on project timeline and cost.
 - Discuss any open questions or trade-offs
 - Get explicit approval before proceeding to Bootstrap Project
 
+### 5. Post-Implementation Updates
+
+The SAO is a **living document**. During and after implementation, update it with:
+- **Critical discoveries** — integration pitfalls, framework quirks, workarounds that became patterns
+- **Retrospective corrections** — where DTA decisions proved wrong or incomplete and were revised
+- **Implementation patterns** — recurring code/architecture patterns that emerged and should be standardized
+
+Each update should reference the original DTA decision and explain what changed and why.
+
 ---
 
 ## Deliverables
@@ -160,7 +186,7 @@ For each gap: estimated impact on project timeline and cost.
 
 ## Artifacts Produced
 
-- `docs/architecture/SAO.md`
+- `docs/architecture/SAO.md` — created from template `artifacts/sao_document_template.md`
 
 ## Artifacts Consumed
 

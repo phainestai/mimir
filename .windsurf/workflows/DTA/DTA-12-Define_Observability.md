@@ -84,7 +84,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Observability decision (section for SAO.md)
+- Observability decision → contributes to `artifacts/sao_document_template.md` § "11. Observability"
 
 ## Artifacts Consumed
 

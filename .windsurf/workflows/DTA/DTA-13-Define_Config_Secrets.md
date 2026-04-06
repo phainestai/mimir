@@ -78,7 +78,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Config & secrets decision (section for SAO.md)
+- Config & secrets decision → contributes to `artifacts/sao_document_template.md` § "12. Config & Secrets"
 
 ## Artifacts Consumed
 

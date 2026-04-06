@@ -81,7 +81,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Documentation strategy decision (section for SAO.md)
+- Documentation strategy decision → contributes to `artifacts/sao_document_template.md` § "16. Documentation Strategy"
 
 ## Artifacts Consumed
 

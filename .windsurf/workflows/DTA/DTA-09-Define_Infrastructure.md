@@ -77,7 +77,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Infrastructure decision (section for SAO.md)
+- Infrastructure decision → contributes to `artifacts/sao_document_template.md` § "8. Infrastructure"
 
 ## Artifacts Consumed
 

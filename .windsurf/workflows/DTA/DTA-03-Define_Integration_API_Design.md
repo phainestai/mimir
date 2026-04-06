@@ -60,7 +60,19 @@ If multiple services/processes exist:
 - **Shared Database** — Both processes read/write same DB. Simple but limits scaling.
 - **File-based** — Export/import via files. Simple for batch scenarios.
 
-### 6. Scan Skills
+### 6. Implementation Patterns (document during/after implementation)
+
+For each chosen API style, document recurring implementation patterns as they emerge:
+
+- **Service-to-transport mapping** — How business logic maps to API endpoints/tools. Example: thin controller/tool wrapping a service method.
+- **Sync/async boundary** — If the API layer is async but business logic is sync (or vice versa), document the bridging pattern and any pitfalls discovered.
+- **Protocol-specific constraints** — Transport-layer constraints that affect architecture. Examples: stdio pollution in MCP, CORS in REST, N+1 in GraphQL.
+- **Shared service layer** — If multiple transports (e.g., web UI + API + MCP) share business logic, document how the service layer is structured to serve all consumers.
+- **Error propagation** — How errors from the service layer translate to API responses per transport (HTTP status codes, MCP error objects, gRPC status codes).
+
+> **Note**: This subsection starts as placeholder during DTA. Populate it during implementation and feed findings back into SAO.md via the "Discovered Patterns" section (DTA-18).
+
+### 7. Scan Skills
 
 Query Playbook Skills where `capability_domain` in:
 - `API_REST`
@@ -79,12 +91,13 @@ Report coverage and gaps.
 - ✅ **Contract approach** selected
 - ✅ **External integrations** identified and patterns defined
 - ✅ **Inter-service communication** model chosen (if applicable)
+- ✅ **Implementation patterns** placeholder created (populated during/after implementation)
 - ✅ **Skill coverage** assessed for this domain
 - ✅ **Decision recorded** for inclusion in SAO.md (DTA-18)
 
 ## Artifacts Produced
 
-- Integration & API design decision (section for SAO.md)
+- Integration & API design decision → contributes to `artifacts/sao_document_template.md` § "2. Integration & API Design"
 
 ## Artifacts Consumed
 

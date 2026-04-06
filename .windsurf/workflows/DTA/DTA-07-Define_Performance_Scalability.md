@@ -92,7 +92,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Performance & scalability decision (section for SAO.md)
+- Performance & scalability decision → contributes to `artifacts/sao_document_template.md` § "6. Performance & Scalability"
 
 ## Artifacts Consumed
 

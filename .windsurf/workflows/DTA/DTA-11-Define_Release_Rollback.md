@@ -72,7 +72,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Release & rollback decision (section for SAO.md)
+- Release & rollback decision → contributes to `artifacts/sao_document_template.md` § "10. Release & Rollback"
 
 ## Artifacts Consumed
 

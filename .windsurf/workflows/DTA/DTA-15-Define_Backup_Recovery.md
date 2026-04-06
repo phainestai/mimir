@@ -76,7 +76,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Backup & recovery decision (section for SAO.md)
+- Backup & recovery decision → contributes to `artifacts/sao_document_template.md` § "14. Backup & Recovery"
 
 ## Artifacts Consumed
 

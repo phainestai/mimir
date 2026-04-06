@@ -99,7 +99,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Security decision (section for SAO.md)
+- Security decision → contributes to `artifacts/sao_document_template.md` § "13. Security"
 
 ## Artifacts Consumed
 

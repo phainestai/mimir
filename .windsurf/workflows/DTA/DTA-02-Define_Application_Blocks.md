@@ -63,20 +63,57 @@ Choose one:
 - **Batch Processing** — Scheduled jobs processing data in bulk. Best for: data pipelines, ETL.
 - **Hybrid** — Combine patterns (e.g., MVC for web + event-driven for async).
 
-### 4. Scan Skills
+### 3a. UI Architecture Patterns (if system has a web/desktop UI)
+
+Define the presentation layer architecture:
+
+**Rendering model**:
+- **Server-rendered** — HTML generated on server (Django templates, Jinja2). Best for: testability, SEO, minimal JS.
+- **SPA** — Single Page Application (React, Vue, Svelte). Best for: rich interactivity, complex state.
+- **Hybrid** — Server-rendered with progressive enhancement (HTMX, Alpine.js, Turbo). Best for: server-side simplicity with dynamic UX.
+
+**Layout pattern**:
+- **Single-panel** — One main content area. Best for: simple CRUD, mobile-first.
+- **Multi-panel** — Split layout (navigation + content + detail). Best for: explorer-style UIs, dashboards.
+- **Wizard/stepper** — Sequential steps. Best for: complex forms, onboarding.
+
+**Component interaction model**:
+- **Full page reload** — Traditional links/forms. Simplest, most testable.
+- **Partial updates** — Server returns HTML fragments, client swaps them (HTMX, Turbo Frames). Testable with standard server-side tests.
+- **Client-side state** — JS manages state, talks to API (React+Redux, Vue+Pinia). Requires browser-based testing.
+
+**Visualization approach** (if applicable):
+- **Server-generated** — Graphviz, matplotlib, SVG generation on server. Best for: static/semi-static diagrams.
+- **Client-rendered** — D3.js, Cytoscape.js, Chart.js. Best for: interactive, real-time visualizations.
+- **Hybrid** — Server generates data, client renders. Best for: large datasets with interactive exploration.
+
+Document rationale for each choice, especially impact on **testability** and **build complexity**.
+
+### 4. Scan Skills & Reference Implementations
 
 Query Playbook Skills where `capability_domain` in:
 - `APP_STRUCTURE`
 - `DOMAIN_MODELING`
+- `DEPENDENCY_INJECTION`
 
 Report coverage:
 ```
 Skill Coverage for Application Blocks:
-  APP_STRUCTURE  | [Skill Name] ✅  or  ❌ No Skill
-  DOMAIN_MODELING| [Skill Name] ✅  or  ❌ No Skill
+  APP_STRUCTURE    | [Django App Architecture Skill] ✅
+                   | Reference: Repository pattern, service layers, dependency rules
+                   | Example: Mimir methodology/ app structure
+  
+  DOMAIN_MODELING  | [DDD Bounded Contexts Skill] ✅  
+                   | Reference: Entity modeling, aggregate boundaries
+                   | Example: Playbook → Workflow → Activity hierarchy
+  
+  DEPENDENCY_INJECTION | ❌ No Skill - will create custom patterns
+                       | Estimated impact: +1 iteration for pattern definition
 ```
 
-If gaps exist: "No Skill for APP_STRUCTURE — will need to create one or rely on general guidance. Estimated impact: +N iterations for bootstrapping."
+If reference implementations exist: "Following Django app patterns from [Django App Architecture Skill](#skill-456), recommend service layer approach with estimated 2-day implementation."
+
+If gaps exist: "No Skill for Dependency Injection — will need to define patterns. Estimated impact: +1 iteration."
 
 ---
 
@@ -85,12 +122,13 @@ If gaps exist: "No Skill for APP_STRUCTURE — will need to create one or rely o
 - ✅ **Bounded contexts / domain packages** identified and documented
 - ✅ **Module dependency rules** defined (what imports what)
 - ✅ **Foundational pattern** chosen with rationale
-- ✅ **Skill coverage** assessed for this domain
+- ✅ **UI architecture patterns** defined (if applicable): rendering model, layout, interaction model, visualization
+- ✅ **Skill coverage** assessed for this domain with reference implementations
 - ✅ **Decision recorded** for inclusion in SAO.md (DTA-18)
 
 ## Artifacts Produced
 
-- Application blocks decision (section for SAO.md)
+- Application blocks decision → contributes to `artifacts/sao_document_template.md` § "1. Application Blocks"
 
 ## Artifacts Consumed
 

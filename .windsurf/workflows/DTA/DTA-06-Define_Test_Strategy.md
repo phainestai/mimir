@@ -77,7 +77,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Test strategy decision (section for SAO.md)
+- Test strategy decision → contributes to `artifacts/sao_document_template.md` § "5. Test Strategy"
 
 ## Artifacts Consumed
 

@@ -2,9 +2,9 @@
 
 **Playbook**: FeatureFactory v3.8 (Draft)
 **Workflow ID**: TBD
-**Description**: Define how the project runs — base methodology, lifecycle phases (Inception → Elaboration → Construction → Operation), iteration structure, WBS, and sample plans. Output: docs/process/MODUS_OPERANDI.md
+**Description**: Define how the project runs — base methodology, lifecycle phases (Inception → Elaboration → Construction → Operation), iteration structure, WBS, sample plans, and AI/human collaboration patterns. Output: docs/process/MODUS_OPERANDI.md
 **Phase Organization**: Uses phases (Decision → Planning → Documentation)
-**Total Activities**: 5
+**Total Activities**: 6
 **Export Date**: 2026-04-06
 
 ## Activities

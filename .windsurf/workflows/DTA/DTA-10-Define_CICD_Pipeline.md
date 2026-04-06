@@ -87,7 +87,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- CI/CD pipeline decision (section for SAO.md)
+- CI/CD pipeline decision → contributes to `artifacts/sao_document_template.md` § "9. CI/CD Pipeline"
 
 ## Artifacts Consumed
 

@@ -105,7 +105,7 @@ Report coverage and gaps.
 
 ## Artifacts Produced
 
-- Error handling & resilience decision (section for SAO.md)
+- Error handling & resilience decision → contributes to `artifacts/sao_document_template.md` § "7. Error Handling & Resilience"
 
 ## Artifacts Consumed
 
