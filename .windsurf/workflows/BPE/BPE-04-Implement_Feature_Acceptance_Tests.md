@@ -12,7 +12,7 @@ Implement Feature Acceptance Tests
 ## Guidance
 
 ## Purpose
-Test all scenarios from a `.feature` file using Django Test Client to ensure feature works correctly at the logic level. This is Tier 1 Testing: Fast, comprehensive feature validation.
+Test all scenarios from a `.feature` file using your framework's test client to ensure feature works correctly at the logic level. This is Tier 1 Testing: Fast, comprehensive feature validation.
 
 ## When to Use
 For every feature implementation. Run on every commit.
@@ -23,32 +23,39 @@ For every feature implementation. Run on every commit.
 Review the feature file, list all scenarios. Goal: Create one test method per scenario (or logical group).
 
 ### 2. Create Test File
-File naming convention: `tests/integration/test_<feature>_<aspect>.py`
+File naming convention: `tests/integration/test_<feature>_<aspect>.<ext>`
 
 Examples:
-- tests/integration/test_auth_login.py
-- tests/integration/test_workflow_create.py
-- tests/integration/test_activity_crud.py
+- tests/integration/test_auth_login
+- tests/integration/test_workflow_create
+- tests/integration/test_activity_crud
 
-### 3. Implement Tests with Django Test Client
+### 3. Implement Tests with Framework Test Client
 
 **Test All Paths:**
 - Happy path (valid input → success)
 - Validation errors (invalid input → error messages)
 - Edge cases (boundary conditions)
 - Authentication/authorization checks
-- Database state changes
+- State changes (database, cache, etc.)
 - Redirects and messages
 
 ### 4. Run Tests
-```bash
-pytest tests/integration/test_<feature>.py -v
-pytest tests/integration/test_<feature>.py --cov=<app> -v
-pytest tests/integration/test_<feature>.py::TestClass::test_method -v
-```
+Use your test framework's commands to run tests:
+- Run all integration tests for a feature
+- Run with coverage reporting
+- Run specific test class or method
 
 ### 5. Document Coverage
-Add docstring to test class documenting which scenarios are covered, test strategy, and how to run.
+Add documentation to test class documenting which scenarios are covered, test strategy, and how to run.
+
+### 6. Scan Skills
+
+Query Playbook Skills where `capability_domain` in:
+- `TEST_FRAMEWORK` — Testing patterns and best practices for your stack
+- `TEST_DATA` — Test data and fixture management patterns
+
+Apply reference implementations and patterns from matched Skills.
 
 ## Rules to Follow
 
@@ -58,8 +65,8 @@ Do not use mocks - integration tests supposed to use real objects, real connecti
 ### II. Test-First Development
 Every function/method must begin with a test. Tests prove that your implementation works as intended.
 
-### III. Test Runners
-Use pytest for unit and integration tests.
+### III. Test Framework
+Use your test framework for unit and integration tests.
 
 ### IV. Fix Tests Immediately
 Failing tests are major problem - we don't start new development until we fix them. If it's a test problem - fix it. If it's implementation details vs test diff - either fix the test, or ask user what takes precedence.
@@ -87,7 +94,7 @@ None
 
 ## Artifacts Consumed
 
-None
+- Skills from capability domains: `TEST_FRAMEWORK`, `TEST_DATA`
 
 ## Notes
 
