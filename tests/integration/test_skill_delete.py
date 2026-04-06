@@ -1,15 +1,14 @@
 """
-Integration tests for Skill DELETE operation.
+Integration tests for Skill DELETE operation (playbook-scoped).
 
-Tests skill deletion modal, confirmation flow, and cascade behavior.
-Covers scenarios: FOB-SKILLS-DELETE_SKILL-01 through FOB-SKILLS-DELETE_SKILL-05.
+Tests skill deletion modal, confirmation flow, and activity FK clearing.
 """
 
 import pytest
 from django.test import Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from methodology.models import Playbook, Workflow, Activity
+from methodology.models import Playbook, Workflow, Activity, Skill
 
 User = get_user_model()
 
@@ -43,32 +42,25 @@ class TestSkillDelete:
             playbook=self.playbook,
             order=1
         )
-        self.activity = Activity.objects.create(
-            name='Setup React Environment',
-            guidance='Guide for setting up React',
-            workflow=self.workflow,
-            order=1
-        )
 
-        from methodology.models import Skill
         self.skill = Skill.objects.create(
-            activity=self.activity,
+            playbook=self.playbook,
             title='Old Guide',
-            content='Outdated content'
+            capability_domain='GUI_FORM',
+            technology_stack='React+Redux',
+            content='Outdated content',
         )
 
     def _confirm_url(self):
         return reverse('skill_delete_confirm', kwargs={
             'playbook_pk': self.playbook.pk,
-            'workflow_pk': self.workflow.pk,
-            'activity_pk': self.activity.pk,
+            'skill_pk': self.skill.pk,
         })
 
     def _delete_url(self):
         return reverse('skill_delete', kwargs={
             'playbook_pk': self.playbook.pk,
-            'workflow_pk': self.workflow.pk,
-            'activity_pk': self.activity.pk,
+            'skill_pk': self.skill.pk,
         })
 
     def test_skill_delete_01_open_delete_confirmation_modal(self):
@@ -86,32 +78,66 @@ class TestSkillDelete:
         assert response.status_code == 200
         assert b'Old Guide' in response.content
 
+    def test_skill_delete_02_modal_shows_metadata(self):
+        """FOB-SKILLS-DELETE_SKILL-02: Modal shows capability_domain and technology_stack."""
+        response = self.client.get(self._confirm_url())
+
+        assert response.status_code == 200
+        assert b'GUI_FORM' in response.content
+        assert b'React+Redux' in response.content
+
     def test_skill_delete_02_modal_shows_warning(self):
-        """FOB-SKILLS-DELETE_SKILL-02: Modal shows warning about activity link."""
+        """FOB-SKILLS-DELETE_SKILL-02: Modal shows warning about permanent deletion."""
         response = self.client.get(self._confirm_url())
 
         assert response.status_code == 200
         assert b'cannot be undone' in response.content
 
+    def test_skill_delete_03_modal_warns_about_linked_activities(self):
+        """FOB-SKILLS-DELETE_SKILL-03: Modal warns when activities reference this skill."""
+        Activity.objects.create(
+            name='Build Form',
+            guidance='Uses form skill',
+            workflow=self.workflow,
+            order=1,
+            skill=self.skill,
+        )
+        response = self.client.get(self._confirm_url())
+
+        assert response.status_code == 200
+        assert b'1 activity' in response.content
+
     def test_skill_delete_04_confirm_deletion(self):
         """FOB-SKILLS-DELETE_SKILL-04: Skill is deleted on confirmation."""
-        from methodology.models import Skill
         response = self.client.post(self._delete_url())
 
         assert response.status_code == 302
         assert not Skill.objects.filter(pk=self.skill.pk).exists()
 
-    def test_skill_delete_04_redirects_after_deletion(self):
-        """FOB-SKILLS-DELETE_SKILL-04: After deletion, redirects to skill list."""
+    def test_skill_delete_04_redirects_to_playbook_skill_list(self):
+        """FOB-SKILLS-DELETE_SKILL-04: After deletion, redirects to playbook skill list."""
         response = self.client.post(self._delete_url())
 
         assert response.status_code == 302
-        assert reverse('skill_list') in response.url
+        expected = reverse('skill_list_playbook', kwargs={'playbook_pk': self.playbook.pk})
+        assert response.url == expected
+
+    def test_skill_delete_04_clears_activity_fk(self):
+        """FOB-SKILLS-DELETE_SKILL-04: Deleting skill sets activity.skill to NULL."""
+        activity = Activity.objects.create(
+            name='Build Form',
+            guidance='Uses form skill',
+            workflow=self.workflow,
+            order=1,
+            skill=self.skill,
+        )
+        self.client.post(self._delete_url())
+
+        activity.refresh_from_db()
+        assert activity.skill is None
 
     def test_skill_delete_05_cancel_does_not_delete(self):
-        """FOB-SKILLS-DELETE_SKILL-05: Cancel link present in modal (skill not deleted on GET)."""
-        from methodology.models import Skill
-        # GET the confirm endpoint (what Cancel results in — skill stays)
+        """FOB-SKILLS-DELETE_SKILL-05: Cancel link present; skill not deleted on GET."""
         response = self.client.get(self._confirm_url())
 
         assert response.status_code == 200
@@ -123,7 +149,6 @@ class TestSkillDelete:
         other_user = User.objects.create_user(username='other', password='pass123')
         self.client.login(username='other', password='pass123')
 
-        from methodology.models import Skill
         response = self.client.post(self._delete_url())
 
         assert response.status_code == 302
@@ -133,8 +158,7 @@ class TestSkillDelete:
         """Skill detail page contains HTMX delete button pointing to confirm endpoint."""
         detail_url = reverse('skill_detail', kwargs={
             'playbook_pk': self.playbook.pk,
-            'workflow_pk': self.workflow.pk,
-            'activity_pk': self.activity.pk,
+            'skill_pk': self.skill.pk,
         })
         response = self.client.get(detail_url)
 

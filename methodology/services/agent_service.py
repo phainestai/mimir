@@ -173,3 +173,55 @@ class AgentService:
         playbook_id = agent.playbook_id
         agent.delete()
         logger.info(f"Deleted agent '{name}' (id={agent_id}) from playbook {playbook_id}")
+
+    # ── Activity Queries + Facades ─────────────────────────────────────
+
+    @staticmethod
+    def get_activities_for_agent(agent_id):
+        """
+        Get all activities referencing a given agent.
+
+        :param agent_id: Agent primary key
+        :returns: QuerySet of Activity instances ordered by workflow name, activity name
+        :rtype: QuerySet[Activity]
+
+        Example:
+            >>> activities = AgentService.get_activities_for_agent(42)
+            >>> [a.name for a in activities]
+            ['Review Code', 'Generate Tests']
+        """
+        from methodology.models import Activity
+        qs = Activity.objects.filter(
+            agent_id=agent_id
+        ).select_related('workflow').order_by('workflow__name', 'name')
+        logger.info(f"Fetched {qs.count()} activities for agent {agent_id}")
+        return qs
+
+    @staticmethod
+    def link_agent_to_activity(activity_id, agent_id):
+        """
+        Facade: link an agent to an activity. Delegates to ActivityService.
+
+        :param activity_id: Activity primary key
+        :param agent_id: Agent primary key
+        :returns: Updated Activity instance
+
+        Example:
+            >>> AgentService.link_agent_to_activity(1, 3)
+        """
+        from methodology.services.activity_service import ActivityService
+        return ActivityService.set_activity_agent(activity_id, agent_id)
+
+    @staticmethod
+    def unlink_agent_from_activity(activity_id):
+        """
+        Facade: unlink agent from an activity. Delegates to ActivityService.
+
+        :param activity_id: Activity primary key
+        :returns: Updated Activity instance
+
+        Example:
+            >>> AgentService.unlink_agent_from_activity(1)
+        """
+        from methodology.services.activity_service import ActivityService
+        return ActivityService.clear_activity_agent(activity_id)

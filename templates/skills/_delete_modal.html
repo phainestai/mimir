@@ -22,9 +22,27 @@
                     You are about to permanently delete skill
                     <strong>"{{ skill.title }}"</strong>.
                 </p>
+                {% if skill.capability_domain or skill.technology_stack %}
+                <div class="mb-2">
+                    {% if skill.capability_domain %}
+                    <span class="badge bg-info text-dark"><i class="fa-solid fa-cubes"></i> {{ skill.capability_domain }}</span>
+                    {% endif %}
+                    {% if skill.technology_stack %}
+                    <span class="badge bg-success"><i class="fa-solid fa-layer-group"></i> {{ skill.technology_stack }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if activities %}
+                <div class="alert alert-danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <strong>{{ activities|length }} activit{{ activities|length|pluralize:"y,ies" }}</strong>
+                    currently reference{{ activities|length|pluralize:",s" }} this skill.
+                    Their skill link will be cleared (set to empty).
+                </div>
+                {% endif %}
                 <div class="alert alert-warning">
                     <i class="fa-solid fa-triangle-exclamation"></i>
-                    This action cannot be undone. The skill guidance will be permanently deleted.
+                    This action cannot be undone. The skill and its content will be permanently deleted.
                 </div>
             </div>
             <div class="modal-footer">
@@ -39,7 +57,9 @@
                     {% csrf_token %}
                     <button type="submit"
                             class="btn btn-danger"
-                            data-testid="confirm-delete-btn">
+                            data-testid="confirm-delete-btn"
+                            data-bs-toggle="tooltip"
+                            title="Permanently delete this skill">
                         <i class="fa-solid fa-trash"></i> Delete Skill
                     </button>
                 </form>

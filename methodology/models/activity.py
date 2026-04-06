@@ -31,6 +31,14 @@ class Activity(models.Model):
         related_name='activities',
         help_text="Optional AI agent assigned to perform this activity"
     )
+    skill = models.ForeignKey(
+        'Skill',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='activities',
+        help_text="Optional skill providing tech-specific guidance for this activity"
+    )
     
     # Core fields
     name = models.CharField(

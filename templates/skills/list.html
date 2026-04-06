@@ -9,13 +9,13 @@
     <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
             <h2><i class="fa-solid fa-graduation-cap"></i> Skills</h2>
-            <p class="text-muted">Step-by-step guidance documents linked to activities</p>
+            <p class="text-muted">Reusable tech-specific guidance across all your playbooks</p>
         </div>
         <div>
-            <a href="{% url 'activity_global_list' %}"
+            <a href="{% url 'playbook_list' %}"
                class="btn btn-outline-secondary"
-               data-testid="back-to-activities-btn">
-                <i class="fa-solid fa-arrow-left"></i> Activities
+               data-testid="back-to-playbooks-btn">
+                <i class="fa-solid fa-arrow-left"></i> Playbooks
             </a>
         </div>
     </div>
@@ -29,7 +29,7 @@
                            class="form-control"
                            name="q"
                            value="{{ query }}"
-                           placeholder="Search skills by title or content…"
+                           placeholder="Search skills by title, domain, stack, or content..."
                            data-testid="skill-search">
                     <button class="btn btn-outline-secondary" type="submit">
                         <i class="fa-solid fa-search"></i> Search
@@ -53,15 +53,14 @@
                 Skills
                 <span class="badge bg-secondary ms-2">{{ skills|length }}</span>
             </h5>
-            {% comment %}Create button — points to activity-scoped URL when accessed from an activity{% endcomment %}
         </div>
         <div class="card-body p-0">
             <table class="table table-hover mb-0" data-testid="skills-table">
                 <thead class="table-light">
                     <tr>
                         <th>Title</th>
-                        <th>Activity</th>
-                        <th>Workflow</th>
+                        <th>Capability Domain</th>
+                        <th>Technology Stack</th>
                         <th>Playbook</th>
                         <th style="width: 10%">Actions</th>
                     </tr>
@@ -70,19 +69,31 @@
                     {% for skill in skills %}
                     <tr data-testid="skill-row-{{ skill.id }}">
                         <td>
-                            <a href="{% url 'skill_detail' playbook_pk=skill.activity.workflow.playbook.pk workflow_pk=skill.activity.workflow.pk activity_pk=skill.activity.pk %}">
+                            <a href="{% url 'skill_detail' playbook_pk=skill.playbook.pk skill_pk=skill.pk %}">
                                 <i class="fa-solid fa-graduation-cap text-primary"></i>
                                 <strong>{{ skill.title }}</strong>
                             </a>
                         </td>
-                        <td class="text-muted small">{{ skill.activity.name }}</td>
-                        <td class="text-muted small">{{ skill.activity.workflow.name }}</td>
-                        <td class="text-muted small">{{ skill.activity.workflow.playbook.name }}</td>
                         <td>
-                            <a href="{% url 'skill_detail' playbook_pk=skill.activity.workflow.playbook.pk workflow_pk=skill.activity.workflow.pk activity_pk=skill.activity.pk %}"
+                            {% if skill.capability_domain %}
+                            <span class="badge bg-info text-dark">{{ skill.capability_domain }}</span>
+                            {% else %}
+                            <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if skill.technology_stack %}
+                            <span class="badge bg-success">{{ skill.technology_stack }}</span>
+                            {% else %}
+                            <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ skill.playbook.name }}</td>
+                        <td>
+                            <a href="{% url 'skill_detail' playbook_pk=skill.playbook.pk skill_pk=skill.pk %}"
                                class="btn btn-outline-primary btn-sm"
                                data-testid="view-skill-{{ skill.id }}"
-                               data-bs-toggle="tooltip" title="View skill">
+                               data-bs-toggle="tooltip" title="View skill details">
                                 <i class="fa-solid fa-eye"></i>
                             </a>
                         </td>
@@ -105,11 +116,11 @@
                 <i class="fa-solid fa-times"></i> Clear search
             </a>
             {% else %}
-            <p class="text-muted">Skills are created from activity detail pages.</p>
-            <a href="{% url 'activity_global_list' %}"
+            <p class="text-muted">Skills are created from within playbook pages.</p>
+            <a href="{% url 'playbook_list' %}"
                class="btn btn-primary mt-3"
                data-testid="create-skill-btn">
-                <i class="fa-solid fa-tasks"></i> Go to Activities
+                <i class="fa-solid fa-book"></i> Go to Playbooks
             </a>
             {% endif %}
         </div>

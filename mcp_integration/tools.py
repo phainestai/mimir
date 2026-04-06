@@ -924,31 +924,604 @@ async def create_pip_from_protocol(protocol_file: str, pip_title: str) -> dict:
     logger.info(f'MCP Tool: Created PIP {result["pip_id"]}')
     return result
 
+# ============================================================================
+# SKILL MCP TOOLS
+# ============================================================================
+
+async def create_skill(
+    playbook_id: int,
+    title: str,
+    content: str = '',
+    capability_domain: str = '',
+    technology_stack: str = '',
+) -> dict:
+    """
+    Create skill in draft playbook. Increments parent version.
+
+    :param playbook_id: Parent playbook ID. Example: 1
+    :param title: Skill title (required). Example: "Build Login Form"
+    :param content: Markdown content (optional). Example: "## Steps\\n1. ..."
+    :param capability_domain: What capability (optional). Example: "GUI_FORM"
+    :param technology_stack: Tech stack (optional). Example: "React+Redux"
+    :return: Created skill dict
+    :raises PermissionError: If playbook is released
+    :raises ValueError: If playbook not found or validation fails
+    """
+    logger.info(f'MCP Tool: create_skill called - playbook_id={playbook_id}, title="{title}"')
+
+    user = await sync_to_async(get_current_user)()
+    playbook = await _get_draft_playbook(playbook_id, user)
+
+    from methodology.services.skill_service import SkillService
+    skill = await sync_to_async(SkillService.create_skill)(
+        playbook=playbook,
+        title=title,
+        content=content,
+        capability_domain=capability_domain,
+        technology_stack=technology_stack,
+    )
+
+    old_version = playbook.version
+    playbook.version += Decimal('0.1')
+    await sync_to_async(playbook.save)()
+
+    logger.info(f'MCP Tool: Created skill id={skill.id}, version {old_version} → {playbook.version}')
+    return {
+        'id': skill.id,
+        'title': skill.title,
+        'content': skill.content,
+        'capability_domain': skill.capability_domain,
+        'technology_stack': skill.technology_stack,
+        'playbook_id': playbook.id,
+    }
+
+
+async def list_skills(
+    playbook_id: int,
+    domain: str = '',
+    stack: str = '',
+    search: str = '',
+) -> list:
+    """
+    List skills for playbook with optional filters.
+
+    :param playbook_id: Playbook ID. Example: 1
+    :param domain: Filter by capability_domain. Example: "GUI_FORM"
+    :param stack: Filter by technology_stack. Example: "React+Redux"
+    :param search: Free-text search. Example: "login"
+    :return: List of skill dicts
+    :raises ValueError: If playbook not found
+    """
+    logger.info(f'MCP Tool: list_skills called - playbook_id={playbook_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.models import Playbook
+    try:
+        await sync_to_async(Playbook.objects.get)(id=playbook_id, author=user)
+    except Playbook.DoesNotExist:
+        raise ValueError(f'Playbook {playbook_id} not found')
+
+    from methodology.services.skill_service import SkillService
+    skills = await sync_to_async(list)(
+        await sync_to_async(SkillService.list_skills_for_playbook)(
+            playbook_id=playbook_id,
+            capability_domain=domain,
+            technology_stack=stack,
+            search=search,
+        )
+    )
+
+    result = [
+        {
+            'id': s.id,
+            'title': s.title,
+            'capability_domain': s.capability_domain,
+            'technology_stack': s.technology_stack,
+            'activity_count': s.activity_count,
+            'playbook_id': playbook_id,
+        }
+        for s in skills
+    ]
+    logger.info(f'MCP Tool: Listed {len(result)} skills for playbook {playbook_id}')
+    return result
+
+
+async def get_skill(skill_id: int) -> dict:
+    """
+    Get skill details with activity count.
+
+    :param skill_id: Skill ID. Example: 1
+    :return: Skill dict with activity_count
+    :raises ValueError: If skill not found or not owned
+    """
+    logger.info(f'MCP Tool: get_skill called - skill_id={skill_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.skill_service import SkillService
+    try:
+        skill = await sync_to_async(SkillService.get_skill)(skill_id)
+    except Exception:
+        raise ValueError(f'Skill {skill_id} not found')
+
+    if skill.playbook.author_id != user.id:
+        raise ValueError(f'Skill {skill_id} not found')
+
+    activity_count = await sync_to_async(skill.activities.count)()
+
+    return {
+        'id': skill.id,
+        'title': skill.title,
+        'content': skill.content,
+        'capability_domain': skill.capability_domain,
+        'technology_stack': skill.technology_stack,
+        'playbook_id': skill.playbook_id,
+        'activity_count': activity_count,
+    }
+
+
+async def update_skill(
+    skill_id: int,
+    title: str = None,
+    content: str = None,
+    capability_domain: str = None,
+    technology_stack: str = None,
+) -> dict:
+    """
+    Update skill in draft playbook. Increments parent version.
+
+    :param skill_id: Skill ID. Example: 1
+    :param title: New title (optional). Example: "Build Auth Form"
+    :param content: New content (optional)
+    :param capability_domain: New domain (optional). Example: "GUI_AUTH"
+    :param technology_stack: New stack (optional). Example: "React+Formik"
+    :return: Updated skill dict
+    :raises PermissionError: If playbook is released
+    :raises ValueError: If skill not found or validation fails
+    """
+    logger.info(f'MCP Tool: update_skill called - skill_id={skill_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.skill_service import SkillService
+    skill = await sync_to_async(SkillService.get_skill)(skill_id)
+
+    if skill.playbook.author_id != user.id:
+        raise ValueError(f'Skill {skill_id} not found')
+    if skill.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook "{skill.playbook.name}".')
+
+    kwargs = {}
+    if title is not None:
+        kwargs['title'] = title
+    if content is not None:
+        kwargs['content'] = content
+    if capability_domain is not None:
+        kwargs['capability_domain'] = capability_domain
+    if technology_stack is not None:
+        kwargs['technology_stack'] = technology_stack
+
+    updated = await sync_to_async(SkillService.update_skill)(skill_id, **kwargs)
+
+    old_version = skill.playbook.version
+    skill.playbook.version += Decimal('0.1')
+    await sync_to_async(skill.playbook.save)()
+
+    logger.info(f'MCP Tool: Updated skill {skill_id}, version {old_version} → {skill.playbook.version}')
+    return {
+        'id': updated.id,
+        'title': updated.title,
+        'content': updated.content,
+        'capability_domain': updated.capability_domain,
+        'technology_stack': updated.technology_stack,
+        'playbook_id': updated.playbook_id,
+    }
+
+
+async def delete_skill(skill_id: int) -> dict:
+    """
+    Delete skill in draft playbook. Increments parent version. Activity FKs cleared.
+
+    :param skill_id: Skill ID. Example: 1
+    :return: Dict with deleted=True
+    :raises PermissionError: If playbook is released
+    :raises ValueError: If skill not found or not owned
+    """
+    logger.info(f'MCP Tool: delete_skill called - skill_id={skill_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.skill_service import SkillService
+    skill = await sync_to_async(SkillService.get_skill)(skill_id)
+
+    if skill.playbook.author_id != user.id:
+        raise ValueError(f'Skill {skill_id} not found')
+    if skill.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook "{skill.playbook.name}".')
+
+    playbook = skill.playbook
+    old_version = playbook.version
+
+    await sync_to_async(SkillService.delete_skill)(skill_id)
+
+    playbook.version += Decimal('0.1')
+    await sync_to_async(playbook.save)()
+
+    logger.info(f'MCP Tool: Deleted skill {skill_id}, version {old_version} → {playbook.version}')
+    return {'deleted': True, 'skill_id': skill_id}
+
+
+async def link_skill_to_activity(activity_id: int, skill_id: int) -> dict:
+    """
+    Link a skill to an activity. Both must be in the same playbook.
+
+    :param activity_id: Activity ID. Example: 1
+    :param skill_id: Skill ID. Example: 5
+    :return: Dict with updated activity_id and skill_id
+    :raises ValueError: If not found or cross-playbook
+    """
+    logger.info(f'MCP Tool: link_skill_to_activity called - activity_id={activity_id}, skill_id={skill_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.activity_service import ActivityService
+    from methodology.models import Activity, Skill
+
+    activity = await sync_to_async(
+        Activity.objects.select_related('workflow__playbook').get
+    )(pk=activity_id)
+    if activity.workflow.playbook.author_id != user.id:
+        raise ValueError(f'Activity {activity_id} not found')
+    if activity.workflow.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook.')
+
+    updated = await sync_to_async(ActivityService.set_activity_skill)(activity_id, skill_id)
+
+    return {'activity_id': updated.id, 'skill_id': updated.skill_id}
+
+
+async def unlink_skill_from_activity(activity_id: int) -> dict:
+    """
+    Unlink skill from an activity (set FK to NULL).
+
+    :param activity_id: Activity ID. Example: 1
+    :return: Dict with updated activity_id and skill_id=None
+    :raises ValueError: If activity not found or not owned
+    """
+    logger.info(f'MCP Tool: unlink_skill_from_activity called - activity_id={activity_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.activity_service import ActivityService
+    from methodology.models import Activity
+
+    activity = await sync_to_async(
+        Activity.objects.select_related('workflow__playbook').get
+    )(pk=activity_id)
+    if activity.workflow.playbook.author_id != user.id:
+        raise ValueError(f'Activity {activity_id} not found')
+    if activity.workflow.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook.')
+
+    updated = await sync_to_async(ActivityService.clear_activity_skill)(activity_id)
+
+    return {'activity_id': updated.id, 'skill_id': None}
+
+
+# ============================================================================
+# AGENT MCP TOOLS
+# ============================================================================
+
+async def create_agent(
+    playbook_id: int,
+    name: str,
+    description: str = '',
+) -> dict:
+    """
+    Create agent in draft playbook. Increments parent version.
+
+    :param playbook_id: Parent playbook ID. Example: 1
+    :param name: Agent name (required, unique per playbook). Example: "Code Reviewer"
+    :param description: Description (optional). Example: "Reviews PRs"
+    :return: Created agent dict
+    :raises PermissionError: If playbook is released
+    :raises ValueError: If playbook not found or validation fails
+    """
+    logger.info(f'MCP Tool: create_agent called - playbook_id={playbook_id}, name="{name}"')
+
+    user = await sync_to_async(get_current_user)()
+    playbook = await _get_draft_playbook(playbook_id, user)
+
+    from methodology.services.agent_service import AgentService
+    agent = await sync_to_async(AgentService.create_agent)(
+        playbook=playbook,
+        name=name,
+        description=description,
+    )
+
+    old_version = playbook.version
+    playbook.version += Decimal('0.1')
+    await sync_to_async(playbook.save)()
+
+    logger.info(f'MCP Tool: Created agent id={agent.id}, version {old_version} → {playbook.version}')
+    return {
+        'id': agent.id,
+        'name': agent.name,
+        'description': agent.description,
+        'playbook_id': playbook.id,
+    }
+
+
+async def list_agents(
+    playbook_id: int,
+    search: str = '',
+) -> list:
+    """
+    List agents for playbook with optional search.
+
+    :param playbook_id: Playbook ID. Example: 1
+    :param search: Free-text search. Example: "reviewer"
+    :return: List of agent dicts
+    :raises ValueError: If playbook not found
+    """
+    logger.info(f'MCP Tool: list_agents called - playbook_id={playbook_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.models import Playbook
+    try:
+        await sync_to_async(Playbook.objects.get)(id=playbook_id, author=user)
+    except Playbook.DoesNotExist:
+        raise ValueError(f'Playbook {playbook_id} not found')
+
+    from methodology.services.agent_service import AgentService
+    from django.db.models import Count, Q
+
+    qs = await sync_to_async(AgentService.list_agents_for_playbook)(playbook_id)
+
+    if search:
+        qs = qs.filter(Q(name__icontains=search) | Q(description__icontains=search))
+
+    qs = qs.annotate(activity_count=Count('activities'))
+    agents = await sync_to_async(list)(qs)
+
+    result = [
+        {
+            'id': a.id,
+            'name': a.name,
+            'description': a.description,
+            'activity_count': a.activity_count,
+            'playbook_id': playbook_id,
+        }
+        for a in agents
+    ]
+    logger.info(f'MCP Tool: Listed {len(result)} agents for playbook {playbook_id}')
+    return result
+
+
+async def get_agent(agent_id: int) -> dict:
+    """
+    Get agent details with activity count.
+
+    :param agent_id: Agent ID. Example: 1
+    :return: Agent dict with activity_count
+    :raises ValueError: If agent not found or not owned
+    """
+    logger.info(f'MCP Tool: get_agent called - agent_id={agent_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.agent_service import AgentService
+    try:
+        agent = await sync_to_async(AgentService.get_agent)(agent_id)
+    except Exception:
+        raise ValueError(f'Agent {agent_id} not found')
+
+    if agent.playbook.author_id != user.id:
+        raise ValueError(f'Agent {agent_id} not found')
+
+    activity_count = await sync_to_async(agent.activities.count)()
+
+    return {
+        'id': agent.id,
+        'name': agent.name,
+        'description': agent.description,
+        'playbook_id': agent.playbook_id,
+        'activity_count': activity_count,
+    }
+
+
+async def update_agent(
+    agent_id: int,
+    name: str = None,
+    description: str = None,
+) -> dict:
+    """
+    Update agent in draft playbook. Increments parent version.
+
+    :param agent_id: Agent ID. Example: 1
+    :param name: New name (optional). Example: "Senior Reviewer"
+    :param description: New description (optional)
+    :return: Updated agent dict
+    :raises PermissionError: If playbook is released
+    :raises ValueError: If agent not found or validation fails
+    """
+    logger.info(f'MCP Tool: update_agent called - agent_id={agent_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.agent_service import AgentService
+    agent = await sync_to_async(AgentService.get_agent)(agent_id)
+
+    if agent.playbook.author_id != user.id:
+        raise ValueError(f'Agent {agent_id} not found')
+    if agent.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook "{agent.playbook.name}".')
+
+    kwargs = {}
+    if name is not None:
+        kwargs['name'] = name
+    if description is not None:
+        kwargs['description'] = description
+
+    updated = await sync_to_async(AgentService.update_agent)(agent_id, **kwargs)
+
+    old_version = agent.playbook.version
+    agent.playbook.version += Decimal('0.1')
+    await sync_to_async(agent.playbook.save)()
+
+    logger.info(f'MCP Tool: Updated agent {agent_id}, version {old_version} → {agent.playbook.version}')
+    return {
+        'id': updated.id,
+        'name': updated.name,
+        'description': updated.description,
+        'playbook_id': updated.playbook_id,
+    }
+
+
+async def delete_agent(agent_id: int) -> dict:
+    """
+    Delete agent in draft playbook. Increments parent version. Activity FKs cleared.
+
+    :param agent_id: Agent ID. Example: 1
+    :return: Dict with deleted=True
+    :raises PermissionError: If playbook is released
+    :raises ValueError: If agent not found or not owned
+    """
+    logger.info(f'MCP Tool: delete_agent called - agent_id={agent_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.agent_service import AgentService
+    agent = await sync_to_async(AgentService.get_agent)(agent_id)
+
+    if agent.playbook.author_id != user.id:
+        raise ValueError(f'Agent {agent_id} not found')
+    if agent.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook "{agent.playbook.name}".')
+
+    playbook = agent.playbook
+    old_version = playbook.version
+
+    await sync_to_async(AgentService.delete_agent)(agent_id)
+
+    playbook.version += Decimal('0.1')
+    await sync_to_async(playbook.save)()
+
+    logger.info(f'MCP Tool: Deleted agent {agent_id}, version {old_version} → {playbook.version}')
+    return {'deleted': True, 'agent_id': agent_id}
+
+
+async def link_agent_to_activity(activity_id: int, agent_id: int) -> dict:
+    """
+    Link an agent to an activity. Both must be in the same playbook.
+
+    :param activity_id: Activity ID. Example: 1
+    :param agent_id: Agent ID. Example: 3
+    :return: Dict with updated activity_id and agent_id
+    :raises ValueError: If not found or cross-playbook
+    """
+    logger.info(f'MCP Tool: link_agent_to_activity called - activity_id={activity_id}, agent_id={agent_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.activity_service import ActivityService
+    from methodology.models import Activity
+
+    activity = await sync_to_async(
+        Activity.objects.select_related('workflow__playbook').get
+    )(pk=activity_id)
+    if activity.workflow.playbook.author_id != user.id:
+        raise ValueError(f'Activity {activity_id} not found')
+    if activity.workflow.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook.')
+
+    updated = await sync_to_async(ActivityService.set_activity_agent)(activity_id, agent_id)
+
+    return {'activity_id': updated.id, 'agent_id': updated.agent_id}
+
+
+async def unlink_agent_from_activity(activity_id: int) -> dict:
+    """
+    Unlink agent from an activity (set FK to NULL).
+
+    :param activity_id: Activity ID. Example: 1
+    :return: Dict with updated activity_id and agent_id=None
+    :raises ValueError: If activity not found or not owned
+    """
+    logger.info(f'MCP Tool: unlink_agent_from_activity called - activity_id={activity_id}')
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.activity_service import ActivityService
+    from methodology.models import Activity
+
+    activity = await sync_to_async(
+        Activity.objects.select_related('workflow__playbook').get
+    )(pk=activity_id)
+    if activity.workflow.playbook.author_id != user.id:
+        raise ValueError(f'Activity {activity_id} not found')
+    if activity.workflow.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook.')
+
+    updated = await sync_to_async(ActivityService.clear_activity_agent)(activity_id)
+
+    return {'activity_id': updated.id, 'agent_id': None}
+
+
+# ============================================================================
+# SHARED HELPERS
+# ============================================================================
+
+async def _get_draft_playbook(playbook_id: int, user):
+    """
+    Retrieve playbook, verify ownership and draft status.
+
+    :param playbook_id: Playbook primary key
+    :param user: Authenticated user
+    :returns: Playbook instance
+    :raises ValueError: If playbook not found
+    :raises PermissionError: If playbook is released
+    """
+    from methodology.models import Playbook
+    try:
+        playbook = await sync_to_async(Playbook.objects.get)(id=playbook_id, author=user)
+    except Playbook.DoesNotExist:
+        raise ValueError(f'Playbook {playbook_id} not found')
+
+    if playbook.status == 'released':
+        raise PermissionError(
+            f'Cannot modify released playbook "{playbook.name}". Use create_pip instead.'
+        )
+    return playbook
+
+
 def initialize_mcp():
     """
     Initialize and return the FastMCP instance.
-    
+
     Called by mcp_server management command.
-    Registers all 20 tools with FastMCP.
-    
+    Registers all 34 tools with FastMCP.
+
     :returns: FastMCP instance ready to run
     """
-    logger.info('MCP: Initializing FastMCP server with 20 tools')
-    
+    logger.info('MCP: Initializing FastMCP server with 34 tools')
+
     # Register playbook tools
     mcp.tool()(create_playbook)
     mcp.tool()(list_playbooks)
     mcp.tool()(get_playbook)
     mcp.tool()(update_playbook)
     mcp.tool()(delete_playbook)
-    
+
     # Register workflow tools
     mcp.tool()(create_workflow)
     mcp.tool()(list_workflows)
     mcp.tool()(get_workflow)
     mcp.tool()(update_workflow)
     mcp.tool()(delete_workflow)
-    
+
     # Register activity tools
     mcp.tool()(create_activity)
     mcp.tool()(list_activities)
@@ -956,13 +1529,31 @@ def initialize_mcp():
     mcp.tool()(update_activity)
     mcp.tool()(delete_activity)
     mcp.tool()(set_predecessor)
-    
+
     # Register workflow export/import tools
     mcp.tool()(export_workflow_to_local)
     mcp.tool()(import_workflow_from_local)
     mcp.tool()(apply_upload_protocol)
     mcp.tool()(create_pip_from_protocol)
-    
-    logger.info('MCP: All 20 tools registered')
+
+    # Register skill tools
+    mcp.tool()(create_skill)
+    mcp.tool()(list_skills)
+    mcp.tool()(get_skill)
+    mcp.tool()(update_skill)
+    mcp.tool()(delete_skill)
+    mcp.tool()(link_skill_to_activity)
+    mcp.tool()(unlink_skill_from_activity)
+
+    # Register agent tools
+    mcp.tool()(create_agent)
+    mcp.tool()(list_agents)
+    mcp.tool()(get_agent)
+    mcp.tool()(update_agent)
+    mcp.tool()(delete_agent)
+    mcp.tool()(link_agent_to_activity)
+    mcp.tool()(unlink_agent_from_activity)
+
+    logger.info('MCP: All 34 tools registered')
     return mcp
 
