@@ -229,7 +229,7 @@ def skill_detail(request, playbook_pk, skill_pk):
         return redirect('playbook_list')
 
     skill = _get_skill_in_playbook(playbook, skill_pk)
-    activities = skill.activities.select_related('workflow').order_by('workflow__name', 'name')
+    activities = SkillService.get_activities_for_skill(skill_pk)
 
     logger.info(
         "User %s viewing skill %s '%s' in playbook %s",
@@ -330,7 +330,7 @@ def skill_delete_confirm(request, playbook_pk, skill_pk):
         return redirect('playbook_list')
 
     skill = _get_skill_in_playbook(playbook, skill_pk)
-    activities = skill.activities.select_related('workflow').order_by('workflow__name', 'name')
+    activities = SkillService.get_activities_for_skill(skill_pk)
 
     from django.urls import reverse
     delete_url = reverse('skill_delete', kwargs={

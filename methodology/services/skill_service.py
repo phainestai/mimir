@@ -288,6 +288,58 @@ class SkillService:
             title, skill_id, playbook_id, activity_count,
         )
 
+    # ── Activity Queries + Facades ───────────────────────────────────
+
+    @staticmethod
+    def get_activities_for_skill(skill_id: int):
+        """
+        Get all activities referencing a given skill.
+
+        :param skill_id: Skill primary key
+        :returns: QuerySet of Activity instances ordered by workflow name, activity name
+        :rtype: QuerySet[Activity]
+
+        Example:
+            >>> activities = SkillService.get_activities_for_skill(42)
+            >>> [a.name for a in activities]
+            ['Build Login Form', 'Build Settings Form']
+        """
+        from methodology.models import Activity
+        qs = Activity.objects.filter(
+            skill_id=skill_id
+        ).select_related('workflow').order_by('workflow__name', 'name')
+        logger.info("Fetched %d activities for skill %s", qs.count(), skill_id)
+        return qs
+
+    @staticmethod
+    def link_skill_to_activity(activity_id: int, skill_id: int):
+        """
+        Facade: link a skill to an activity. Delegates to ActivityService.
+
+        :param activity_id: Activity primary key
+        :param skill_id: Skill primary key
+        :returns: Updated Activity instance
+
+        Example:
+            >>> SkillService.link_skill_to_activity(1, 5)
+        """
+        from methodology.services.activity_service import ActivityService
+        return ActivityService.set_activity_skill(activity_id, skill_id)
+
+    @staticmethod
+    def unlink_skill_from_activity(activity_id: int):
+        """
+        Facade: unlink skill from an activity. Delegates to ActivityService.
+
+        :param activity_id: Activity primary key
+        :returns: Updated Activity instance
+
+        Example:
+            >>> SkillService.unlink_skill_from_activity(1)
+        """
+        from methodology.services.activity_service import ActivityService
+        return ActivityService.clear_activity_skill(activity_id)
+
     # ── Private validation helpers ─────────────────────────────────────
 
     @staticmethod

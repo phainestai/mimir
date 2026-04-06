@@ -2,14 +2,14 @@
 Service layer for Activity operations.
 
 Provides business logic for activity CRUD operations, validation,
-and grouping functionality.
+grouping functionality, and skill/agent link management.
 """
 
 import logging
 from django.db import IntegrityError
 from django.db import models
 from django.core.exceptions import ValidationError
-from methodology.models import Activity
+from methodology.models import Activity, Skill, Agent
 
 logger = logging.getLogger(__name__)
 
@@ -369,3 +369,123 @@ class ActivityService:
         except Exception as e:
             logger.error(f"Error fetching recent activities for user {user.username}: {e}")
             raise  # Propagate to caller for proper handling
+
+    # ── Skill/Agent Link Management ────────────────────────────────────
+
+    @staticmethod
+    def set_activity_skill(activity_id: int, skill_id: int):
+        """
+        Link a skill to an activity. Both must belong to the same playbook.
+
+        :param activity_id: Activity primary key
+        :param skill_id: Skill primary key
+        :returns: Updated Activity instance
+        :raises Activity.DoesNotExist: If activity not found
+        :raises Skill.DoesNotExist: If skill not found
+        :raises ValidationError: If skill and activity are in different playbooks
+
+        Example:
+            >>> updated = ActivityService.set_activity_skill(1, 5)
+            >>> updated.skill_id
+            5
+        """
+        activity = Activity.objects.select_related('workflow__playbook').get(pk=activity_id)
+        skill = Skill.objects.select_related('playbook').get(pk=skill_id)
+
+        if activity.workflow.playbook_id != skill.playbook_id:
+            raise ValidationError(
+                f"Skill '{skill.title}' (playbook {skill.playbook_id}) and "
+                f"activity '{activity.name}' (playbook {activity.workflow.playbook_id}) "
+                f"must be in the same playbook"
+            )
+
+        activity.skill = skill
+        activity.save(update_fields=['skill'])
+        logger.info(
+            "Linked skill %s '%s' to activity %s '%s'",
+            skill_id, skill.title, activity_id, activity.name,
+        )
+        return activity
+
+    @staticmethod
+    def clear_activity_skill(activity_id: int):
+        """
+        Unlink skill from an activity (set FK to NULL).
+
+        :param activity_id: Activity primary key
+        :returns: Updated Activity instance
+        :raises Activity.DoesNotExist: If activity not found
+
+        Example:
+            >>> updated = ActivityService.clear_activity_skill(1)
+            >>> updated.skill_id is None
+            True
+        """
+        activity = Activity.objects.get(pk=activity_id)
+        old_skill_id = activity.skill_id
+        activity.skill = None
+        activity.save(update_fields=['skill'])
+        logger.info(
+            "Cleared skill (was %s) from activity %s '%s'",
+            old_skill_id, activity_id, activity.name,
+        )
+        return activity
+
+    @staticmethod
+    def set_activity_agent(activity_id: int, agent_id: int):
+        """
+        Link an agent to an activity. Both must belong to the same playbook.
+
+        :param activity_id: Activity primary key
+        :param agent_id: Agent primary key
+        :returns: Updated Activity instance
+        :raises Activity.DoesNotExist: If activity not found
+        :raises Agent.DoesNotExist: If agent not found
+        :raises ValidationError: If agent and activity are in different playbooks
+
+        Example:
+            >>> updated = ActivityService.set_activity_agent(1, 3)
+            >>> updated.agent_id
+            3
+        """
+        activity = Activity.objects.select_related('workflow__playbook').get(pk=activity_id)
+        agent = Agent.objects.select_related('playbook').get(pk=agent_id)
+
+        if activity.workflow.playbook_id != agent.playbook_id:
+            raise ValidationError(
+                f"Agent '{agent.name}' (playbook {agent.playbook_id}) and "
+                f"activity '{activity.name}' (playbook {activity.workflow.playbook_id}) "
+                f"must be in the same playbook"
+            )
+
+        activity.agent = agent
+        activity.save(update_fields=['agent'])
+        logger.info(
+            "Linked agent %s '%s' to activity %s '%s'",
+            agent_id, agent.name, activity_id, activity.name,
+        )
+        return activity
+
+    @staticmethod
+    def clear_activity_agent(activity_id: int):
+        """
+        Unlink agent from an activity (set FK to NULL).
+
+        :param activity_id: Activity primary key
+        :returns: Updated Activity instance
+        :raises Activity.DoesNotExist: If activity not found
+
+        Example:
+            >>> updated = ActivityService.clear_activity_agent(1)
+            >>> updated.agent_id is None
+            True
+        """
+        activity = Activity.objects.get(pk=activity_id)
+        old_agent_id = activity.agent_id
+        activity.agent = None
+        activity.save(update_fields=['agent'])
+        logger.info(
+            "Cleared agent (was %s) from activity %s '%s'",
+            old_agent_id, activity_id, activity.name,
+        )
+        return activity
