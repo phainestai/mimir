@@ -54,12 +54,12 @@ docs/plans/ESTIMATION_STRATEGY.md     ← Estimation level, risk profile, sprint
 
 ```mermaid
 flowchart LR
-    ESM[ESM]
-    DTA[DTA]
-    DSP[DSP]
-    EST[EST]
-    BSP[BSP]
-    BPE[BPE]
+    ESM["ESM<br/>Envision the System"]
+    DTA["DTA<br/>Define Architecture"]
+    DSP["DSP<br/>Deploy Software Process"]
+    EST["EST<br/>Estimate the Project"]
+    BSP["BSP<br/>Bootstrap Project"]
+    BPE["BPE<br/>Build Feature"]
     
     SCREEN["screen-flow.drawio<br/>+ docs/features/**"]
     SAO["SAO.md"]
