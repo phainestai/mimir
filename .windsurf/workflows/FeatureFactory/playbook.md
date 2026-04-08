@@ -60,13 +60,13 @@ flowchart LR
     EST["EST<br/>Estimate the Project"]
     BSP["BSP<br/>Bootstrap Project"]
     BPE["BPE<br/>Build Feature"]
+    LOOP["BPE<br/>Build Feature<br/>(loop)"]
     
     SCREEN["screen-flow.drawio<br/>+ docs/features/**"]
     SAO["SAO.md"]
     CLAUDE["CLAUDE.md"]
     ESTIMATION["ESTIMATION_TEMPLATE.xlsx"]
     PROJECT["runnable project"]
-    LOOP["BPE (loop)"]
     
     ESM --> SCREEN
     ESM --> DTA
@@ -84,8 +84,8 @@ flowchart LR
     classDef workflow fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef artifact fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     
-    class ESM,DTA,DSP,EST,BSP,BPE workflow
-    class SCREEN,SAO,CLAUDE,ESTIMATION,PROJECT,LOOP artifact
+    class ESM,DTA,DSP,EST,BSP,BPE,LOOP workflow
+    class SCREEN,SAO,CLAUDE,ESTIMATION,PROJECT artifact
 ```
 
 ---
