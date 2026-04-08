@@ -1,11 +1,23 @@
-# Define Software Process
+# Deploy Software Process
 
 **Playbook**: FeatureFactory v3.8 (Draft)
 **Workflow ID**: TBD
-**Description**: Define how the project runs — base methodology, lifecycle phases (Inception → Elaboration → Construction → Operation), iteration structure, WBS, sample plans, and AI/human collaboration patterns. Output: docs/process/MODUS_OPERANDI.md
-**Phase Organization**: Uses phases (Decision → Planning → Documentation)
+**Description**: Check prerequisite artifacts (ESM, DTA), choose target AI IDE, and generate configuration (CLAUDE.md / copilot-instructions.md / Windsurf rules) so AI can consume docs/**, workflows, skills, and artifact templates to start building features.
+**Phase Organization**: Uses phases (Prerequisite Check → Configuration → Finalization)
 **Total Activities**: 6
-**Export Date**: 2026-04-06
+**Export Date**: 2026-04-08
+
+## Prerequisites
+
+- Completed ESM workflow → user journey, screen flows, feature files, IA guidelines
+- Completed DTA workflow → `docs/architecture/SAO.md`
+
+## Output
+
+- AI IDE configuration file for chosen target:
+  - **Claude Code** → `CLAUDE.md`
+  - **GitHub Copilot** → `.github/copilot-instructions.md`
+  - **Windsurf/Cursor** → `.windsurf/rules/` + `.cursor/rules/`
 
 ## Activities
 
