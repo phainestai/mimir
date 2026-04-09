@@ -1,14 +1,14 @@
-# FeatureFactory Playbook v3.8
+# FeatureFactory Playbook v3.9
 
 **Playbook**: FeatureFactory
-**Version**: 3.8 (Draft)
+**Version**: 3.9 (Draft)
 **Purpose**: End-to-end workflow for AI-assisted software product development — from idea to shipped feature, with estimation, architecture, and repeatable delivery.
 
 ---
 
 ## What This Playbook Does
 
-FeatureFactory turns a product idea into running, tested, estimated software through a sequence of six workflows. The first four run once during **Inception** and produce the base artifacts every subsequent sprint depends on. The last two form the **Delivery Loop** that repeats every sprint.
+FeatureFactory turns a product idea into running, tested, estimated software through a sequence of eight workflows. The first six run once during **Inception** and produce the base artifacts every subsequent sprint depends on. The last two form the **Delivery Loop** that repeats every sprint.
 
 ---
 
@@ -22,15 +22,17 @@ FeatureFactory turns a product idea into running, tested, estimated software thr
 | 2 | **DTA** — Define Architecture | Technical decisions across 16 domains → SAO | `docs/architecture/SAO.md` |
 | 3 | **DSP** — Deploy Software Process | AI IDE configuration (CLAUDE.md / copilot rules / Windsurf rules) | `CLAUDE.md` or `.windsurf/rules/` |
 | 4 | **EST** — Estimate the Project | Two-level estimates, Monte Carlo forecast, client quote | `docs/plans/ESTIMATION_TEMPLATE.xlsx`, `docs/plans/ESTIMATION_STRATEGY.md` |
+| 5 | **DCI** — Design & Deploy Cloud Infra | Infra repo with CDK stacks (VPC, EKS, ECR, Route53), Makefile targets, GH Actions | `{project}-infra/` repo, `docs/architecture/INFRA_REQUIREMENTS.md` |
+| 6 | **DCD** — Design & Deploy CICD | Helm chart, CI/CD pipelines (GH Actions), deployment Make targets | `deploy/helm/`, `.github/workflows/ci.yml`, `.github/workflows/cd.yml` |
 
-**Gate condition**: All four Inception workflows must complete before Sprint 0 begins. BSP requires SAO.md (from DTA). EST Level 2 requires SAO.md + feature files (from ESM).
+**Gate condition**: All six Inception workflows must complete before Sprint 0 begins. BSP requires SAO.md (from DTA). EST Level 2 requires SAO.md + feature files (from ESM). DCI requires SAO.md + estimation. DCD requires DCI (infra must exist before CICD can deploy to it).
 
 ### Delivery Loop (repeats every sprint)
 
 | # | Workflow | When It Runs | Key Output |
 |---|----------|-------------|------------|
-| 5 | **BSP** — Bootstrap Project | Sprint 0 only | Runnable project, Makefile, dependencies |
-| 6 | **BPE** — Build Feature | Every sprint, once per feature | Implemented + tested feature, DoD signed off |
+| 7 | **BSP** — Bootstrap Project | Sprint 0 only | Runnable project, Makefile, dependencies |
+| 8 | **BPE** — Build Feature | Every sprint, once per feature | Implemented + tested feature, DoD signed off |
 | — | **EST-08** — Sprint Close & Rebaseline | End of every sprint | Updated estimates, calibrated $/FP |
 
 ---
@@ -46,6 +48,13 @@ docs/architecture/screen-flow.drawio   ← Screen map, navigation flows (ESM out
 docs/features/**/*.feature             ← BDD scenarios, one file per feature (ESM output)
 docs/plans/ESTIMATION_TEMPLATE.xlsx   ← Live estimates, Monte Carlo, client quote (EST output)
 docs/plans/ESTIMATION_STRATEGY.md     ← Estimation level, risk profile, sprint cadence (EST output)
+docs/architecture/INFRA_REQUIREMENTS.md ← AWS services, blue/green strategy, cost (DCI output)
+docs/architecture/CICD_REQUIREMENTS.md  ← Pipeline stages, make targets, environments (DCD output)
+{project}-infra/                        ← Separate infra repo with CDK stacks (DCI output)
+deploy/helm/{project}/                  ← Helm chart + per-env values (DCD output)
+.github/workflows/ci.yml               ← CI pipeline (DCD output)
+.github/workflows/cd.yml               ← CD pipeline (DCD output)
+Makefile                                ← Single orchestration layer (BSP + DCI + DCD)
 ```
 
 ---
@@ -58,6 +67,8 @@ flowchart LR
     DTA["DTA<br/>Define Architecture"]
     DSP["DSP<br/>Deploy Software Process"]
     EST["EST<br/>Estimate the Project"]
+    DCI["DCI<br/>Design & Deploy<br/>Cloud Infra"]
+    DCD["DCD<br/>Design & Deploy<br/>CICD"]
     BSP["BSP<br/>Bootstrap Project"]
     BPE["BPE<br/>Build Feature<br/>(loop)"]
     
@@ -65,6 +76,8 @@ flowchart LR
     SAO["SAO.md"]
     CLAUDE["CLAUDE.md"]
     ESTIMATION["ESTIMATION_TEMPLATE.xlsx"]
+    INFRA["infra repo<br/>+ INFRA_REQUIREMENTS.md"]
+    CICD["Helm chart<br/>+ CI/CD workflows"]
     PROJECT["runnable project"]
     
     ESM --> SCREEN
@@ -72,9 +85,14 @@ flowchart LR
     DTA --> SAO
     SAO --> DSP
     SAO --> EST
+    SAO --> DCI
     DSP --> CLAUDE
     EST --> ESTIMATION
+    DCI --> INFRA
+    INFRA --> DCD
+    DCD --> CICD
     ESTIMATION --> BSP
+    CICD --> BSP
     BSP --> PROJECT
     PROJECT --> BPE
     
@@ -83,8 +101,8 @@ flowchart LR
     classDef workflow fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef artifact fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     
-    class ESM,DTA,DSP,EST,BSP,BPE workflow
-    class SCREEN,SAO,CLAUDE,ESTIMATION,PROJECT artifact
+    class ESM,DTA,DSP,EST,DCI,DCD,BSP,BPE workflow
+    class SCREEN,SAO,CLAUDE,ESTIMATION,INFRA,CICD,PROJECT artifact
 ```
 
 ---
@@ -107,8 +125,9 @@ The `generate_estimation_xls.py` skill (in `EST/skills/`) automates the full XLS
 1. **SAO.md is the single source of architectural truth.** Every workflow that touches code reads SAO.md first. If SAO.md is stale, update DTA before proceeding.
 2. **Feature files are the scope contract.** EST sizes from them; BPE implements them; tests verify them. Do not implement work that has no `.feature` file.
 3. **Estimates are living documents.** Level 1 → Level 2 → Sprint Close is a convergence loop. Never treat an estimate as final.
-4. **Sprint 0 overhead is always quoted separately.** BSP + DSP FP must appear as a line item on the client quote, never blended into feature FPs.
+4. **Sprint 0 overhead is always quoted separately.** BSP + DSP + DCI + DCD FP must appear as a line item on the client quote, never blended into feature FPs.
 5. **DoD is non-negotiable.** BPE-06 applies to every feature regardless of size. No feature ships without DoD sign-off.
+6. **Makefile is the single orchestration layer.** Every operation (dev, infra, deploy, switch) is a `make` target. GH Actions workflows are thin wrappers calling `make` in sequence. Local and CI/CD use identical commands.
 
 ---
 
@@ -126,7 +145,24 @@ FeatureFactory/
 │   ├── skills/
 │   │   └── generate_estimation_xls.py   ← XLS skill (call from Windsurf)
 │   └── artifacts/
+├── DCI/                 ← Design & Deploy Cloud Infra (7 activities)
+│   ├── skills/
+│   │   ├── aws_cdk_python.md            ← AWS CDK patterns
+│   │   └── k8s_eks_deployment.md        ← K8s/EKS deployment patterns
+│   └── artifacts/
+│       ├── infra_repo_scaffold.md       ← Infra repo structure template
+│       ├── cdk_stack_templates.py       ← CDK stack skeletons
+│       └── infra_gh_workflow.yml        ← GH Actions for infra deploy
+├── DCD/                 ← Design & Deploy CICD (7 activities)
+│   ├── skills/
+│   │   └── github_actions_patterns.md   ← GH Actions CI/CD patterns
+│   └── artifacts/
+│       ├── helmchart_template.md         ← Helm chart structure
+│       ├── ci_workflow.yml              ← CI pipeline template
+│       └── cd_workflow.yml              ← CD pipeline template
 ├── BSP/                 ← Bootstrap Project (8 activities)
+│   └── artifacts/
+│       └── makefile_template.mk         ← Makefile template (base + extension points)
 └── BPE/                 ← Build Feature (8 activities)
 ```
 

@@ -15,142 +15,33 @@ Create Makefile
 
 ## Objective
 
-Create a comprehensive Makefile that serves as the single entry point for all development operations: provisioning, running, testing, linting, formatting, and cleanup. All targets must be idempotent and well-documented.
+Create a comprehensive Makefile that serves as the **single orchestration layer** for all development, infrastructure, and deployment operations. CI/CD pipelines call these targets — no business logic lives in GitHub Actions.
+
+The Makefile template is in `BSP/artifacts/makefile_template.mk`. Copy it, adapt variables to your stack, and verify all targets work.
 
 ---
 
 ## Process
 
-### 1. Makefile Structure
+### 1. Copy Makefile Template
 
-```makefile
-.PHONY: help provision run test test-unit test-integration test-e2e lint format clean
+Copy `BSP/artifacts/makefile_template.mk` to your project root as `Makefile`.
 
-# Default target
-.DEFAULT_GOAL := help
+The template includes:
+- **Base sections**: General, Provision, Development, Testing, Code Quality, Database, Cleanup
+- **Extension points**: `##@ Infrastructure` and `##@ Deployment` sections (commented out, added by DCI/DCD workflows later)
+- **Commented variable blocks** for infra and deployment (uncommented during DCI/DCD)
 
-# Variables
-VENV := .venv
-PYTHON := $(VENV)/bin/python
-PIP := $(VENV)/bin/pip
-PYTEST := $(VENV)/bin/pytest
-MANAGE := $(PYTHON) manage.py
-PORT := 8000
-
-##@ General
-
-help: ## Show this help message
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) }' $(MAKEFILE_LIST)
-
-##@ Provision
-
-provision: _check-prereqs _venv _pip-install _npm-install _db-init ## Install all prerequisites & dependencies
-	@echo "✅ Provisioning complete. Run 'make run' to start."
-
-_check-prereqs:
-	@echo "Checking prerequisites..."
-	@command -v python3 >/dev/null 2>&1 || { echo "❌ python3 not found"; exit 1; }
-	@command -v git >/dev/null 2>&1 || { echo "❌ git not found"; exit 1; }
-	@echo "✅ Prerequisites OK"
-
-_venv:
-	@if [ ! -d "$(VENV)" ]; then \
-		echo "Creating virtual environment..."; \
-		python3 -m venv $(VENV); \
-		$(PIP) install --upgrade pip; \
-	else \
-		echo "✅ Virtual environment exists"; \
-	fi
-
-_pip-install:
-	@echo "Installing Python dependencies..."
-	@$(PIP) install -r requirements.txt -q
-
-_npm-install:
-	@if [ -f "package.json" ]; then \
-		echo "Installing Node.js dependencies..."; \
-		npm install; \
-	fi
-
-_db-init:
-	@echo "Running database migrations..."
-	@$(MANAGE) migrate --run-syncdb
-
-##@ Development
-
-run: ## Start development server
-	@$(MANAGE) runserver 0.0.0.0:$(PORT)
-
-shell: ## Open Django shell
-	@$(MANAGE) shell
-
-dbshell: ## Open database shell
-	@$(MANAGE) dbshell
-
-##@ Testing
-
-test: ## Run all tests
-	@$(PYTEST) tests/ -v --tb=short 2>&1 | tee tests.log
-
-test-unit: ## Run unit tests only
-	@$(PYTEST) tests/unit/ -v --tb=short
-
-test-integration: ## Run integration tests only
-	@$(PYTEST) tests/integration/ -v --tb=short
-
-test-e2e: ## Run E2E tests only
-	@$(PYTEST) tests/e2e/ -v --tb=short
-
-test-watch: ## Run tests in watch mode (requires pytest-watch)
-	@$(VENV)/bin/ptw tests/ -- -v --tb=short
-
-coverage: ## Run tests with coverage report
-	@$(PYTEST) tests/ --cov --cov-report=html --cov-report=term-missing
-
-##@ Code Quality
-
-lint: ## Run linter (ruff check)
-	@$(VENV)/bin/ruff check .
-
-format: ## Auto-format code (ruff format)
-	@$(VENV)/bin/ruff format .
-	@$(VENV)/bin/ruff check --fix .
-
-typecheck: ## Run type checker (if configured)
-	@$(VENV)/bin/mypy . || echo "mypy not configured — skipping"
-
-precommit: ## Run all pre-commit hooks
-	@$(VENV)/bin/pre-commit run --all-files
-
-##@ Database
-
-migrate: ## Run database migrations
-	@$(MANAGE) migrate
-
-makemigrations: ## Create new migrations
-	@$(MANAGE) makemigrations
-
-##@ Cleanup
-
-clean: ## Remove build artifacts, caches, logs
-	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@rm -rf .pytest_cache htmlcov .coverage coverage.xml
-	@rm -rf node_modules
-	@rm -f tests.log
-	@echo "✅ Cleaned"
-
-clean-all: clean ## Remove everything including venv
-	@rm -rf $(VENV)
-	@echo "✅ Cleaned all (including venv)"
-```
+See the full template: [`BSP/artifacts/makefile_template.mk`](artifacts/makefile_template.mk)
 
 ### 2. Adapt to Stack
 
+- Read SAO.md Technology Stack Table for tool paths and versions
 - If no Node.js in stack: remove `_npm-install` and `package.json` check
 - If no Django: replace `manage.py` commands with framework equivalents
 - If additional tools (e.g., Docker): add `docker-up`, `docker-down` targets
 - All targets should follow the pattern: verb-noun (e.g., `test-unit`, `db-init`)
+- **Do NOT uncomment** `##@ Infrastructure` or `##@ Deployment` sections yet — those are added by DCI and DCD workflows respectively
 
 ### 3. Verify All Targets
 
@@ -183,14 +74,20 @@ git commit -m "chore(make): create Makefile with provision, run, test, lint, for
 
 ## Artifacts Produced
 
-- `Makefile`
+- `Makefile` (from `BSP/artifacts/makefile_template.mk`)
 
 ## Artifacts Consumed
 
+- `BSP/artifacts/makefile_template.mk` — Makefile template (single source of truth)
 - `docs/architecture/SAO.md` — Technology Stack Table (for tool paths)
 - `docs/architecture/SAO.md` — § Test Strategy (DTA-06) for test targets
 - `docs/architecture/SAO.md` — § Developer Experience (DTA-16) for quality targets
 
 ## Notes
 
-The Makefile is the **single source of truth** for all dev operations. README.md references it. CI/CD pipelines call its targets. New developers only need to know `make provision && make run`.
+The Makefile is the **single orchestration layer** for all operations. CI/CD pipelines (GitHub Actions) are thin wrappers that call `make` targets in sequence. This means:
+- Local dev and CI/CD use identical commands
+- Any pipeline step can be reproduced locally
+- GH Actions never contains business logic, only `make` calls + approval gates
+
+The `##@ Infrastructure` and `##@ Deployment` sections are extension points. They are populated by the DCI and DCD workflows respectively during Inception.
