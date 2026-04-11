@@ -61,9 +61,9 @@
         <div class="card-header">
             <h5 class="mb-0"><i class="fa-solid fa-align-left"></i> Description</h5>
         </div>
-        <div class="card-body" data-testid="agent-description">
+        <div class="card-body" data-testid="agent-description" style="max-height: 400px; overflow-y: auto;">
             {% if agent.description %}
-                <p>{{ agent.description }}</p>
+                <pre class="mb-0" style="white-space: pre-wrap; word-wrap: break-word; font-size: 0.875rem;">{{ agent.description }}</pre>
             {% else %}
                 <p class="text-muted">No description provided.</p>
             {% endif %}
