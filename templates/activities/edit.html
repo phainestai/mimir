@@ -171,6 +171,98 @@
                             </div>
                         </div>
 
+                        <!-- Agent Selection -->
+                        <div class="mb-4">
+                            <label for="agent" class="form-label">
+                                Assigned Agent
+                                <i class="fa-solid fa-info-circle text-muted" 
+                                   data-bs-toggle="tooltip"
+                                   title="AI agent responsible for performing this activity"></i>
+                            </label>
+                            <select name="agent" 
+                                    id="agent" 
+                                    class="form-select"
+                                    data-testid="agent-select">
+                                <option value="">-- None --</option>
+                                {% for agent in available_agents %}
+                                <option value="{{ agent.id }}" 
+                                        {% if form_data.agent|stringformat:"s" == agent.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ agent.name }}{% if agent.description %} - {{ agent.description|striptags|truncatewords:10 }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="fa-solid fa-brain"></i> Optional: AI agent to perform this activity
+                            </small>
+                        </div>
+
+                        <!-- Skill Selection -->
+                        <div class="mb-4">
+                            <label for="skill" class="form-label">
+                                Required Skill
+                                <i class="fa-solid fa-info-circle text-muted" 
+                                   data-bs-toggle="tooltip"
+                                   title="Skill needed to perform this activity"></i>
+                            </label>
+                            <select name="skill" 
+                                    id="skill" 
+                                    class="form-select"
+                                    data-testid="skill-select">
+                                <option value="">-- None --</option>
+                                {% for skill in available_skills %}
+                                <option value="{{ skill.id }}" 
+                                        {% if form_data.skill|stringformat:"s" == skill.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ skill.title }}{% if skill.capability_domain %} ({{ skill.capability_domain }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="fa-solid fa-hand-holding-magic"></i> Optional: Skill required for this activity
+                            </small>
+                        </div>
+
+                        <!-- Artifact Inputs -->
+                        <div class="mb-4">
+                            <label class="form-label">
+                                Input Artifacts
+                                <i class="fa-solid fa-info-circle text-muted" 
+                                   data-bs-toggle="tooltip"
+                                   title="Artifacts consumed by this activity"></i>
+                            </label>
+                            {% if available_artifacts %}
+                            <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;" data-testid="artifact-inputs-list">
+                                {% for artifact in available_artifacts %}
+                                <div class="form-check">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           name="artifact_inputs" 
+                                           value="{{ artifact.id }}"
+                                           id="artifact_{{ artifact.id }}"
+                                           {% if artifact.id in form_data.artifact_inputs %}checked{% endif %}
+                                           data-testid="artifact-checkbox-{{ artifact.id }}">
+                                    <label class="form-check-label" for="artifact_{{ artifact.id }}">
+                                        <i class="fa-solid fa-file-lines text-primary me-1"></i>
+                                        <strong>{{ artifact.name }}</strong>
+                                        <span class="badge bg-secondary ms-2">{{ artifact.type }}</span>
+                                        {% if artifact.is_required %}
+                                        <span class="badge bg-danger ms-1">Required</span>
+                                        {% endif %}
+                                        <br>
+                                        <small class="text-muted ms-4">Produced by: {{ artifact.produced_by.name }}</small>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted small">
+                                <i class="fa-solid fa-info-circle"></i> No artifacts available in this playbook yet
+                            </p>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                <i class="fa-solid fa-file-lines"></i> Optional: Select artifacts consumed as inputs
+                            </small>
+                        </div>
+
                         <!-- Buttons -->
                         <div class="d-flex justify-content-between mt-4">
                             <a 

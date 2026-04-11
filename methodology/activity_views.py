@@ -344,6 +344,10 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
         order = request.POST.get('order', '').strip()
         predecessor_id = request.POST.get('predecessor', '').strip() or None
         successor_id = request.POST.get('successor', '').strip() or None
+        agent_id = request.POST.get('agent', '').strip() or None
+        skill_id = request.POST.get('skill', '').strip() or None
+        artifact_input_ids = request.POST.getlist('artifact_inputs')
+
         
         # Convert order to int
         order_int = None
@@ -388,6 +392,38 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
                 update_fields['order'] = order_int
             
             ActivityService.update_activity(activity_pk, **update_fields)
+            
+            # Handle agent linking
+            if agent_id:
+                ActivityService.set_activity_agent(activity_pk, int(agent_id))
+                logger.info(f"Agent {agent_id} linked to activity {activity_pk}")
+            else:
+                ActivityService.clear_activity_agent(activity_pk)
+                logger.info(f"Agent unlinked from activity {activity_pk}")
+            
+            # Handle skill linking
+            if skill_id:
+                ActivityService.set_activity_skill(activity_pk, int(skill_id))
+                logger.info(f"Skill {skill_id} linked to activity {activity_pk}")
+            else:
+                ActivityService.clear_activity_skill(activity_pk)
+                logger.info(f"Skill unlinked from activity {activity_pk}")
+            
+            # Handle artifact inputs
+            from methodology.models import ArtifactInput
+            # Clear existing artifact inputs
+            ArtifactInput.objects.filter(activity_id=activity_pk).delete()
+            logger.info(f"Cleared existing artifact inputs for activity {activity_pk}")
+            
+            # Add new artifact inputs
+            for artifact_id_str in artifact_input_ids:
+                try:
+                    artifact_id = int(artifact_id_str)
+                    from methodology.services.artifact_service import ArtifactService
+                    ArtifactService.link_artifact_to_activity(artifact_id, activity_pk, is_required=False)
+                    logger.info(f"Artifact {artifact_id} linked as input to activity {activity_pk}")
+                except (ValueError, Exception) as e:
+                    logger.warning(f"Failed to link artifact {artifact_id_str} to activity {activity_pk}: {e}")
             logger.info(f"Activity {activity_pk} updated successfully")
             messages.success(request, f"Activity '{name}' updated successfully!")
             return redirect('activity_detail', playbook_pk=playbook_pk, workflow_pk=workflow_pk, activity_pk=activity_pk)
@@ -405,6 +441,10 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
         'order': activity.order,
         'predecessor': activity.predecessor.id if activity.predecessor else '',
         'successor': activity.successor.id if activity.successor else '',
+        'agent': activity.agent.id if activity.agent else '',
+        'skill': activity.skill.id if activity.skill else '',
+        'artifact_inputs': list(activity.artifact_inputs.values_list('artifact_id', flat=True)),
+
     }
     return _render_edit_form(request, playbook, workflow, activity, form_data, {})
 
@@ -413,6 +453,18 @@ def _render_edit_form(request, playbook, workflow, activity, form_data, errors):
     """Helper to render edit form with context."""
     # Get available predecessors and successors (exclude current activity)
     available_predecessors = ActivityService.get_available_predecessors(workflow, exclude_activity_id=activity.id)
+    
+    # Get available agents, skills, and artifacts from playbook
+    from methodology.models import Agent, Skill, Artifact
+    available_agents = Agent.objects.filter(playbook=playbook).order_by('name')
+    available_skills = Skill.objects.filter(playbook=playbook).order_by('title')
+    # Exclude artifacts produced by this activity
+    available_artifacts = Artifact.objects.filter(
+        playbook=playbook
+    ).exclude(
+        produced_by=activity
+    ).select_related('produced_by').order_by('produced_by__name', 'name')
+
     available_successors = ActivityService.get_available_successors(workflow, exclude_activity_id=activity.id)
     
     # Check if dropdowns should be disabled (only 1 activity - the current one)
@@ -423,6 +475,10 @@ def _render_edit_form(request, playbook, workflow, activity, form_data, errors):
         'workflow': workflow,
         'activity': activity,
         'form_data': form_data,
+        'available_agents': available_agents,
+        'available_skills': available_skills,
+        'available_artifacts': available_artifacts,
+
         'errors': errors,
         'available_predecessors': available_predecessors,
         'available_successors': available_successors,
