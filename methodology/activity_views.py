@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 
-from methodology.models import Playbook, Workflow, Activity
+from methodology.models import Playbook, Workflow, Activity, ArtifactInput
 from methodology.services.activity_service import ActivityService
 
 logger = logging.getLogger(__name__)
@@ -286,7 +286,6 @@ def activity_detail(request, playbook_pk, workflow_pk, activity_pk):
     
     
     # Get artifact inputs for this activity
-    from methodology.models import ArtifactInput
     artifact_inputs = ArtifactInput.objects.filter(
         activity=activity
     ).select_related('artifact', 'artifact__produced_by').order_by('artifact__name')
@@ -420,7 +419,6 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
                 logger.info(f"Skill unlinked from activity {activity_pk}")
             
             # Handle artifact inputs
-            from methodology.models import ArtifactInput
             # Clear existing artifact inputs
             ArtifactInput.objects.filter(activity_id=activity_pk).delete()
             logger.info(f"Cleared existing artifact inputs for activity {activity_pk}")
@@ -429,8 +427,11 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
             for artifact_id_str in artifact_input_ids:
                 try:
                     artifact_id = int(artifact_id_str)
-                    from methodology.services.artifact_service import ArtifactService
-                    ArtifactService.link_artifact_to_activity(artifact_id, activity_pk, is_required=False)
+                    ArtifactInput.objects.create(
+                        activity_id=activity_pk,
+                        artifact_id=artifact_id,
+                        is_required=False
+                    )
                     logger.info(f"Artifact {artifact_id} linked as input to activity {activity_pk}")
                 except (ValueError, Exception) as e:
                     logger.warning(f"Failed to link artifact {artifact_id_str} to activity {activity_pk}: {e}")
@@ -453,7 +454,7 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
         'successor': activity.successor.id if activity.successor else '',
         'agent': activity.agent.id if activity.agent else '',
         'skill': activity.skill.id if activity.skill else '',
-        'artifact_inputs': list(activity.artifact_inputs.values_list('artifact_id', flat=True)),
+        'artifact_inputs': list(ArtifactInput.objects.filter(activity=activity).values_list('artifact_id', flat=True)),
 
     }
     return _render_edit_form(request, playbook, workflow, activity, form_data, {})

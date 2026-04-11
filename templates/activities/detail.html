@@ -187,7 +187,7 @@
                 <div class="card-body">
                     {% if activity.skill %}
                         <h6 class="card-title">
-                            <a href="{% url 'skill_detail' pk=activity.skill.id %}" data-testid="skill-link">
+                            <a href="{% url 'skill_detail' playbook_pk=playbook.pk skill_pk=activity.skill.id %}" data-testid="skill-link">
                                 {{ activity.skill.title }}
                             </a>
                         </h6>
