@@ -1,16 +1,16 @@
-# Upload Protocol for Bootstrap Project (BSP)
+# Upload Protocol for Bootstrap Project
 
-**Generated**: 2026-04-11 14:57 UTC
-**Workflow ID**: 1
-**Playbook**: FeatureFactory v5.5 (draft)
+**Generated**: 2026-04-12 14:43 UTC
+**Workflow ID**: 14
+**Playbook**: FeatureFactory v8.7 (draft)
 
 ## Change Summary
 
 - **New Activities**: 8
 - **Modified Activities**: 0
-- **Deleted Activities**: 8
+- **Deleted Activities**: 0
 - **Reordered Activities**: 0
-- **Total Changes**: 16
+- **Total Changes**: 8
 
 ## Detailed Changes
 
@@ -39,32 +39,6 @@
 
 - **Configure Observability & Logging** (Order: 8, Phase: Configure)
   - **Rationale**: [AI to fill: Why this activity is needed]
-
-### Deleted Activities
-
-- **Verify & Install Prerequisites** (ID: 1, Order: 1)
-  - **Rationale**: [AI to fill: Why this activity is no longer needed]
-
-- **Initialize Repository** (ID: 2, Order: 2)
-  - **Rationale**: [AI to fill: Why this activity is no longer needed]
-
-- **Scaffold Project Structure** (ID: 3, Order: 3)
-  - **Rationale**: [AI to fill: Why this activity is no longer needed]
-
-- **Initialize Runtimes & Dependencies** (ID: 4, Order: 4)
-  - **Rationale**: [AI to fill: Why this activity is no longer needed]
-
-- **Configure Dev Tooling** (ID: 5, Order: 5)
-  - **Rationale**: [AI to fill: Why this activity is no longer needed]
-
-- **Create Makefile** (ID: 6, Order: 6)
-  - **Rationale**: [AI to fill: Why this activity is no longer needed]
-
-- **Create Welcome Page & Verify** (ID: 7, Order: 7)
-  - **Rationale**: [AI to fill: Why this activity is no longer needed]
-
-- **Configure Observability & Logging** (ID: 8, Order: 8)
-  - **Rationale**: [AI to fill: Why this activity is no longer needed]
 
 
 ## Approval Options

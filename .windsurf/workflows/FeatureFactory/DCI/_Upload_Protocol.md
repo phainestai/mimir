@@ -1,37 +1,40 @@
-# Upload Protocol for Deploy Software Process
+# Upload Protocol for Design & Deploy Cloud Infra
 
-**Generated**: 2026-04-12 14:42 UTC
-**Workflow ID**: 10
-**Playbook**: FeatureFactory v5.9 (draft)
+**Generated**: 2026-04-12 14:43 UTC
+**Workflow ID**: 12
+**Playbook**: FeatureFactory v7.3 (draft)
 
 ## Change Summary
 
-- **New Activities**: 6
+- **New Activities**: 7
 - **Modified Activities**: 0
 - **Deleted Activities**: 0
 - **Reordered Activities**: 0
-- **Total Changes**: 6
+- **Total Changes**: 7
 
 ## Detailed Changes
 
 ### New Activities
 
-- **Verify ESM Artifacts** (Order: 1, Phase: Prerequisite Check)
+- **Review SAO & Define Infra Requirements** (Order: 1, Phase: Design)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
-- **Verify DTA Artifacts** (Order: 2, Phase: Prerequisite Check)
+- **Scaffold Infra Repo & CDK Project** (Order: 2, Phase: Design)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
-- **Verify Architecture & Code Organization** (Order: 3, Phase: Prerequisite Check)
+- **Build VPC & Networking Stack** (Order: 3, Phase: Provision)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
-- **Choose Target AI IDE** (Order: 4, Phase: Configuration)
+- **Build EKS Cluster & ECR Stack** (Order: 4, Phase: Provision)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
-- **Generate AI IDE Configuration** (Order: 5, Phase: Configuration)
+- **Build Route53 & DNS Stack** (Order: 5, Phase: Provision)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
-- **Review & Commit** (Order: 6, Phase: Finalization)
+- **Create Infra GH Workflow** (Order: 6, Phase: Deploy)
+  - **Rationale**: [AI to fill: Why this activity is needed]
+
+- **Deploy & Verify Cloud Environment** (Order: 7, Phase: Verify)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
 

@@ -1,37 +1,40 @@
-# Upload Protocol for Deploy Software Process
+# Upload Protocol for Design & Deploy CICD
 
-**Generated**: 2026-04-12 14:42 UTC
-**Workflow ID**: 10
-**Playbook**: FeatureFactory v5.9 (draft)
+**Generated**: 2026-04-12 14:43 UTC
+**Workflow ID**: 13
+**Playbook**: FeatureFactory v8.0 (draft)
 
 ## Change Summary
 
-- **New Activities**: 6
+- **New Activities**: 7
 - **Modified Activities**: 0
 - **Deleted Activities**: 0
 - **Reordered Activities**: 0
-- **Total Changes**: 6
+- **Total Changes**: 7
 
 ## Detailed Changes
 
 ### New Activities
 
-- **Verify ESM Artifacts** (Order: 1, Phase: Prerequisite Check)
+- **Review SAO & Define CICD Requirements** (Order: 1, Phase: Design)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
-- **Verify DTA Artifacts** (Order: 2, Phase: Prerequisite Check)
+- **Create Helm Chart & Values** (Order: 2, Phase: Design)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
-- **Verify Architecture & Code Organization** (Order: 3, Phase: Prerequisite Check)
+- **Add Container & Deploy Make Targets** (Order: 3, Phase: Build)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
-- **Choose Target AI IDE** (Order: 4, Phase: Configuration)
+- **Build CI Pipeline** (Order: 4, Phase: Build)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
-- **Generate AI IDE Configuration** (Order: 5, Phase: Configuration)
+- **Build CD Pipeline** (Order: 5, Phase: Deploy)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
-- **Review & Commit** (Order: 6, Phase: Finalization)
+- **Implement Switch & Rollback** (Order: 6, Phase: Deploy)
+  - **Rationale**: [AI to fill: Why this activity is needed]
+
+- **End-to-End Pipeline Verification** (Order: 7, Phase: Verify)
   - **Rationale**: [AI to fill: Why this activity is needed]
 
 
