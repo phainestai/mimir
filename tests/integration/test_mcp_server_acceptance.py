@@ -27,7 +27,7 @@ class MCPServerTest:
         """Start the MCP server subprocess."""
         logger.info("Starting MCP server subprocess...")
         
-        venv_python = self.project_root / "venv" / "bin" / "python"
+        venv_python = self.project_root / ".venv" / "bin" / "python"
         manage_py = self.project_root / "manage.py"
         
         self.process = subprocess.Popen(
