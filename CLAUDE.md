@@ -265,3 +265,67 @@ Both processes share the same SQLite DB with a 20-second timeout for concurrent 
 - **Mermaid.js** for inline diagrams in activity guidance (Markdown)
 - Always add `data-testid` attributes to interactive elements for Playwright tests
 - Tooltips on complex form fields (consistent pattern per `docs/ux/IA_guidelines.md`)
+
+---
+
+## Iteration Protocol
+
+When tasked with **"Work on Milestone #N"**:
+
+1. Read milestone description — parse `<!-- MANIFEST -->` YAML block
+2. Verify all `status-queued` issues exist for each scenario in manifest
+3. Find next eligible scenario: `status-queued` + all `dependencies[]` issues are closed (`status-done`)
+4. Apply `status-in-progress` label, remove `status-queued`
+5. Post `<!-- EXECUTION_START -->` comment with timestamp and time budget
+6. Follow **BPE-02 → BPE-05** to fill the skeleton (implement the `raise NotImplementedError()` stubs)
+7. Monitor files touched vs `codebase_footprint[]` from issue `<!-- SCENARIO -->` block
+8. Run `checkpoint.command` from issue YAML
+9. If **PASS**: commit, close issue, comment actual_duration + `status-done`, go to step 3
+10. If **FAIL**: go to Drift Handling below
+
+### Drift Handling
+
+- `time_overrun` < 120% of budget: post `<!-- DRIFT absorbed -->` comment, continue
+- `test_failure` (first time): apply targeted fix, retry checkpoint once
+  - Retry passes → continue (record retry in comment)
+  - Retry fails → reclassify as `checkpoint_fail_retry` → **ESCALATE**
+- `scope_expansion` of test/config file: add to footprint in issue YAML, continue
+- `scope_expansion` of production source file → **ESCALATE**
+- `time_overrun` ≥ 200% of budget → **ESCALATE**
+- `checkpoint_fail_retry` (second failure after retry) → **ESCALATE**
+- 2+ absorbed signals on same scenario → **ESCALATE**
+
+### Escalation
+
+Post on the issue and stop:
+```
+<!-- ESCALATE -->
+type: {signal_type}
+severity: escalated
+detected_at: {ISO8601}
+evidence: {specific evidence}
+jedao_recommendation: {A: fix and retry | B: resequence | C: scope reduce}
+await_human_decision: true
+<!-- /ESCALATE -->
+```
+Apply label `drift-escalated`, remove `status-in-progress`. **Do not touch code until human posts a decision comment.**
+
+Human decision keywords: `fix and retry` / `resequence` / `scope reduce` / `pause`
+
+### Session Resume Protocol
+
+On every session start when an iteration is active:
+1. `gh issue list --label status-in-progress --json number,title,milestone`
+2. If an issue has `status-in-progress` → that is where you left off
+3. Re-run `checkpoint.command` from the issue `<!-- SCENARIO -->` YAML first
+4. PASS → close issue, `status-done`, pull next scenario
+5. FAIL → treat as first `test_failure`, apply retry protocol
+6. No `status-in-progress` issues → find next `status-queued` eligible scenario
+
+### Authority Model (Jedao)
+
+**Can decide without asking:** reorder within same parallel group, absorb drift below threshold, retry checkpoint once, add test/config file to footprint, skip blocked scenario and return later
+
+**Must escalate:** checkpoint fail after retry, production file outside footprint, time ≥ 2× budget, integration conflict not in manifest, 2+ absorbed signals on same scenario
+
+**Cannot do:** drop a scenario, add scope, modify manifest goal, merge to main, create release without human review
