@@ -149,14 +149,17 @@ class Playbook(models.Model):
         :returns: Dictionary with stat counts
         :rtype: dict
         """
+        from methodology.models.activity import Activity
+        from methodology.models.artifact import Artifact
+
+        activity_qs = Activity.objects.filter(workflow__playbook=self)  # noqa: F841
         return {
             'workflows': self.workflows.count(),
-            'phases': 0,  # TODO: Implement when Phase model exists
-            'activities': 0,  # TODO: Implement when Activity model exists
-            'artifacts': 0,  # TODO: Implement when Artifact model exists
-            'roles': 0,  # TODO: Implement when Role model exists
-            'skills': 0,  # TODO: Implement when Skill model exists
-            'goals': 'Coming soon (v2.1)'
+            'phases': activity_qs.exclude(phase__isnull=True).exclude(phase='').values('phase').distinct().count(),
+            'activities': activity_qs.count(),
+            'artifacts': Artifact.objects.filter(playbook=self).count(),
+            'agents': self.agents.count(),
+            'skills': self.skills.count(),
         }
     
     def get_status_badge_color(self):

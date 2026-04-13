@@ -39,9 +39,8 @@ class TestPlaybookQuickStats:
         assert 'phases' in stats
         assert 'activities' in stats
         assert 'artifacts' in stats
-        assert 'roles' in stats
+        assert 'agents' in stats
         assert 'skills' in stats
-        assert stats['goals'] == 'Coming soon (v2.1)'
     
     def test_get_quick_stats_no_workflows(self):
         """Test quick stats with zero workflows."""
@@ -59,7 +58,7 @@ class TestPlaybookQuickStats:
         assert stats['phases'] == 0
         assert stats['activities'] == 0
         assert stats['artifacts'] == 0
-        assert stats['roles'] == 0
+        assert stats['agents'] == 0
         assert stats['skills'] == 0
     
     def test_get_quick_stats_structure(self):
@@ -78,16 +77,13 @@ class TestPlaybookQuickStats:
         assert isinstance(stats, dict)
         
         # Verify all expected keys exist
-        required_keys = ['workflows', 'phases', 'activities', 'artifacts', 'roles', 'skills', 'goals']
+        required_keys = ['workflows', 'phases', 'activities', 'artifacts', 'agents', 'skills']
         for key in required_keys:
             assert key in stats, f"Missing key: {key}"
         
         # Verify integer types for counts
-        for key in ['workflows', 'phases', 'activities', 'artifacts', 'roles', 'skills']:
+        for key in required_keys:
             assert isinstance(stats[key], int), f"{key} should be integer"
-        
-        # Verify goals is string
-        assert isinstance(stats['goals'], str)
 
 
 @pytest.mark.django_db
