@@ -1,14 +1,14 @@
-# FeatureFactory Playbook v3.9
+# FeatureFactory Playbook v18.7
 
 **Playbook**: FeatureFactory
-**Version**: 3.9 (Draft)
+**Version**: 18.7 (Draft)
 **Purpose**: End-to-end workflow for AI-assisted software product development — from idea to shipped feature, with estimation, architecture, and repeatable delivery.
 
 ---
 
 ## What This Playbook Does
 
-FeatureFactory turns a product idea into running, tested, estimated software through a sequence of eight workflows. The first six run once during **Inception** and produce the base artifacts every subsequent sprint depends on. The last two form the **Delivery Loop** that repeats every sprint.
+FeatureFactory turns a product idea into running, tested, estimated software through a sequence of ten workflows. The first six run once during **Inception** and produce the base artifacts every subsequent sprint depends on. The last four form the **Delivery Loop** that repeats every iteration.
 
 ---
 
@@ -27,22 +27,24 @@ FeatureFactory turns a product idea into running, tested, estimated software thr
 
 **Gate condition**: All six Inception workflows must complete before Sprint 0 begins. BSP requires SAO.md (from DTA). EST Level 2 requires SAO.md + feature files (from ESM). DCI requires SAO.md + estimation. DCD requires DCI (infra must exist before CICD can deploy to it).
 
-### Delivery Loop (repeats every sprint)
+### Delivery Loop (repeats every iteration)
 
 | # | Workflow | When It Runs | Key Output |
 |---|----------|-------------|------------|
 | 7 | **BSP** — Bootstrap Project | Sprint 0 only | Runnable project, Makefile, dependencies |
-| 8 | **BPE** — Build Feature | Every sprint, once per feature | Implemented + tested feature, DoD signed off |
-| — | **EST-08** — Sprint Close & Rebaseline | End of every sprint | Updated estimates, calibrated $/FP |
+| 8 | **BPE** — Build Feature | Used inside PIT-04 per scenario | BPE-01 plan + skeletons per scenario |
+| 9 | **PIT** — Plan Iteration | Before every iteration | Execution manifest, GitHub Milestone + Issues, code skeletons |
+| 10 | **MIT** — Manage Iteration | After PIT, per iteration | Implemented scenarios, GitHub Release, Lessons Learned, EST-08 rebaseline |
+| — | **EST-08** — Sprint Close & Rebaseline | Embedded in MIT-06 | Updated estimates, calibrated $/FP |
 
 ---
 
 ## Base Artifacts
 
-These four artifacts are the foundation. Every workflow in the Delivery Loop reads them. Keep them current.
+These artifacts are the foundation. Every workflow in the Delivery Loop reads them. Keep them current.
 
 ```
-CLAUDE.md                              ← AI IDE process config (DSP output)
+CLAUDE.md                              ← AI IDE process config (DSP output); includes Iteration Protocol for Jedao
 docs/architecture/SAO.md               ← Technology stack, code organization, patterns (DTA output)
 docs/architecture/screen-flow.drawio   ← Screen map, navigation flows (ESM output)
 docs/features/**/*.feature             ← BDD scenarios, one file per feature (ESM output)
@@ -55,6 +57,8 @@ deploy/helm/{project}/                  ← Helm chart + per-env values (DCD out
 .github/workflows/ci.yml               ← CI pipeline (DCD output)
 .github/workflows/cd.yml               ← CD pipeline (DCD output)
 Makefile                                ← Single orchestration layer (BSP + DCI + DCD)
+docs/plans/iterations/ITER-*.yaml      ← Execution manifests (PIT output, consumed by MIT)
+docs/lessons_learned/ITER-*.md         ← Iteration retrospectives (MIT output, consumed by PIT)
 ```
 
 ---
@@ -67,19 +71,23 @@ flowchart LR
     DTA["DTA<br/>Define Architecture"]
     DSP["DSP<br/>Deploy Software Process"]
     EST["EST<br/>Estimate the Project"]
-    DCI["DCI<br/>Design & Deploy<br/>Cloud Infra"]
-    DCD["DCD<br/>Design & Deploy<br/>CICD"]
+    DCI["DCI<br/>Design &amp; Deploy<br/>Cloud Infra"]
+    DCD["DCD<br/>Design &amp; Deploy<br/>CICD"]
     BSP["BSP<br/>Bootstrap Project"]
-    BPE["BPE<br/>Build Feature<br/>(loop)"]
-    
+    BPE["BPE<br/>Build Feature<br/>used inside PIT"]
+    PIT["PIT<br/>Plan Iteration<br/>human+AI composite"]
+    MIT["MIT<br/>Manage Iteration<br/>Jedao autonomous"]
+
     SCREEN["screen-flow.drawio<br/>+ docs/features/**"]
     SAO["SAO.md"]
-    CLAUDE["CLAUDE.md"]
+    CLAUDE["CLAUDE.md<br/>+ Iteration Protocol"]
     ESTIMATION["ESTIMATION_TEMPLATE.xlsx"]
     INFRA["infra repo<br/>+ INFRA_REQUIREMENTS.md"]
     CICD["Helm chart<br/>+ CI/CD workflows"]
     PROJECT["runnable project"]
-    
+    MANIFEST["Execution Manifest YAML<br/>+ GitHub Milestone/Issues"]
+    LESSONS["docs/lessons_learned/<br/>ITER-*.md"]
+
     ESM --> SCREEN
     ESM --> DTA
     DTA --> SAO
@@ -94,15 +102,24 @@ flowchart LR
     ESTIMATION --> BSP
     CICD --> BSP
     BSP --> PROJECT
-    PROJECT --> BPE
-    
+    PROJECT --> PIT
+    CLAUDE --> PIT
+    LESSONS -.->|"orient input"| PIT
+    PIT --> MANIFEST
+    MANIFEST --> MIT
+    MIT --> LESSONS
+    MIT -->|"EST-08 rebaseline"| ESTIMATION
+    PIT -.->|"BPE-01 per scenario"| BPE
+
     SCREEN -.-> EST
-    
+
     classDef workflow fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef artifact fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+    classDef deliveryloop fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+
     class ESM,DTA,DSP,EST,DCI,DCD,BSP,BPE workflow
-    class SCREEN,SAO,CLAUDE,ESTIMATION,INFRA,CICD,PROJECT artifact
+    class SCREEN,SAO,CLAUDE,ESTIMATION,INFRA,CICD,PROJECT,MANIFEST,LESSONS artifact
+    class PIT,MIT deliveryloop
 ```
 
 ---
@@ -163,8 +180,64 @@ FeatureFactory/
 ├── BSP/                 ← Bootstrap Project (8 activities)
 │   └── artifacts/
 │       └── makefile_template.mk         ← Makefile template (base + extension points)
-└── BPE/                 ← Build Feature (8 activities)
+├── BPE/                 ← Build Feature (8 activities; used inside PIT-04 per scenario)
+├── PIT/                 ← Plan Iteration (9 activities; human+AI composite planning)
+│   ├── _workflow.md
+│   ├── PIT-01-Read_Lessons_Learned.md
+│   ├── PIT-02-Select_Iteration_Goal.md
+│   ├── PIT-03-Sequence_Scenarios.md
+│   ├── PIT-04-Run_BPE-01_and_Create_Skeletons_per_Scenario.md
+│   ├── PIT-05-Revise_Conflict_Map_and_Build_Manifest.md
+│   ├── PIT-06-Define_Checkpoints_and_Hooks.md
+│   ├── PIT-07-Publish_to_GitHub.md
+│   ├── PIT-08-Human_Acceptance_Review.md
+│   └── PIT-09-Prepare_Jedao_Brief.md
+└── MIT/                 ← Manage Iteration (6 activities; Jedao autonomous execution)
+    ├── _workflow.md
+    ├── MIT-01-Activate_Iteration.md
+    ├── MIT-02-Execute_Scenario.md
+    ├── MIT-03-Handle_Drift.md
+    ├── MIT-04-Human_Decision_Sync.md
+    ├── MIT-05-Course_Correct_Manifest.md
+    └── MIT-06-Close_Iteration.md
 ```
+
+---
+
+## Iteration Execution Model (PIT + MIT)
+
+PIT and MIT implement a short, time-boxed execution cadence with a human-AI composite authority model.
+
+### Doctrine (v1.0)
+Two primary imperatives govern every iteration:
+1. **Iterate in ~1 hour** — each scenario is sized to fit within one hour of execution. If it doesn't fit, decompose it.
+2. **Hit the goal with minimum end-iteration rework** — conflict detection, skeleton-first design, and file-level footprint tracking prevent agents from colliding in the codebase.
+
+### Key Concepts
+
+| Term | Definition |
+|---|---|
+| Iteration | A time-boxed execution of 2–5 scenarios against a single goal (target: ~1h critical path) |
+| Scenario | Smallest unit of work; one GitHub Issue; has a single checkpoint command that proves it done |
+| Execution Manifest | YAML file + GitHub Milestone description defining the full iteration plan |
+| Codebase Footprint | Exact list of files a scenario will touch, derived from skeleton `git diff` |
+| Conflict Map | Files shared between scenarios → serialization required |
+| Drift Signal | Detected deviation: `time_overrun`, `test_failure`, `scope_expansion`, `integration_conflict` |
+| Jedao | Autonomous execution agent; authority-bounded; escalates when thresholds breach |
+
+### GitHub as Operational Blackboard
+
+| GitHub Object | Purpose |
+|---|---|
+| Milestone | Iteration record; description holds `<!-- MANIFEST -->` YAML |
+| Issue | Scenario record; body holds `<!-- SCENARIO -->` YAML + BPE-01 plan |
+| Issue Labels | State machine: `status-queued` → `status-in-progress` → `status-done` |
+| Issue Comments | Checkpoint pass, drift signals, escalations, decisions |
+| Release | Iteration closure record; created by MIT-06 |
+
+### CLAUDE.md Iteration Protocol
+
+CLAUDE.md must contain an `## Iteration Protocol` section for Jedao to function. PIT-09 verifies it is current before activating MIT. See `PIT/PIT-09-Prepare_Jedao_Brief.md` for the required template.
 
 ---
 
