@@ -30,7 +30,7 @@ drift_thresholds:
 scenarios:
   S1:
     title: "Phase model, PhaseService, and migration helper"
-    github_issue: null   # assigned in PIT-07
+    github_issue: 68
     parallel_group: A
     time_budget_minutes: 60
     codebase_footprint:
@@ -53,7 +53,7 @@ scenarios:
 
   S2:
     title: "Phase CRUDL views, URLs, and templates"
-    github_issue: null
+    github_issue: 69
     parallel_group: B
     time_budget_minutes: 75
     codebase_footprint:
@@ -87,7 +87,7 @@ scenarios:
 
   S3:
     title: "Activity-Phase integration, Workflow detail tab, MCP backward-compat, data migration"
-    github_issue: null
+    github_issue: 70
     parallel_group: C
     time_budget_minutes: 60
     codebase_footprint:
