@@ -159,7 +159,7 @@ class WorkflowProtocolService:
         imported_activities = WorkflowImportService._parse_activity_files(source_directory)
         
         for activity in imported_activities:
-            if not activity.get('activity_id'):
+            if not activity.get('activity_id') and activity.get('name'):
                 protocol_data['changes']['new'].append(activity)
         
         return protocol_data

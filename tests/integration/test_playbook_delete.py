@@ -661,7 +661,7 @@ class TestPlaybookDeleteModalEndpoint:
 
         assert response.status_code == 200
         content = response.content.decode("utf-8")
-        assert "All workflows, activities, artifacts, roles, skills and version history" in content
+        assert "All workflows, activities, artifacts, agents, skills and version history" in content
 
     def test_delete_via_list_removes_playbook_from_list(self, client):
         user = User.objects.create_user(

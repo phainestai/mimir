@@ -69,6 +69,14 @@ class TestWorkflowProtocolService:
         )
     
     @pytest.fixture
+    def protocol_dir(self):
+        """Create temporary directory for protocol and activity files."""
+        import tempfile, shutil
+        tmpdir = tempfile.mkdtemp()
+        yield tmpdir
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+    @pytest.fixture
     def protocol_file(self):
         """Create temporary protocol file."""
         temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False)
@@ -109,26 +117,35 @@ No workflow ID here
         with pytest.raises(ValidationError, match="workflow_id not found"):
             WorkflowProtocolService._parse_protocol(protocol_file)
     
-    def test_apply_protocol_to_draft_playbook(self, workflow_draft, protocol_file):
-        """Test applying protocol to draft playbook."""
-        protocol_content = f"""# Upload Protocol for Frontend Development
+    def test_apply_protocol_to_draft_playbook(self, workflow_draft, protocol_dir):
+        """Test applying protocol to draft playbook creates new activity from file."""
+        protocol_path = Path(protocol_dir) / '_Upload_Protocol.md'
+        activity_path = Path(protocol_dir) / 'FFE-01-Design_Component.md'
 
-**Workflow ID**: {workflow_draft.id}
+        activity_path.write_text(
+            "# Activity: Design Component\n\n"
+            "**Activity ID**: TBD\n"
+            "**Order**: 1\n"
+            "**Phase**: Planning\n\n"
+            "## Guidance\n\nReview mockups and create component spec.\n"
+        )
 
-## Change Summary
+        protocol_path.write_text(
+            f"# Upload Protocol for Frontend Development\n\n"
+            f"**Workflow ID**: {workflow_draft.id}\n\n"
+            f"## Change Summary\n\n"
+            f"- **New Activities**: 1\n"
+            f"- **Modified Activities**: 0\n"
+            f"- **Deleted Activities**: 0\n"
+            f"- **Reordered Activities**: 0\n"
+            f"- **Total Changes**: 1\n"
+        )
 
-- **New Activities**: 1
-- **Modified Activities**: 0
-- **Deleted Activities**: 0
-- **Reordered Activities**: 0
-- **Total Changes**: 1
-"""
-        Path(protocol_file).write_text(protocol_content)
-        
-        result = WorkflowProtocolService.apply_upload_protocol(protocol_file)
-        
+        result = WorkflowProtocolService.apply_upload_protocol(str(protocol_path))
+
         assert result['status'] == 'applied'
         assert result['workflow_id'] == workflow_draft.id
+        assert result['changes_applied']['new'] == 1
         assert result['changes_applied']['total'] == 1
     
     def test_apply_protocol_to_released_playbook_raises_error(self, workflow_released, protocol_file):
@@ -190,18 +207,24 @@ No workflow ID here
             )
     
     def test_apply_changes_counts(self, workflow_draft):
-        """Test _apply_changes returns correct counts."""
+        """Test _apply_changes returns correct counts for each change type."""
         changes = {
-            'summary': {
-                'new': 2,
-                'modified': 1,
-                'deleted': 1,
-                'reordered': 1
-            }
+            'new': [
+                {'name': 'Activity Alpha', 'order': 1, 'phase': None,
+                 'guidance': '', 'activity_id': None, 'dependencies': [], 'filename': 'a1.md'},
+                {'name': 'Activity Beta', 'order': 2, 'phase': 'Planning',
+                 'guidance': '## Guidance\nDo the thing.', 'activity_id': None,
+                 'dependencies': [], 'filename': 'a2.md'},
+            ],
+            'modified': [{'activity_id': 9999, 'name': 'Old Activity'}],
+            'deleted':  [{'activity_id': 9998, 'name': 'Gone Activity', 'order': 3}],
+            'reordered': [{'activity_id': 9997, 'name': 'Moved Activity',
+                           'old_order': 4, 'new_order': 1}],
+            'summary': {'new': 2, 'modified': 1, 'deleted': 1, 'reordered': 1, 'total': 5}
         }
-        
+
         result = WorkflowProtocolService._apply_changes(workflow_draft, changes)
-        
+
         assert result['new'] == 2
         assert result['modified'] == 1
         assert result['deleted'] == 1
