@@ -57,7 +57,17 @@ def create_default_phases(playbook_id: int):
     
     :param playbook_id: Playbook ID
     """
-    print(f"Creating 5 standard phases for playbook {playbook_id}...")
+    from methodology.models import Playbook
+    
+    # Get playbook and its owner
+    try:
+        playbook = Playbook.objects.get(id=playbook_id)
+        user = playbook.author
+    except Playbook.DoesNotExist:
+        print(f"✗ Error: Playbook {playbook_id} not found")
+        return []
+    
+    print(f"Creating 5 standard phases for playbook {playbook_id} (owner: {user.username})...")
     
     created_phases = []
     for phase_data in STANDARD_PHASES:
@@ -66,10 +76,11 @@ def create_default_phases(playbook_id: int):
                 playbook_id=playbook_id,
                 name=phase_data['name'],
                 description=phase_data['description'],
-                order=phase_data['order']
+                order=phase_data['order'],
+                user=user
             )
             created_phases.append(phase)
-            print(f"✓ Created phase: {phase['name']} (ID: {phase['id']})")
+            print(f"✓ Created phase: {phase.name} (ID: {phase.id})")
         except Exception as e:
             print(f"✗ Failed to create phase '{phase_data['name']}': {str(e)}")
     
