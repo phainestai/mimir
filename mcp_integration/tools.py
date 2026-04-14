@@ -574,7 +574,10 @@ async def list_activities(workflow_id: int) -> list:
         raise ValueError(f'Workflow {workflow_id} not found')
     
     from methodology.services.activity_service import ActivityService
-    activities = await sync_to_async(ActivityService.get_activities_for_workflow)(workflow_id)
+    activities_qs = await sync_to_async(ActivityService.get_activities_for_workflow)(workflow_id)
+    
+    # Convert QuerySet to list
+    activities = await sync_to_async(list)(activities_qs)
     
     result = [
         {
