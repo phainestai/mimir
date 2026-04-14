@@ -1863,6 +1863,227 @@ async def unlink_artifact_from_activity(artifact_input_id: int) -> dict:
     return {'deleted': True}
 
 
+# ============================================================================
+# PHASE MCP TOOLS
+# ============================================================================
+
+async def create_phase(
+    playbook_id: int,
+    name: str,
+    description: str = '',
+    order: int | None = None
+) -> dict:
+    """
+    Create phase in draft playbook. Increments parent version.
+    
+    :param playbook_id: Parent playbook ID. Example: 1
+    :param name: Phase name (required, unique per playbook). Example: "Planning"
+    :param description: Description (optional). Example: "Initial planning phase"
+    :param order: Display order (optional, auto-assigned if None). Example: 1
+    :return: Created phase dict
+    :raises PermissionError: If playbook is released
+    :raises ValueError: If playbook not found or validation fails
+    """
+    logger.info(f'MCP Tool: create_phase called - playbook_id={playbook_id}, name="{name}"')
+    
+    user = await get_current_user()
+    
+    from methodology.models import Playbook
+    try:
+        playbook = await sync_to_async(
+            Playbook.objects.select_related('author').get
+        )(pk=playbook_id, author=user)
+    except Playbook.DoesNotExist:
+        raise ValueError(f'Playbook {playbook_id} not found')
+    
+    if playbook.status == 'released':
+        raise PermissionError('Cannot create phases in released playbook')
+    
+    from methodology.services.phase_service import PhaseService
+    phase = await sync_to_async(PhaseService.create_phase)(
+        playbook_id=playbook_id,
+        name=name,
+        description=description,
+        order=order
+    )
+    
+    logger.info(f'MCP Tool: Phase {phase["id"]} created in playbook {playbook_id}')
+    return phase
+
+
+async def list_phases(playbook_id: int) -> list[dict]:
+    """
+    List all phases for a playbook.
+    
+    :param playbook_id: Playbook ID. Example: 1
+    :return: List of phase dicts with activity counts
+    :raises ValueError: If playbook not found
+    """
+    logger.info(f'MCP Tool: list_phases called - playbook_id={playbook_id}')
+    
+    user = await get_current_user()
+    
+    from methodology.models import Playbook
+    try:
+        await sync_to_async(
+            Playbook.objects.get
+        )(pk=playbook_id, author=user)
+    except Playbook.DoesNotExist:
+        raise ValueError(f'Playbook {playbook_id} not found')
+    
+    from methodology.services.phase_service import PhaseService
+    phases = await sync_to_async(PhaseService.list_phases)(playbook_id)
+    
+    logger.info(f'MCP Tool: Retrieved {len(phases)} phases for playbook {playbook_id}')
+    return phases
+
+
+async def get_phase(phase_id: int) -> dict:
+    """
+    Get phase details with activities.
+    
+    :param phase_id: Phase ID. Example: 1
+    :return: Phase dict with activities list
+    :raises ValueError: If phase not found or not owned
+    """
+    logger.info(f'MCP Tool: get_phase called - phase_id={phase_id}')
+    
+    user = await get_current_user()
+    
+    from methodology.models import Phase
+    try:
+        phase = await sync_to_async(
+            Phase.objects.select_related('playbook__author').get
+        )(pk=phase_id)
+    except Phase.DoesNotExist:
+        raise ValueError(f'Phase {phase_id} not found')
+    
+    if phase.playbook.author_id != user.id:
+        raise ValueError(f'Phase {phase_id} not found')
+    
+    from methodology.services.phase_service import PhaseService
+    phase_data = await sync_to_async(PhaseService.get_phase_with_activities)(phase_id)
+    
+    logger.info(f'MCP Tool: Retrieved phase {phase_id}')
+    return phase_data
+
+
+async def update_phase(
+    phase_id: int,
+    name: str | None = None,
+    description: str | None = None,
+    order: int | None = None
+) -> dict:
+    """
+    Update phase in draft playbook. Increments parent version.
+    
+    :param phase_id: Phase ID. Example: 1
+    :param name: New name (optional). Example: "Execution"
+    :param description: New description (optional)
+    :param order: New order (optional). Example: 2
+    :return: Updated phase dict
+    :raises PermissionError: If playbook is released
+    :raises ValueError: If phase not found or validation fails
+    """
+    logger.info(f'MCP Tool: update_phase called - phase_id={phase_id}')
+    
+    user = await get_current_user()
+    
+    from methodology.models import Phase
+    try:
+        phase = await sync_to_async(
+            Phase.objects.select_related('playbook__author').get
+        )(pk=phase_id)
+    except Phase.DoesNotExist:
+        raise ValueError(f'Phase {phase_id} not found')
+    
+    if phase.playbook.author_id != user.id:
+        raise ValueError(f'Phase {phase_id} not found')
+    
+    if phase.playbook.status == 'released':
+        raise PermissionError('Cannot update phases in released playbook')
+    
+    from methodology.services.phase_service import PhaseService
+    updated_phase = await sync_to_async(PhaseService.update_phase)(
+        phase_id=phase_id,
+        name=name,
+        description=description,
+        order=order
+    )
+    
+    logger.info(f'MCP Tool: Phase {phase_id} updated')
+    return updated_phase
+
+
+async def delete_phase(phase_id: int) -> dict:
+    """
+    Delete phase in draft playbook. Clears phase from activities. Increments parent version.
+    
+    :param phase_id: Phase ID. Example: 1
+    :return: Dict with deleted=True
+    :raises PermissionError: If playbook is released
+    :raises ValueError: If phase not found or not owned
+    """
+    logger.info(f'MCP Tool: delete_phase called - phase_id={phase_id}')
+    
+    user = await get_current_user()
+    
+    from methodology.models import Phase
+    try:
+        phase = await sync_to_async(
+            Phase.objects.select_related('playbook__author').get
+        )(pk=phase_id)
+    except Phase.DoesNotExist:
+        raise ValueError(f'Phase {phase_id} not found')
+    
+    if phase.playbook.author_id != user.id:
+        raise ValueError(f'Phase {phase_id} not found')
+    
+    if phase.playbook.status == 'released':
+        raise PermissionError('Cannot delete phases in released playbook')
+    
+    from methodology.services.phase_service import PhaseService
+    await sync_to_async(PhaseService.delete_phase)(phase_id)
+    
+    logger.info(f'MCP Tool: Phase {phase_id} deleted')
+    return {'deleted': True}
+
+
+async def reorder_phases(playbook_id: int, phase_order: list[int]) -> dict:
+    """
+    Reorder phases in draft playbook. Increments parent version.
+    
+    :param playbook_id: Playbook ID. Example: 1
+    :param phase_order: List of phase IDs in desired order. Example: [3, 1, 2]
+    :return: Dict with reordered=True and count
+    :raises PermissionError: If playbook is released
+    :raises ValueError: If playbook not found or validation fails
+    """
+    logger.info(f'MCP Tool: reorder_phases called - playbook_id={playbook_id}')
+    
+    user = await get_current_user()
+    
+    from methodology.models import Playbook
+    try:
+        playbook = await sync_to_async(
+            Playbook.objects.get
+        )(pk=playbook_id, author=user)
+    except Playbook.DoesNotExist:
+        raise ValueError(f'Playbook {playbook_id} not found')
+    
+    if playbook.status == 'released':
+        raise PermissionError('Cannot reorder phases in released playbook')
+    
+    from methodology.services.phase_service import PhaseService
+    result = await sync_to_async(PhaseService.reorder_phases)(
+        playbook_id=playbook_id,
+        phase_order=phase_order
+    )
+    
+    logger.info(f'MCP Tool: Reordered {result["count"]} phases in playbook {playbook_id}')
+    return result
+
+
 def _parse_required_filter(value: str):
     """
     Parse required_filter string to bool or None.
@@ -1970,6 +2191,14 @@ def initialize_mcp():
     mcp.tool()(link_artifact_to_activity)
     mcp.tool()(unlink_artifact_from_activity)
 
-    logger.info('MCP: All 41 tools registered')
+    # Register phase tools
+    mcp.tool()(create_phase)
+    mcp.tool()(list_phases)
+    mcp.tool()(get_phase)
+    mcp.tool()(update_phase)
+    mcp.tool()(delete_phase)
+    mcp.tool()(reorder_phases)
+
+    logger.info('MCP: All 47 tools registered')
     return mcp
 
