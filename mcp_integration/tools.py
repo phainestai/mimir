@@ -1886,7 +1886,7 @@ async def create_phase(
     """
     logger.info(f'MCP Tool: create_phase called - playbook_id={playbook_id}, name="{name}"')
     
-    user = await get_current_user()
+    user = await sync_to_async(get_current_user)()
     
     from methodology.models import Playbook
     try:
@@ -1921,7 +1921,7 @@ async def list_phases(playbook_id: int) -> list[dict]:
     """
     logger.info(f'MCP Tool: list_phases called - playbook_id={playbook_id}')
     
-    user = await get_current_user()
+    user = await sync_to_async(get_current_user)()
     
     from methodology.models import Playbook
     try:
@@ -1948,7 +1948,7 @@ async def get_phase(phase_id: int) -> dict:
     """
     logger.info(f'MCP Tool: get_phase called - phase_id={phase_id}')
     
-    user = await get_current_user()
+    user = await sync_to_async(get_current_user)()
     
     from methodology.models import Phase
     try:
@@ -1987,7 +1987,7 @@ async def update_phase(
     """
     logger.info(f'MCP Tool: update_phase called - phase_id={phase_id}')
     
-    user = await get_current_user()
+    user = await sync_to_async(get_current_user)()
     
     from methodology.models import Phase
     try:
@@ -2026,7 +2026,7 @@ async def delete_phase(phase_id: int) -> dict:
     """
     logger.info(f'MCP Tool: delete_phase called - phase_id={phase_id}')
     
-    user = await get_current_user()
+    user = await sync_to_async(get_current_user)()
     
     from methodology.models import Phase
     try:
@@ -2061,7 +2061,7 @@ async def reorder_phases(playbook_id: int, phase_order: list[int]) -> dict:
     """
     logger.info(f'MCP Tool: reorder_phases called - playbook_id={playbook_id}')
     
-    user = await get_current_user()
+    user = await sync_to_async(get_current_user)()
     
     from methodology.models import Playbook
     try:
