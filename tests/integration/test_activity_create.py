@@ -158,8 +158,11 @@ class TestActivityCreate:
         activity = Activity.objects.get(name='Act 3')
         assert activity.order == 3  # Should be next in sequence
     
-    def test_act_create_06_create_with_phase(self):
+    def test_act_create_06_create_with_phase(self, create_test_phases):
         """Test creating activity with phase assignment."""
+        # Create test phases
+        phases = create_test_phases(self.playbook)
+        
         url = reverse('activity_create', kwargs={
             'playbook_pk': self.playbook.pk,
             'workflow_pk': self.workflow.pk
@@ -168,7 +171,7 @@ class TestActivityCreate:
         data = {
             'name': 'Plan Features',
             'guidance': 'Feature planning',
-            'phase': 'Planning',
+            'phase': phases['Planning'].id,
         }
         response = self.client.post(url, data)
         
@@ -176,7 +179,7 @@ class TestActivityCreate:
         
         # Verify phase was set
         activity = Activity.objects.get(name='Plan Features')
-        assert activity.phase == 'Planning'
+        assert activity.phase == phases['Planning']
     
     def test_act_create_07_cancel_redirects_to_list(self):
         """Test cancel button redirects to activities list."""

@@ -152,10 +152,10 @@ class Playbook(models.Model):
         from methodology.models.activity import Activity
         from methodology.models.artifact import Artifact
 
-        activity_qs = Activity.objects.filter(workflow__playbook=self)  # noqa: F841
+        activity_qs = Activity.objects.filter(workflow__playbook=self)
         return {
             'workflows': self.workflows.count(),
-            'phases': activity_qs.exclude(phase__isnull=True).exclude(phase='').values('phase').distinct().count(),
+            'phases': self.phases.count(),  # Count Phase objects in playbook
             'activities': activity_qs.count(),
             'artifacts': Artifact.objects.filter(playbook=self).count(),
             'agents': self.agents.count(),
