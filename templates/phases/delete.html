@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Delete {{ phase.name }} - {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'phase_list' playbook.pk %}">Phases</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'phase_detail' playbook.pk phase.id %}">{{ phase.name }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Delete</li>
+                </ol>
+            </nav>
+
+            <!-- Header -->
+            <h1 class="display-6 mb-4 text-danger">
+                <i class="fa-solid fa-exclamation-triangle"></i> Delete Phase
+            </h1>
+
+            <!-- Confirmation Form -->
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fa-solid fa-warning"></i> Confirm Deletion</h5>
+                </div>
+                <div class="card-body" data-testid="phase-delete">
+                    <div class="alert alert-danger" role="alert">
+                        <h5 class="alert-heading"><i class="fa-solid fa-exclamation-triangle"></i> Warning</h5>
+                        <p>You are about to permanently delete this phase. This action cannot be undone.</p>
+                    </div>
+
+                    <div class="mb-4" data-testid="phase-details">
+                        <h6>Phase to be deleted:</h6>
+                        <dl class="row">
+                            <dt class="col-sm-3">Name:</dt>
+                            <dd class="col-sm-9"><strong>{{ phase.name }}</strong></dd>
+
+                            <dt class="col-sm-3">Description:</dt>
+                            <dd class="col-sm-9">{{ phase.description|default:"No description" }}</dd>
+
+                            <dt class="col-sm-3">Order:</dt>
+                            <dd class="col-sm-9">#{{ phase.order }}</dd>
+
+                            <dt class="col-sm-3">Activities:</dt>
+                            <dd class="col-sm-9">
+                                {% if activity_count > 0 %}
+                                    <span class="badge bg-warning text-dark">{{ activity_count }} activities assigned</span>
+                                {% else %}
+                                    <span class="text-muted">No activities assigned</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+
+                    {% if activity_count > 0 %}
+                    <div class="alert alert-warning" role="alert">
+                        <h6 class="alert-heading"><i class="fa-solid fa-info-circle"></i> Impact</h6>
+                        <p class="mb-0">
+                            This phase has <strong>{{ activity_count }} activities</strong> assigned to it. 
+                            Deleting this phase will clear the phase assignment from these activities 
+                            (they will become "Unassigned").
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'phase_detail' playbook.pk phase.id %}" 
+                               class="btn btn-secondary"
+                               data-bs-toggle="tooltip"
+                               title="Cancel and return to phase details"
+                               data-testid="cancel-button">
+                                <i class="fa-solid fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" 
+                                    class="btn btn-danger"
+                                    data-bs-toggle="tooltip"
+                                    title="Permanently delete this phase"
+                                    data-testid="confirm-delete-button">
+                                <i class="fa-solid fa-trash"></i> Yes, Delete Phase
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

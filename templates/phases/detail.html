@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ phase.name }} - {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'phase_list' playbook.pk %}">Phases</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ phase.name }}</li>
+                </ol>
+            </nav>
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <h1 class="display-6" data-testid="phase-title">
+                        <i class="fa-solid fa-layer-group"></i> {{ phase.name }}
+                    </h1>
+                    <p class="text-muted">
+                        <span class="badge bg-info" data-testid="order-badge">Order: #{{ phase.order }}</span>
+                        <span class="badge bg-secondary" data-testid="activity-count-badge">
+                            <i class="fa-solid fa-tasks"></i> {{ phase.activity_count }} activities
+                        </span>
+                    </p>
+                    <p class="text-muted small">
+                        <i class="fa-solid fa-clock"></i> Updated {{ phase.updated_at|timesince }} ago
+                    </p>
+                </div>
+                {% if playbook.status == 'draft' %}
+                <div>
+                    <a href="{% url 'phase_edit' playbook.pk phase.id %}" 
+                       class="btn btn-primary"
+                       data-bs-toggle="tooltip"
+                       title="Edit this phase"
+                       data-testid="edit-button">
+                        <i class="fa-solid fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'phase_delete' playbook.pk phase.id %}" 
+                       class="btn btn-danger"
+                       data-bs-toggle="tooltip"
+                       title="Delete this phase"
+                       data-testid="delete-button">
+                        <i class="fa-solid fa-trash"></i> Delete
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Description -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fa-solid fa-info-circle"></i> Description</h5>
+                </div>
+                <div class="card-body" data-testid="phase-description">
+                    {% if phase.description %}
+                    <p>{{ phase.description }}</p>
+                    {% else %}
+                    <p class="text-muted fst-italic">No description provided</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Activities in this Phase -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-tasks"></i> Activities in this Phase
+                        <span class="badge bg-secondary">{{ phase.activity_count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if phase.activities %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Name</th>
+                                    <th>Workflow</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in phase.activities %}
+                                <tr>
+                                    <td><span class="badge bg-secondary">#{{ activity.order }}</span></td>
+                                    <td>
+                                        <a href="{% url 'activity_detail' playbook.pk activity.workflow.id activity.id %}">
+                                            {{ activity.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'workflow_detail' playbook.pk activity.workflow.id %}">
+                                            {{ activity.workflow.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'activity_detail' playbook.pk activity.workflow.id activity.id %}" 
+                                           class="btn btn-sm btn-outline-primary"
+                                           data-bs-toggle="tooltip"
+                                           title="View activity details">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fa-solid fa-info-circle"></i> No activities assigned to this phase yet.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Back Button -->
+            <div class="mt-4">
+                <a href="{% url 'phase_list' playbook.pk %}" 
+                   class="btn btn-secondary"
+                   data-bs-toggle="tooltip"
+                   title="Return to phases list">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Phases
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

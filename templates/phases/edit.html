@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ phase.name }} - {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'phase_list' playbook.pk %}">Phases</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'phase_detail' playbook.pk phase.id %}">{{ phase.name }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                </ol>
+            </nav>
+
+            <!-- Header -->
+            <h1 class="display-6 mb-4">
+                <i class="fa-solid fa-edit"></i> Edit Phase
+            </h1>
+
+            <!-- Form -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" data-testid="phase-edit-form">
+                        {% csrf_token %}
+
+                        <!-- Name -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                <strong>Name</strong> <span class="text-danger">*</span>
+                                <i class="fa-solid fa-info-circle text-muted" 
+                                   data-bs-toggle="tooltip"
+                                   title="Lifecycle stage name"></i>
+                            </label>
+                            <input type="text" 
+                                   class="form-control {% if errors.name %}is-invalid{% endif %}" 
+                                   id="name" 
+                                   name="name"
+                                   maxlength="100"
+                                   value="{{ form_data.name }}"
+                                   required
+                                   data-testid="name-input">
+                            {% if errors.name %}
+                            <div class="invalid-feedback">{{ errors.name }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                Description
+                                <i class="fa-solid fa-info-circle text-muted" 
+                                   data-bs-toggle="tooltip"
+                                   title="Brief description of this lifecycle phase"></i>
+                            </label>
+                            <textarea class="form-control" 
+                                      id="description" 
+                                      name="description"
+                                      rows="3"
+                                      data-testid="description-input">{{ form_data.description }}</textarea>
+                        </div>
+
+                        <!-- Order -->
+                        <div class="mb-3">
+                            <label for="order" class="form-label">
+                                Order
+                                <i class="fa-solid fa-info-circle text-muted" 
+                                   data-bs-toggle="tooltip"
+                                   title="Display order"></i>
+                            </label>
+                            <input type="number" 
+                                   class="form-control {% if errors.order %}is-invalid{% endif %}" 
+                                   id="order" 
+                                   name="order"
+                                   min="1"
+                                   value="{{ form_data.order }}"
+                                   data-testid="order-input">
+                            {% if errors.order %}
+                            <div class="invalid-feedback">{{ errors.order }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'phase_detail' playbook.pk phase.id %}" 
+                               class="btn btn-secondary"
+                               data-bs-toggle="tooltip"
+                               title="Cancel and return to phase details">
+                                <i class="fa-solid fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" 
+                                    class="btn btn-primary"
+                                    data-bs-toggle="tooltip"
+                                    title="Save changes to this phase"
+                                    data-testid="submit-button">
+                                <i class="fa-solid fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

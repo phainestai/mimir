@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Phases - {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Phases</li>
+                </ol>
+            </nav>
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="display-6">
+                    <i class="fa-solid fa-layer-group"></i> Phases
+                    <span class="badge bg-secondary">{{ phases|length }}</span>
+                </h1>
+                {% if playbook.status == 'draft' %}
+                <a href="{% url 'phase_create' playbook.pk %}" 
+                   class="btn btn-primary"
+                   data-bs-toggle="tooltip"
+                   title="Create a new lifecycle phase">
+                    <i class="fa-solid fa-plus"></i> Create Phase
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Phases List -->
+            {% if phases %}
+            <div class="row">
+                {% for phase in phases %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <span class="badge bg-info me-2">#{{ phase.order }}</span>
+                                {{ phase.name }}
+                            </h5>
+                            {% if phase.description %}
+                            <p class="card-text text-muted">{{ phase.description|truncatewords:20 }}</p>
+                            {% else %}
+                            <p class="card-text text-muted fst-italic">No description</p>
+                            {% endif %}
+                            
+                            <div class="mt-3">
+                                <span class="badge bg-secondary">
+                                    <i class="fa-solid fa-tasks"></i> {{ phase.activity_count }} activities
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'phase_detail' playbook.pk phase.id %}" 
+                                   class="btn btn-sm btn-outline-primary"
+                                   data-bs-toggle="tooltip"
+                                   title="View phase details">
+                                    <i class="fa-solid fa-eye"></i> View
+                                </a>
+                                {% if playbook.status == 'draft' %}
+                                <div>
+                                    <a href="{% url 'phase_edit' playbook.pk phase.id %}" 
+                                       class="btn btn-sm btn-outline-secondary"
+                                       data-bs-toggle="tooltip"
+                                       title="Edit this phase">
+                                        <i class="fa-solid fa-edit"></i> Edit
+                                    </a>
+                                    <a href="{% url 'phase_delete' playbook.pk phase.id %}" 
+                                       class="btn btn-sm btn-outline-danger"
+                                       data-bs-toggle="tooltip"
+                                       title="Delete this phase">
+                                        <i class="fa-solid fa-trash"></i> Delete
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="alert alert-info" role="alert">
+                <h4 class="alert-heading"><i class="fa-solid fa-info-circle"></i> No Phases Defined</h4>
+                <p>This playbook doesn't have any lifecycle phases yet. Phases help organize activities into logical stages like Planning, Execution, or Review.</p>
+                {% if playbook.status == 'draft' %}
+                <hr>
+                <p class="mb-0">
+                    <a href="{% url 'phase_create' playbook.pk %}" class="btn btn-primary">
+                        <i class="fa-solid fa-plus"></i> Create Your First Phase
+                    </a>
+                </p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

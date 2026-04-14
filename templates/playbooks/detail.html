@@ -176,6 +176,20 @@ document.addEventListener('DOMContentLoaded', function() {
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link"
+                    data-testid="tab-phases"
+                    id="phases-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#phases-content"
+                    type="button"
+                    role="tab">
+                <i class="fa-solid fa-layer-group"></i> Phases
+                {% if quick_stats.phases %}
+                <span class="badge bg-secondary ms-1">{{ quick_stats.phases }}</span>
+                {% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link"
                     data-testid="tab-agents"
                     id="agents-tab"
                     data-bs-toggle="tab"
@@ -347,6 +361,28 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- Workflows Tab (placeholder) -->
         <div class="tab-pane fade" id="workflows-content" role="tabpanel">
             {% include "methodology/partials/workflows_tab_content.html" %}
+        </div>
+
+        <!-- Phases Tab -->
+        <div class="tab-pane fade" id="phases-content" role="tabpanel" data-testid="phases-tab-content">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="fa-solid fa-layer-group me-2"></i>Lifecycle Phases</h5>
+                {% if can_edit %}
+                <a href="{% url 'phase_create' playbook.pk %}"
+                   class="btn btn-primary btn-sm"
+                   data-testid="create-phase-btn"
+                   data-bs-toggle="tooltip"
+                   title="Create a new lifecycle phase">
+                    <i class="fa-solid fa-plus"></i> Create Phase
+                </a>
+                {% endif %}
+            </div>
+            <a href="{% url 'phase_list' playbook.pk %}" 
+               class="btn btn-outline-primary btn-sm mb-3"
+               data-bs-toggle="tooltip"
+               title="View all phases">
+                <i class="fa-solid fa-list"></i> View All Phases
+            </a>
         </div>
 
         <!-- Agents Tab -->
