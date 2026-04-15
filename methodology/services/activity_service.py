@@ -150,7 +150,7 @@ class ActivityService:
         grouped = {}
         
         for activity in activities:
-            phase_name = activity.get_phase_display_name()
+            phase_name = activity.phase.name if activity.phase else 'Unassigned'
             if phase_name not in grouped:
                 grouped[phase_name] = []
             grouped[phase_name].append(activity)
