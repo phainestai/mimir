@@ -2,10 +2,7 @@
   "permissions": {
     "allow": [
       "Read(//Users/denispetelin/.claude/**)",
-      "Read(//Users/denispetelin/.config/claude/**)",
-      "Bash(pkill -f \"mimir/manage.py mcp_server\")",
-      "Bash(.venv/bin/python manage.py mcp_server --user=admin)"
+      "Read(//Users/denispetelin/.config/claude/**)"
     ]
-  },
-  "enableAllProjectMcpServers": true
+  }
 }

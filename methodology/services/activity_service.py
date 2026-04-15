@@ -18,7 +18,7 @@ class ActivityService:
     """Service class for activity operations."""
     
     @staticmethod
-    def create_activity(workflow, name, guidance='', phase_id=None, order=None, 
+    def create_activity(workflow, name, guidance='', phase=None, order=None, 
                        predecessor=None, successor=None):
         """
         Create activity with validation and auto-order.
@@ -26,7 +26,7 @@ class ActivityService:
         :param workflow: Parent workflow instance
         :param name: Activity name (max 200 chars, unique within workflow)
         :param guidance: Rich Markdown guidance with instructions, examples, diagrams (optional)
-        :param phase_id: Phase ID for lifecycle stage grouping (optional). Example: 1
+        :param phase: Phase grouping (optional)
         :param order: Execution order (auto-assigned if None)
         :param predecessor: Previous activity (must be in same workflow)
         :param successor: Next activity (must be in same workflow)
@@ -38,7 +38,7 @@ class ActivityService:
             ...     workflow=wf,
             ...     name="Design Component",
             ...     guidance="## Steps\n1. Review requirements\n2. Create mockup",
-            ...     phase_id=1,
+            ...     phase="Planning",
             ...     predecessor=previous_activity
             ... )
         """
@@ -72,26 +72,13 @@ class ActivityService:
             logger.warning(f"Successor {successor.id} not in workflow {workflow.id}")
             raise ValidationError("Successor must be in the same workflow")
         
-        # Validate phase belongs to same playbook if provided
-        phase_instance = None
-        if phase_id:
-            from methodology.models import Phase
-            try:
-                phase_instance = Phase.objects.get(id=phase_id)
-                if phase_instance.playbook_id != workflow.playbook_id:
-                    logger.warning(f"Phase {phase_id} not in playbook {workflow.playbook_id}")
-                    raise ValidationError("Phase must belong to the same playbook as the workflow")
-            except Phase.DoesNotExist:
-                logger.warning(f"Phase {phase_id} not found")
-                raise ValidationError(f"Phase with id {phase_id} not found")
-        
         # Create activity
         try:
             activity = Activity.objects.create(
                 workflow=workflow,
                 name=name.strip(),
                 guidance=guidance.strip() if guidance else '',
-                phase=phase_instance,
+                phase=phase.strip() if phase else None,
                 order=order,
                 predecessor=predecessor,
                 successor=successor
@@ -163,7 +150,7 @@ class ActivityService:
         grouped = {}
         
         for activity in activities:
-            phase_name = activity.phase.name if activity.phase else 'Unassigned'
+            phase_name = activity.get_phase_display_name()
             if phase_name not in grouped:
                 grouped[phase_name] = []
             grouped[phase_name].append(activity)
@@ -176,7 +163,7 @@ class ActivityService:
         Update activity fields.
         
         :param activity_id: Activity primary key
-        :param kwargs: Fields to update (name, guidance, order, phase_id, predecessor, successor)
+        :param kwargs: Fields to update (name, guidance, order, phase, predecessor, successor)
         :returns: Updated Activity instance
         :raises Activity.DoesNotExist: If activity not found
         :raises ValidationError: If validation fails
@@ -185,7 +172,7 @@ class ActivityService:
             >>> activity = ActivityService.update_activity(
             ...     123,
             ...     name="New Name",
-            ...     phase_id=2,
+            ...     phase="Execution",
             ...     predecessor=prev_activity
             ... )
         """
@@ -218,24 +205,12 @@ class ActivityService:
             if kwargs['successor'].workflow_id != activity.workflow_id:
                 raise ValidationError("Successor must be in the same workflow")
         
-        # Validate phase_id if being updated
-        if 'phase_id' in kwargs:
-            phase_id = kwargs.pop('phase_id')  # Remove from kwargs
-            if phase_id:
-                from methodology.models import Phase
-                try:
-                    phase_instance = Phase.objects.get(id=phase_id)
-                    if phase_instance.playbook_id != activity.workflow.playbook_id:
-                        raise ValidationError("Phase must belong to the same playbook as the workflow")
-                    kwargs['phase'] = phase_instance  # Set the actual phase object
-                except Phase.DoesNotExist:
-                    raise ValidationError(f"Phase with id {phase_id} not found")
-            else:
-                kwargs['phase'] = None  # Clear phase assignment
-        
         # Strip string fields
         if 'guidance' in kwargs and kwargs['guidance']:
             kwargs['guidance'] = kwargs['guidance'].strip()
+        
+        if 'phase' in kwargs and kwargs['phase']:
+            kwargs['phase'] = kwargs['phase'].strip()
         
         # Update fields
         for field, value in kwargs.items():
@@ -266,31 +241,7 @@ class ActivityService:
         
         activity.delete()
         logger.info(f"Deleted activity '{name}' from workflow {workflow_id}")
-
-    @staticmethod
-    def set_predecessor(activity, predecessor):
-        """
-        Set the predecessor of an activity, validating same-workflow and no circular deps.
-
-        :param activity: Activity instance to update
-        :param predecessor: Activity instance to set as predecessor
-        :raises ValidationError: if predecessor is in a different workflow or creates a cycle
-
-        Example:
-            >>> ActivityService.set_predecessor(activity_b, activity_a)
-        """
-        if predecessor.workflow_id != activity.workflow_id:
-            raise ValidationError("Predecessor must be in the same workflow")
-
-        # Guard against self-reference
-        if predecessor.pk == activity.pk:
-            raise ValidationError("Activity cannot be its own predecessor")
-
-        activity.predecessor = predecessor
-        activity.clean()
-        activity.save()
-        logger.info(f"Set predecessor of activity {activity.id} to {predecessor.id}")
-
+    
     @staticmethod
     def duplicate_activity(activity_id, new_name=None):
         """
@@ -322,7 +273,7 @@ class ActivityService:
             workflow=original.workflow,
             name=new_name,
             guidance=original.guidance,
-            phase_id=original.phase_id,
+            phase=original.phase,
             order=next_order
         )
     
