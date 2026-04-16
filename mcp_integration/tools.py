@@ -564,8 +564,11 @@ async def list_activities(workflow_id: int) -> list:
     """
     List activities for workflow.
     
+    Returns basic activity info (id, name, phase_id, order, etc.) without guidance.
+    Use get_activity(id) to retrieve full details including guidance, agent, skill, and artifacts.
+    
     :param workflow_id: Parent workflow ID. Example: 1
-    :return: List of activity dicts
+    :return: List of activity dicts (without guidance field)
     :raises ValueError: if workflow not found
     """
     logger.info(f'MCP Tool: list_activities called - workflow_id={workflow_id}')
@@ -589,7 +592,6 @@ async def list_activities(workflow_id: int) -> list:
         {
             'id': a.id,
             'name': a.name,
-            'guidance': a.guidance,
             'phase_id': a.phase_id,
             'order': a.order,
             'workflow_id': a.workflow_id,
@@ -598,7 +600,7 @@ async def list_activities(workflow_id: int) -> list:
         }
         for a in activities
     ]
-    logger.info(f'MCP Tool: Returning {len(result)} activities')
+    logger.info(f'MCP Tool: Returning {len(result)} activities (guidance excluded - use get_activity for details)')
     return result
 
 
