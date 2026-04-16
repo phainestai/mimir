@@ -37,7 +37,12 @@ class WorkflowExportService:
             logger.error(f"Workflow {workflow_id} not found")
             raise ObjectDoesNotExist(f"Workflow with ID {workflow_id} does not exist")
         
-        activities = list(workflow.activities.all().order_by('order'))
+        # Fetch activities with agent, skill, and artifacts (Issue #72)
+        activities = list(
+            workflow.activities.select_related('agent', 'skill')
+            .prefetch_related('output_artifacts', 'input_artifacts__artifact')
+            .order_by('order')
+        )
         logger.info(f"Found {len(activities)} activities in workflow '{workflow.name}'")
         
         if not folder_name:
@@ -118,7 +123,14 @@ After editing, use import_workflow_from_local MCP tool to import changes.
     
     @staticmethod
     def _generate_activity_md(activity, order: int, slug_prefix: str) -> tuple[str, str]:
-        """Generate activity markdown file."""
+        """
+        Generate activity markdown file with agent, skill, and artifacts.
+        
+        :param activity: Activity instance with prefetched agent, skill, artifacts
+        :param order: Activity order number
+        :param slug_prefix: Prefix for filename
+        :return: Tuple of (filename, content)
+        """
         slug = WorkflowExportService._slugify(activity.name)
         filename = f"{slug_prefix}-{order:02d}-{slug}.md"
         
@@ -130,6 +142,50 @@ After editing, use import_workflow_from_local MCP tool to import changes.
         
         dependencies_text = "\n".join(dependencies) if dependencies else "None"
         phase_text = activity.phase.name if activity.phase else "None"
+        
+        # Build agent section (Issue #72)
+        if activity.agent:
+            agent_text = f"""**Name**: {activity.agent.name}
+**Description**: {activity.agent.description if activity.agent.description else 'No description'}"""
+        else:
+            agent_text = "None"
+        
+        # Build skill section (Issue #72)
+        if activity.skill:
+            skill_lines = [f"**Title**: {activity.skill.title}"]
+            if activity.skill.capability_domain:
+                skill_lines.append(f"**Capability Domain**: {activity.skill.capability_domain}")
+            if activity.skill.technology_stack:
+                skill_lines.append(f"**Technology Stack**: {activity.skill.technology_stack}")
+            skill_text = "\n".join(skill_lines)
+        else:
+            skill_text = "None"
+        
+        # Build artifacts produced section (Issue #72)
+        output_artifacts = list(activity.output_artifacts.all())
+        if output_artifacts:
+            artifacts_produced_lines = []
+            for artifact in output_artifacts:
+                req_text = "Required" if artifact.is_required else "Optional"
+                artifacts_produced_lines.append(
+                    f"- **{artifact.name}** ({artifact.type}) - {req_text}"
+                )
+            artifacts_produced_text = "\n".join(artifacts_produced_lines)
+        else:
+            artifacts_produced_text = "None"
+        
+        # Build artifacts consumed section (Issue #72)
+        input_artifact_inputs = list(activity.input_artifacts.all())
+        if input_artifact_inputs:
+            artifacts_consumed_lines = []
+            for ai in input_artifact_inputs:
+                req_text = "Required" if ai.is_required else "Optional"
+                artifacts_consumed_lines.append(
+                    f"- **{ai.artifact.name}** ({ai.artifact.type}) - {req_text}"
+                )
+            artifacts_consumed_text = "\n".join(artifacts_consumed_lines)
+        else:
+            artifacts_consumed_text = "None"
         
         content = f"""# Activity: {activity.name}
 
@@ -146,13 +202,21 @@ After editing, use import_workflow_from_local MCP tool to import changes.
 
 {activity.guidance if activity.guidance else 'No guidance provided.'}
 
+## Agent
+
+{agent_text}
+
+## Skill
+
+{skill_text}
+
 ## Artifacts Produced
 
-None
+{artifacts_produced_text}
 
 ## Artifacts Consumed
 
-None
+{artifacts_consumed_text}
 
 ## Notes
 
