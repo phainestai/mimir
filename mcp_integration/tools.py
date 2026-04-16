@@ -614,7 +614,7 @@ async def get_activity(activity_id: int) -> dict:
     from methodology.models import Activity
     try:
         activity = await sync_to_async(Activity.objects.select_related(
-            'predecessor', 'successor', 'workflow__playbook', 'agent', 'skill'
+            'predecessor', 'successor', 'workflow__playbook', 'agent', 'skill', 'phase'
         ).prefetch_related(
             'output_artifacts', 'input_artifacts__artifact'
         ).get)(
@@ -670,31 +670,37 @@ async def get_activity(activity_id: int) -> dict:
     
     # Build input artifacts list (Issue #71)
     input_artifact_inputs = await sync_to_async(list)(activity.input_artifacts.all())
-    input_artifacts_list = [
-        {
-            'id': ai.artifact.id,
-            'name': ai.artifact.name,
-            'type': ai.artifact.type,
+    input_artifacts_list = []
+    for ai in input_artifact_inputs:
+        # Access related artifact object safely in async context
+        artifact = await sync_to_async(lambda ai=ai: ai.artifact)()
+        input_artifacts_list.append({
+            'id': artifact.id,
+            'name': artifact.name,
+            'type': artifact.type,
             'is_required': ai.is_required,
-        }
-        for ai in input_artifact_inputs
-    ]
+        })
+    
+    # Access phase, predecessor, successor safely in async context
+    phase = await sync_to_async(lambda: activity.phase)()
+    predecessor = await sync_to_async(lambda: activity.predecessor)()
+    successor = await sync_to_async(lambda: activity.successor)()
     
     result = {
         'id': activity.id,
         'name': activity.name,
         'guidance': activity.guidance,
-        'phase': activity.phase,
+        'phase': phase,
         'order': activity.order,
         'workflow_id': activity.workflow_id,
         'predecessor': {
-            'id': activity.predecessor.id,
-            'name': activity.predecessor.name,
-        } if activity.predecessor else None,
+            'id': predecessor.id,
+            'name': predecessor.name,
+        } if predecessor else None,
         'successor': {
-            'id': activity.successor.id,
-            'name': activity.successor.name,
-        } if activity.successor else None,
+            'id': successor.id,
+            'name': successor.name,
+        } if successor else None,
         'agent': agent_dict,
         'skill': skill_dict,
         'output_artifacts': output_artifacts_list,
