@@ -4,9 +4,13 @@ Django management command to run the MCP server.
 Usage:
     python manage.py mcp_server --user=<username>
 """
+import os
 import logging
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+
+# Allow Django ORM calls in async context (needed for FastMCP)
+os.environ['DJANGO_ALLOW_ASYNC_UNSAFE'] = 'true'
 
 logger = logging.getLogger(__name__)
 

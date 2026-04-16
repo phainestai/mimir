@@ -4,6 +4,12 @@ MCP Tool Definitions for Mimir.
 Thin wrappers around existing service layer methods.
 Adds: permission checks, user context, version incrementing.
 """
+import os
+
+# CRITICAL: Allow Django ORM in async context (FastMCP runs in async event loop)
+# This must be set BEFORE any Django imports
+os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', 'true')
+
 import logging
 from typing import Literal
 from decimal import Decimal
@@ -685,11 +691,19 @@ async def get_activity(activity_id: int) -> dict:
                 'name': activity.successor.name,
             }
         
+        # Build phase dict
+        phase_dict = None
+        if activity.phase:
+            phase_dict = {
+                'id': activity.phase.id,
+                'name': activity.phase.name,
+            }
+        
         result = {
             'id': activity.id,
             'name': activity.name,
             'guidance': activity.guidance,
-            'phase': activity.phase,
+            'phase': phase_dict,
             'order': activity.order,
             'workflow_id': activity.workflow_id,
             'predecessor': predecessor_dict,
