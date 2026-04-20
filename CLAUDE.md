@@ -10,7 +10,7 @@ Mimir is a **self-evolving engineering playbook platform**. It lets teams docume
 
 **Key innovation:** AI assistants can propose playbook improvements (PIPs) that engineers review and approve.
 
-**Current Status:** Production-ready MVP with full CRUDLF for Playbooks, Workflows, Activities, and Agents. MCP integration complete with 40+ tools.
+**Current Status:** Production-ready MVP with full CRUDLF for Playbooks, Workflows, Activities, Agents, Skills, Phases (as modeled), Artifacts (partial), and **Rules** (playbook-scoped, Activity M2M). MCP integration includes 50+ tools (including rule CRUDLF and `set_activity_rules`).
 
 ---
 
@@ -21,12 +21,12 @@ Mimir is a **self-evolving engineering playbook platform**. It lets teams docume
 ```
 mimir/                        # Django project config (settings, urls, wsgi)
 methodology/                  # Core Django app (models, services, views, templates)
-  models/                     # 7 entity models
+  models/                     # Playbook, Workflow, Phase, Activity, Artifact, Skill, Agent, Rule, …
   services/                   # Business logic (shared by UI and MCP)
   views/                      # Thin Django view controllers
   utils/                      # markdown_renderer.py (Markdown + Mermaid)
 mcp_integration/              # MCP server (thin wrappers over services)
-  tools.py                    # All 16+ MCP tool definitions
+  tools.py                    # MCP tool definitions (playbooks, workflows, activities, skills, rules, …)
   context.py                  # User context
   management/commands/mcp_server.py
 accounts/                     # User auth
@@ -58,7 +58,7 @@ Playbook (status: draft/released/disabled; version: 0.x → 1.0+)
        ├─ Phase (optional; currently string field, not separate model)
        └─ Activity (name, guidance: Markdown+Mermaid, order)
             └─ Artifact (input/output, producer/consumer)
-Playbook also has: Agent (Act 7, not yet built), Skill (Act 8, not yet built)
+Playbook also has: Agent, Skill, **Rule** (IDE-style rules; many-to-many with Activities)
 ```
 
 **Implementation status:**
@@ -70,8 +70,9 @@ Playbook also has: Agent (Act 7, not yet built), Skill (Act 8, not yet built)
 | Phase | ⚠️ String field only |
 | Artifact | ⚠️ Model exists, partial |
 | Agent | ✅ Full CRUDLF (Act 7) |
-| Skill | ⚠️ Model exists, partial (Act 8) |
-| PIP | ❌ Not built (Act 9) |
+| Skill | ✅ Full CRUDLF (Act 8) |
+| Rule | ✅ Full CRUDLF + export to `rules/` |
+| PIP | ❌ Not built in FOB UI (V2 / Homebase narrative retained in specs) |
 
 ### Services Pattern
 

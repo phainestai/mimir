@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Rules - {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="rules-playbook-list">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item active">Rules</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 data-testid="rules-header"><i class="fa-solid fa-scale-balanced"></i> Rules in {{ playbook.name }}</h2>
+            <p class="text-muted">IDE rules exported with workflows to your editor</p>
+        </div>
+        {% if can_edit %}
+        <a href="{% url 'rule_create' playbook_pk=playbook.pk %}" class="btn btn-primary" data-testid="create-rule-btn">
+            <i class="fa-solid fa-plus"></i> Create Rule
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Search..."
+                               data-testid="rule-search">
+                    </div>
+                    <div class="col-md-3 form-check">
+                        <input class="form-check-input" type="checkbox" name="unlinked" value="1" id="unlinked"
+                               {% if unlinked_only %}checked{% endif %}>
+                        <label class="form-check-label" for="unlinked">Unlinked only</label>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-secondary" type="submit"><i class="fa-solid fa-search"></i> Apply</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if rules %}
+    <div class="card">
+        <div class="card-header"><h5 class="mb-0">Rules <span class="badge bg-secondary ms-2">{{ rules|length }}</span></h5></div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>Title</th><th>Slug</th><th>Activities</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for rule in rules %}
+                    <tr>
+                        <td><a href="{% url 'rule_detail' playbook_pk=playbook.pk rule_pk=rule.pk %}"><strong>{{ rule.title }}</strong></a></td>
+                        <td><code>{{ rule.slug }}</code></td>
+                        <td><span class="badge bg-secondary">{{ rule.activity_count }}</span></td>
+                        <td><a href="{% url 'rule_detail' playbook_pk=playbook.pk rule_pk=rule.pk %}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-eye"></i></a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card"><div class="card-body text-center py-5 text-muted">No rules yet.{% if can_edit %} <a href="{% url 'rule_create' playbook_pk=playbook.pk %}">Create one</a>.{% endif %}</div></div>
+    {% endif %}
+</div>
+{% endblock %}

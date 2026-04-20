@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load markdown_filters %}
+
+{% block title %}{{ rule.title }} - {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="rule-detail">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rule_list_playbook' playbook_pk=playbook.pk %}">Rules</a></li>
+            <li class="breadcrumb-item active">{{ rule.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 data-testid="rule-title"><i class="fa-solid fa-scale-balanced"></i> {{ rule.title }}</h2>
+            <p class="text-muted small"><code>{{ rule.slug }}</code> &middot; always_apply: {{ rule.always_apply|yesno:"yes,no" }}</p>
+        </div>
+        {% if can_edit %}
+        <div class="btn-group">
+            <a href="{% url 'rule_edit' playbook_pk=playbook.pk rule_pk=rule.pk %}" class="btn btn-primary" data-testid="edit-rule-btn">
+                <i class="fa-solid fa-edit"></i> Edit
+            </a>
+            <button type="button" class="btn btn-outline-danger"
+                    hx-get="{% url 'rule_delete_confirm' playbook_pk=playbook.pk rule_pk=rule.pk %}"
+                    hx-target="#rule-delete-modal-container" hx-swap="innerHTML">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><h5 class="mb-0">Content</h5></div>
+        <div class="card-body markdown-content" data-testid="rule-content">
+            {% if rule.content %}{{ rule.content|markdown }}{% else %}<p class="text-muted">No body.</p>{% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><h5 class="mb-0">Activities <span class="badge bg-secondary">{{ activities|length }}</span></h5></div>
+        <div class="card-body" data-testid="rule-activities">
+            {% if activities %}
+            <ul class="list-group list-group-flush">
+                {% for act in activities %}
+                <li class="list-group-item">
+                    <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=act.workflow.pk activity_pk=act.pk %}">{{ act.name }}</a>
+                    <small class="text-muted ms-2">{{ act.workflow.name }}</small>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted mb-0">No activities linked.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div id="rule-delete-modal-container"></div>
+{% endblock %}

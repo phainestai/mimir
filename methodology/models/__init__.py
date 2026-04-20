@@ -7,5 +7,17 @@ from .artifact import Artifact
 from .artifact_input import ArtifactInput
 from .skill import Skill
 from .agent import Agent
+from .rule import Rule
 
-__all__ = ['Playbook', 'PlaybookVersion', 'Workflow', 'Phase', 'Activity', 'Artifact', 'ArtifactInput', 'Skill', 'Agent']
+__all__ = [
+    'Playbook',
+    'PlaybookVersion',
+    'Workflow',
+    'Phase',
+    'Activity',
+    'Artifact',
+    'ArtifactInput',
+    'Skill',
+    'Agent',
+    'Rule',
+]

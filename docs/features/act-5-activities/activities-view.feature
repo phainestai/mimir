@@ -53,6 +53,11 @@ Feature: FOB-ACTIVITIES-VIEW_ACTIVITY-1 View Activity Details
     And the card shows capability domain and technology stack badges
     And she sees "Change Skill" button if she can edit
 
+  Scenario: FOB-ACTIVITIES-VIEW_ACTIVITY-07b View linked rules
+    Given the activity links playbook rules "pytest-first" and "no-mocks"
+    Then she sees "Rules" card
+    And each rule title links to rule detail
+
   Scenario: FOB-ACTIVITIES-VIEW_ACTIVITY-08 Edit activity button
     Given Maria is viewing the activity
     When she clicks [Edit Activity]

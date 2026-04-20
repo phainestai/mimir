@@ -184,6 +184,28 @@
                             </div>
                         </div>
 
+                        <!-- Rules (IDE) -->
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fa-solid fa-scale-balanced"></i> Rules
+                            </label>
+                            {% if available_rules %}
+                            <div class="border rounded p-3" style="max-height:220px;overflow-y:auto;" data-testid="activity-rules-select">
+                                {% for rule in available_rules %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="rules" value="{{ rule.id }}"
+                                           id="rule_{{ rule.id }}"
+                                           {% if rule.id|stringformat:"s" in selected_rule_ids %}checked{% endif %}
+                                           data-testid="rule-checkbox-{{ rule.id }}">
+                                    <label class="form-check-label" for="rule_{{ rule.id }}">{{ rule.title }} <code class="small">{{ rule.slug }}</code></label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted small mb-0">No rules in this playbook. <a href="{% url 'rule_create' playbook_pk=playbook.pk %}">Create a rule</a>.</p>
+                            {% endif %}
+                        </div>
+
                         <!-- Buttons -->
                         <div class="d-flex justify-content-between mt-4">
                             <a 

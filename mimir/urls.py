@@ -21,6 +21,7 @@ from methodology import views as methodology_views
 from methodology import workflow_views
 from methodology import activity_views
 from methodology import skill_views
+from methodology import rule_views
 from methodology import agent_views
 from methodology import artifact_views
 from methodology import phase_views
@@ -38,11 +39,13 @@ urlpatterns = [
     path("playbooks/<int:playbook_pk>/workflows/<int:workflow_pk>/activities/", include("methodology.activity_urls")),  # Activity URLs scoped to workflow
     path("playbooks/<int:playbook_pk>/phases/", include("methodology.phase_urls")),  # Phase URLs scoped to playbook
     path("playbooks/<int:playbook_pk>/skills/", include("methodology.skill_urls")),  # Skill URLs scoped to playbook
+    path("playbooks/<int:playbook_pk>/rules/", include("methodology.rule_urls")),  # Rule URLs scoped to playbook
     path("", include("methodology.artifact_urls")),  # Artifact URLs
     path("workflows/", workflow_views.workflow_global_list, name="workflow_global_list"),  # Global workflows view
     path("phases/", phase_views.phase_list_global, name="phase_list_global"),  # Global phases view
     path("activities/", activity_views.activity_global_list, name="activity_global_list"),  # Global activities view
     path("skills/", skill_views.skill_list_global, name="skill_list"),  # Global skills view
+    path("rules/", rule_views.rule_list_global, name="rule_list"),  # Global rules view
     path("agents/", include("methodology.agent_urls")),  # Agent views (list, create, detail)
     path("artifacts/", artifact_views.artifact_list_global, name="artifact_list_global"),  # Global artifacts view
 ]

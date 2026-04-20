@@ -1,7 +1,7 @@
 """Admin configuration for methodology models."""
 
 from django.contrib import admin
-from methodology.models import Playbook, PlaybookVersion, Workflow, Activity, Artifact, ArtifactInput, Skill, Agent
+from methodology.models import Playbook, PlaybookVersion, Workflow, Activity, Artifact, ArtifactInput, Skill, Agent, Rule
 
 
 @admin.register(Playbook)
@@ -40,6 +40,7 @@ class ActivityAdmin(admin.ModelAdmin):
     search_fields = ('name', 'guidance', 'workflow__name', 'workflow__playbook__name')
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('workflow', 'order')
+    filter_horizontal = ('rules',)
     fieldsets = (
         ('Basic Information', {
             'fields': ('workflow', 'name', 'guidance')
@@ -80,6 +81,16 @@ class SkillAdmin(admin.ModelAdmin):
     list_display = ('title', 'playbook', 'capability_domain', 'technology_stack', 'created_at')
     search_fields = ('title', 'content', 'capability_domain', 'technology_stack')
     list_filter = ('created_at',)
+    readonly_fields = ('created_at', 'updated_at')
+    raw_id_fields = ('playbook',)
+
+
+@admin.register(Rule)
+class RuleAdmin(admin.ModelAdmin):
+    """Admin configuration for Rule model."""
+    list_display = ('title', 'slug', 'playbook', 'always_apply', 'created_at')
+    search_fields = ('title', 'slug', 'content')
+    list_filter = ('always_apply', 'created_at')
     readonly_fields = ('created_at', 'updated_at')
     raw_id_fields = ('playbook',)
 

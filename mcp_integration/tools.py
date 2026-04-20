@@ -11,7 +11,7 @@ import os
 os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', 'true')
 
 import logging
-from typing import Literal
+from typing import Literal, Optional
 from decimal import Decimal
 from fastmcp import FastMCP
 from asgiref.sync import sync_to_async
@@ -626,7 +626,7 @@ async def get_activity(activity_id: int) -> dict:
             activity = Activity.objects.select_related(
                 'predecessor', 'successor', 'workflow__playbook', 'agent', 'skill', 'phase'
             ).prefetch_related(
-                'output_artifacts', 'input_artifacts__artifact'
+                'output_artifacts', 'input_artifacts__artifact', 'rules'
             ).get(
                 id=activity_id,
                 workflow__playbook__author=user
@@ -653,7 +653,17 @@ async def get_activity(activity_id: int) -> dict:
                 'capability_domain': activity.skill.capability_domain,
                 'technology_stack': activity.skill.technology_stack,
             }
-        
+
+        rules_list = [
+            {
+                'id': r.id,
+                'title': r.title,
+                'slug': r.slug,
+                'always_apply': r.always_apply,
+            }
+            for r in sorted(activity.rules.all(), key=lambda x: x.slug)
+        ]
+
         # Build output artifacts list
         output_artifacts = list(activity.output_artifacts.all())
         output_artifacts_list = [
@@ -712,6 +722,7 @@ async def get_activity(activity_id: int) -> dict:
             'successor': successor_dict,
             'agent': agent_dict,
             'skill': skill_dict,
+            'rules': rules_list,
             'output_artifacts': output_artifacts_list,
             'input_artifacts': input_artifacts_list,
         }
@@ -719,7 +730,7 @@ async def get_activity(activity_id: int) -> dict:
         logger.info(
             f'MCP Tool: Activity with predecessor={activity.predecessor_id}, '
             f'successor={activity.successor_id}, agent={activity.agent_id}, '
-            f'skill={activity.skill_id}, outputs={len(output_artifacts_list)}, '
+            f'skill={activity.skill_id}, rules={len(rules_list)}, outputs={len(output_artifacts_list)}, '
             f'inputs={len(input_artifacts_list)}'
         )
         
@@ -1296,6 +1307,196 @@ async def unlink_skill_from_activity(activity_id: int) -> dict:
     updated = await sync_to_async(ActivityService.clear_activity_skill)(activity_id)
 
     return {'activity_id': updated.id, 'skill_id': None}
+
+
+# ============================================================================
+# RULE MCP TOOLS
+# ============================================================================
+
+async def create_rule(
+    playbook_id: int,
+    title: str,
+    content: str = '',
+    slug: str = '',
+    always_apply: bool = True,
+) -> dict:
+    """Create playbook rule (.mdc export). Increments playbook version on draft."""
+    logger.info(f'MCP Tool: create_rule called - playbook_id={playbook_id}, title={title!r}')
+    user = await sync_to_async(get_current_user)()
+    playbook = await _get_draft_playbook(playbook_id, user)
+
+    from methodology.services.rule_service import RuleService
+
+    rule = await sync_to_async(RuleService.create_rule)(
+        playbook=playbook,
+        title=title,
+        content=content,
+        slug=slug,
+        always_apply=always_apply,
+    )
+    old_version = playbook.version
+    playbook.version += Decimal('0.1')
+    await sync_to_async(playbook.save)()
+
+    logger.info(f'MCP Tool: Created rule id={rule.id}, version {old_version} → {playbook.version}')
+    return {
+        'id': rule.id,
+        'title': rule.title,
+        'slug': rule.slug,
+        'content': rule.content,
+        'always_apply': rule.always_apply,
+        'playbook_id': playbook.id,
+    }
+
+
+async def list_rules(
+    playbook_id: int,
+    search: str = '',
+    unlinked_only: bool = False,
+) -> list:
+    """List rules for playbook."""
+    logger.info(f'MCP Tool: list_rules playbook_id={playbook_id}')
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.models import Playbook
+
+    try:
+        await sync_to_async(Playbook.objects.get)(id=playbook_id, author=user)
+    except Playbook.DoesNotExist:
+        raise ValueError(f'Playbook {playbook_id} not found')
+
+    from methodology.services.rule_service import RuleService
+
+    qs = await sync_to_async(RuleService.list_rules_for_playbook)(
+        playbook_id, search=search, unlinked_only=unlinked_only
+    )
+    rules = await sync_to_async(list)(qs)
+    return [
+        {
+            'id': r.id,
+            'title': r.title,
+            'slug': r.slug,
+            'always_apply': r.always_apply,
+            'activity_count': getattr(r, 'activity_count', 0),
+            'playbook_id': r.playbook_id,
+        }
+        for r in rules
+    ]
+
+
+async def get_rule(rule_id: int) -> dict:
+    """Get rule by ID."""
+    logger.info(f'MCP Tool: get_rule rule_id={rule_id}')
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.rule_service import RuleService
+
+    rule = await sync_to_async(RuleService.get_rule)(rule_id)
+    if rule.playbook.author_id != user.id:
+        raise ValueError(f'Rule {rule_id} not found')
+    ac = await sync_to_async(rule.activities.count)()
+    return {
+        'id': rule.id,
+        'title': rule.title,
+        'slug': rule.slug,
+        'content': rule.content,
+        'always_apply': rule.always_apply,
+        'playbook_id': rule.playbook_id,
+        'activity_count': ac,
+    }
+
+
+async def update_rule(
+    rule_id: int,
+    title: Optional[str] = None,
+    content: Optional[str] = None,
+    slug: Optional[str] = None,
+    always_apply: Optional[bool] = None,
+) -> dict:
+    """Update rule in draft playbook."""
+    logger.info(f'MCP Tool: update_rule rule_id={rule_id}')
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.rule_service import RuleService
+
+    rule = await sync_to_async(RuleService.get_rule)(rule_id)
+    if rule.playbook.author_id != user.id:
+        raise ValueError(f'Rule {rule_id} not found')
+    if rule.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook "{rule.playbook.name}".')
+
+    kwargs = {}
+    if title is not None:
+        kwargs['title'] = title
+    if content is not None:
+        kwargs['content'] = content
+    if slug is not None:
+        kwargs['slug'] = slug
+    if always_apply is not None:
+        kwargs['always_apply'] = always_apply
+
+    if not kwargs:
+        raise ValueError('No fields to update')
+
+    updated = await sync_to_async(RuleService.update_rule)(rule_id, **kwargs)
+    playbook = rule.playbook
+    old_version = playbook.version
+    playbook.version += Decimal('0.1')
+    await sync_to_async(playbook.save)()
+
+    logger.info(f'MCP Tool: Updated rule {rule_id}, version {old_version} → {playbook.version}')
+    return {
+        'id': updated.id,
+        'title': updated.title,
+        'slug': updated.slug,
+        'content': updated.content,
+        'always_apply': updated.always_apply,
+        'playbook_id': updated.playbook_id,
+    }
+
+
+async def delete_rule(rule_id: int) -> dict:
+    """Delete rule from draft playbook."""
+    logger.info(f'MCP Tool: delete_rule rule_id={rule_id}')
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.rule_service import RuleService
+
+    rule = await sync_to_async(RuleService.get_rule)(rule_id)
+    if rule.playbook.author_id != user.id:
+        raise ValueError(f'Rule {rule_id} not found')
+    if rule.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook "{rule.playbook.name}".')
+
+    playbook = rule.playbook
+    old_version = playbook.version
+    await sync_to_async(RuleService.delete_rule)(rule_id)
+    playbook.version += Decimal('0.1')
+    await sync_to_async(playbook.save)()
+
+    return {'deleted': True, 'rule_id': rule_id}
+
+
+async def set_activity_rules(activity_id: int, rule_ids: list) -> dict:
+    """Replace activity's linked rules (same playbook only)."""
+    logger.info(f'MCP Tool: set_activity_rules activity_id={activity_id}, rule_ids={rule_ids}')
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.activity_service import ActivityService
+    from methodology.models import Activity
+
+    activity = await sync_to_async(
+        Activity.objects.select_related('workflow__playbook').get
+    )(pk=activity_id)
+    if activity.workflow.playbook.author_id != user.id:
+        raise ValueError(f'Activity {activity_id} not found')
+    if activity.workflow.playbook.status == 'released':
+        raise PermissionError('Cannot modify released playbook.')
+
+    await sync_to_async(ActivityService.set_activity_rules)(activity_id, rule_ids)
+    updated = await sync_to_async(Activity.objects.prefetch_related('rules').get)(pk=activity_id)
+    ids = await sync_to_async(lambda: list(updated.rules.values_list('id', flat=True)))()
+    return {'activity_id': activity_id, 'rule_ids': ids}
 
 
 # ============================================================================
@@ -2298,6 +2499,14 @@ def initialize_mcp():
     mcp.tool()(link_skill_to_activity)
     mcp.tool()(unlink_skill_from_activity)
 
+    # Register rule tools
+    mcp.tool()(create_rule)
+    mcp.tool()(list_rules)
+    mcp.tool()(get_rule)
+    mcp.tool()(update_rule)
+    mcp.tool()(delete_rule)
+    mcp.tool()(set_activity_rules)
+
     # Register agent tools
     mcp.tool()(create_agent)
     mcp.tool()(list_agents)
@@ -2307,7 +2516,7 @@ def initialize_mcp():
     mcp.tool()(link_agent_to_activity)
     mcp.tool()(unlink_agent_from_activity)
 
-        # Register artifact tools
+    # Register artifact tools
     mcp.tool()(create_artifact)
     mcp.tool()(list_artifacts)
     mcp.tool()(get_artifact)
@@ -2324,6 +2533,6 @@ def initialize_mcp():
     mcp.tool()(delete_phase)
     mcp.tool()(reorder_phases)
 
-    logger.info('MCP: All 47 tools registered')
+    logger.info('MCP: All tools registered (includes rule CRUDLF + set_activity_rules)')
     return mcp
 

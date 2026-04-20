@@ -37,10 +37,14 @@ class WorkflowExportService:
             logger.error(f"Workflow {workflow_id} not found")
             raise ObjectDoesNotExist(f"Workflow with ID {workflow_id} does not exist")
         
-        # Fetch activities with agent, skill, and artifacts (Issue #72)
+        # Fetch activities with agent, skill, artifacts, and rules
         activities = list(
             workflow.activities.select_related('agent', 'skill')
-            .prefetch_related('output_artifacts', 'input_artifacts__artifact')
+            .prefetch_related(
+                'output_artifacts',
+                'input_artifacts__artifact',
+                'rules',
+            )
             .order_by('order')
         )
         logger.info(f"Found {len(activities)} activities in workflow '{workflow.name}'")
@@ -73,13 +77,20 @@ class WorkflowExportService:
             activity_file.write_text(content, encoding='utf-8')
             files_created.append(filename)
             logger.info(f"Created {filename}")
-        
+
+        rules_dir, rule_files = WorkflowExportService._export_rules_for_workflow(
+            activities, Path(target_directory)
+        )
+        files_created.extend(rule_files)
+
         result = {
             'status': 'exported',
             'workflow_id': workflow_id,
             'workflow_name': workflow.name,
             'export_path': str(export_path.absolute()),
+            'rules_export_path': str(rules_dir.absolute()) if rules_dir else '',
             'files_created': files_created,
+            'rule_files_created': rule_files,
             'message': 'Workflow exported successfully. Edit files locally and use import_workflow_from_local to apply changes.'
         }
         
@@ -160,7 +171,14 @@ After editing, use import_workflow_from_local MCP tool to import changes.
             skill_text = "\n".join(skill_lines)
         else:
             skill_text = "None"
-        
+
+        rule_links = list(activity.rules.all())
+        if rule_links:
+            rules_lines = [f"- **{r.title}** (`{r.slug}`)" for r in sorted(rule_links, key=lambda x: x.slug)]
+            rules_text = "\n".join(rules_lines)
+        else:
+            rules_text = "None"
+
         # Build artifacts produced section (Issue #72)
         output_artifacts = list(activity.output_artifacts.all())
         if output_artifacts:
@@ -210,6 +228,10 @@ After editing, use import_workflow_from_local MCP tool to import changes.
 
 {skill_text}
 
+## Rules
+
+{rules_text}
+
 ## Artifacts Produced
 
 {artifacts_produced_text}
@@ -225,6 +247,52 @@ No additional notes.
         
         return filename, content
     
+    @staticmethod
+    def _export_rules_for_workflow(activities, workflows_root: Path):
+        """
+        Write distinct playbook rules referenced by activities into sibling ``rules/`` folder.
+
+        :returns: Tuple of (rules directory Path or None, list of relative paths created)
+        """
+        seen = {}
+        for activity in activities:
+            for rule in activity.rules.all():
+                seen[rule.id] = rule
+        if not seen:
+            logger.info('No rules linked to workflow activities; skipping rules export')
+            return None, []
+
+        try:
+            rules_parent = workflows_root.resolve().parent
+        except OSError:
+            rules_parent = workflows_root.parent
+        rules_dir = rules_parent / 'rules'
+        try:
+            rules_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            logger.error('Failed to create rules directory %s: %s', rules_dir, e)
+            raise PermissionError(f'Cannot create rules directory {rules_dir}: {e}') from e
+
+        rel_created = []
+        for rule in sorted(seen.values(), key=lambda r: r.slug):
+            fname = f'{rule.slug}.mdc'
+            body = WorkflowExportService._format_rule_mdc(rule)
+            out = rules_dir / fname
+            out.write_text(body, encoding='utf-8')
+            rel = f'rules/{fname}'
+            rel_created.append(rel)
+            logger.info('Exported rule file %s', out)
+
+        return rules_dir, rel_created
+
+    @staticmethod
+    def _format_rule_mdc(rule) -> str:
+        """Cursor-style .mdc body with YAML front matter."""
+        aa = 'true' if rule.always_apply else 'false'
+        fm = f'---\nalwaysApply: {aa}\n---\n\n'
+        content = rule.content.strip() if rule.content else ''
+        return fm + content + ('\n' if content and not content.endswith('\n') else '')
+
     @staticmethod
     def _slugify(text: str) -> str:
         """Convert text to slug format."""

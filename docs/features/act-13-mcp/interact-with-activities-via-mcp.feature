@@ -104,6 +104,12 @@ Feature: FOB-MCP-ACTIVITIES-1 AI Assistant Interacts with Activities via MCP
       | predecessor | {id: 1, name: "Define Props"}    |
       | successor   | {id: 3, name: "Write Component"} |
 
+  Scenario: FOB-MCP-CONFIG-ACTIVITIES-GET_ACTIVITY-2 Rules array
+    Given activity (id=2) links playbook rules "pytest-first" and "ruff-format"
+    When Cascade calls "get_activity" with:
+      | activity_id | 2 |
+    Then MCP returns field "rules" as a list of rule objects with id title slug always_apply
+
   Scenario: FOB-MCP-CONFIG-ACTIVITIES-GET_ACTIVITY-1 Non-existent activity raises error
     When Cascade calls "get_activity" with:
       | activity_id | 999 |

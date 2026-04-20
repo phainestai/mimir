@@ -5,7 +5,7 @@ import tempfile
 import shutil
 from pathlib import Path
 from django.core.exceptions import ObjectDoesNotExist
-from methodology.models import Workflow, Activity, Playbook, Agent, Skill, Artifact, ArtifactInput
+from methodology.models import Workflow, Activity, Playbook, Agent, Skill, Artifact, ArtifactInput, Rule
 from methodology.services.workflow_export_service import WorkflowExportService
 
 
@@ -66,6 +66,34 @@ class TestWorkflowExportService:
         yield temp_dir
         shutil.rmtree(temp_dir)
     
+    def test_export_writes_linked_rules_mdc(self, workflow, activities, temp_dir, playbook):
+        """Export creates sibling rules/ with .mdc for linked rules."""
+        rule = Rule.objects.create(
+            playbook=playbook,
+            title='Pytest rule',
+            slug='pytest-rule',
+            content='Use pytest for all tests.',
+            always_apply=True,
+        )
+        activities[0].rules.add(rule)
+
+        sub = Path(temp_dir) / 'workflows'
+        sub.mkdir(parents=True, exist_ok=True)
+        result = WorkflowExportService.export_workflow_to_markdown(
+            workflow_id=workflow.id,
+            target_directory=str(sub),
+            folder_name='FFE',
+        )
+        rules_dir = sub.parent / 'rules'
+        mdc = rules_dir / 'pytest-rule.mdc'
+        assert mdc.exists()
+        text = mdc.read_text()
+        assert 'alwaysApply: true' in text
+        assert 'Use pytest' in text
+        assert 'rules/pytest-rule.mdc' in result['files_created'] or any(
+            'pytest-rule.mdc' in f for f in result['files_created']
+        )
+
     def test_export_workflow_creates_files(self, workflow, activities, temp_dir):
         """Test FOB-WORKFLOWS-EXPORT_IMPORT-01: Export creates all files."""
         result = WorkflowExportService.export_workflow_to_markdown(

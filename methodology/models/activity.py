@@ -39,7 +39,13 @@ class Activity(models.Model):
         related_name='activities',
         help_text="Optional skill providing tech-specific guidance for this activity"
     )
-    
+    rules = models.ManyToManyField(
+        'Rule',
+        blank=True,
+        related_name='activities',
+        help_text='IDE rules linked to this activity (many-to-many)',
+    )
+
     # Core fields
     name = models.CharField(
         max_length=200,

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Edit Rule - {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="rule-edit">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rule_list_playbook' playbook_pk=playbook.pk %}">Rules</a></li>
+            <li class="breadcrumb-item active">Edit</li>
+        </ol>
+    </nav>
+
+    <h2>Edit Rule</h2>
+    <div class="card">
+        <div class="card-body">
+            <form method="post" data-testid="rule-form">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label" for="title">Title</label>
+                    <input type="text" class="form-control {% if errors.title %}is-invalid{% endif %}" id="title" name="title"
+                           value="{{ form_data.title }}" required data-testid="rule-title-input">
+                    {% if errors.title %}<div class="invalid-feedback">{{ errors.title }}</div>{% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="slug">Slug</label>
+                    <input type="text" class="form-control" id="slug" name="slug" value="{{ form_data.slug }}" data-testid="rule-slug-input">
+                </div>
+                <div class="mb-3 form-check">
+                    <input class="form-check-input" type="checkbox" name="always_apply" id="always_apply"
+                           {% if form_data.always_apply %}checked{% endif %}>
+                    <label class="form-check-label" for="always_apply">Always apply</label>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="content">Content</label>
+                    <textarea class="form-control font-monospace" id="content" name="content" rows="14"
+                              data-testid="rule-content-input">{{ form_data.content }}</textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'rule_detail' playbook_pk=playbook.pk rule_pk=rule.pk %}" class="btn btn-outline-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -215,6 +215,31 @@
                 </div>
             </div>
 
+            <!-- Rules Card -->
+            <div class="card mb-4" data-testid="rules-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fa-solid fa-scale-balanced"></i> Rules</h5>
+                </div>
+                <div class="card-body">
+                    {% if activity.rules.all %}
+                    <ul class="list-group list-group-flush">
+                        {% for rule in activity.rules.all %}
+                        <li class="list-group-item px-0">
+                            <a href="{% url 'rule_detail' playbook_pk=playbook.pk rule_pk=rule.pk %}" data-testid="rule-link-{{ rule.id }}">{{ rule.title }}</a>
+                            <small class="text-muted ms-2"><code>{{ rule.slug }}</code></small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted mb-0" data-testid="no-rules">No rules linked.</p>
+                    {% endif %}
+                    {% if can_edit %}
+                    <a href="{% url 'activity_edit' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                       class="btn btn-sm btn-outline-primary mt-2"><i class="fa-solid fa-pen-to-square"></i> Edit rules</a>
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Input Artifacts Card -->
             <div class="card" data-testid="artifacts-card">
                 <div class="card-header d-flex justify-content-between align-items-center">

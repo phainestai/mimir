@@ -33,7 +33,7 @@ Runs an independent UX consulting practice. Needs to organize her personal workf
 - **Note**: Mimir MCP provides playbook context; external MCPs handle work item creation/tracking
 
 **Domain Model Notes**:
-- **7 Core Entities**: Playbook, Workflow, Phase, Activity, Artifact, Role, Skill
+- **Core Entities**: Playbook, Workflow, Phase, Activity, Artifact, Role, Skill, **Rule** (playbook-scoped IDE rules; M2M with Activities; exported with workflows to `rules/*.mdc`)
 - **Phase is OPTIONAL**: Workflows MAY contain Phases for grouping Activities, but Phase is not required. A Workflow can organize Activities with or without Phase grouping.
 - **Artifact**: Formerly called "Deliverable" in some contexts. Use "Artifact" consistently for outputs produced by Activities.
   - **Producer/Consumer Model**: Each artifact is produced by exactly one activity (output) and can be consumed by multiple downstream activities (inputs)

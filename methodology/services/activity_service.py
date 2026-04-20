@@ -9,7 +9,7 @@ import logging
 from django.db import IntegrityError
 from django.db import models
 from django.core.exceptions import ValidationError
-from methodology.models import Activity, Skill, Agent
+from methodology.models import Activity, Skill, Agent, Rule
 
 logger = logging.getLogger(__name__)
 
@@ -477,6 +477,44 @@ class ActivityService:
         logger.info(
             "Cleared skill (was %s) from activity %s '%s'",
             old_skill_id, activity_id, activity.name,
+        )
+        return activity
+
+    @staticmethod
+    def set_activity_rules(activity_id: int, rule_ids: list):
+        """
+        Replace M2M rules on an activity. Each rule must belong to the activity's playbook.
+
+        :param activity_id: Activity primary key
+        :param rule_ids: List of Rule primary keys (may be empty to clear all)
+        :returns: Updated Activity instance
+        :raises ValidationError: If any rule belongs to another playbook or ID invalid
+        """
+        activity = Activity.objects.select_related('workflow__playbook').get(pk=activity_id)
+        playbook_id = activity.workflow.playbook_id
+        ids = []
+        for r in rule_ids:
+            if r is None or r == '':
+                continue
+            try:
+                ids.append(int(r))
+            except (TypeError, ValueError):
+                raise ValidationError('Invalid rule id in list.') from None
+        ids = list(dict.fromkeys(ids))
+        if not ids:
+            activity.rules.clear()
+            logger.info('Cleared all rules from activity %s', activity_id)
+            return activity
+        rules = Rule.objects.filter(pk__in=ids, playbook_id=playbook_id)
+        if rules.count() != len(ids):
+            raise ValidationError(
+                'One or more rules were not found or belong to a different playbook.'
+            )
+        activity.rules.set(rules)
+        logger.info(
+            'Set %d rule(s) on activity %s',
+            len(ids),
+            activity_id,
         )
         return activity
 

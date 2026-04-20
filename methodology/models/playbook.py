@@ -160,6 +160,7 @@ class Playbook(models.Model):
             'artifacts': Artifact.objects.filter(playbook=self).count(),
             'agents': self.agents.count(),
             'skills': self.skills.count(),
+            'rules': self.rules.count(),
         }
     
     def get_status_badge_color(self):

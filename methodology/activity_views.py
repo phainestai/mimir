@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 
-from methodology.models import Playbook, Workflow, Activity, ArtifactInput
+from methodology.models import Playbook, Workflow, Activity, ArtifactInput, Rule
 from methodology.services.activity_service import ActivityService
 
 logger = logging.getLogger(__name__)
@@ -212,6 +212,8 @@ def activity_create(request, playbook_pk, workflow_pk):
                 predecessor=predecessor,
                 successor=successor
             )
+            rule_ids = request.POST.getlist('rules')
+            ActivityService.set_activity_rules(activity.pk, rule_ids)
             logger.info(f"Activity '{name}' created successfully in workflow {workflow_pk}")
             messages.success(request, f"Activity '{activity.name}' created successfully!")
             return redirect('activity_list', playbook_pk=playbook_pk, workflow_pk=workflow_pk)
@@ -228,17 +230,23 @@ def activity_create(request, playbook_pk, workflow_pk):
 def _render_create_form(request, playbook, workflow, form_data, errors):
     """Helper to render create form with context."""
     from methodology.models import Phase
-    
+
     # Get available predecessors and successors
     available_predecessors = ActivityService.get_available_predecessors(workflow)
     available_successors = ActivityService.get_available_successors(workflow)
-    
+
     # Get available phases for this playbook
     available_phases = Phase.objects.filter(playbook=playbook).order_by('order')
+    available_rules = Rule.objects.filter(playbook=playbook).order_by('title')
     
     # Check if dropdowns should be disabled (no other activities)
     disable_dependencies = workflow.get_activity_count() == 0
-    
+
+    if hasattr(form_data, 'getlist'):
+        selected_rule_ids = [str(x) for x in form_data.getlist('rules')]
+    else:
+        selected_rule_ids = [str(x) for x in (form_data.get('rules') or [])]
+
     context = {
         'playbook': playbook,
         'workflow': workflow,
@@ -247,6 +255,8 @@ def _render_create_form(request, playbook, workflow, form_data, errors):
         'available_predecessors': available_predecessors,
         'available_successors': available_successors,
         'available_phases': available_phases,
+        'available_rules': available_rules,
+        'selected_rule_ids': selected_rule_ids,
         'disable_dependencies': disable_dependencies,
     }
     return render(request, 'activities/create.html', context)
@@ -282,7 +292,7 @@ def activity_detail(request, playbook_pk, workflow_pk, activity_pk):
     playbook = get_object_or_404(Playbook, pk=playbook_pk)
     workflow = get_object_or_404(Workflow, pk=workflow_pk, playbook=playbook)
     activity = get_object_or_404(
-        Activity.objects.select_related('predecessor', 'successor'),
+        Activity.objects.select_related('predecessor', 'successor').prefetch_related('rules'),
         pk=activity_pk,
         workflow=workflow
     )
@@ -344,7 +354,7 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
     playbook = get_object_or_404(Playbook, pk=playbook_pk)
     workflow = get_object_or_404(Workflow, pk=workflow_pk, playbook=playbook)
     activity = get_object_or_404(
-        Activity.objects.select_related('predecessor', 'successor'),
+        Activity.objects.select_related('predecessor', 'successor').prefetch_related('rules'),
         pk=activity_pk,
         workflow=workflow
     )
@@ -365,8 +375,8 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
         agent_id = request.POST.get('agent', '').strip() or None
         skill_id = request.POST.get('skill', '').strip() or None
         artifact_input_ids = request.POST.getlist('artifact_inputs')
+        rule_ids = request.POST.getlist('rules')
 
-        
         # Convert order to int
         order_int = None
         if order:
@@ -433,7 +443,8 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
             # Handle artifact inputs
             artifact_ids_int = [int(aid) for aid in artifact_input_ids if aid]
             ActivityService.set_activity_artifact_inputs(activity_pk, artifact_ids_int)
-            
+            ActivityService.set_activity_rules(activity_pk, rule_ids)
+
             logger.info(f"Activity {activity_pk} updated successfully with {len(artifact_ids_int)} artifact inputs")
             logger.info(f"Activity {activity_pk} updated successfully")
             messages.success(request, f"Activity '{name}' updated successfully!")
@@ -455,6 +466,7 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
         'agent': activity.agent.id if activity.agent else '',
         'skill': activity.skill.id if activity.skill else '',
         'artifact_inputs': list(ArtifactInput.objects.filter(activity=activity).values_list('artifact_id', flat=True)),
+        'rules': list(activity.rules.values_list('id', flat=True)),
 
     }
     return _render_edit_form(request, playbook, workflow, activity, form_data, {})
@@ -464,7 +476,7 @@ def _render_edit_form(request, playbook, workflow, activity, form_data, errors):
     """Helper to render edit form with context."""
     # Get available predecessors and successors (exclude current activity)
     available_predecessors = ActivityService.get_available_predecessors(workflow, exclude_activity_id=activity.id)
-    
+
     # Get available agents, skills, artifacts, and phases from playbook
     from methodology.models import Agent, Skill, Artifact, Phase
     available_agents = Agent.objects.filter(playbook=playbook).order_by('name')
@@ -479,10 +491,12 @@ def _render_edit_form(request, playbook, workflow, activity, form_data, errors):
     ).select_related('produced_by').order_by('produced_by__name', 'name')
 
     available_successors = ActivityService.get_available_successors(workflow, exclude_activity_id=activity.id)
-    
+
+    available_rules = Rule.objects.filter(playbook=playbook).order_by('title')
+
     # Check if dropdowns should be disabled (only 1 activity - the current one)
     disable_dependencies = workflow.get_activity_count() <= 1
-    
+
     context = {
         'playbook': playbook,
         'workflow': workflow,
@@ -490,6 +504,7 @@ def _render_edit_form(request, playbook, workflow, activity, form_data, errors):
         'form_data': form_data,
         'available_agents': available_agents,
         'available_skills': available_skills,
+        'available_rules': available_rules,
         'available_artifacts': available_artifacts,
         'available_phases': available_phases,
 

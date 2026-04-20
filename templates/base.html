@@ -123,6 +123,16 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if '/rules/' in request.path %}active{% endif %}" 
+                           href="{% url 'rule_list' %}" 
+                           data-testid="nav-rules"
+                           data-bs-toggle="tooltip" data-bs-placement="bottom"
+                           title="View all IDE rules across your playbooks"
+                           {% if '/rules/' in request.path %}aria-current="page"{% endif %}>
+                            <i class="fas fa-scale-balanced"></i> Rules
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link disabled" href="#" data-testid="nav-pips"
                            data-bs-toggle="tooltip" data-bs-placement="bottom"
                            title="Coming soon: Global PIPs list (currently accessed via Playbook tabs)">

@@ -19,6 +19,12 @@ Feature: FOB-WORKFLOWS-EXPORT_IMPORT-1 MCP Workflow Synchronization
     And folder contains "_workflow.md" with workflow metadata
     And folder contains 15 activity files: FFE-01-*.md through FFE-15-*.md
 
+  Scenario: FOB-WORKFLOWS-EXPORT_IMPORT-01b Export writes rules to sibling rules folder
+    Given activities in the workflow link playbook rules "pytest" and "ruff"
+    When AI exports the workflow to ".windsurf/workflows/FFE/"
+    Then distinct rule files appear under ".windsurf/rules/" as "*.mdc"
+    And each file contains YAML front matter with alwaysApply
+
   ✅ Scenario: FOB-WORKFLOWS-EXPORT_IMPORT-02 Activity file contains complete metadata
     Given workflow "Frontend Development" has been exported via MCP
     When Maria opens "FFE-01-Setup_Project.md"

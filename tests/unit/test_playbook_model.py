@@ -60,6 +60,7 @@ class TestPlaybookQuickStats:
         assert stats['artifacts'] == 0
         assert stats['agents'] == 0
         assert stats['skills'] == 0
+        assert stats['rules'] == 0
     
     def test_get_quick_stats_structure(self):
         """Test quick stats returns proper dictionary structure."""
@@ -77,7 +78,7 @@ class TestPlaybookQuickStats:
         assert isinstance(stats, dict)
         
         # Verify all expected keys exist
-        required_keys = ['workflows', 'phases', 'activities', 'artifacts', 'agents', 'skills']
+        required_keys = ['workflows', 'phases', 'activities', 'artifacts', 'agents', 'skills', 'rules']
         for key in required_keys:
             assert key in stats, f"Missing key: {key}"
         
