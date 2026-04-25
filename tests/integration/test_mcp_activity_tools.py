@@ -92,14 +92,18 @@ class TestMCPActivityCreate:
         assert draft_playbook.version > version_before
 
     @pytest.mark.asyncio
-    async def test_create_activity_phase_param_accepted(self, setup_user_context, workflow):
-        """Passing phase string does not raise an error (param accepted, not wired to DB)."""
+    async def test_create_activity_phase_id_persisted(self, setup_user_context, workflow, phase):
+        """phase_id is wired through to the service and persisted on the activity."""
         result = await create_activity(
             workflow_id=workflow.id,
             name='Phase Activity',
-            phase='Inception',
+            phase_id=phase.id,
         )
         assert result['name'] == 'Phase Activity'
+        assert result['phase_id'] == phase.id
+
+        created = await sync_to_async(Activity.objects.get)(pk=result['id'])
+        assert created.phase_id == phase.id
 
     @pytest.mark.asyncio
     async def test_create_activity_with_predecessor(self, setup_user_context, workflow, activity):

@@ -491,14 +491,14 @@ async def delete_workflow(workflow_id: int) -> dict:
 # ============================================================================
 
 async def create_activity(workflow_id: int, name: str, guidance: str = "",
-                        phase: str = None, predecessor_id: int = None) -> dict:
+                        phase_id: int = None, predecessor_id: int = None) -> dict:
     """
     Create activity in workflow (DRAFT playbook). Increments grandparent version.
-    
+
     :param workflow_id: Parent workflow ID. Example: 1
     :param name: Activity name. Example: "Design Component"
     :param guidance: Rich Markdown guidance (optional)
-    :param phase: Phase grouping (optional)
+    :param phase_id: Phase ID to assign (optional, must belong to same playbook). Example: 3
     :param predecessor_id: Predecessor activity ID (optional, must be in same workflow)
     :return: Created activity dict
     :raises PermissionError: if grandparent playbook is released
@@ -539,6 +539,7 @@ async def create_activity(workflow_id: int, name: str, guidance: str = "",
         workflow=workflow,
         name=name,
         guidance=guidance,
+        phase_id=phase_id,
         predecessor=predecessor
     )
     
@@ -552,7 +553,7 @@ async def create_activity(workflow_id: int, name: str, guidance: str = "",
         'id': activity.id,
         'name': activity.name,
         'guidance': activity.guidance,
-        'phase': activity.phase,
+        'phase_id': activity.phase_id,
         'order': activity.order,
         'workflow_id': workflow.id,
         'predecessor_id': predecessor.id if predecessor else None,
