@@ -91,6 +91,38 @@ class TestMCPActivityUpdate:
         phase_obj = await sync_to_async(lambda: activity.phase)()
         assert phase_obj.name == 'Inception'
 
+    @pytest.mark.asyncio
+    async def test_update_activity_invalid_phase_id_raises_value_error(self, setup_user_context, activity):
+        """Non-existent phase_id raises ValueError, not a raw Django ValidationError."""
+        with pytest.raises(ValueError, match='Phase'):
+            await update_activity(activity_id=activity.id, phase_id=99999)
+
+    @pytest.mark.asyncio
+    async def test_update_activity_phase_from_different_playbook_raises_value_error(
+        self, setup_user_context, activity, maria
+    ):
+        """phase_id from a different playbook raises ValueError."""
+        other_playbook = await sync_to_async(Playbook.objects.create)(
+            name='Other Playbook', description='', category='test',
+            status='draft', source='owned', author=maria,
+        )
+        other_phase = await sync_to_async(Phase.objects.create)(
+            name='Foreign Phase', playbook=other_playbook, order=1,
+        )
+        with pytest.raises(ValueError, match='Phase'):
+            await update_activity(activity_id=activity.id, phase_id=other_phase.id)
+
+    @pytest.mark.asyncio
+    async def test_update_activity_duplicate_name_raises_value_error(
+        self, setup_user_context, workflow, activity
+    ):
+        """Renaming to an existing activity name in the same workflow raises ValueError."""
+        other = await sync_to_async(Activity.objects.create)(
+            name='Other Activity', workflow=workflow, order=2,
+        )
+        with pytest.raises(ValueError, match='Other Activity'):
+            await update_activity(activity_id=activity.id, name=other.name)
+
 
 @pytest.mark.django_db(transaction=True)
 class TestMCPActivityGet:
