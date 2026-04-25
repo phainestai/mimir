@@ -13,6 +13,7 @@ os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', 'true')
 import logging
 from typing import Literal, Optional
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from fastmcp import FastMCP
 from asgiref.sync import sync_to_async
 
@@ -535,14 +536,19 @@ async def create_activity(workflow_id: int, name: str, guidance: str = "",
     # Call existing service
     from methodology.services.activity_service import ActivityService
     old_version = workflow.playbook.version
-    activity = await sync_to_async(ActivityService.create_activity)(
-        workflow=workflow,
-        name=name,
-        guidance=guidance,
-        phase_id=phase_id,
-        predecessor=predecessor
-    )
-    
+    try:
+        activity = await sync_to_async(ActivityService.create_activity)(
+            workflow=workflow,
+            name=name,
+            guidance=guidance,
+            phase_id=phase_id,
+            predecessor=predecessor
+        )
+    except ValidationError as e:
+        msg = e.message if hasattr(e, 'message') else str(e)
+        logger.error(f'MCP Tool: create_activity validation error: {msg}')
+        raise ValueError(msg)
+
     # Increment grandparent version
     workflow.playbook.version += Decimal('0.1')
     await sync_to_async(workflow.playbook.save)()
