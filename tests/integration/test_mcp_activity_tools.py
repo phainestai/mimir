@@ -156,6 +156,34 @@ class TestMCPActivityCreate:
                 name=activity.name,
             )
 
+    @pytest.mark.asyncio
+    async def test_create_activity_released_playbook_raises_permission_error(self, setup_user_context, maria):
+        """Creating activity in a released playbook raises PermissionError."""
+        released = await sync_to_async(Playbook.objects.create)(
+            name='Released Playbook', description='', category='test',
+            status='released', source='owned', author=maria,
+        )
+        workflow = await sync_to_async(Workflow.objects.create)(
+            name='Released Workflow', description='', playbook=released, order=1,
+        )
+        with pytest.raises(PermissionError, match='released'):
+            await create_activity(workflow_id=workflow.id, name='Blocked Activity')
+
+    @pytest.mark.asyncio
+    async def test_create_activity_predecessor_in_different_workflow_raises_value_error(
+        self, setup_user_context, draft_playbook, workflow, activity
+    ):
+        """Predecessor from a different workflow raises ValueError."""
+        other_workflow = await sync_to_async(Workflow.objects.create)(
+            name='Other Workflow', description='', playbook=draft_playbook, order=2,
+        )
+        with pytest.raises(ValueError, match=str(activity.id)):
+            await create_activity(
+                workflow_id=other_workflow.id,
+                name='Cross-workflow Activity',
+                predecessor_id=activity.id,
+            )
+
 
 @pytest.mark.django_db(transaction=True)
 class TestMCPActivityUpdate:
