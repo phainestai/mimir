@@ -81,6 +81,8 @@ class TestMCPActivityCreate:
 
         assert result['name'] == 'New Activity'
         assert result['workflow_id'] == workflow.id
+        assert result['order'] == 1
+        assert result['phase_id'] is None
         assert 'id' in result
 
         # Verify persisted in DB
@@ -239,6 +241,22 @@ class TestMCPActivityUpdate:
         )
         with pytest.raises(ValueError, match='Other Activity'):
             await update_activity(activity_id=activity.id, name=other.name)
+
+    @pytest.mark.asyncio
+    async def test_update_activity_released_playbook_raises_permission_error(self, setup_user_context, maria):
+        """Updating activity in a released playbook raises PermissionError."""
+        released = await sync_to_async(Playbook.objects.create)(
+            name='Released Playbook', description='', category='test',
+            status='released', source='owned', author=maria,
+        )
+        wf = await sync_to_async(Workflow.objects.create)(
+            name='Released Workflow', description='', playbook=released, order=1,
+        )
+        act = await sync_to_async(Activity.objects.create)(
+            name='Locked Activity', workflow=wf, order=1,
+        )
+        with pytest.raises(PermissionError, match='released'):
+            await update_activity(activity_id=act.id, name='New Name')
 
 
 @pytest.mark.django_db(transaction=True)
