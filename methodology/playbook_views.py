@@ -215,18 +215,21 @@ def playbook_edit(request, pk):
         description = request.POST.get('description', '').strip()
         category = request.POST.get('category', '').strip()
         visibility = request.POST.get('visibility', '').strip()
+        tags_raw = request.POST.get('tags', '').strip()
+        tags = [t.strip() for t in tags_raw.split(',') if t.strip()]
 
         if not name:
             return render(request, 'playbooks/edit.html', {
                 'playbook': playbook,
                 'errors': {'name': 'Name is required'},
                 'form_data': request.POST,
+                'tags_string': tags_raw,
             })
 
         try:
             PlaybookService.update_playbook(
                 pk, name=name, description=description,
-                category=category, visibility=visibility
+                category=category, visibility=visibility, tags=tags
             )
             messages.success(request, f"Playbook '{name}' updated successfully!")
             logger.info(f"Playbook {pk} updated by {request.user.username}")
@@ -236,12 +239,14 @@ def playbook_edit(request, pk):
                 'playbook': playbook,
                 'errors': {'name': str(e.message)},
                 'form_data': request.POST,
+                'tags_string': request.POST.get('tags', ''),
             })
 
     return render(request, 'playbooks/edit.html', {
         'playbook': playbook,
         'errors': {},
         'form_data': {},
+        'tags_string': ', '.join(playbook.tags) if playbook.tags else '',
     })
 
 
