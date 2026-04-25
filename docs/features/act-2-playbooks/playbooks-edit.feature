@@ -220,3 +220,10 @@ Feature: FOB-PLAYBOOKS-EDIT_PLAYBOOK-1 Edit Playbook
     And she waits 30 seconds without clicking Save
     Then she sees "Draft auto-saved" notification
     And her changes are preserved if she closes and reopens
+
+  Scenario: FOB-PLAYBOOKS-EDIT_PLAYBOOK-25 Edit form renders for playbook with no tags
+    Given Maria owns a playbook with no tags assigned
+    When she opens the edit form
+    Then the Tags field is empty
+    And the form renders without errors
+    And she can add new tags and save successfully
