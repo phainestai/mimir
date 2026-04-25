@@ -8,7 +8,7 @@ from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from methodology.models import Playbook, Workflow, Activity, Phase, Agent, Skill, Artifact, ArtifactInput
 from mcp_integration.context import set_current_user
-from mcp_integration.tools import update_activity, get_activity
+from mcp_integration.tools import create_activity, update_activity, get_activity
 
 User = get_user_model()
 
@@ -66,6 +66,53 @@ def phase(draft_playbook):
         playbook=draft_playbook,
         order=1
     )
+
+
+@pytest.mark.django_db(transaction=True)
+class TestMCPActivityCreate:
+    """Test create_activity MCP tool."""
+
+    @pytest.mark.asyncio
+    async def test_create_activity_happy_path(self, setup_user_context, workflow, draft_playbook):
+        """Create activity returns correct fields and increments playbook version."""
+        version_before = await sync_to_async(lambda: draft_playbook.version)()
+
+        result = await create_activity(workflow_id=workflow.id, name='New Activity')
+
+        assert result['name'] == 'New Activity'
+        assert result['workflow_id'] == workflow.id
+        assert 'id' in result
+
+        # Verify persisted in DB
+        activity = await sync_to_async(Activity.objects.get)(pk=result['id'])
+        assert activity.name == 'New Activity'
+
+        # Playbook version should have incremented
+        await sync_to_async(draft_playbook.refresh_from_db)()
+        assert draft_playbook.version > version_before
+
+    @pytest.mark.asyncio
+    async def test_create_activity_phase_param_accepted(self, setup_user_context, workflow):
+        """Passing phase string does not raise an error (param accepted, not wired to DB)."""
+        result = await create_activity(
+            workflow_id=workflow.id,
+            name='Phase Activity',
+            phase='Inception',
+        )
+        assert result['name'] == 'Phase Activity'
+
+    @pytest.mark.asyncio
+    async def test_create_activity_with_predecessor(self, setup_user_context, workflow, activity):
+        """Predecessor wiring is persisted correctly."""
+        result = await create_activity(
+            workflow_id=workflow.id,
+            name='Follow-up Activity',
+            predecessor_id=activity.id,
+        )
+
+        assert result['name'] == 'Follow-up Activity'
+        follow_up = await sync_to_async(Activity.objects.get)(pk=result['id'])
+        assert follow_up.predecessor_id == activity.id
 
 
 @pytest.mark.django_db(transaction=True)

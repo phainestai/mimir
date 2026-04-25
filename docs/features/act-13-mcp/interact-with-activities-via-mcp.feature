@@ -31,6 +31,8 @@ Feature: FOB-MCP-ACTIVITIES-1 AI Assistant Interacts with Activities via MCP
       | workflow_id |                      1 |
     And grandparent playbook version is incremented from "0.2" to "0.3"
     And activity is assigned auto-incremented order number
+    # NOTE: "phase" parameter is accepted by the tool without error but is not currently
+    # persisted to the database. Use update_activity with phase_id to assign a Phase model.
 
   Scenario: FOB-MCP-CONFIG-ACTIVITIES-CREATE_ACTIVITY-1 Create with predecessor
     Given workflow (id=1) has activity "Define Props" (id=1)
