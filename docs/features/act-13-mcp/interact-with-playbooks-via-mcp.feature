@@ -37,7 +37,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
       | name        | React Component Development |
       | description | Different description       |
       | category    | frontend                    |
-    Then MCP returns error "ValidationError: Playbook 'React Component Development' already exists"
+    Then MCP returns error "ValueError: Playbook 'React Component Development' already exists"
     And no new playbook is created
 
   Scenario: FOB-MCP-CONFIG-PLAYBOOKS-CREATE_PLAYBOOK-2 Empty name raises error
@@ -45,7 +45,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
       | name        |           |
       | description | Test desc |
       | category    | test      |
-    Then MCP returns error "ValidationError: Playbook name cannot be empty"
+    Then MCP returns error "ValueError: Playbook name cannot be empty"
   # ============================================================================
   # LIST PLAYBOOKS
   # ============================================================================
@@ -153,7 +153,7 @@ Feature: FOB-MCP-PLAYBOOKS-1 AI Assistant Interacts with Playbooks via MCP
     When Cascade calls MCP tool "update_playbook" with:
       | playbook_id |         2 |
       | name        | React Dev |
-    Then MCP returns error "ValidationError: Playbook 'React Dev' already exists"
+    Then MCP returns error "ValueError: Playbook 'React Dev' already exists"
     And playbook id=2 is not modified
   # ============================================================================
   # DELETE PLAYBOOK (DRAFT ONLY)

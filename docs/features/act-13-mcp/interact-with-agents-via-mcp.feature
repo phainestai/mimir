@@ -32,7 +32,7 @@ Feature: FOB-MCP-AGENTS-1 AI Assistant Interacts with Agents via MCP
     When Cascade calls MCP tool "create_agent" with:
       | playbook_id | 1 |
       | name        |   |
-    Then MCP returns error "ValidationError: Agent name cannot be empty"
+    Then MCP returns error "ValueError: Agent name cannot be empty"
 
   Scenario: MCP-AG-03 Create agent in released playbook raises error
     Given released playbook "Production Guide" exists for user "maria"
@@ -125,7 +125,7 @@ Feature: FOB-MCP-AGENTS-1 AI Assistant Interacts with Agents via MCP
     When Cascade calls MCP tool "link_agent_to_activity" with:
       | activity_id | 2 |
       | agent_id    | 1 |
-    Then MCP returns error "ValidationError: must be in the same playbook"
+    Then MCP returns error "ValueError: must be in the same playbook"
 
   Scenario: MCP-AG-13 Unlink agent from activity
     Given draft playbook with activity linked to agent "Code Reviewer"

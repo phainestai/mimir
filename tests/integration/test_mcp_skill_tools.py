@@ -8,7 +8,6 @@ import pytest
 from decimal import Decimal
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from methodology.models import Playbook, Workflow, Activity, Skill
 from mcp_integration.context import set_current_user
 from mcp_integration.tools import (
@@ -98,7 +97,7 @@ class TestMCPSkillCreate:
     @pytest.mark.asyncio
     async def test_mcp_sk_02_empty_title_raises(self, setup_user_context, draft_playbook):
         """Scenario: MCP-SK-02 Create skill with empty title raises error."""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValueError):
             await create_skill(playbook_id=draft_playbook.id, title='')
 
     @pytest.mark.asyncio
@@ -204,6 +203,15 @@ class TestMCPSkillUpdate:
         assert draft_playbook.version == old_version + Decimal('0.1')
 
     @pytest.mark.asyncio
+    async def test_mcp_sk_09b_update_skill_empty_title_raises_value_error(
+        self, setup_user_context, draft_playbook,
+    ):
+        """Updating a skill to an empty title raises ValueError (service ValidationError normalized)."""
+        created = await create_skill(playbook_id=draft_playbook.id, title='Valid Title')
+        with pytest.raises(ValueError, match='title'):
+            await update_skill(skill_id=created['id'], title='')
+
+    @pytest.mark.asyncio
     async def test_mcp_sk_10_update_released_raises(self, setup_user_context, released_playbook):
         """Scenario: MCP-SK-10 Update skill in released playbook raises error."""
         skill = await sync_to_async(Skill.objects.create)(
@@ -279,7 +287,7 @@ class TestMCPSkillLinkUnlink:
         )
         created = await create_skill(playbook_id=draft_playbook.id, title='SK1')
 
-        with pytest.raises(ValidationError, match='same playbook'):
+        with pytest.raises(ValueError, match='same playbook'):
             await link_skill_to_activity(other_act.id, created['id'])
 
     @pytest.mark.asyncio

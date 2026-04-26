@@ -4,7 +4,6 @@ import pytest_asyncio
 from decimal import Decimal
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from methodology.models import Playbook, Workflow
 from mcp_integration.context import set_current_user
 from mcp_integration.tools import create_playbook, create_workflow, update_workflow, delete_workflow
@@ -39,11 +38,28 @@ class TestMCPWorkflowCreate:
     
     @pytest.mark.asyncio
     async def test_mcp_wf_02_create_workflow_duplicate_name_raises_error(self, setup_user_context, draft_playbook):
-        """Scenario: MCP-WF-02 Duplicate workflow name raises ValidationError"""
+        """Scenario: MCP-WF-02 Duplicate workflow name raises ValueError"""
         await create_workflow(playbook_id=draft_playbook['id'], name="Design Phase", description="Test")
         
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValueError):
             await create_workflow(playbook_id=draft_playbook['id'], name="Design Phase", description="Different")
+
+@pytest.mark.django_db(transaction=True)
+class TestMCPWorkflowUpdate:
+    @pytest.mark.asyncio
+    async def test_mcp_wf_11_update_workflow_duplicate_name_raises_value_error(
+        self, setup_user_context, draft_playbook,
+    ):
+        """Renaming a workflow to an existing name in the same playbook raises ValueError."""
+        wf1 = await create_workflow(
+            playbook_id=draft_playbook['id'], name='First', description='a',
+        )
+        await create_workflow(
+            playbook_id=draft_playbook['id'], name='Second', description='b',
+        )
+        with pytest.raises(ValueError, match='Second'):
+            await update_workflow(workflow_id=wf1['id'], name='Second')
+
 
 @pytest.mark.django_db(transaction=True)
 class TestMCPWorkflowDelete:

@@ -3,6 +3,17 @@ MCP Tool Definitions for Mimir.
 
 Thin wrappers around existing service layer methods.
 Adds: permission checks, user context, version incrementing.
+
+Exception contract for MCP callers
+---------------------------------
+- ``ValueError``: not found, wrong owner, invalid arguments, and any
+  ``django.core.exceptions.ValidationError`` raised by services (normalized
+  via ``_handle_validation_error``) unless noted otherwise below.
+- ``PermissionError``: attempts to mutate a released playbook (and similar
+  guardrails).
+
+Read-only tools (list/get) typically raise only ``ValueError`` for missing
+entities or wrong ownership. Write tools may raise both.
 """
 import os
 
@@ -25,6 +36,22 @@ mcp = FastMCP("Mimir Methodology Assistant")
 
 # Import user context management
 from mcp_integration.context import get_current_user
+
+
+def _handle_validation_error(e: ValidationError, tool_name: str) -> None:
+    """
+    Normalize Django ValidationError to ValueError for MCP callers.
+
+    :param e: ValidationError from the service layer
+    :param tool_name: MCP tool name for logging
+    :raises ValueError: Always re-raises with the validation message
+    """
+    if hasattr(e, 'messages') and e.messages:
+        msg = '; '.join(str(m) for m in e.messages)
+    else:
+        msg = str(e)
+    logger.error(f'MCP Tool: {tool_name} validation error: {msg}')
+    raise ValueError(msg)
 
 
 # ============================================================================
@@ -61,13 +88,16 @@ async def create_playbook(name: str, description: str, category: str) -> dict:
     
     # Call existing service
     from methodology.services.playbook_service import PlaybookService
-    playbook = await sync_to_async(PlaybookService.create_playbook)(
-        name=name,
-        description=description,
-        category=category,
-        author=user,
-        status='draft'  # MCP always creates drafts
-    )
+    try:
+        playbook = await sync_to_async(PlaybookService.create_playbook)(
+            name=name,
+            description=description,
+            category=category,
+            author=user,
+            status='draft'  # MCP always creates drafts
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'create_playbook')
     
     result = {
         'id': playbook.id,
@@ -166,7 +196,7 @@ async def update_playbook(playbook_id: int, name: str = None,
     :param category: New category or None
     :return: Updated playbook dict
     :raises PermissionError: if playbook is released
-    :raises ValueError: if not found or not owned
+    :raises ValueError: if not found, not owned, or validation fails (e.g. duplicate name)
     """
     logger.info(f'MCP Tool: update_playbook called - id={playbook_id}')
     
@@ -198,7 +228,10 @@ async def update_playbook(playbook_id: int, name: str = None,
         old_version = playbook.version
         
         # Update playbook
-        playbook = await sync_to_async(PlaybookService.update_playbook)(playbook_id, **update_data)
+        try:
+            playbook = await sync_to_async(PlaybookService.update_playbook)(playbook_id, **update_data)
+        except ValidationError as e:
+            _handle_validation_error(e, 'update_playbook')
         
         # Increment version
         playbook.version += Decimal('0.1')
@@ -285,7 +318,10 @@ async def create_workflow(playbook_id: int, name: str, description: str = "") ->
     # Call existing service
     from methodology.services.workflow_service import WorkflowService
     old_version = playbook.version
-    workflow = await sync_to_async(WorkflowService.create_workflow)(playbook, name, description)
+    try:
+        workflow = await sync_to_async(WorkflowService.create_workflow)(playbook, name, description)
+    except ValidationError as e:
+        _handle_validation_error(e, 'create_workflow')
     
     # Increment parent version
     playbook.version += Decimal('0.1')
@@ -391,7 +427,7 @@ async def update_workflow(workflow_id: int, name: str = None,
     :param order: New order or None
     :return: Updated workflow dict
     :raises PermissionError: if parent playbook is released
-    :raises ValueError: if not found
+    :raises ValueError: if not found or validation fails (e.g. duplicate workflow name)
     """
     logger.info(f'MCP Tool: update_workflow called - id={workflow_id}')
     
@@ -426,7 +462,10 @@ async def update_workflow(workflow_id: int, name: str = None,
         old_version = workflow.playbook.version
         
         # Update workflow
-        workflow = await sync_to_async(WorkflowService.update_workflow)(workflow_id, **update_data)
+        try:
+            workflow = await sync_to_async(WorkflowService.update_workflow)(workflow_id, **update_data)
+        except ValidationError as e:
+            _handle_validation_error(e, 'update_workflow')
         
         # Increment parent version
         workflow.playbook.version += Decimal('0.1')
@@ -545,9 +584,7 @@ async def create_activity(workflow_id: int, name: str, guidance: str = "",
             predecessor=predecessor
         )
     except ValidationError as e:
-        msg = e.message if hasattr(e, 'message') else str(e)
-        logger.error(f'MCP Tool: create_activity validation error: {msg}')
-        raise ValueError(msg)
+        _handle_validation_error(e, 'create_activity')
 
     # Increment grandparent version
     workflow.playbook.version += Decimal('0.1')
@@ -769,7 +806,7 @@ async def update_activity(activity_id: int, name: str = None, guidance: str = No
     :param order: New order or None
     :return: Updated activity dict
     :raises PermissionError: if grandparent playbook is released
-    :raises ValueError: if not found
+    :raises ValueError: if not found or validation fails (duplicate name, invalid phase_id, cross-playbook phase)
     """
     logger.info(f'MCP Tool: update_activity called - id={activity_id}')
     
@@ -808,9 +845,7 @@ async def update_activity(activity_id: int, name: str = None, guidance: str = No
         try:
             activity = await sync_to_async(ActivityService.update_activity)(activity_id, **update_data)
         except ValidationError as e:
-            msg = e.message if hasattr(e, 'message') else str(e)
-            logger.error(f'MCP Tool: update_activity validation error: {msg}')
-            raise ValueError(msg)
+            _handle_validation_error(e, 'update_activity')
 
         # Increment grandparent version
         activity.workflow.playbook.version += Decimal('0.1')
@@ -904,7 +939,10 @@ async def set_predecessor(activity_id: int, predecessor_id: int) -> dict:
     # Call service (validates circular dependencies)
     from methodology.services.activity_service import ActivityService
     old_version = activity.workflow.playbook.version
-    await sync_to_async(ActivityService.set_predecessor)(activity, predecessor)
+    try:
+        await sync_to_async(ActivityService.set_predecessor)(activity, predecessor)
+    except ValidationError as e:
+        _handle_validation_error(e, 'set_predecessor')
     
     # Increment grandparent version
     activity.workflow.playbook.version += Decimal('0.1')
@@ -974,18 +1012,24 @@ async def import_workflow_from_local(
     user = await sync_to_async(get_current_user)()
     
     from methodology.services.workflow_import_service import WorkflowImportService
-    result = await sync_to_async(WorkflowImportService.import_workflow_from_markdown)(
-        workflow_id=workflow_id,
-        source_directory=source_directory
-    )
+    try:
+        result = await sync_to_async(WorkflowImportService.import_workflow_from_markdown)(
+            workflow_id=workflow_id,
+            source_directory=source_directory
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'import_workflow_from_local')
     
     if auto_apply and result['playbook_status'] == 'draft':
         from methodology.services.workflow_protocol_service import WorkflowProtocolService
         import os
         protocol_file = os.path.join(source_directory, '_Upload_Protocol.md')
-        apply_result = await sync_to_async(WorkflowProtocolService.apply_upload_protocol)(
-            protocol_file=protocol_file
-        )
+        try:
+            apply_result = await sync_to_async(WorkflowProtocolService.apply_upload_protocol)(
+                protocol_file=protocol_file
+            )
+        except ValidationError as e:
+            _handle_validation_error(e, 'import_workflow_from_local')
         result['auto_applied'] = True
         result['apply_result'] = apply_result
     
@@ -1005,9 +1049,12 @@ async def apply_upload_protocol(protocol_file: str) -> dict:
     user = await sync_to_async(get_current_user)()
     
     from methodology.services.workflow_protocol_service import WorkflowProtocolService
-    result = await sync_to_async(WorkflowProtocolService.apply_upload_protocol)(
-        protocol_file=protocol_file
-    )
+    try:
+        result = await sync_to_async(WorkflowProtocolService.apply_upload_protocol)(
+            protocol_file=protocol_file
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'apply_upload_protocol')
     
     logger.info(f'MCP Tool: Applied protocol, changes: {result["changes_applied"]}')
     return result
@@ -1026,10 +1073,13 @@ async def create_pip_from_protocol(protocol_file: str, pip_title: str) -> dict:
     user = await sync_to_async(get_current_user)()
     
     from methodology.services.workflow_protocol_service import WorkflowProtocolService
-    result = await sync_to_async(WorkflowProtocolService.create_pip_from_protocol)(
-        protocol_file=protocol_file,
-        pip_title=pip_title
-    )
+    try:
+        result = await sync_to_async(WorkflowProtocolService.create_pip_from_protocol)(
+            protocol_file=protocol_file,
+            pip_title=pip_title
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'create_pip_from_protocol')
     
     logger.info(f'MCP Tool: Created PIP {result["pip_id"]}')
     return result
@@ -1063,13 +1113,16 @@ async def create_skill(
     playbook = await _get_draft_playbook(playbook_id, user)
 
     from methodology.services.skill_service import SkillService
-    skill = await sync_to_async(SkillService.create_skill)(
-        playbook=playbook,
-        title=title,
-        content=content,
-        capability_domain=capability_domain,
-        technology_stack=technology_stack,
-    )
+    try:
+        skill = await sync_to_async(SkillService.create_skill)(
+            playbook=playbook,
+            title=title,
+            content=content,
+            capability_domain=capability_domain,
+            technology_stack=technology_stack,
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'create_skill')
 
     old_version = playbook.version
     playbook.version += Decimal('0.1')
@@ -1212,7 +1265,10 @@ async def update_skill(
     if technology_stack is not None:
         kwargs['technology_stack'] = technology_stack
 
-    updated = await sync_to_async(SkillService.update_skill)(skill_id, **kwargs)
+    try:
+        updated = await sync_to_async(SkillService.update_skill)(skill_id, **kwargs)
+    except ValidationError as e:
+        _handle_validation_error(e, 'update_skill')
 
     old_version = skill.playbook.version
     skill.playbook.version += Decimal('0.1')
@@ -1286,7 +1342,10 @@ async def link_skill_to_activity(activity_id: int, skill_id: int) -> dict:
     if activity.workflow.playbook.status == 'released':
         raise PermissionError(f'Cannot modify released playbook.')
 
-    updated = await sync_to_async(ActivityService.set_activity_skill)(activity_id, skill_id)
+    try:
+        updated = await sync_to_async(ActivityService.set_activity_skill)(activity_id, skill_id)
+    except ValidationError as e:
+        _handle_validation_error(e, 'link_skill_to_activity')
 
     return {'activity_id': updated.id, 'skill_id': updated.skill_id}
 
@@ -1337,13 +1396,16 @@ async def create_rule(
 
     from methodology.services.rule_service import RuleService
 
-    rule = await sync_to_async(RuleService.create_rule)(
-        playbook=playbook,
-        title=title,
-        content=content,
-        slug=slug,
-        always_apply=always_apply,
-    )
+    try:
+        rule = await sync_to_async(RuleService.create_rule)(
+            playbook=playbook,
+            title=title,
+            content=content,
+            slug=slug,
+            always_apply=always_apply,
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'create_rule')
     old_version = playbook.version
     playbook.version += Decimal('0.1')
     await sync_to_async(playbook.save)()
@@ -1448,7 +1510,10 @@ async def update_rule(
     if not kwargs:
         raise ValueError('No fields to update')
 
-    updated = await sync_to_async(RuleService.update_rule)(rule_id, **kwargs)
+    try:
+        updated = await sync_to_async(RuleService.update_rule)(rule_id, **kwargs)
+    except ValidationError as e:
+        _handle_validation_error(e, 'update_rule')
     playbook = rule.playbook
     old_version = playbook.version
     playbook.version += Decimal('0.1')
@@ -1503,7 +1568,10 @@ async def set_activity_rules(activity_id: int, rule_ids: list) -> dict:
     if activity.workflow.playbook.status == 'released':
         raise PermissionError('Cannot modify released playbook.')
 
-    await sync_to_async(ActivityService.set_activity_rules)(activity_id, rule_ids)
+    try:
+        await sync_to_async(ActivityService.set_activity_rules)(activity_id, rule_ids)
+    except ValidationError as e:
+        _handle_validation_error(e, 'set_activity_rules')
     updated = await sync_to_async(Activity.objects.prefetch_related('rules').get)(pk=activity_id)
     ids = await sync_to_async(lambda: list(updated.rules.values_list('id', flat=True)))()
     return {'activity_id': activity_id, 'rule_ids': ids}
@@ -1534,11 +1602,14 @@ async def create_agent(
     playbook = await _get_draft_playbook(playbook_id, user)
 
     from methodology.services.agent_service import AgentService
-    agent = await sync_to_async(AgentService.create_agent)(
-        playbook=playbook,
-        name=name,
-        description=description,
-    )
+    try:
+        agent = await sync_to_async(AgentService.create_agent)(
+            playbook=playbook,
+            name=name,
+            description=description,
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'create_agent')
 
     old_version = playbook.version
     playbook.version += Decimal('0.1')
@@ -1665,7 +1736,10 @@ async def update_agent(
     if description is not None:
         kwargs['description'] = description
 
-    updated = await sync_to_async(AgentService.update_agent)(agent_id, **kwargs)
+    try:
+        updated = await sync_to_async(AgentService.update_agent)(agent_id, **kwargs)
+    except ValidationError as e:
+        _handle_validation_error(e, 'update_agent')
 
     old_version = agent.playbook.version
     agent.playbook.version += Decimal('0.1')
@@ -1737,7 +1811,10 @@ async def link_agent_to_activity(activity_id: int, agent_id: int) -> dict:
     if activity.workflow.playbook.status == 'released':
         raise PermissionError(f'Cannot modify released playbook.')
 
-    updated = await sync_to_async(ActivityService.set_activity_agent)(activity_id, agent_id)
+    try:
+        updated = await sync_to_async(ActivityService.set_activity_agent)(activity_id, agent_id)
+    except ValidationError as e:
+        _handle_validation_error(e, 'link_agent_to_activity')
 
     return {'activity_id': updated.id, 'agent_id': updated.agent_id}
 
@@ -1794,8 +1871,7 @@ async def create_artifact(
     :param is_required: Whether required. Example: True
     :return: Created artifact dict
     :raises PermissionError: If playbook is released
-    :raises ValueError: If playbook or activity not found
-    :raises ValidationError: If validation fails
+    :raises ValueError: If playbook or activity not found, or validation fails
     """
     logger.info(
         f'MCP Tool: create_artifact called - playbook_id={playbook_id}, '
@@ -1816,14 +1892,17 @@ async def create_artifact(
         )
 
     from methodology.services.artifact_service import ArtifactService
-    artifact = await sync_to_async(ArtifactService.create_artifact)(
-        playbook=playbook,
-        produced_by=produced_by,
-        name=name,
-        description=description,
-        type=type,
-        is_required=is_required,
-    )
+    try:
+        artifact = await sync_to_async(ArtifactService.create_artifact)(
+            playbook=playbook,
+            produced_by=produced_by,
+            name=name,
+            description=description,
+            type=type,
+            is_required=is_required,
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'create_artifact')
 
     old_version = playbook.version
     playbook.version += Decimal('0.1')
@@ -1959,7 +2038,7 @@ async def update_artifact(
     :param is_required: New required flag or None
     :return: Updated artifact dict
     :raises PermissionError: If playbook is released
-    :raises ValueError: If not found
+    :raises ValueError: If not found or validation fails
     """
     logger.info(f'MCP Tool: update_artifact called - artifact_id={artifact_id}')
 
@@ -1991,9 +2070,12 @@ async def update_artifact(
         kwargs['is_required'] = is_required
 
     from methodology.services.artifact_service import ArtifactService
-    updated = await sync_to_async(ArtifactService.update_artifact)(
-        artifact_id, **kwargs,
-    )
+    try:
+        updated = await sync_to_async(ArtifactService.update_artifact)(
+            artifact_id, **kwargs,
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'update_artifact')
 
     playbook = artifact.playbook
     old_version = playbook.version
@@ -2077,8 +2159,7 @@ async def link_artifact_to_activity(
     :param activity_id: Consumer activity ID. Example: 5
     :param is_required: Whether input is required. Example: True
     :return: Dict with id, artifact_id, activity_id, is_required
-    :raises ValueError: If not found
-    :raises ValidationError: If circular dependency or duplicate
+    :raises ValueError: If not found, circular dependency, or duplicate link
     """
     logger.info(
         f'MCP Tool: link_artifact_to_activity called - '
@@ -2111,11 +2192,14 @@ async def link_artifact_to_activity(
         )
 
     from methodology.services.artifact_service import ArtifactService
-    artifact_input = await sync_to_async(ArtifactService.add_artifact_input)(
-        artifact=artifact,
-        activity=activity,
-        is_required=is_required,
-    )
+    try:
+        artifact_input = await sync_to_async(ArtifactService.add_artifact_input)(
+            artifact=artifact,
+            activity=activity,
+            is_required=is_required,
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'link_artifact_to_activity')
 
     logger.info(
         f'MCP Tool: Linked artifact {artifact_id} to activity {activity_id}'
@@ -2213,13 +2297,16 @@ async def create_phase(
         raise PermissionError('Cannot create phases in released playbook')
     
     from methodology.services.phase_service import PhaseService
-    phase = await sync_to_async(PhaseService.create_phase)(
-        playbook_id=playbook_id,
-        name=name,
-        description=description,
-        order=order,
-        user=user
-    )
+    try:
+        phase = await sync_to_async(PhaseService.create_phase)(
+            playbook_id=playbook_id,
+            name=name,
+            description=description,
+            order=order,
+            user=user
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'create_phase')
     
     phase_dict = _phase_to_dict(phase)
     logger.info(f'MCP Tool: Phase {phase_dict["id"]} created in playbook {playbook_id}')
@@ -2330,13 +2417,16 @@ async def update_phase(
         raise PermissionError('Cannot update phases in released playbook')
     
     from methodology.services.phase_service import PhaseService
-    updated_phase = await sync_to_async(PhaseService.update_phase)(
-        phase_id=phase_id,
-        name=name,
-        description=description,
-        order=order,
-        user=user
-    )
+    try:
+        updated_phase = await sync_to_async(PhaseService.update_phase)(
+            phase_id=phase_id,
+            name=name,
+            description=description,
+            order=order,
+            user=user
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'update_phase')
     
     phase_dict = _phase_to_dict(updated_phase)
     logger.info(f'MCP Tool: Phase {phase_id} updated')
@@ -2371,7 +2461,10 @@ async def delete_phase(phase_id: int) -> dict:
         raise PermissionError('Cannot delete phases in released playbook')
     
     from methodology.services.phase_service import PhaseService
-    await sync_to_async(PhaseService.delete_phase)(phase_id, user)
+    try:
+        await sync_to_async(PhaseService.delete_phase)(phase_id, user)
+    except ValidationError as e:
+        _handle_validation_error(e, 'delete_phase')
     
     logger.info(f'MCP Tool: Phase {phase_id} deleted')
     return {'deleted': True}
@@ -2405,11 +2498,14 @@ async def reorder_phases(playbook_id: int, phase_order: list[int]) -> dict:
     from methodology.services.phase_service import PhaseService
     # Convert list of IDs to list of (id, order) tuples
     phase_order_list = [(phase_id, idx + 1) for idx, phase_id in enumerate(phase_order)]
-    updated_phases = await sync_to_async(PhaseService.reorder_phases)(
-        playbook_id=playbook_id,
-        phase_order_list=phase_order_list,
-        user=user
-    )
+    try:
+        updated_phases = await sync_to_async(PhaseService.reorder_phases)(
+            playbook_id=playbook_id,
+            phase_order_list=phase_order_list,
+            user=user
+        )
+    except ValidationError as e:
+        _handle_validation_error(e, 'reorder_phases')
     
     result = {
         'reordered': True,

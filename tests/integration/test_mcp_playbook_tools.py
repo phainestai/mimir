@@ -8,7 +8,6 @@ import pytest
 from decimal import Decimal
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from methodology.models import Playbook
 from mcp_integration.context import set_current_user
 from mcp_integration.tools import (
@@ -67,7 +66,7 @@ class TestMCPPlaybookCreate:
         """Scenario: MCP-PB-02 Create playbook with duplicate name raises error"""
         await create_playbook(name="React Component Development", description="Test", category="frontend")
         
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValueError):
             await create_playbook(name="React Component Development", description="Different", category="frontend")
 
 
@@ -85,6 +84,14 @@ class TestMCPPlaybookUpdate:
         assert result['name'] == "Updated Name"
         assert result['version'] == '0.2'
         # Version incremented
+
+    @pytest.mark.asyncio
+    async def test_mcp_pb_11_update_playbook_duplicate_name_raises_value_error(self, setup_user_context):
+        """Renaming a playbook to an existing name raises ValueError."""
+        first = await create_playbook(name='Alpha Playbook', description='a', category='test')
+        await create_playbook(name='Beta Playbook', description='b', category='test')
+        with pytest.raises(ValueError, match='Beta'):
+            await update_playbook(playbook_id=first['id'], name='Beta Playbook')
 
 
 @pytest.mark.django_db(transaction=True)

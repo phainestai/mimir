@@ -73,7 +73,7 @@ class TestMCPPhaseCreate:
         """Create phase with duplicate name raises error."""
         await create_phase(playbook_id=test_playbook['id'], name="Inception", description="First", order=1)
         
-        with pytest.raises(Exception):  # ValidationError
+        with pytest.raises(ValueError, match='Inception'):
             await create_phase(playbook_id=test_playbook['id'], name="Inception", description="Duplicate", order=2)
 
 

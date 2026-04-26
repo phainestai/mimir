@@ -36,7 +36,7 @@ Feature: FOB-MCP-SKILLS-1 AI Assistant Interacts with Skills via MCP
     When Cascade calls MCP tool "create_skill" with:
       | playbook_id | 1 |
       | title       |   |
-    Then MCP returns error "ValidationError: Skill title cannot be empty"
+    Then MCP returns error "ValueError: Skill title cannot be empty"
 
   Scenario: MCP-SK-03 Create skill in released playbook raises error
     Given released playbook "Production Guide" exists for user "maria"
@@ -146,7 +146,7 @@ Feature: FOB-MCP-SKILLS-1 AI Assistant Interacts with Skills via MCP
     When Cascade calls MCP tool "link_skill_to_activity" with:
       | activity_id | 2 |
       | skill_id    | 1 |
-    Then MCP returns error "ValidationError: must be in the same playbook"
+    Then MCP returns error "ValueError: must be in the same playbook"
 
   Scenario: MCP-SK-15 Unlink skill from activity
     Given draft playbook with activity linked to skill "Build Login Form"

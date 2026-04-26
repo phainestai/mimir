@@ -56,7 +56,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
       | playbook_id |            1 |
       | name        | Design Phase |
       | description | Duplicate    |
-    Then MCP returns error "ValidationError: Workflow 'Design Phase' already exists in this playbook"
+    Then MCP returns error "ValueError: Workflow 'Design Phase' already exists in this playbook"
 
   Scenario: FOB-MCP-CONFIG-WORKFLOWS-CREATE_WORKFLOW-4 Non-existent playbook raises error
     When Cascade calls "create_workflow" with:
@@ -156,7 +156,7 @@ Feature: FOB-MCP-WORKFLOWS-1 AI Assistant Interacts with Workflows via MCP
     When Cascade calls "update_workflow" with:
       | workflow_id |            2 |
       | name        | Design Phase |
-    Then MCP returns error "ValidationError: Workflow 'Design Phase' already exists in this playbook"
+    Then MCP returns error "ValueError: Workflow 'Design Phase' already exists in this playbook"
   # ============================================================================
   # DELETE WORKFLOW (IN DRAFT PLAYBOOK)
   # ============================================================================

@@ -8,7 +8,6 @@ import pytest
 from decimal import Decimal
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from methodology.models import Playbook, Workflow, Activity, Artifact, ArtifactInput
 from mcp_integration.context import set_current_user
 from mcp_integration.tools import (
@@ -122,10 +121,10 @@ class TestMCPArtifactCreate:
         """
         GIVEN a draft playbook
         WHEN create_artifact is called with empty name
-        THEN ValidationError is raised
+        THEN ValueError is raised
         """
         wf, act1, act2 = workflow_with_activities
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValueError):
             await create_artifact(
                 playbook_id=draft_playbook.id,
                 produced_by_id=act1.id,
@@ -290,6 +289,25 @@ class TestMCPArtifactUpdate:
         assert draft_playbook.version == old_version + Decimal('0.1')
 
     @pytest.mark.asyncio
+    async def test_mcp_ar_08b_update_artifact_duplicate_name_raises_value_error(
+        self, setup_user_context, draft_playbook, workflow_with_activities,
+    ):
+        """Renaming an artifact to an existing name in the same playbook raises ValueError."""
+        wf, act1, act2 = workflow_with_activities
+        first = await create_artifact(
+            playbook_id=draft_playbook.id,
+            produced_by_id=act1.id,
+            name='First Artifact',
+        )
+        await create_artifact(
+            playbook_id=draft_playbook.id,
+            produced_by_id=act1.id,
+            name='Second Artifact',
+        )
+        with pytest.raises(ValueError, match='Second Artifact'):
+            await update_artifact(artifact_id=first['id'], name='Second Artifact')
+
+    @pytest.mark.asyncio
     async def test_mcp_ar_09_update_released_raises(
         self, setup_user_context, released_playbook,
     ):
@@ -416,7 +434,7 @@ class TestMCPArtifactLinkUnlink:
         """
         GIVEN an artifact produced by act1
         WHEN link_artifact_to_activity is called with act1 (the producer)
-        THEN ValidationError is raised (circular dependency)
+        THEN ValueError is raised (circular dependency)
         """
         wf, act1, act2 = workflow_with_activities
         created = await create_artifact(
@@ -425,7 +443,7 @@ class TestMCPArtifactLinkUnlink:
             name='AR1',
         )
 
-        with pytest.raises(ValidationError, match='[Cc]ircular'):
+        with pytest.raises(ValueError, match='[Cc]ircular'):
             await link_artifact_to_activity(
                 artifact_id=created['id'],
                 activity_id=act1.id,
@@ -438,7 +456,7 @@ class TestMCPArtifactLinkUnlink:
         """
         GIVEN an artifact already linked to act2
         WHEN link_artifact_to_activity is called again for act2
-        THEN ValidationError is raised
+        THEN ValueError is raised
         """
         wf, act1, act2 = workflow_with_activities
         created = await create_artifact(
@@ -451,7 +469,7 @@ class TestMCPArtifactLinkUnlink:
             activity_id=act2.id,
         )
 
-        with pytest.raises(ValidationError, match='already'):
+        with pytest.raises(ValueError, match='already'):
             await link_artifact_to_activity(
                 artifact_id=created['id'],
                 activity_id=act2.id,

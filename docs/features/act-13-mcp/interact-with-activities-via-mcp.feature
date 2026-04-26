@@ -70,7 +70,7 @@ Feature: FOB-MCP-ACTIVITIES-1 AI Assistant Interacts with Activities via MCP
       | workflow_id |            1 |
       | name        | Define Props |
       | guidance    | Duplicate    |
-    Then MCP returns error "ValidationError: Activity with name 'Define Props' already exists in this workflow"
+    Then MCP returns error "ValueError: Activity with name 'Define Props' already exists in this workflow"
   # ============================================================================
   # LIST ACTIVITIES
   # ============================================================================
@@ -205,7 +205,7 @@ Feature: FOB-MCP-ACTIVITIES-1 AI Assistant Interacts with Activities via MCP
     When Cascade calls "set_activity_predecessor" with:
       | activity_id    | 1 |
       | predecessor_id | 3 |
-    Then MCP returns error "ValidationError: Circular dependency detected"
+    Then MCP returns error "ValueError: Circular dependency detected"
     And no dependency is created
 
   Scenario: FOB-MCP-CONFIG-ACTIVITIES-UPDATE_ACTIVITY-7 Predecessor in different workflow raises error

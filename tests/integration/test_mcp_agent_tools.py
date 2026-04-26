@@ -8,7 +8,6 @@ import pytest
 from decimal import Decimal
 from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from methodology.models import Playbook, Workflow, Activity, Agent
 from mcp_integration.context import set_current_user
 from mcp_integration.tools import (
@@ -94,7 +93,7 @@ class TestMCPAgentCreate:
     @pytest.mark.asyncio
     async def test_mcp_ag_02_empty_name_raises(self, setup_user_context, draft_playbook):
         """Scenario: MCP-AG-02 Create agent with empty name raises error."""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValueError):
             await create_agent(playbook_id=draft_playbook.id, name='')
 
     @pytest.mark.asyncio
@@ -176,6 +175,16 @@ class TestMCPAgentUpdate:
         assert draft_playbook.version == old_version + Decimal('0.1')
 
     @pytest.mark.asyncio
+    async def test_mcp_ag_07b_update_agent_duplicate_name_raises_value_error(
+        self, setup_user_context, draft_playbook,
+    ):
+        """Renaming an agent to an existing name in the same playbook raises ValueError."""
+        a = await create_agent(playbook_id=draft_playbook.id, name='Agent A')
+        b = await create_agent(playbook_id=draft_playbook.id, name='Agent B')
+        with pytest.raises(ValueError, match='Agent B'):
+            await update_agent(agent_id=a['id'], name='Agent B')
+
+    @pytest.mark.asyncio
     async def test_mcp_ag_08_update_released_raises(self, setup_user_context, released_playbook):
         """Scenario: MCP-AG-08 Update agent in released playbook raises error."""
         agent = await sync_to_async(Agent.objects.create)(
@@ -249,7 +258,7 @@ class TestMCPAgentLinkUnlink:
         )
         created = await create_agent(playbook_id=draft_playbook.id, name='AG1')
 
-        with pytest.raises(ValidationError, match='same playbook'):
+        with pytest.raises(ValueError, match='same playbook'):
             await link_agent_to_activity(other_act.id, created['id'])
 
     @pytest.mark.asyncio
