@@ -35,7 +35,7 @@ def playbook_for_stats(db):
 def _quick_stats_skill_tile(html: str) -> str:
     """Extract the Skills tile markup from the playbook detail page HTML."""
     match = re.search(
-        r'<div[^>]*data-testid="stat-skills"[^>]*>.*?</div>\s*</div>',
+        r'<div[^>]*data-testid="stat-skills"[^>]*>.*?</div>',
         html, re.DOTALL,
     )
     assert match is not None, "Quick Stats skills tile not found"
