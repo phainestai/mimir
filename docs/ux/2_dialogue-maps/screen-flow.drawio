@@ -577,6 +577,27 @@
                 <mxCell id="v2-arrow-list-view-pb" value="[Select]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4682B4;fontSize=9;" parent="v2-root-1" source="v2-fob-playbooks-list" target="v2-fob-playbooks-view" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
+                <mxCell id="v2-arrow-pb-stats-workflows" value="[Quick Stats]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4682B4;fontSize=9;" parent="v2-root-1" source="v2-fob-playbooks-view" target="v2-fob-workflows-list" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="v2-arrow-pb-stats-phases" value="[Quick Stats]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4682B4;fontSize=9;" parent="v2-root-1" source="v2-fob-playbooks-view" target="v2-fob-phases-list" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="v2-arrow-pb-stats-activities" value="[Quick Stats]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4682B4;fontSize=9;" parent="v2-root-1" source="v2-fob-playbooks-view" target="v2-fob-activities-list" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="v2-arrow-pb-stats-artifacts" value="[Quick Stats]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4682B4;fontSize=9;" parent="v2-root-1" source="v2-fob-playbooks-view" target="v2-fob-artifacts-list" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="v2-arrow-pb-stats-skills" value="[Quick Stats]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4682B4;fontSize=9;" parent="v2-root-1" source="v2-fob-playbooks-view" target="v2-fob-skills-list" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="v2-arrow-pb-stats-rules" value="[Quick Stats]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4682B4;fontSize=9;" parent="v2-root-1" source="v2-fob-playbooks-view" target="v2-fob-rules-list" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="v2-arrow-pb-stats-agents" value="[Quick Stats]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4682B4;fontSize=9;" parent="v2-root-1" source="v2-fob-playbooks-view" target="v2-fob-agents-list" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
                 <mxCell id="v2-arrow-view-edit-pb" value="[Edit]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4682B4;fontSize=9;" parent="v2-root-1" source="v2-fob-playbooks-view" target="v2-fob-playbooks-edit" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
@@ -986,6 +1007,9 @@
                 </mxCell>
                 <mxCell id="v2-fob-skills-list" value="✅ FOB-SKILLS-&#10;LIST+FIND" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#22c55e;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="100" y="2350" width="150" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="v2-fob-rules-list" value="✅ FOB-RULES-&#10;LIST+FIND" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#22c55e;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
+                    <mxGeometry x="540" y="2350" width="150" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="v2-fob-skills-create" value="✅ FOB-SKILLS-&#10;CREATE_SKILL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#4682B4;strokeColor=#22c55e;fontSize=9;fontColor=#ffffff;strokeWidth=3;" parent="v2-root-1" vertex="1">
                     <mxGeometry x="320" y="2350" width="150" height="70" as="geometry"/>

@@ -241,6 +241,22 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | Active   | green  |
       | Disabled | gray   |
       | Draft    | yellow |
+
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-25 Quick Stats tiles are clickable drill-downs
+    Given Maria is on the playbook detail page for "React Frontend Development"
+    And she sees the Quick Stats card with 7 tiles: Workflows, Phases, Activities, Artifacts, Agents, Skills, Rules
+    Then each tile is rendered as an anchor with a visible hover affordance
+    And each tile's link points to the playbook-scoped list URL for that entity
+    And each link uses the playbook id of "React Frontend Development"
+
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-26 Clicking a Quick Stats tile opens the scoped list
+    Given Maria is on the playbook detail page for "React Frontend Development"
+    When she clicks the "Activities" tile in Quick Stats
+    Then she navigates to /playbooks/<pk>/activities/
+    And she sees only activities that belong to "React Frontend Development"
+    And the page header indicates the playbook context
+    # Repeat acceptance for: Workflows, Phases, Artifacts, Agents, Skills, Rules
+
 # =============================================================================
 # IMPLEMENTATION STATUS (as of 2025-11-28)
 # =============================================================================
