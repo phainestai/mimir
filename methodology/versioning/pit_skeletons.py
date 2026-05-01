@@ -33,3 +33,8 @@ def scenario_s05_re_release_next_major() -> None:
 def scenario_s06_pip_single_aggregate_minor() -> None:
     """FOB-PLAYBOOKS-VERSIONING-22."""
     raise NotImplementedError()
+
+
+def scenario_s07_pip_sequential_minors() -> None:
+    """FOB-PLAYBOOKS-VERSIONING-23."""
+    raise NotImplementedError()
