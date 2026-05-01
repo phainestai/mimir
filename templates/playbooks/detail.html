@@ -472,9 +472,48 @@ document.addEventListener('DOMContentLoaded', function() {
             {% endif %}
         </div>
 
-        <!-- History Tab (placeholder) -->
-        <div class="tab-pane fade" id="history" role="tabpanel">
-            <p class="text-muted">History tab content (to be implemented)</p>
+        <!-- History Tab -->
+        <div class="tab-pane fade" id="history" role="tabpanel" data-testid="history-tab-panel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0" data-testid="history-heading">Version history</h5>
+                {% if version_history|length >= 2 %}
+                    <a class="btn btn-sm btn-outline-primary"
+                       data-testid="history-compare-link"
+                       href="{% url 'playbook_versions_compare' pk=playbook.pk %}?left={{ version_history.1.url_slug }}&right={{ version_history.0.url_slug }}">
+                        Compare latest two
+                    </a>
+                {% endif %}
+            </div>
+            {% if version_history %}
+            <ul class="list-group list-group-flush" data-testid="history-versions-table">
+                {% for row in version_history %}
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-start gap-3"
+                    data-testid="history-version-row">
+                    <div>
+                        <a href="{% url 'playbook_version_snapshot' pk=playbook.pk version_slug=row.url_slug %}"
+                           class="fw-semibold link-primary"
+                           data-testid="history-version-link">
+                            v{{ row.label }}</a>
+                        <span class="badge ms-2 {% if row.kind_major %}bg-primary{% else %}bg-secondary text-white{% endif %}"
+                              data-testid="history-version-kind">{{ row.kind_major|yesno:'major,minor' }}</span>
+                        <div class="text-muted small">{{ row.description|default:row.change_summary }}</div>
+                    </div>
+                    <div class="small text-muted text-end text-nowrap">
+                        <div data-testid="history-version-source">{{ row.source }}</div>
+                        {% if row.pip_id %}
+                            <span data-testid="history-pip-link" data-pip-id="{{ row.pip_id }}">PIP&nbsp;#{{ row.pip_id }}</span>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">No captured versions yet.</p>
+            {% endif %}
+            <hr class="mt-4" />
+            <div data-testid="history-timeline" class="timeline-placeholder small text-muted">
+                Older entries appear above in chronological order when present.
+            </div>
         </div>
 
         <!-- Settings Tab (placeholder) -->

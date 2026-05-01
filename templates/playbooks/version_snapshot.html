@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}v{{ record.version_number }} snapshot — {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="version-snapshot-page">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">v{{ record.version_number }}</li>
+        </ol>
+    </nav>
+    <h3 class="h5 mb-3">Snapshot JSON — v{{ record.version_number }}</h3>
+    <pre class="small bg-dark text-white p-3 rounded" data-testid="history-snapshot-json">{{ snapshot_json }}</pre>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Compare versions — {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="version-compare-page">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Compare</li>
+        </ol>
+    </nav>
+    <h3 class="h5 mb-3">Compare v{{ left_label }} ↔ v{{ right_label }}</h3>
+    <div class="row" data-testid="history-split-compare">
+        <div class="col-md-6">
+            <h4 class="h6">v{{ left_label }}</h4>
+            <pre class="small bg-light border p-3" data-testid="history-compare-pane-left">{{ left_json }}</pre>
+        </div>
+        <div class="col-md-6">
+            <h4 class="h6">v{{ right_label }}</h4>
+            <pre class="small bg-light border p-3" data-testid="history-compare-pane-right">{{ right_json }}</pre>
+        </div>
+    </div>
+</div>
+{% endblock %}
