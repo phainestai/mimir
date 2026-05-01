@@ -73,3 +73,8 @@ def scenario_s13_historical_version_view() -> None:
 def scenario_s14_version_compare_split_pane() -> None:
     """FOB-PLAYBOOKS-VIEW_PLAYBOOK-10."""
     raise NotImplementedError()
+
+
+def scenario_s15_pip_rows_in_history() -> None:
+    """FOB-PLAYBOOKS-VIEW_PLAYBOOK-11."""
+    raise NotImplementedError()
