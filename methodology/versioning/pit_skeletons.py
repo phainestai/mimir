@@ -18,3 +18,8 @@ def scenario_s02_playbook_version_migration() -> None:
 def scenario_s03_playbook_release_with_description() -> None:
     """FOB-PLAYBOOKS-VERSIONING-07 — Release + next major."""
     raise NotImplementedError()
+
+
+def scenario_s04_release_description_required() -> None:
+    """FOB-PLAYBOOKS-VERSIONING-20."""
+    raise NotImplementedError()
