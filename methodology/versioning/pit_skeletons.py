@@ -43,3 +43,8 @@ def scenario_s07_pip_sequential_minors() -> None:
 def scenario_s08_pip_manage_minor_contract() -> None:
     """PIP-MANAGE-05 contract."""
     raise NotImplementedError()
+
+
+def scenario_s09_admin_revert_draft() -> None:
+    """FOB-PLAYBOOKS-VERSIONING-24."""
+    raise NotImplementedError()
