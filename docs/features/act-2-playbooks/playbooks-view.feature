@@ -90,17 +90,26 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     # Only visible if can_edit (owned playbooks)
     # Empty state with 'Create First Workflow' button
 
-  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-08 Navigate to History tab
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-08 Navigate to History tab and see major + minor versions
     Given Maria is on the playbook detail page
     When she clicks the "History" tab
-    Then she sees the version timeline
-    And versions are listed: v1.0, v1.1, v1.2
-    And each version shows:
+    Then she sees the version timeline in reverse-chronological order
+    And versions are listed: v1.2, v1.1, v1.0 (most recent first)
+    And each entry shows:
       | field          |
       | Version number |
+      | Kind           |
+      | Status         |
       | Date           |
       | Author         |
-      | Change summary |
+      | Description    |
+      | Source         |
+    And major entries (e.g., v1.0) are visually distinguished from minor entries (e.g., v1.1, v1.2)
+      | kind  | indicator                                   |
+      | major | highlighted card / badge "Release"          |
+      | minor | compact row / badge "Minor"                 |
+    And major entries display the release description provided at Release time
+    And minor entries display the change summary
     And each version has [View This Version] and [Compare with Current] buttons
 
   Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-09 View specific version from History
@@ -108,6 +117,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     When she clicks [View This Version] for v1.0
     Then she sees the playbook as it was in v1.0
     And a notice displays "You are viewing version v1.0 (not current)"
+    And the notice includes the release description for v1.0
     And she sees [Return to Current Version] button
 
   Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-10 Compare versions
@@ -115,7 +125,7 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     When she clicks [Compare with Current] for v1.0
     Then she sees the Version Comparison View
     And the view shows split-pane diff viewer
-    And left pane shows "Version v1.0"
+    And left pane shows "Version v1.0" with its release description
     And right pane shows "Current (v1.2)"
     And differences are highlighted:
       | color  | meaning  |
@@ -123,11 +133,15 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | red    | Removed  |
       | yellow | Modified |
 
-  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-11 View PIP history in History tab
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-11 View PIP-sourced entries in History tab
     Given Maria is on the History tab
-    Then she sees "PIP History" section
-    And PIPs that led to new versions are listed
-    And each PIP shows: Title, Submitter, Status, Related version
+    And the playbook has minor versions sourced from PIPs:
+      | Version | Source | PIP    | Description                              |
+      |     1.1 | PIP    | PIP-12 | Add Activity "Generate Manifest"         |
+      |     1.2 | PIP    | PIP-15 | 3 edits across Workflow BTE              |
+    Then minor entries sourced from a PIP show a "PIP" badge
+    And each PIP-sourced entry links to the originating PIP (PIP-12, PIP-15)
+    And each linked PIP shows: Title, Submitter, Status, Related version
 
   Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-12 Navigate to Settings tab (owned playbooks only)
     Given Maria owns the playbook "Product Discovery Framework"

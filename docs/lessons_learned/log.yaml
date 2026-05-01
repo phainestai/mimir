@@ -1,0 +1,3 @@
+# Iteration learning log — append only, newest entries last
+# Schema: milestone, date, goal, velocity_ratio, dominant_drift, footprint_accuracy, pip_candidates
+entries: []
