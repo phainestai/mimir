@@ -48,7 +48,7 @@ class PlaybookVersion(models.Model):
         default=VersionSource.AUTHOR,
     )
     pip = models.ForeignKey(
-        "ProcessImprovementProposal",
+        "methodology.ProcessImprovementProposal",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

@@ -2,65 +2,7 @@
 {% load static %}
 {% load markdown_filters %}
 
-{% block title %}{{ playbook.name }} - Playbook
-<script>
-// Workflow search and filter functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('workflow-search');
-    const filterPhases = document.getElementById('filter-has-phases');
-    const table = document.getElementById('workflows-table');
-    const rows = table ? table.querySelectorAll('tbody tr[data-workflow-row]') : [];
-    const emptyState = document.getElementById('empty-state');
-    
-    function filterWorkflows() {
-        if (!searchInput || !filterPhases || rows.length === 0) return;
-        
-        const searchTerm = searchInput.value.toLowerCase();
-        const phaseFilter = filterPhases.value;
-        let visibleCount = 0;
-        
-        rows.forEach(row => {
-            const nameElement = row.querySelector('[data-workflow-name]');
-            const phaseElement = row.querySelector('[data-phase-count]');
-            
-            const name = nameElement ? nameElement.textContent.toLowerCase() : '';
-            const phaseCount = phaseElement ? parseInt(phaseElement.textContent) : 0;
-            
-            // Search filter
-            const matchesSearch = name.includes(searchTerm);
-            
-            // Phase filter
-            let matchesPhase = true;
-            if (phaseFilter === 'with-phases') matchesPhase = phaseCount > 0;
-            if (phaseFilter === 'no-phases') matchesPhase = phaseCount === 0;
-            
-            // Show/hide row
-            if (matchesSearch && matchesPhase) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Show/hide empty state
-        if (emptyState && table) {
-            if (visibleCount === 0 && rows.length > 0) {
-                emptyState.style.display = 'block';
-                table.style.display = 'none';
-            } else {
-                emptyState.style.display = 'none';
-                table.style.display = '';
-            }
-        }
-    }
-    
-    if (searchInput) searchInput.addEventListener('input', filterWorkflows);
-    if (filterPhases) filterPhases.addEventListener('change', filterWorkflows);
-});
-</script>
-
-{% endblock %}
+{% block title %}{{ playbook.name }} - Playbook{% endblock %}
 
 {% block content %}
 <div class="container mt-4" data-testid="playbook-detail">
@@ -572,8 +514,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 </style>
 
+<div id="playbook-delete-modal-container"></div>
+{% if playbook.source == 'owned' and playbook.author == request.user %}
+    {% if playbook.is_draft or playbook.is_released %}
+    <div class="modal fade" id="release-modal" tabindex="-1" aria-labelledby="release-modal-label" aria-hidden="true" data-testid="release-modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="release-modal-label">Release playbook</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'playbook_release' pk=playbook.pk %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <label for="release-description-input" class="form-label">Release description</label>
+                        <textarea class="form-control" name="release_description" id="release-description-input" rows="4" data-testid="release-description-input" placeholder="Summarize what this release contains."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success" data-testid="release-confirm">Confirm release</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
 <script>
-// Workflow search and filter functionality
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('workflow-search');
     const filterPhases = document.getElementById('filter-has-phases');
@@ -624,31 +594,4 @@ document.addEventListener('DOMContentLoaded', function() {
     if (filterPhases) filterPhases.addEventListener('change', filterWorkflows);
 });
 </script>
-
-<div id="playbook-delete-modal-container"></div>
-{% if playbook.source == 'owned' and playbook.author == request.user %}
-    {% if playbook.is_draft or playbook.is_released %}
-    <div class="modal fade" id="release-modal" tabindex="-1" aria-labelledby="release-modal-label" aria-hidden="true" data-testid="release-modal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="release-modal-label">Release playbook</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="post" action="{% url 'playbook_release' pk=playbook.pk %}">
-                    {% csrf_token %}
-                    <div class="modal-body">
-                        <label for="release-description-input" class="form-label">Release description</label>
-                        <textarea class="form-control" name="release_description" id="release-description-input" rows="4" data-testid="release-description-input" placeholder="Summarize what this release contains."></textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success" data-testid="release-confirm">Confirm release</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-{% endif %}
 {% endblock %}
