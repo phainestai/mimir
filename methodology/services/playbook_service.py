@@ -8,14 +8,30 @@ import logging
 from decimal import Decimal
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
-from methodology.models import Playbook, PlaybookVersion
+from methodology.models import Playbook, PlaybookVersion, VersionSource, Workflow
 
 logger = logging.getLogger(__name__)
 
 
+def _playbook_release_snapshot(playbook: Playbook) -> dict:
+    """JSON-serializable snapshot of playbook structure for PlaybookVersion."""
+    workflows = Workflow.objects.filter(playbook=playbook).order_by("order", "created_at")
+    return {
+        "name": playbook.name,
+        "description": playbook.description,
+        "category": playbook.category,
+        "status": playbook.status,
+        "version": str(playbook.version),
+        "workflows": [
+            {"id": w.pk, "name": w.name, "order": w.order, "abbreviation": w.abbreviation}
+            for w in workflows
+        ],
+    }
+
+
 class PlaybookService:
     """Service class for playbook CRUD operations."""
-    
+
     @staticmethod
     def create_playbook(name, description, category, author, 
                        status='draft', visibility='private', source='owned'):
@@ -69,9 +85,12 @@ class PlaybookService:
             if status in ['released', 'active']:
                 PlaybookVersion.objects.create(
                     playbook=playbook,
-                    version_number=1,
+                    version_number=Decimal('1.0'),
                     snapshot_data={'name': playbook.name, 'version': str(playbook.version)},
                     change_summary='Initial version',
+                    description='Initial version',
+                    is_major=True,
+                    source=VersionSource.RELEASE,
                     created_by=author,
                 )
             
@@ -215,49 +234,135 @@ class PlaybookService:
     
     @staticmethod
     @transaction.atomic
-    def release_playbook(playbook_id, author):
+    def release_playbook(playbook_id, author, *, description: str):
         """
-        Release draft playbook to production (version 1.0).
-        
-        Transitions from draft (0.x) to released (1.0).
-        After release, playbook requires PIP workflow for changes.
-        
-        :param playbook_id: Playbook ID
-        :param author: User instance (must be owner)
-        :returns: Released Playbook instance
-        :raises ValidationError: If not draft or other validation fails
-        :raises PermissionError: If user doesn't own playbook
-        
-        Example:
-            >>> playbook = PlaybookService.release_playbook(
-            ...     playbook_id=1,
-            ...     author=user
-            ... )
-            >>> playbook.version
-            Decimal('1.0')
-            >>> playbook.status
-            'released'
+        Publish a draft playbook to released, or bump a released playbook to the next major line.
+
+        Requires a non-empty release description and at least one workflow (VERSIONING-18).
+
+        Draft 0.x transitions to ``released`` at the next major line (for example 0.9 → 1.0).
+        Released ``1.x`` bumps to the next major (for example 1.3 → 2.0) while staying released.
+
+        :param playbook_id: Playbook PK
+        :param author: Acting user (must own the playbook)
+        :param description: Release notes (non-empty)
+        :raises ValidationError: invalid state, empty description, or no workflows
+        :raises PermissionError: not the owner
         """
-        logger.info(f"Releasing playbook id={playbook_id}, author={author.id}")
-        
+        description_clean = (description or "").strip()
+        if not description_clean:
+            raise ValidationError(
+                {"release_description": "Release description is required."},
+                code="release_description_required",
+            )
+
         playbook = Playbook.objects.get(pk=playbook_id)
-        
-        # Permission check
+
         if playbook.author != author:
-            logger.error(f"User {author.id} attempted to release playbook {playbook_id} owned by {playbook.author.id}")
+            logger.error(
+                "User %s attempted release on playbook %s owned by %s",
+                author.id,
+                playbook_id,
+                playbook.author_id,
+            )
             raise PermissionError("You don't have permission to release this playbook")
-        
-        # Validation - must be draft
-        if not playbook.is_draft:
-            logger.error(f"Attempted to release non-draft playbook {playbook_id} (status={playbook.status})")
-            raise ValidationError(f"Only draft playbooks can be released. Current status: {playbook.status}")
-        
-        old_version = playbook.version
-        old_status = playbook.status
-        
-        # Call model method and persist
-        playbook.release()
-        playbook.save()
-        
-        logger.info(f"Playbook '{playbook.name}' released: {old_status} v{old_version} → {playbook.status} v{playbook.version}")
+
+        if playbook.status not in ("draft", "released"):
+            raise ValidationError(
+                f"Release is only available for draft or released playbooks "
+                f"(current status: {playbook.status})"
+            )
+
+        if not Workflow.objects.filter(playbook=playbook).exists():
+            raise ValidationError(
+                "Add at least one workflow before releasing this playbook.",
+                code="release_requires_workflow",
+            )
+
+        was_draft = playbook.status == "draft"
+        next_version = playbook.compute_next_major_line_version()
+        snapshot_before = _playbook_release_snapshot(playbook)
+
+        if was_draft:
+            playbook.status = "released"
+        playbook.version = next_version
+        update_fields = ["version", "updated_at"]
+        if was_draft:
+            update_fields.insert(0, "status")
+        playbook.save(update_fields=update_fields)
+
+        playbook.refresh_from_db()
+        snapshot_after = _playbook_release_snapshot(playbook)
+
+        PlaybookVersion.objects.create(
+            playbook=playbook,
+            version_number=next_version,
+            snapshot_data={**snapshot_after, "before_release": snapshot_before},
+            change_summary=description_clean,
+            description=description_clean,
+            is_major=True,
+            source=VersionSource.RELEASE,
+            created_by=author,
+        )
+
+        logger.info(
+            "Playbook '%s' (id=%s) advanced to released major v%s",
+            playbook.name,
+            playbook.pk,
+            next_version,
+        )
+        return playbook
+
+    @staticmethod
+    @transaction.atomic
+    def revert_released_playbook_to_draft(
+        playbook_id, *, actor, reason: str
+    ) -> Playbook:
+        """
+        Staff transition: ``released`` → ``draft``, keeping the current playbook version.
+
+        When no ``PlaybookVersion`` row exists yet for ``playbook.version``, inserts an
+        admin-sourced audit row (unique constraint is per ``(playbook, version_number)``).
+        """
+        text = (reason or "").strip()
+        if not text:
+            raise ValidationError("Revert reason is required.")
+
+        if not getattr(actor, "is_staff", False):
+            raise PermissionError("Only staff can revert a released playbook to draft.")
+
+        playbook = Playbook.objects.get(pk=playbook_id)
+        if playbook.status != "released":
+            raise ValidationError(
+                "Only released playbooks can be reverted to draft "
+                f"(current status: {playbook.status})."
+            )
+
+        hold_version = playbook.version
+        playbook.status = "draft"
+        playbook.save(update_fields=["status", "updated_at"])
+
+        if not PlaybookVersion.objects.filter(
+            playbook=playbook, version_number=hold_version
+        ).exists():
+            PlaybookVersion.objects.create(
+                playbook=playbook,
+                version_number=hold_version,
+                snapshot_data={
+                    "event": "admin_revert_to_draft",
+                    "version": str(hold_version),
+                    "name": playbook.name,
+                },
+                change_summary=text,
+                description=text,
+                is_major=False,
+                source=VersionSource.ADMIN,
+                created_by=actor,
+            )
+
+        logger.info(
+            "Playbook id=%s reverted released → draft at v%s",
+            playbook_id,
+            hold_version,
+        )
         return playbook

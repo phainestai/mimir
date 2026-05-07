@@ -1,25 +1,75 @@
 """Admin configuration for methodology models."""
 
-from django.contrib import admin
-from methodology.models import Playbook, PlaybookVersion, Workflow, Activity, Artifact, ArtifactInput, Skill, Agent, Rule
+from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
+from methodology.models import (
+    Activity,
+    Agent,
+    Artifact,
+    ArtifactInput,
+    Playbook,
+    PlaybookVersion,
+    ProcessImprovementProposal,
+    Rule,
+    Skill,
+    Workflow,
+)
 
 
 @admin.register(Playbook)
 class PlaybookAdmin(admin.ModelAdmin):
     """Admin configuration for Playbook model."""
+
     list_display = ('name', 'author', 'category', 'status', 'source', 'version', 'created_at')
     list_filter = ('status', 'category', 'source', 'visibility')
     search_fields = ('name', 'description', 'tags')
     readonly_fields = ('created_at', 'updated_at')
+    actions = ('revert_released_playbooks_to_draft',)
+
+    @admin.action(description="Revert Released → Draft (keeps numeric version)")
+    def revert_released_playbooks_to_draft(self, request, queryset):
+        from methodology.services.playbook_service import PlaybookService
+
+        for playbook in queryset:
+            try:
+                PlaybookService.revert_released_playbook_to_draft(
+                    playbook.pk,
+                    actor=request.user,
+                    reason=f"Admin revert (user id={request.user.pk}, playbook id={playbook.pk})",
+                )
+            except (ValidationError, PermissionError) as exc:
+                self.message_user(request, f"{playbook.name}: {exc}", level=messages.ERROR)
+            else:
+                self.message_user(
+                    request, f'Reverted "{playbook.name}" to draft.', level=messages.SUCCESS
+                )
 
 
 @admin.register(PlaybookVersion)
 class PlaybookVersionAdmin(admin.ModelAdmin):
     """Admin configuration for PlaybookVersion model."""
-    list_display = ('playbook', 'version_number', 'created_at')
-    list_filter = ('created_at',)
-    search_fields = ('playbook__name', 'change_summary')
-    readonly_fields = ('created_at',)
+
+    list_display = (
+        "playbook",
+        "version_number",
+        "is_major",
+        "source",
+        "pip",
+        "created_at",
+    )
+    list_filter = ("is_major", "source", "created_at")
+    search_fields = ("playbook__name", "change_summary", "description")
+    readonly_fields = ("created_at",)
+    raw_id_fields = ("pip",)
+
+
+@admin.register(ProcessImprovementProposal)
+class ProcessImprovementProposalAdmin(admin.ModelAdmin):
+    list_display = ("title", "playbook", "status", "created_at")
+    list_filter = ("status",)
+    search_fields = ("title", "playbook__name")
+    readonly_fields = ("created_at",)
+    raw_id_fields = ("playbook",)
 
 
 @admin.register(Workflow)

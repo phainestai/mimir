@@ -15,6 +15,16 @@ urlpatterns = [
     path('add/', playbook_views.playbook_add, name='playbook_add'),
     
     # Detail, Edit, Delete
+    path(
+        "<int:pk>/history/version/<slug:version_slug>/",
+        playbook_views.playbook_version_snapshot,
+        name="playbook_version_snapshot",
+    ),
+    path(
+        "<int:pk>/history/compare/",
+        playbook_views.playbook_versions_compare,
+        name="playbook_versions_compare",
+    ),
     path('<int:pk>/', playbook_views.playbook_detail, name='playbook_detail'),
     path('<int:pk>/edit/', playbook_views.playbook_edit, name='playbook_edit'),
     path('<int:pk>/delete/', playbook_views.playbook_delete, name='playbook_delete'),
@@ -23,5 +33,6 @@ urlpatterns = [
     # Actions
     path('<int:pk>/export/', playbook_views.playbook_export, name='playbook_export'),
     path('<int:pk>/duplicate/', playbook_views.playbook_duplicate, name='playbook_duplicate'),
+    path('<int:pk>/release/', playbook_views.playbook_release, name='playbook_release'),
     path('<int:pk>/toggle-status/', playbook_views.playbook_toggle_status, name='playbook_toggle_status'),
 ]

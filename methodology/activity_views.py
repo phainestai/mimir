@@ -67,6 +67,24 @@ def activity_global_list(request):
     })
 
 
+@login_required
+def activity_list_for_playbook(request, playbook_pk):
+    playbook = get_object_or_404(Playbook, pk=playbook_pk, author=request.user)
+    activities_qs = ActivityService.list_activities_for_playbook(playbook_pk, request.user)
+    cnt = activities_qs.count()
+    logger.info(
+        'User %s viewing activities for playbook %s (count=%d)',
+        request.user.username,
+        playbook_pk,
+        cnt,
+    )
+    return render(request, 'activities/playbook_list.html', {
+        'playbook': playbook,
+        'activities': activities_qs,
+        'can_edit': playbook.can_edit(request.user),
+    })
+
+
 # ==================== LIST ====================
 
 @login_required

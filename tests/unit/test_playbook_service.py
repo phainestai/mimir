@@ -8,7 +8,7 @@ import pytest
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from methodology.models import Playbook
+from methodology.models import Playbook, Workflow
 from methodology.services.playbook_service import PlaybookService
 
 User = get_user_model()
@@ -209,13 +209,38 @@ class TestPlaybookServiceRelease:
     
     def test_release_draft_playbook_success(self, maria, draft_playbook):
         """Test releasing a draft playbook."""
-        PlaybookService.release_playbook(draft_playbook.id, maria)
-        
+        Workflow.objects.create(
+            playbook=draft_playbook,
+            name="W",
+            description="",
+            order=1,
+        )
+        PlaybookService.release_playbook(
+            draft_playbook.id,
+            maria,
+            description="First release.",
+        )
+
         draft_playbook.refresh_from_db()
         assert draft_playbook.status == 'released'
         assert draft_playbook.version == Decimal('1.0')
     
-    def test_release_already_released_playbook_raises_error(self, maria, released_playbook):
-        """Test releasing an already released playbook raises ValidationError."""
-        with pytest.raises(ValidationError):
-            PlaybookService.release_playbook(released_playbook.id, maria)
+    def test_release_already_released_bumps_next_major(self, maria, released_playbook):
+        """Released playbook can advance to next major line with description."""
+        Workflow.objects.create(
+            playbook=released_playbook,
+            name='WRel',
+            description='',
+            order=1,
+        )
+        released_playbook.version = Decimal('1.3')
+        released_playbook.save(update_fields=['version'])
+
+        PlaybookService.release_playbook(
+            released_playbook.id,
+            maria,
+            description='v2 milestone',
+        )
+        released_playbook.refresh_from_db()
+        assert released_playbook.version == Decimal('2.0')
+        assert released_playbook.status == 'released'

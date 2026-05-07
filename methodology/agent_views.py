@@ -52,6 +52,24 @@ def agent_list_global(request):
     return render(request, 'agents/list.html', context)
 
 
+@login_required
+def agent_list_for_playbook(request, playbook_pk):
+    playbook = get_object_or_404(Playbook, pk=playbook_pk, author=request.user)
+    agents = AgentService.list_agents_for_playbook(playbook_pk)
+    cnt = agents.count()
+    logger.info(
+        'User %s viewing agents for playbook %s (count=%d)',
+        request.user.username,
+        playbook_pk,
+        cnt,
+    )
+    return render(request, 'agents/playbook_list.html', {
+        'playbook': playbook,
+        'agents': agents,
+        'can_edit': playbook.can_edit(request.user),
+    })
+
+
 # ==================== CREATE ====================
 
 

@@ -126,19 +126,17 @@ class Playbook(models.Model):
         
         return self.version
     
-    def release(self):
+    def compute_next_major_line_version(self) -> Decimal:
         """
-        Release the playbook from draft to production.
-        
-        Changes status to 'released' and sets version to 1.0.
-        After release, changes must go through PIP workflow.
+        Next major line from the current playbook version (X.Y → next integer major).
+
+        Examples: 0.9 → 1.0, 1.0 → 2.0, 1.3 → 2.0.
+
+        :returns: Decimal major version with one decimal place
         """
-        if not self.is_draft:
-            raise ValueError("Only draft playbooks can be released")
-        
-        self.status = 'released'
-        self.version = Decimal('1.0')
-        self.save()
+        current = Decimal(str(self.version))
+        whole = int(current)
+        return Decimal(whole + 1).quantize(Decimal("0.1"))
     
     def get_quick_stats(self):
         """

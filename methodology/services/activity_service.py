@@ -171,6 +171,24 @@ class ActivityService:
         return grouped
     
     @staticmethod
+    def list_activities_for_playbook(playbook_id: int, user):
+        """
+        Return activities across all workflows in a playbook, scoped to author's playbooks.
+
+        :param playbook_id: Playbook primary key
+        :param user: Django user restricting results to workflows they own
+        :returns: QuerySet ordered by workflow order then activity order
+        """
+        return Activity.objects.filter(
+            workflow__playbook_id=playbook_id,
+            workflow__playbook__author=user,
+        ).select_related(
+            'workflow',
+            'workflow__playbook',
+            'phase',
+        ).order_by('workflow__order', 'order', 'pk')
+    
+    @staticmethod
     def update_activity(activity_id, **kwargs):
         """
         Update activity fields.

@@ -122,7 +122,8 @@ Feature: FOB-WORKFLOWS-EXPORT_IMPORT-1 MCP Workflow Synchronization
     Then PIP status is "Pending Review"
     And PIP contains change protocol with 4 changes
     And local files in ".windsurf/workflows/FFE/" are preserved as PIP documentation
-    And upon approval, playbook will become v2.0
+    And upon approval, playbook minor version increments by 1 (e.g., v1.0 → v1.1)
+    And major version is unchanged (only the "Release" action bumps major)
 
   # ERROR AND EDGE CASE SCENARIOS
 
@@ -176,8 +177,9 @@ Feature: FOB-WORKFLOWS-EXPORT_IMPORT-1 MCP Workflow Synchronization
     And AI creates PIP from protocol via MCP
     # Verify
     Then PIP is created with status "Pending Review"
-    And upon approval, playbook will become v2.0
-    And workflow changes will be applied
+    And upon approval, playbook minor version increments by 1 (e.g., v1.0 → v1.1)
+    And major version is unchanged (only the "Release" action bumps major)
+    And workflow changes will be applied as a single aggregated minor bump
 
   Scenario: FOB-WORKFLOWS-EXPORT_IMPORT-17 Multiple export-import iterations
     Given Maria has exported workflow once

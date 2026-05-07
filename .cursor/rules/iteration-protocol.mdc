@@ -1,0 +1,72 @@
+---
+description: MIT / Cursor execution protocol for PIT-produced GitHub milestones (doctrine v2.0).
+alwaysApply: false
+---
+
+# Iteration Protocol (Doctrine v2.0)
+
+Canonical manifest: `docs/plans/iterations/ITER-20260501-versioning-complete.yaml`.
+
+GitHub sprint: Milestone **`SPRINT: Complete Versioning for the Playbooks`** (`<!-- MANIFEST -->` in milestone description should mirror the repo file).
+
+## Before each scenario
+
+1. Open the Milestone on GitHub; confirm scenario order **S01 → S15** using dependency links in Issue bodies (`S02` depends on `#83`, etc.).
+2. Pick the lowest-numbered **`status-queued`** Issue whose predecessors are **`status-done`** / closed-complete.
+3. Move it to **`status-in-progress`** and assign yourself.
+4. Read the Issue body **`<!-- SCENARIO -->`** block (checkpoint, footprint, rollback), then the BPE-01 plan section.
+
+## Implementing
+
+1. Work inside `codebase_footprint[]` only unless drift escalation below is waived by the human author.
+2. Replace the **`methodology/versioning/pit_skeletons.scenario_*`** stub for this scenario with real assertions / implementation.
+3. Follow Build Feature sequencing: skeleton → failing tests (`do-test-first.mdc`) → services → Django views/templates/HTMX → integration tests (**no mocking**).
+4. Run the Issue **checkpoint** command verbatim; must exit **0** before **`status-done`**.
+5. Then run breadth regression `.venv/bin/pytest tests/ -x --ignore=tests/e2e` unless narrowed in the Issue.
+6. Angular commits `<type>(<scope>): subject`.
+
+### Completion note on Issue
+
+- checkpoint summary  
+- commits list  
+- whether footprint drifted versus `<!-- SCENARIO -->`
+
+---
+
+# Drift Handling
+
+From manifest `ITER-20260501-versioning-complete.yaml` → **`drift_thresholds`**.
+
+**Absorb (once):**
+
+- `checkpoint_fail` → single identical retry after small fix (`checkpoint_fail_retry: 1`).
+
+**Escalate (human + label `drift-escalated`):**
+
+| Key | Meaning |
+|-----|---------|
+| `footprint_violation` | Edit outside footprint |
+| `method_explosion` | New public APIs not implied by skeleton |
+| `sao_violation` | Breaks SAO § |
+| `checkpoint_fail_after_retry` | Second checkpoint failure |
+
+---
+
+# Session Resume
+
+1. Prefer any **`status-in-progress`** Issue until checkpoint passes or escalation.
+2. Re-run checkpoint: PASS ⇒ **`status-done`**, pick next `status-queued` respecting deps; FAIL ⇒ one retry unless already absorbed ⇒ escalate.
+
+---
+
+# Authority Model
+
+**Autonomous:** stub fill inside footprint; tests/fixtures wired to checklist.
+
+**Human first:** edits outside footprint, extra migrations, `mcp_integration/` tool contract changes, manifest/doctrine edits.
+
+---
+
+## Activation
+
+**Work on milestone `SPRINT: Complete Versioning for the Playbooks`** — Issues **#83 (S01)** through **#97 (S15)**, sequential lane **parallel-group-A**.

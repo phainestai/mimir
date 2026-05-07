@@ -1,0 +1,303 @@
+iteration:
+  goal: Complete Versioning for the Playbooks
+  doctrine_version: '2.0'
+  created_at: '2026-05-01T00:00:00Z'
+  target_duration_notes: Skeleton phase complete; estimates omitted from issue bodies per BPE-01. Executed strictly serial
+    due to pit_skeletons.py contention.
+conflict_map:
+  methodology/versioning/pit_skeletons.py:
+  - S01
+  - S02
+  - S03
+  - S04
+  - S05
+  - S06
+  - S07
+  - S08
+  - S09
+  - S10
+  - S11
+  - S12
+  - S13
+  - S14
+  - S15
+  tests/integration/test_playbook_release.py:
+  - S03
+  - S04
+  - S05
+  tests/integration/test_pip_implement.py:
+  - S06
+  - S07
+  - S08
+  tests/integration/test_admin_revert.py:
+  - S09
+  - S10
+  tests/integration/test_history_tab_render.py:
+  - S12
+  - S13
+  - S14
+  - S15
+parallel_groups:
+  serial_all:
+  - S01
+  - S02
+  - S03
+  - S04
+  - S05
+  - S06
+  - S07
+  - S08
+  - S09
+  - S10
+  - S11
+  - S12
+  - S13
+  - S14
+  - S15
+drift_thresholds:
+  absorbed:
+    checkpoint_fail_retry: 1
+  escalated:
+    footprint_violation: true
+    method_explosion: true
+    sao_violation: true
+    checkpoint_fail_after_retry: true
+scenarios:
+  S01:
+    title: VERSIONING-26 PlaybookVersion X.Y schema fields
+    github_issue: 83
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: 06e0065
+    codebase_footprint:
+    - methodology/versioning/__init__.py
+    - methodology/versioning/pit_skeletons.py
+    - tests/unit/test_playbook_version_model.py
+    checkpoint:
+      command: .venv/bin/pytest tests/unit/test_playbook_version_model.py -x
+      expected_exit_code: 0
+    dependencies: []
+    sao_sections:
+    - §Hybrid MCP Access
+    - §Shared Services
+    rollback_point: git stash
+  S02:
+    title: VERSIONING-27 Migration preserves integer history
+    github_issue: 84
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: 3fb2475
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_playbook_version_migration.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_playbook_version_migration.py -x
+      expected_exit_code: 0
+    dependencies:
+    - S01
+    sao_sections:
+    - §Shared Services
+    rollback_point: git stash
+  S03:
+    title: VERSIONING-07 Release description + next major
+    github_issue: 85
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: 1bb38de
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_playbook_release.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_playbook_release.py::test_release_creates_major_version_with_description_skeleton
+        -x
+      expected_exit_code: 0
+    dependencies:
+    - S02
+    sao_sections:
+    - §Hybrid MCP Access
+    - §Shared Services
+    rollback_point: git stash
+  S04:
+    title: VERSIONING-20 Block release without description
+    github_issue: 86
+    parallel_group: serial_all
+    difficulty: easy
+    skeleton_commit: 84973e9
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_playbook_release.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_playbook_release.py::test_release_without_description_blocked_skeleton
+        -x
+      expected_exit_code: 0
+    dependencies:
+    - S03
+    rollback_point: git stash
+  S05:
+    title: VERSIONING-21 Re-release bumps next major
+    github_issue: 87
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: 8f82439
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_playbook_release.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_playbook_release.py::test_re_release_bumps_next_major_skeleton -x
+      expected_exit_code: 0
+    dependencies:
+    - S04
+    rollback_point: git stash
+  S06:
+    title: VERSIONING-22 PIP aggregated single minor bump
+    github_issue: 88
+    parallel_group: serial_all
+    difficulty: hard
+    skeleton_commit: 90f8cea
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_pip_implement.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_pip_implement.py::test_pip_with_n_changes_produces_single_minor_bump_skeleton
+        -x
+      expected_exit_code: 0
+    dependencies:
+    - S05
+    rollback_point: git stash
+  S07:
+    title: VERSIONING-23 Sequential PIP minor bumps
+    github_issue: 89
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: 7833efb
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_pip_implement.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_pip_implement.py::test_sequential_pips_increment_minor_skeleton -x
+      expected_exit_code: 0
+    dependencies:
+    - S06
+    rollback_point: git stash
+  S08:
+    title: PIP-MANAGE-05 Implement PIP minor contract
+    github_issue: 90
+    parallel_group: serial_all
+    difficulty: easy
+    skeleton_commit: 8d49fff
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_pip_implement.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_pip_implement.py::test_pip_manage_05_minor_bump_contract_skeleton -x
+      expected_exit_code: 0
+    dependencies:
+    - S07
+    rollback_point: git stash
+  S09:
+    title: VERSIONING-24 Admin revert Released to Draft
+    github_issue: 91
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: ec03f3f
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_admin_revert.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_admin_revert.py::test_revert_keeps_version_changes_status_skeleton
+        -x
+      expected_exit_code: 0
+    dependencies:
+    - S08
+    rollback_point: git stash
+  S10:
+    title: VERSIONING-25 Post-revert edits and re-release
+    github_issue: 92
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: 9defa4e
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_admin_revert.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_admin_revert.py::test_post_revert_edits_then_release_skeleton -x
+      expected_exit_code: 0
+    dependencies:
+    - S09
+    rollback_point: git stash
+  S11:
+    title: VERSIONING-12 History listing service / view context
+    github_issue: 93
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: cf0805f
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_playbook_history.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_playbook_history.py::test_history_listing_endpoint_skeleton -x
+      expected_exit_code: 0
+    dependencies:
+    - S10
+    rollback_point: git stash
+  S12:
+    title: VIEW_PLAYBOOK-08 History timeline UI
+    github_issue: 94
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: c8c8ea2
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_history_tab_render.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_history_tab_render.py::test_major_minor_visual_distinction_skeleton
+        -x
+      expected_exit_code: 0
+    dependencies:
+    - S11
+    rollback_point: git stash
+  S13:
+    title: VIEW_PLAYBOOK-09 View historical version
+    github_issue: 95
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: a23c229
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_history_tab_render.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_history_tab_render.py::test_view_historical_version_skeleton -x
+      expected_exit_code: 0
+    dependencies:
+    - S12
+    rollback_point: git stash
+  S14:
+    title: VIEW_PLAYBOOK-10 Compare versions split pane
+    github_issue: 96
+    parallel_group: serial_all
+    difficulty: hard
+    skeleton_commit: d9f6ef9
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_history_tab_render.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_history_tab_render.py::test_compare_versions_split_pane_skeleton -x
+      expected_exit_code: 0
+    dependencies:
+    - S13
+    rollback_point: git stash
+  S15:
+    title: VIEW_PLAYBOOK-11 PIP rows in History
+    github_issue: 97
+    parallel_group: serial_all
+    difficulty: medium
+    skeleton_commit: 8e30cc2
+    codebase_footprint:
+    - methodology/versioning/pit_skeletons.py
+    - tests/integration/test_history_tab_render.py
+    checkpoint:
+      command: .venv/bin/pytest tests/integration/test_history_tab_render.py::test_pip_sourced_rows_link_to_pip_skeleton -x
+      expected_exit_code: 0
+    dependencies:
+    - S14
+    rollback_point: git stash

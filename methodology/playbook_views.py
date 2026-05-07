@@ -5,12 +5,16 @@ Provides views for listing, creating, viewing, editing, and deleting playbooks.
 Includes a 3-step creation wizard and export/import functionality.
 """
 
+import json
 import logging
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from methodology.forms.playbook_forms import PlaybookBasicInfoForm
 from methodology.models import Playbook, Workflow
@@ -179,6 +183,8 @@ def playbook_detail(request, pk):
     phases = PhaseService.list_phases(playbook.pk, request.user)
     logger.info(f"User {request.user.username} viewing playbook '{playbook.name}' (id={pk})")
 
+    from methodology.services.playbook_history_service import list_playbook_version_rows
+
     context = {
         'playbook': playbook,
         'workflows': workflows,
@@ -186,8 +192,67 @@ def playbook_detail(request, pk):
         'can_edit': can_edit,
         'agents': agents,
         'phases': phases,
+        'version_history': list_playbook_version_rows(playbook),
     }
     return render(request, 'playbooks/detail.html', context)
+
+
+@login_required
+def playbook_version_snapshot(request, pk, version_slug):
+    """Pretty-print one historical ``PlaybookVersion.snapshot_data`` (S13)."""
+    playbook = get_object_or_404(Playbook, pk=pk)
+    vn = Decimal(str(version_slug.replace("_", ".")))
+
+    from methodology.services.playbook_history_service import get_playbook_version_by_number
+
+    pv = get_playbook_version_by_number(playbook, vn)
+    if pv is None:
+        raise Http404("Version snapshot not found")
+
+    snapshot_raw = json.dumps(pv.snapshot_data, indent=2, sort_keys=True, default=str)
+    return render(
+        request,
+        "playbooks/version_snapshot.html",
+        {
+            "playbook": playbook,
+            "record": pv,
+            "snapshot_json": snapshot_raw,
+        },
+    )
+
+
+@login_required
+def playbook_versions_compare(request, pk):
+    """Split view of two snapshots (JSON) for HISTORY compare (S14)."""
+    playbook = get_object_or_404(Playbook, pk=pk)
+    left_slug = request.GET.get("left", "").strip()
+    right_slug = request.GET.get("right", "").strip()
+    if not left_slug or not right_slug:
+        raise Http404("Query params left and right (e.g. 1_0) are required")
+
+    from methodology.services.playbook_history_service import get_playbook_version_by_number
+
+    v_left = Decimal(str(left_slug.replace("_", ".")))
+    v_right = Decimal(str(right_slug.replace("_", ".")))
+    pv_a = get_playbook_version_by_number(playbook, v_left)
+    pv_b = get_playbook_version_by_number(playbook, v_right)
+    if pv_a is None or pv_b is None:
+        raise Http404("One or both snapshots are missing")
+
+    left_json = json.dumps(pv_a.snapshot_data, indent=2, sort_keys=True, default=str)
+    right_json = json.dumps(pv_b.snapshot_data, indent=2, sort_keys=True, default=str)
+
+    return render(
+        request,
+        "playbooks/version_compare.html",
+        {
+            "playbook": playbook,
+            "left_label": format(v_left, "f"),
+            "right_label": format(v_right, "f"),
+            "left_json": left_json,
+            "right_json": right_json,
+        },
+    )
 
 
 # ==================== EDIT ====================
@@ -296,6 +361,39 @@ def playbook_delete(request, pk):
 
 
 # ==================== ACTIONS ====================
+
+@login_required
+@require_POST
+def playbook_release(request, pk):
+    """
+    Confirm release: draft → released next major line, or released → next major line.
+
+    POST body ``release_description`` is required.
+
+    """
+    playbook = get_object_or_404(Playbook, pk=pk)
+    description = request.POST.get("release_description", "")
+
+    try:
+        PlaybookService.release_playbook(pk, request.user, description=description)
+    except PermissionError:
+        messages.error(request, "You don't have permission to release this playbook.")
+    except ValidationError as e:
+        if getattr(e, "error_dict", None):
+            for errs in e.error_dict.values():
+                for msg in errs:
+                    messages.error(request, str(msg))
+        elif getattr(e, "messages", False):
+            for msg in e.messages:
+                messages.error(request, msg)
+        else:
+            messages.error(request, str(e.message))
+    else:
+        messages.success(request, "Playbook released.")
+
+    logger.info(f"Release POST for playbook id={pk} by {request.user.username}")
+    return redirect("playbook_detail", pk=pk)
+
 
 @login_required
 def playbook_export(request, pk):

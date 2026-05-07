@@ -1,0 +1,10 @@
+# Iteration learning log — append only, newest entries last
+# Schema: milestone, date, goal, velocity_ratio, dominant_drift, footprint_accuracy, pip_candidates
+entries:
+  - milestone: 6
+    date: "2026-05-01"
+    goal: "SPRINT: Complete Versioning for the Playbooks (S01–S15)"
+    velocity_ratio: 1.0
+    dominant_drift: none
+    footprint_accuracy: met_checkpoints
+    pip_candidates: []

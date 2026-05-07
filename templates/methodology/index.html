@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Mimir - Engineering Playbook{% endblock %}
 
@@ -6,22 +7,25 @@
 <div class="row">
     <div class="col-12">
         <div class="jumbotron bg-light p-5 rounded" data-testid="methodology-explorer">
-            <h1 class="display-4">
-                <i class="fas fa-book-sparkles text-primary"></i> Welcome to Mimir
-            </h1>
-            <p class="lead">Your Self-Evolving Engineering Playbook</p>
+            <div class="d-flex align-items-center gap-4 mb-3">
+                <img src="{% static 'images/mimir-logo.png' %}" alt="Mimir" height="112">
+                <div>
+                    <h1 class="display-4 mb-1">Welcome to Mimir</h1>
+                    <p class="lead mb-0">Your Self-Evolving Engineering Playbook</p>
+                </div>
+            </div>
             <hr class="my-4">
             <p>
                 Mimir helps you manage and evolve engineering playbooks through AI-driven continuous improvement.
                 View playbooks, review Playbook Improvement Proposals (PIPs), and customize your local library.
             </p>
             <div class="mt-4">
-                <a class="btn btn-primary btn-lg" href="/playbooks/" role="button" data-testid="explore-playbooks-button"
+                <a class="btn btn-primary" href="/playbooks/" role="button" data-testid="explore-playbooks-button"
                    data-bs-toggle="tooltip" data-bs-placement="top"
                    title="Browse and explore your complete playbook library">
                     <i class="fas fa-book-sparkles"></i> Explore Playbooks
                 </a>
-                <a class="btn btn-outline-secondary btn-lg ms-2" href="{% url 'pip_list' %}" role="button" data-testid="view-pips-button"
+                <a class="btn btn-outline-secondary ms-2" href="{% url 'pip_list' %}" role="button" data-testid="view-pips-button"
                    data-bs-toggle="tooltip" data-bs-placement="top"
                    title="Review and approve Playbook Improvement Proposals">
                     <i class="fas fa-lightbulb"></i> View PIPs
@@ -31,72 +35,105 @@
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-book-sparkles text-info"></i> Playbooks
-                </h5>
-                <p class="card-text">
-                    Browse and explore your local playbook library. View workflows, activities, and skills.
-                </p>
-                <a href="/playbooks/" class="btn btn-sm btn-outline-info"
-                   data-bs-toggle="tooltip" data-bs-placement="top"
-                   title="View all playbooks in your library">
-                    <i class="fas fa-list"></i> View All
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-lightbulb text-warning"></i> Playbook Improvements
-                </h5>
-                <p class="card-text">
-                    Review and approve Playbook Improvement Proposals (PIPs) from AI assistants and team feedback.
-                </p>
-                <a href="{% url 'pip_list' %}" class="btn btn-sm btn-outline-warning"
-                   data-bs-toggle="tooltip" data-bs-placement="top"
-                   title="Review pending Playbook Improvement Proposals">
-                    <i class="fas fa-lightbulb"></i> Review PIPs
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <i class="fas fa-code-branch text-success"></i> Versions
-                </h5>
-                <p class="card-text">
-                    Track playbook versions and see how your processes evolve over time.
-                </p>
-                <a href="#" class="btn btn-sm btn-outline-success"
-                   data-bs-toggle="tooltip" data-bs-placement="top"
-                   title="View version history and track playbook evolution">
-                    <i class="fas fa-history"></i> Version History
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="row mt-4">
     <div class="col-12">
-        <div class="alert alert-info" role="alert">
-            <h5 class="alert-heading">
-                <i class="fas fa-info-circle"></i> Getting Started
-            </h5>
-            <p class="mb-0">
-                This is your FOB (Forward Operating Base) - a single-user desktop application for playbook management.
-                The MCP interface allows AI assistants to query playbooks, while this web interface lets you review PIPs and customize playbooks.
-            </p>
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-1">
+                    <i class="fas fa-plug text-primary"></i> Connect Your AI IDE to Mimir via MCP
+                </h5>
+                <p class="text-muted mb-4">Add the config below to your IDE, restart it, and your AI assistant will have direct access to all playbooks.</p>
+
+                <ul class="nav nav-tabs mb-3" id="mcpTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-windsurf" data-bs-toggle="tab" data-bs-target="#pane-windsurf" type="button" role="tab">
+                            <img src="https://cdn.simpleicons.org/windsurf" height="16" alt="" class="brand-icon me-1" style="vertical-align: text-top;"> Windsurf
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-claude" data-bs-toggle="tab" data-bs-target="#pane-claude" type="button" role="tab">
+                            <img src="https://cdn.simpleicons.org/anthropic" height="16" alt="" class="brand-icon me-1" style="vertical-align: text-top;"> Claude Desktop
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-cursor" data-bs-toggle="tab" data-bs-target="#pane-cursor" type="button" role="tab">
+                            <img src="https://cdn.simpleicons.org/cursor" height="16" alt="" class="brand-icon me-1" style="vertical-align: text-top;"> Cursor
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="mcpTabsContent">
+                    <div class="tab-pane fade show active" id="pane-windsurf" role="tabpanel">
+                        <p class="text-muted small mb-2">File: <code>~/.codeium/windsurf/mcp_config.json</code></p>
+                        <pre class="bg-dark text-light rounded p-3 small"><code>{
+  "mcpServers": {
+    "mimir": {
+      "command": "/absolute/path/to/mimir/venv/bin/python",
+      "args": [
+        "/absolute/path/to/mimir/manage.py",
+        "mcp_server",
+        "--user=admin"
+      ],
+      "env": {
+        "DJANGO_SETTINGS_MODULE": "mimir.settings",
+        "PYTHONPATH": "/absolute/path/to/mimir",
+        "MIMIR_MCP_MODE": "1"
+      },
+      "disabled": false
+    }
+  }
+}</code></pre>
+                    </div>
+                    <div class="tab-pane fade" id="pane-claude" role="tabpanel">
+                        <p class="text-muted small mb-2">File: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+                        <pre class="bg-dark text-light rounded p-3 small"><code>{
+  "mcpServers": {
+    "mimir": {
+      "command": "/absolute/path/to/mimir/venv/bin/python",
+      "args": [
+        "/absolute/path/to/mimir/manage.py",
+        "mcp_server",
+        "--user=admin"
+      ],
+      "env": {
+        "DJANGO_SETTINGS_MODULE": "mimir.settings",
+        "PYTHONPATH": "/absolute/path/to/mimir",
+        "MIMIR_MCP_MODE": "true"
+      }
+    }
+  }
+}</code></pre>
+                    </div>
+                    <div class="tab-pane fade" id="pane-cursor" role="tabpanel">
+                        <p class="text-muted small mb-2">File: workspace <code>.cursorrules</code> or Cursor settings</p>
+                        <pre class="bg-dark text-light rounded p-3 small"><code>{
+  "mcp": {
+    "servers": {
+      "mimir": {
+        "command": "/absolute/path/to/mimir/venv/bin/python",
+        "args": [
+          "/absolute/path/to/mimir/manage.py",
+          "mcp_server",
+          "--user=admin"
+        ],
+        "env": {
+          "DJANGO_SETTINGS_MODULE": "mimir.settings",
+          "PYTHONPATH": "/absolute/path/to/mimir",
+          "MIMIR_MCP_MODE": "true"
+        }
+      }
+    }
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning mt-3 mb-0 py-2">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    Replace <code>/absolute/path/to/mimir</code> with your actual project path and <code>admin</code> with your username. Restart your IDE after saving.
+                </div>
+            </div>
         </div>
     </div>
 </div>

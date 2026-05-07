@@ -31,11 +31,17 @@ Feature: FOB-PIPS-LIST-1 Manage PIPs
     And she enters rejection reason
     Then PIP status changes to "Rejected"
 
-  Scenario: PIP-MANAGE-05 Implement PIP
-    Given Maria has an approved PIP
+  Scenario: PIP-MANAGE-05 Implement PIP produces a single minor version bump
+    Given Maria has an approved PIP "PIP-42" with N entity changes
+    And the playbook is at version "1.2" with status "Released"
     When she clicks [Implement]
     Then she is guided through implementation
     And changes are applied to playbook
+    And playbook version increments to "1.3" (single minor bump, regardless of N)
+    And major version remains "1"
+    And version history records exactly one new entry "v1.3" with description aggregating all N changes
+    And the v1.3 history entry links back to "PIP-42"
+    And playbook status remains "Released"
     And PIP status changes to "Implemented"
 
   Scenario: PIP-MANAGE-06 Track PIP history

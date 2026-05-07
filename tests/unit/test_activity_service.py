@@ -274,3 +274,41 @@ class TestActivityService:
         # Assertions - activity2 should be first (most recently accessed)
         assert recent[0] == activity2
         assert recent[1] == activity1
+
+
+@pytest.mark.django_db
+class TestListActivitiesForPlaybook:
+    """Tests for ActivityService.list_activities_for_playbook."""
+
+    def test_returns_only_activities_for_given_playbook_and_author(self):
+        u1 = User.objects.create_user(username='u1Acts', password='x')
+        u2 = User.objects.create_user(username='u2Acts', password='x')
+        pb1 = Playbook.objects.create(
+            name='PB1Acts', description='d', category='development', author=u1, source='owned',
+        )
+        pb2 = Playbook.objects.create(
+            name='PB2Acts', description='d', category='development', author=u2, source='owned',
+        )
+        wf1 = Workflow.objects.create(playbook=pb1, name='W1', description='d', order=1)
+        wf2 = Workflow.objects.create(playbook=pb2, name='W2', description='d', order=1)
+        a1 = Activity.objects.create(workflow=wf1, name='Only PB1', guidance='g', order=1)
+        Activity.objects.create(workflow=wf2, name='Only PB2', guidance='g', order=1)
+
+        qs = ActivityService.list_activities_for_playbook(pb1.pk, u1)
+        assert list(qs) == [a1]
+        assert ActivityService.list_activities_for_playbook(pb1.pk, u2).count() == 0
+
+    def test_orders_by_workflow_order_then_activity_order(self):
+        user = User.objects.create_user(username='ordUserActs', password='x')
+        pb = Playbook.objects.create(
+            name='PBOrd', description='d', category='development', author=user, source='owned',
+        )
+        wf_b = Workflow.objects.create(playbook=pb, name='Second WF', description='d', order=2)
+        wf_a = Workflow.objects.create(playbook=pb, name='First WF', description='d', order=1)
+        act_b2 = Activity.objects.create(workflow=wf_b, name='B2', guidance='g', order=2)
+        act_b1 = Activity.objects.create(workflow=wf_b, name='B1', guidance='g', order=1)
+        act_a2 = Activity.objects.create(workflow=wf_a, name='A2', guidance='g', order=2)
+        act_a1 = Activity.objects.create(workflow=wf_a, name='A1', guidance='g', order=1)
+
+        ordered = list(ActivityService.list_activities_for_playbook(pb.pk, user))
+        assert ordered == [act_a1, act_a2, act_b1, act_b2]

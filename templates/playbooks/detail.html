@@ -101,8 +101,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <!-- Release button for draft playbooks -->
                     <button type="button"
                             class="btn btn-success"
-                            data-bs-toggle="tooltip"
-                            title="Release this playbook to v1.0 (makes it read-only, changes require PIP)">
+                            data-bs-toggle="modal"
+                            data-bs-target="#release-modal"
+                            data-testid="open-release-modal"
+                            title="Release this playbook to the next major line (read-only; changes require PIP)">
                         <i class="fa-solid fa-rocket"></i> Release
                     </button>
                 {% elif playbook.is_released %}
@@ -113,6 +115,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             data-bs-toggle="tooltip"
                             title="Released playbooks cannot be edited directly. Please submit a PIP (Process Improvement Proposal) to make changes.">
                         <i class="fa-solid fa-edit"></i> Edit
+                    </button>
+                    <button type="button"
+                            class="btn btn-success"
+                            data-bs-toggle="modal"
+                            data-bs-target="#release-modal"
+                            data-testid="open-release-modal-released"
+                            title="Cut the next major release line (for example v1.x → v2.0).">
+                        <i class="fa-solid fa-rocket"></i> Next major
                     </button>
                     <!-- Submit PIP button for released playbooks -->
                     <a href="#"
@@ -257,53 +267,81 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="card-body">
                             <div class="row text-center">
                                 <div class="col-md-4 mb-3" data-testid="stat-workflows">
-                                    <div class="p-3 border rounded">
+                                    <a href="{% url 'workflow_list' playbook.pk %}"
+                                       class="d-block text-decoration-none text-reset p-3 border rounded h-100 quick-stat-link"
+                                       data-testid="stat-workflows-link"
+                                       data-bs-toggle="tooltip"
+                                       title="View workflows in this playbook">
                                         <i class="fa-solid fa-diagram-project fa-2x text-primary mb-2"></i>
                                         <h3 class="mb-0">{{ quick_stats.workflows }}</h3>
                                         <small class="text-muted">Workflows</small>
-                                    </div>
+                                    </a>
                                 </div>
                                 <div class="col-md-4 mb-3" data-testid="stat-phases">
-                                    <div class="p-3 border rounded">
+                                    <a href="{% url 'phase_list' playbook.pk %}"
+                                       class="d-block text-decoration-none text-reset p-3 border rounded h-100 quick-stat-link"
+                                       data-testid="stat-phases-link"
+                                       data-bs-toggle="tooltip"
+                                       title="View phases for this playbook">
                                         <i class="fa-solid fa-bars-progress fa-2x text-info mb-2"></i>
                                         <h3 class="mb-0">{{ quick_stats.phases }}</h3>
                                         <small class="text-muted">Phases</small>
-                                    </div>
+                                    </a>
                                 </div>
                                 <div class="col-md-4 mb-3" data-testid="stat-activities">
-                                    <div class="p-3 border rounded">
+                                    <a href="{% url 'activity_list_for_playbook' playbook.pk %}"
+                                       class="d-block text-decoration-none text-reset p-3 border rounded h-100 quick-stat-link"
+                                       data-testid="stat-activities-link"
+                                       data-bs-toggle="tooltip"
+                                       title="View all activities in this playbook">
                                         <i class="fa-solid fa-list-check fa-2x text-success mb-2"></i>
                                         <h3 class="mb-0">{{ quick_stats.activities }}</h3>
                                         <small class="text-muted">Activities</small>
-                                    </div>
+                                    </a>
                                 </div>
                                 <div class="col-md-4 mb-3" data-testid="stat-artifacts">
-                                    <div class="p-3 border rounded">
+                                    <a href="{% url 'artifact_list' playbook_id=playbook.pk %}"
+                                       class="d-block text-decoration-none text-reset p-3 border rounded h-100 quick-stat-link"
+                                       data-testid="stat-artifacts-link"
+                                       data-bs-toggle="tooltip"
+                                       title="View artifacts for this playbook">
                                         <i class="fa-solid fa-gift fa-2x text-warning mb-2"></i>
                                         <h3 class="mb-0">{{ quick_stats.artifacts }}</h3>
                                         <small class="text-muted">Artifacts</small>
-                                    </div>
+                                    </a>
                                 </div>
                                 <div class="col-md-4 mb-3" data-testid="stat-agents">
-                                    <div class="p-3 border rounded">
+                                    <a href="{% url 'agent_list_for_playbook' playbook.pk %}"
+                                       class="d-block text-decoration-none text-reset p-3 border rounded h-100 quick-stat-link"
+                                       data-testid="stat-agents-link"
+                                       data-bs-toggle="tooltip"
+                                       title="View agents for this playbook">
                                         <i class="fa-solid fa-brain-circuit fa-2x text-primary mb-2"></i>
                                         <h3 class="mb-0">{{ quick_stats.agents }}</h3>
                                         <small class="text-muted">Agents</small>
-                                    </div>
+                                    </a>
                                 </div>
                                 <div class="col-md-4 mb-3" data-testid="stat-skills">
-                                    <div class="p-3 border rounded">
+                                    <a href="{% url 'skill_list_playbook' playbook.pk %}"
+                                       class="d-block text-decoration-none text-reset p-3 border rounded h-100 quick-stat-link"
+                                       data-testid="stat-skills-link"
+                                       data-bs-toggle="tooltip"
+                                       title="View skills for this playbook">
                                         <i class="fa-solid fa-hand-holding-magic fa-2x text-danger mb-2"></i>
                                         <h3 class="mb-0">{{ quick_stats.skills }}</h3>
                                         <small class="text-muted">Skills</small>
-                                    </div>
+                                    </a>
                                 </div>
                                 <div class="col-md-4 mb-3" data-testid="stat-rules">
-                                    <div class="p-3 border rounded">
+                                    <a href="{% url 'rule_list_playbook' playbook.pk %}"
+                                       class="d-block text-decoration-none text-reset p-3 border rounded h-100 quick-stat-link"
+                                       data-testid="stat-rules-link"
+                                       data-bs-toggle="tooltip"
+                                       title="View rules for this playbook">
                                         <i class="fa-solid fa-scale-balanced fa-2x text-secondary mb-2"></i>
                                         <h3 class="mb-0">{{ quick_stats.rules }}</h3>
                                         <small class="text-muted">Rules</small>
-                                    </div>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -462,9 +500,48 @@ document.addEventListener('DOMContentLoaded', function() {
             {% endif %}
         </div>
 
-        <!-- History Tab (placeholder) -->
-        <div class="tab-pane fade" id="history" role="tabpanel">
-            <p class="text-muted">History tab content (to be implemented)</p>
+        <!-- History Tab -->
+        <div class="tab-pane fade" id="history" role="tabpanel" data-testid="history-tab-panel">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0" data-testid="history-heading">Version history</h5>
+                {% if version_history|length >= 2 %}
+                    <a class="btn btn-sm btn-outline-primary"
+                       data-testid="history-compare-link"
+                       href="{% url 'playbook_versions_compare' pk=playbook.pk %}?left={{ version_history.1.url_slug }}&right={{ version_history.0.url_slug }}">
+                        Compare latest two
+                    </a>
+                {% endif %}
+            </div>
+            {% if version_history %}
+            <ul class="list-group list-group-flush" data-testid="history-versions-table">
+                {% for row in version_history %}
+                <li class="list-group-item px-0 d-flex justify-content-between align-items-start gap-3"
+                    data-testid="history-version-row">
+                    <div>
+                        <a href="{% url 'playbook_version_snapshot' pk=playbook.pk version_slug=row.url_slug %}"
+                           class="fw-semibold link-primary"
+                           data-testid="history-version-link">
+                            v{{ row.label }}</a>
+                        <span class="badge ms-2 {% if row.kind_major %}bg-primary{% else %}bg-secondary text-white{% endif %}"
+                              data-testid="history-version-kind">{{ row.kind_major|yesno:'major,minor' }}</span>
+                        <div class="text-muted small">{{ row.description|default:row.change_summary }}</div>
+                    </div>
+                    <div class="small text-muted text-end text-nowrap">
+                        <div data-testid="history-version-source">{{ row.source }}</div>
+                        {% if row.pip_id %}
+                            <span data-testid="history-pip-link" data-pip-id="{{ row.pip_id }}">PIP&nbsp;#{{ row.pip_id }}</span>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">No captured versions yet.</p>
+            {% endif %}
+            <hr class="mt-4" />
+            <div data-testid="history-timeline" class="timeline-placeholder small text-muted">
+                Older entries appear above in chronological order when present.
+            </div>
         </div>
 
         <!-- Settings Tab (placeholder) -->
@@ -481,6 +558,18 @@ document.addEventListener('DOMContentLoaded', function() {
     .badge.bg-active { background-color: #28a745 !important; }
     .badge.bg-draft { background-color: #6c757d !important; }
     .badge.bg-disabled { background-color: #dc3545 !important; }
+    .quick-stat-link {
+        transition: border-color .15s ease-out, transform .05s ease-out;
+        cursor: pointer;
+    }
+    .quick-stat-link:hover,
+    .quick-stat-link:focus-visible {
+        border-color: var(--bs-primary, #0d6efd) !important;
+        outline: none;
+    }
+    .quick-stat-link:active {
+        transform: translateY(1px);
+    }
 </style>
 
 <script>
@@ -537,4 +626,29 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <div id="playbook-delete-modal-container"></div>
+{% if playbook.source == 'owned' and playbook.author == request.user %}
+    {% if playbook.is_draft or playbook.is_released %}
+    <div class="modal fade" id="release-modal" tabindex="-1" aria-labelledby="release-modal-label" aria-hidden="true" data-testid="release-modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="release-modal-label">Release playbook</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'playbook_release' pk=playbook.pk %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <label for="release-description-input" class="form-label">Release description</label>
+                        <textarea class="form-control" name="release_description" id="release-description-input" rows="4" data-testid="release-description-input" placeholder="Summarize what this release contains."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success" data-testid="release-confirm">Confirm release</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
 {% endblock %}

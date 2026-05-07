@@ -5,6 +5,8 @@ Tests all 21 scenarios from playbooks-create.feature.
 Following TDD: These tests should FAIL until implementation is complete.
 """
 
+from decimal import Decimal
+
 import pytest
 from django.test import Client
 from django.urls import reverse
@@ -284,7 +286,7 @@ class TestPlaybookCreateWizard:
         # Check playbook was created
         playbook = Playbook.objects.get(name='Test Playbook')
         assert playbook.status == 'active'
-        assert playbook.version == 1
+        assert playbook.version == Decimal("1.0")
         # Check version history created
         assert PlaybookVersion.objects.filter(playbook=playbook).exists()
     
@@ -368,10 +370,12 @@ class TestPlaybookCreateWizard:
         self.client.post(reverse('playbook_create_step3'), data=publish_data)
         
         playbook = Playbook.objects.get(name='Test Playbook')
-        assert playbook.version == 1
+        assert playbook.version == Decimal("1.0")
         
         # Check version history
-        version = PlaybookVersion.objects.get(playbook=playbook, version_number=1)
+        version = PlaybookVersion.objects.get(
+            playbook=playbook, version_number=Decimal("1.0")
+        )
         assert version.change_summary == 'Initial version'
     
     # Helper methods

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static %}
+{% load markdown_filters %}
+
+{% block title %}Agents - {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="agents-playbook-list">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Agents</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 data-testid="agents-playbook-header">
+                <i class="fa-solid fa-brain-circuit"></i> Agents in {{ playbook.name }}
+            </h2>
+            <p class="text-muted mb-0">AI assistants configured for activities in this playbook</p>
+        </div>
+        {% if can_edit %}
+        <a href="{% url 'agent_create' playbook_pk=playbook.pk %}"
+           class="btn btn-primary btn-sm"
+           data-bs-toggle="tooltip"
+           title="Create a new agent in this playbook">
+            <i class="fa-solid fa-plus"></i> Create Agent
+        </a>
+        {% endif %}
+    </div>
+
+    {% if agents %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fa-solid fa-list me-2"></i>Agents
+                <span class="badge bg-secondary ms-2">{{ agents|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0" data-testid="agents-playbook-table">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 25%">Name</th>
+                        <th>Description</th>
+                        <th style="width: 10%">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for agent in agents %}
+                    <tr data-testid="agent-row-{{ agent.id }}">
+                        <td>
+                            <i class="fa-solid fa-brain-circuit text-primary me-2"></i>
+                            <strong>{{ agent.name }}</strong>
+                        </td>
+                        <td class="text-muted small">
+                            {{ agent.description|markdown|striptags|truncatewords:25 }}
+                        </td>
+                        <td>
+                            <a href="{% url 'agent_detail' pk=agent.id %}"
+                               class="btn btn-outline-primary btn-sm"
+                               data-testid="view-agent-{{ agent.id }}"
+                               data-bs-toggle="tooltip"
+                               title="View agent">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm" data-testid="empty-state">
+        <div class="card-body text-center py-5">
+            <i class="fa-solid fa-brain-circuit fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No agents yet</h4>
+            <p class="text-muted mb-0">There are no agents for this playbook yet.</p>
+            <a href="{% url 'playbook_detail' pk=playbook.pk %}"
+               class="btn btn-primary mt-3"
+               data-testid="back-to-playbook-btn">
+                <i class="fa-solid fa-book-sparkles me-2"></i>Back to playbook
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

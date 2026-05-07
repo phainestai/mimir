@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Activities - {{ playbook.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="activities-playbook-list">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Activities</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 data-testid="activities-playbook-header">
+                <i class="fa-solid fa-list-check"></i> Activities in {{ playbook.name }}
+            </h2>
+            <p class="text-muted mb-0">All activities across workflows in this playbook</p>
+        </div>
+    </div>
+
+    {% if activities %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fa-solid fa-list me-2"></i>Activities
+                <span class="badge bg-secondary ms-2">{{ activities|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0" data-testid="activities-playbook-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Workflow</th>
+                        <th>Phase</th>
+                        <th style="width: 10%">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in activities %}
+                    <tr data-testid="activity-row-{{ activity.id }}">
+                        <td>
+                            <i class="fa-solid fa-list-check text-primary me-2"></i>
+                            <strong>{{ activity.name }}</strong>
+                        </td>
+                        <td>
+                            <a href="{% url 'workflow_detail' playbook_pk=playbook.pk pk=activity.workflow.pk %}">
+                                {{ activity.workflow.name }}
+                            </a>
+                        </td>
+                        <td class="text-muted small">
+                            {% if activity.phase %}{{ activity.phase.name }}{% else %}—{% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=activity.workflow.pk activity_pk=activity.pk %}"
+                               class="btn btn-outline-primary btn-sm"
+                               data-testid="view-activity-{{ activity.id }}"
+                               data-bs-toggle="tooltip"
+                               title="View activity details">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm" data-testid="empty-state">
+        <div class="card-body text-center py-5">
+            <i class="fa-solid fa-list-check fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No activities yet</h4>
+            <p class="text-muted">Activities are added from workflows in this playbook.</p>
+            <a href="{% url 'playbook_detail' pk=playbook.pk %}"
+               class="btn btn-primary mt-2"
+               data-testid="back-to-playbook-btn">
+                <i class="fa-solid fa-book-sparkles me-2"></i>Back to playbook
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
