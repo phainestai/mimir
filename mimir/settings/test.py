@@ -7,6 +7,9 @@ Optimized for fast test execution with in-memory SQLite.
 import os
 from .base import *  # noqa: F401, F403
 
+# Environment identifier
+MIMIR_ENV = 'test'
+
 # Use a fixed secret key for tests
 SECRET_KEY = "django-test-secret-key-not-for-production"
 

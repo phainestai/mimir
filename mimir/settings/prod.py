@@ -8,6 +8,9 @@ import os
 import dj_database_url
 from .base import *  # noqa: F401, F403
 
+# Environment identifier
+MIMIR_ENV = 'prod'
+
 # SECURITY WARNING: SECRET_KEY must be set via environment variable in production
 SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 

@@ -25,8 +25,10 @@ from methodology import rule_views
 from methodology import agent_views
 from methodology import artifact_views
 from methodology import phase_views
+from mimir import health_views
 
 urlpatterns = [
+    path("health/", health_views.health_check, name="health_check"),
     path("admin/", admin.site.urls),
     path("auth/", include("accounts.urls")),  # Changed from accounts/ per SAO.md URL convention
     path("dashboard/", methodology_views.dashboard, name="dashboard"),

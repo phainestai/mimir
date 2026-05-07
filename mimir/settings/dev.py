@@ -8,6 +8,9 @@ import os
 from pathlib import Path
 from .base import *  # noqa: F401, F403
 
+# Environment identifier
+MIMIR_ENV = 'dev'
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv(
     'DJANGO_SECRET_KEY',
