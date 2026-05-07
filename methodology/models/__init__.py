@@ -1,6 +1,6 @@
 from .playbook import Playbook
-from .playbook_version import PlaybookVersion, VersionSource
 from .process_improvement_proposal import ProcessImprovementProposal
+from .playbook_version import PlaybookVersion, VersionSource
 from .workflow import Workflow
 from .phase import Phase
 from .activity import Activity
