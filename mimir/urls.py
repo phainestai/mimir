@@ -54,6 +54,7 @@ urlpatterns = [
     # API endpoints
     path("api/", include(router.urls)),
     path("api/auth/token/", obtain_auth_token, name="api_token_auth"),
+    path("api/auth/", include("accounts.api_urls")),  # Registration, token refresh, etc.
     path("auth/", include("accounts.urls")),  # Changed from accounts/ per SAO.md URL convention
     path("dashboard/", methodology_views.dashboard, name="dashboard"),
     path("dashboard/activities/", methodology_views.dashboard_activities, name="dashboard_activities"),

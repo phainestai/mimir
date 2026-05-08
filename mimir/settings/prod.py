@@ -136,3 +136,10 @@ LOGGING = {
         },
     },
 }
+
+# Email configuration (AWS SES)
+# AWS credentials should be set via environment variables:
+# AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION
+
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@featurefactory.io')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://mimir.featurefactory.io')
