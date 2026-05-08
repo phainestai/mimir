@@ -1,6 +1,7 @@
 # Django Framework
 django>=5.0
 asgiref>=3.8.0
+djangorestframework>=3.14.0
 
 # WSGI Server for Production
 gunicorn>=21.2.0

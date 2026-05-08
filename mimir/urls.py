@@ -17,6 +17,8 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from rest_framework.authtoken.views import obtain_auth_token
 from methodology import views as methodology_views
 from methodology import workflow_views
 from methodology import activity_views
@@ -26,10 +28,32 @@ from methodology import agent_views
 from methodology import artifact_views
 from methodology import phase_views
 from mimir import health_views
+from methodology.api.viewsets import (
+    PlaybookViewSet, WorkflowViewSet, ActivityViewSet
+)
+from methodology.api.viewsets_resources import (
+    SkillViewSet, AgentViewSet, ArtifactViewSet,
+    ArtifactInputViewSet, PhaseViewSet, RuleViewSet
+)
+
+# DRF Router for API endpoints
+router = DefaultRouter()
+router.register(r'playbooks', PlaybookViewSet, basename='api-playbook')
+router.register(r'workflows', WorkflowViewSet, basename='api-workflow')
+router.register(r'activities', ActivityViewSet, basename='api-activity')
+router.register(r'skills', SkillViewSet, basename='api-skill')
+router.register(r'agents', AgentViewSet, basename='api-agent')
+router.register(r'artifacts', ArtifactViewSet, basename='api-artifact')
+router.register(r'artifact-inputs', ArtifactInputViewSet, basename='api-artifact-input')
+router.register(r'phases', PhaseViewSet, basename='api-phase')
+router.register(r'rules', RuleViewSet, basename='api-rule')
 
 urlpatterns = [
     path("health/", health_views.health_check, name="health_check"),
     path("admin/", admin.site.urls),
+    # API endpoints
+    path("api/", include(router.urls)),
+    path("api/auth/token/", obtain_auth_token, name="api_token_auth"),
     path("auth/", include("accounts.urls")),  # Changed from accounts/ per SAO.md URL convention
     path("dashboard/", methodology_views.dashboard, name="dashboard"),
     path("dashboard/activities/", methodology_views.dashboard_activities, name="dashboard_activities"),
