@@ -2,13 +2,15 @@ name: Build and Deploy Mimir
 
 on:
   push:
-    branches: 
+    branches:
       - main
       - 'release/**'
+      - 'feat/**'
   pull_request:
-    branches: [release/**]
+    branches: [main, 'release/**']
   release:
     types: [published]
+  workflow_dispatch:
 
 env:
   # Azure Container Registry (existing)
