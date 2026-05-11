@@ -1,12 +1,14 @@
 # EB deployment template — variables substituted by CI before packaging.
-# Required env vars for envsubst:
-#   IMAGE_WEB       — full ECR URI for the mimir web image, e.g.
-#                     411113550285.dkr.ecr.us-east-1.amazonaws.com/mimir:branch-sha
-#   IMAGE_MCP       — full ECR URI for the mimir-mcp-facade image
 #
-# Secret env vars (DJANGO_SECRET_KEY, DATABASE_URL, etc.) are stored in the
-# EB environment settings and injected into the container at runtime by EB.
-# They are NOT baked into this file.
+# CI substitutes ONLY: IMAGE_WEB, IMAGE_MCP  (via envsubst '$IMAGE_WEB $IMAGE_MCP')
+#
+# All other ${VAR} references are intentionally left as-is.
+# EB exports every environment property as a host shell variable before invoking
+# docker compose, so Docker Compose resolves them at container start time.
+# (Same pattern as huginn/docker-compose.prod.yml)
+#
+# EB env vars required (set via aws elasticbeanstalk update-environment or CDK):
+#   DJANGO_SECRET_KEY, DATABASE_URL, DJANGO_ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS
 
 services:
   web:
@@ -16,6 +18,10 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: mimir.settings
       MIMIR_ENV: prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DATABASE_URL: ${DATABASE_URL}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
     restart: unless-stopped
 
   mcp-facade:

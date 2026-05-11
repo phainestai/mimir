@@ -261,7 +261,7 @@ jobs:
           IMAGE_WEB: ${{ steps.ecr-login.outputs.registry }}/mimir:${{ steps.version.outputs.suffix }}
           IMAGE_MCP: ${{ steps.ecr-login.outputs.registry }}/mimir-mcp-facade:${{ steps.version.outputs.suffix }}
         run: |
-          envsubst < deploy/docker-compose.tmpl.yml > docker-compose.yml
+          envsubst '$IMAGE_WEB $IMAGE_MCP' < deploy/docker-compose.tmpl.yml > docker-compose.yml
           echo "=== Deployment manifest ===" && cat docker-compose.yml
 
       - name: Package deployment bundle
