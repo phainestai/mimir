@@ -36,7 +36,7 @@ class MimirNetwork(Stack):
             "MimirEbSg",
             vpc=self.vpc,
             security_group_name="mimir-eb",
-            description="Mimir EB EC2 — inbound HTTP/HTTPS from internet",
+            description="Mimir EB EC2 - inbound HTTP/HTTPS from internet",
             allow_all_outbound=True,
         )
         self.eb_sg.add_ingress_rule(

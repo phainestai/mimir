@@ -58,11 +58,13 @@ class MimirApp(Stack):
             self,
             "EbApp",
             application_name="mimir",
-            description="Mimir — Self-Evolving Engineering Playbook (FOB)",
+            description="Mimir - Self-Evolving Engineering Playbook (FOB)",
         )
 
+        # t3.small is not available in us-east-1e — limit to AZs that support it.
         public_subnet_ids = self._vpc.select_subnets(
-            subnet_type=ec2.SubnetType.PUBLIC
+            subnet_type=ec2.SubnetType.PUBLIC,
+            availability_zones=["us-east-1a", "us-east-1b", "us-east-1c"],
         ).subnet_ids
 
         for env_name in ["mimir-blue", "mimir-green"]:
