@@ -1,0 +1,31 @@
+# EB deployment template — variables substituted by CI before packaging.
+# Required env vars for envsubst:
+#   IMAGE_WEB       — full ECR URI for the mimir web image, e.g.
+#                     411113550285.dkr.ecr.us-east-1.amazonaws.com/mimir:branch-sha
+#   IMAGE_MCP       — full ECR URI for the mimir-mcp-facade image
+#
+# Secret env vars (DJANGO_SECRET_KEY, DATABASE_URL, etc.) are stored in the
+# EB environment settings and injected into the container at runtime by EB.
+# They are NOT baked into this file.
+
+services:
+  web:
+    image: ${IMAGE_WEB}
+    ports:
+      - "80:8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: mimir.settings
+      MIMIR_ENV: prod
+    restart: unless-stopped
+
+  mcp-facade:
+    image: ${IMAGE_MCP}
+    ports:
+      - "8001:8001"
+    environment:
+      MCP_TRANSPORT: sse
+      MCP_PORT: "8001"
+      MIMIR_BASE_URL: "http://web:8000"
+    restart: unless-stopped
+    depends_on:
+      - web

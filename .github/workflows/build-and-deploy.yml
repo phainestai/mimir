@@ -98,7 +98,7 @@ jobs:
     name: Build and Push Docker Images
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'release'
+    if: github.event_name == 'push' || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
@@ -211,3 +211,115 @@ jobs:
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           echo "docker compose up -d" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # ── 3. Deploy to AWS Elastic Beanstalk ───────────────────────────────────
+  deploy-to-eb:
+    name: Deploy to Elastic Beanstalk (mimir-blue)
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    # Only deploy from release branches, published releases, or manual dispatch.
+    # AWS_ACCOUNT_ID variable must be set; feat/** pushes intentionally excluded.
+    if: >
+      vars.AWS_ACCOUNT_ID != '' && (
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')) ||
+        github.event_name == 'release' ||
+        github.event_name == 'workflow_dispatch'
+      )
+
+    env:
+      EB_APP: mimir
+      EB_ENV: mimir-blue
+      EB_BUCKET: elasticbeanstalk-us-east-1-${{ vars.AWS_ACCOUNT_ID }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to AWS ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Compute version label
+        id: version
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BRANCH=$(echo "${GITHUB_REF_NAME}" | tr '/' '-')
+          SUFFIX="${BRANCH}-${SHORT_SHA}"
+          echo "suffix=${SUFFIX}" >> $GITHUB_OUTPUT
+          echo "label=v-${SUFFIX}" >> $GITHUB_OUTPUT
+
+      - name: Generate docker-compose.yml from template
+        env:
+          IMAGE_WEB: ${{ steps.ecr-login.outputs.registry }}/mimir:${{ steps.version.outputs.suffix }}
+          IMAGE_MCP: ${{ steps.ecr-login.outputs.registry }}/mimir-mcp-facade:${{ steps.version.outputs.suffix }}
+        run: |
+          envsubst < deploy/docker-compose.tmpl.yml > docker-compose.yml
+          echo "=== Deployment manifest ===" && cat docker-compose.yml
+
+      - name: Package deployment bundle
+        run: zip -j deploy-bundle.zip docker-compose.yml
+
+      - name: Upload bundle to S3
+        id: upload
+        run: |
+          KEY="mimir/${{ steps.version.outputs.label }}/deploy-bundle.zip"
+          aws s3 cp deploy-bundle.zip "s3://${{ env.EB_BUCKET }}/${KEY}"
+          echo "s3_key=${KEY}" >> $GITHUB_OUTPUT
+
+      - name: Create EB application version
+        run: |
+          aws elasticbeanstalk create-application-version \
+            --application-name "${{ env.EB_APP }}" \
+            --version-label "${{ steps.version.outputs.label }}" \
+            --source-bundle S3Bucket="${{ env.EB_BUCKET }}",S3Key="${{ steps.upload.outputs.s3_key }}"
+
+      - name: Deploy to EB environment
+        run: |
+          aws elasticbeanstalk update-environment \
+            --application-name "${{ env.EB_APP }}" \
+            --environment-name "${{ env.EB_ENV }}" \
+            --version-label "${{ steps.version.outputs.label }}"
+
+      - name: Wait for deployment to complete
+        run: |
+          echo "Polling ${{ env.EB_ENV }} every 15s (max 10 min)..."
+          for i in $(seq 1 40); do
+            STATUS=$(aws elasticbeanstalk describe-environments \
+              --application-name "${{ env.EB_APP }}" \
+              --environment-names "${{ env.EB_ENV }}" \
+              --query "Environments[0].Status" --output text)
+            HEALTH=$(aws elasticbeanstalk describe-environments \
+              --application-name "${{ env.EB_APP }}" \
+              --environment-names "${{ env.EB_ENV }}" \
+              --query "Environments[0].Health" --output text)
+            echo "  [${i}/40] Status=${STATUS}  Health=${HEALTH}"
+            if [ "${STATUS}" = "Ready" ]; then
+              echo "Deployment complete."
+              [ "${HEALTH}" = "Red" ] && { echo "Environment health is Red — check EB events"; exit 1; }
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Timed out (10 min) waiting for environment to become Ready."
+          exit 1
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          LABEL="${{ steps.version.outputs.label }}"
+          ENV_URL="https://console.aws.amazon.com/elasticbeanstalk/home?region=us-east-1#/environment/dashboard?applicationName=mimir&environmentId=${{ env.EB_ENV }}"
+          echo "## 🛸 EB Deployment — ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version label** | \`${LABEL}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Environment** | \`${{ env.EB_ENV }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Web image** | \`${{ steps.ecr-login.outputs.registry }}/mimir:${{ steps.version.outputs.suffix }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **MCP image** | \`${{ steps.ecr-login.outputs.registry }}/mimir-mcp-facade:${{ steps.version.outputs.suffix }}\` |" >> $GITHUB_STEP_SUMMARY
