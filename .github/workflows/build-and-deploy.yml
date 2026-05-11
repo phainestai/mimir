@@ -253,7 +253,8 @@ jobs:
           BRANCH=$(echo "${GITHUB_REF_NAME}" | tr '/' '-')
           SUFFIX="${BRANCH}-${SHORT_SHA}"
           echo "suffix=${SUFFIX}" >> $GITHUB_OUTPUT
-          echo "label=v-${SUFFIX}" >> $GITHUB_OUTPUT
+          # Include run_number so retries produce a unique label
+          echo "label=v-${SUFFIX}-r${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       - name: Generate docker-compose.yml from template
         env:
@@ -275,10 +276,19 @@ jobs:
 
       - name: Create EB application version
         run: |
-          aws elasticbeanstalk create-application-version \
+          # Idempotent: skip if version already exists (e.g. workflow re-run).
+          EXISTS=$(aws elasticbeanstalk describe-application-versions \
             --application-name "${{ env.EB_APP }}" \
-            --version-label "${{ steps.version.outputs.label }}" \
-            --source-bundle S3Bucket="${{ env.EB_BUCKET }}",S3Key="${{ steps.upload.outputs.s3_key }}"
+            --version-labels "${{ steps.version.outputs.label }}" \
+            --query "length(ApplicationVersions)" --output text)
+          if [ "${EXISTS}" = "0" ]; then
+            aws elasticbeanstalk create-application-version \
+              --application-name "${{ env.EB_APP }}" \
+              --version-label "${{ steps.version.outputs.label }}" \
+              --source-bundle S3Bucket="${{ env.EB_BUCKET }}",S3Key="${{ steps.upload.outputs.s3_key }}"
+          else
+            echo "Version ${{ steps.version.outputs.label }} already exists — skipping creation."
+          fi
 
       - name: Deploy to EB environment
         run: |
