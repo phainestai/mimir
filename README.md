@@ -64,104 +64,65 @@ Download playbooks from HOMEBASE based on your access level:
 
 ## Quick Start with Docker
 
-**Just want to run Mimir? Pull the container:**
+Two containers: **FOB** (Django web UI + API) and **MCP Facade** (connects your AI IDE to FOB).
+
+### Step 1 — Run FOB
 
 ```bash
-# Pull the latest release from Azure Container Registry
-docker pull acrmimir.azurecr.io/mimir:release-latest
+# Authenticate to ECR (one-time)
+aws ecr get-login-password --region us-east-1 \
+  | docker login --username AWS --password-stdin \
+    411113550285.dkr.ecr.us-east-1.amazonaws.com
 
 # Run with persistent storage
 docker run -d \
-  --name mimir \
+  --name mimir-fob \
   -p 8000:8000 \
   -v ~/mimir-data:/app/data \
-  -e MIMIR_USER=yourusername \
-  -e MIMIR_EMAIL=you@example.com \
-  acrmimir.azurecr.io/mimir:release-latest
+  -e MIMIR_USER=admin \
+  -e MIMIR_PASSWORD=changeme \
+  -e MIMIR_EMAIL=admin@localhost \
+  411113550285.dkr.ecr.us-east-1.amazonaws.com/mimir:latest
 
-# Access the web interface
 open http://localhost:8000
 ```
 
-**Configure MCP in your IDE:**
+### Step 2 — Get your API token
 
-For **Windsurf** (`~/.codeium/windsurf/mcp_config.json`):
+```bash
+curl -s -X POST http://localhost:8000/api/auth/token/ \
+  -d "username=admin&password=changeme" | python3 -c \
+  "import sys,json; print(json.load(sys.stdin)['token'])"
+```
+
+### Step 3 — Configure MCP in your IDE
+
+The MCP facade is a **public image** — no registry auth needed.
+
+**Windsurf** (`~/.codeium/windsurf/mcp_config.json`), **Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`), **Cursor** (`~/.cursor/mcp.json`):
+
 ```json
 {
   "mcpServers": {
     "mimir": {
       "command": "docker",
       "args": [
-        "exec",
-        "-i",
-        "-e",
-        "MIMIR_MCP_MODE=1",
-        "mimir",
-        "python",
-        "manage.py",
-        "mcp_server",
-        "--user=yourusername"
+        "run", "--rm", "-i",
+        "-e", "BASE_URL=http://localhost:8000",
+        "-e", "TOKEN=<your-token>",
+        "-e", "MCP_TRANSPORT=stdio",
+        "public.ecr.aws/h1b6q4p0/mimir-mcp-facade:latest"
       ]
     }
   }
 }
 ```
 
-For **Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
-```json
-{
-  "mcpServers": {
-    "mimir": {
-      "command": "docker",
-      "args": [
-        "exec",
-        "-i",
-        "-e",
-        "MIMIR_MCP_MODE=1",
-        "mimir",
-        "python",
-        "manage.py",
-        "mcp_server",
-        "--user=yourusername"
-      ]
-    }
-  }
-}
-```
+Replace `<your-token>` with the token from Step 2. Restart your IDE after saving.
 
-For **Cursor** (`.cursorrules` or workspace settings):
-```json
-{
-  "mcp": {
-    "servers": {
-      "mimir": {
-        "command": "docker",
-        "args": [
-          "exec",
-          "-i",
-          "-e",
-          "MIMIR_MCP_MODE=1",
-          "mimir",
-          "python",
-          "manage.py",
-          "mcp_server",
-          "--user=yourusername"
-        ]
-      }
-    }
-  }
-}
-```
+> **Multi-platform**: amd64 + arm64 · **Data safety**: SQLite in mounted volume · **Hosted FOB**: change `BASE_URL` to `https://mimir.featurefactory.io`
 
-**Important:** Replace `yourusername` with the username you set in `MIMIR_USER` when starting the container.
-
-**That's it!** Your data persists in `~/mimir-data` across container updates.
-
-> **Multi-platform support**: Works on Intel (amd64) and Apple Silicon (arm64) Macs  
-> **Auto-updates**: Pull latest image and restart container to update  
-> **Data safety**: Database stored in mounted volume survives container restarts
-
-See [docs/DOCKER_QUICK_START.md](docs/DOCKER_QUICK_START.md) for more details.
+See [docs/DOCKER_QUICK_START.md](docs/DOCKER_QUICK_START.md) for docker-compose setup and full reference.
 
 ---
 
@@ -249,9 +210,9 @@ python manage.py createsuperuser
 
 - **Windsurf**: `~/.codeium/windsurf/mcp_config.json`
 - **Claude Desktop**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Cursor**: Workspace `.cursorrules` or settings
+- **Cursor**: `~/.cursor/mcp.json`
 
-See configuration details in section 2 below.
+See the Quick Start section above for the config snippet.
 
 ---
 
@@ -275,81 +236,28 @@ Once logged in, you can:
 
 ### 2. Configure MCP in Your IDE
 
-Add Mimir to your MCP client configuration.
+Register at [mimir.featurefactory.io](https://mimir.featurefactory.io/auth/register/) to get your token, then add to your IDE config:
 
-**For Windsurf** (`~/.codeium/windsurf/mcp_config.json`):
+**Windsurf** (`~/.codeium/windsurf/mcp_config.json`) · **Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`) · **Cursor** (`~/.cursor/mcp.json`):
+
 ```json
 {
   "mcpServers": {
     "mimir": {
-      "command": "/absolute/path/to/mimir/venv/bin/python",
+      "command": "docker",
       "args": [
-        "/absolute/path/to/mimir/manage.py",
-        "mcp_server",
-        "--user=admin"
-      ],
-      "env": {
-        "DJANGO_SETTINGS_MODULE": "mimir.settings",
-        "PYTHONPATH": "/absolute/path/to/mimir",
-        "MIMIR_MCP_MODE": "1"
-      },
-      "disabled": false
+        "run", "--rm", "-i",
+        "-e", "BASE_URL=https://mimir.featurefactory.io",
+        "-e", "TOKEN=<your-token>",
+        "-e", "MCP_TRANSPORT=stdio",
+        "public.ecr.aws/h1b6q4p0/mimir-mcp-facade:latest"
+      ]
     }
   }
 }
 ```
 
-**For Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
-```json
-{
-  "mcpServers": {
-    "mimir": {
-      "command": "/absolute/path/to/mimir/venv/bin/python",
-      "args": [
-        "/absolute/path/to/mimir/manage.py",
-        "mcp_server",
-        "--user=admin"
-      ],
-      "env": {
-        "DJANGO_SETTINGS_MODULE": "mimir.settings",
-        "PYTHONPATH": "/absolute/path/to/mimir",
-        "MIMIR_MCP_MODE": "true"
-      }
-    }
-  }
-}
-```
-
-**For Cursor** (`.cursorrules` or workspace settings):
-```json
-{
-  "mcp": {
-    "servers": {
-      "mimir": {
-        "command": "/absolute/path/to/mimir/venv/bin/python",
-        "args": [
-          "/absolute/path/to/mimir/manage.py",
-          "mcp_server",
-          "--user=admin"
-        ],
-        "env": {
-          "DJANGO_SETTINGS_MODULE": "mimir.settings",
-          "PYTHONPATH": "/absolute/path/to/mimir",
-          "MIMIR_MCP_MODE": "true"
-        }
-      }
-    }
-  }
-}
-```
-
-**Important Notes:**
-- Replace `/absolute/path/to/mimir` with your actual project path
-- Replace `admin` with your username (created in step 5 above)
-- Use the full path to your virtual environment's Python binary
-- The `MIMIR_MCP_MODE` environment variable disables console logging for Windsurf
-
-Restart your IDE after configuration.
+For a local FOB, set `BASE_URL=http://localhost:8000`. Restart your IDE after saving.
 
 ### 3. Use MCP Tools in Your IDE
 
@@ -429,22 +337,21 @@ All tools support async operations and validate user permissions automatically.
 
 ### MCP Server Not Responding
 
-1. **Test the MCP server manually:**
+1. **Verify your token works:**
    ```bash
-   python manage.py mcp_server --user=admin
+   curl -s -H "Authorization: Token <your-token>" \
+     http://localhost:8000/api/playbooks/
    ```
-   The server should start and wait for JSON-RPC input. Press Ctrl+C to exit.
-   
-   To test a simple tool call, send:
-   ```bash
-   echo '{"jsonrpc":"2.0","method":"tools/list","id":1}' | python manage.py mcp_server --user=admin
-   ```
-   You should see a list of 16 available tools.
 
-2. **Verify configuration:**
-   - Ensure paths in MCP config are **absolute**, not relative
-   - Check that `--user=admin` matches an existing user in your database
-   - Verify virtual environment path points to correct Python binary
+2. **Test the MCP facade manually:**
+   ```bash
+   docker run --rm -i \
+     -e BASE_URL=http://localhost:8000 \
+     -e TOKEN=<your-token> \
+     -e MCP_TRANSPORT=stdio \
+     public.ecr.aws/h1b6q4p0/mimir-mcp-facade:latest
+   ```
+   Send `{"jsonrpc":"2.0","method":"tools/list","id":1}` — you should get a list of 53 tools.
 
 3. **Check IDE logs:**
    - **Windsurf**: View logs in MCP settings panel
@@ -452,10 +359,9 @@ All tools support async operations and validate user permissions automatically.
    - **Cursor**: Check IDE console for MCP connection errors
 
 4. **Common issues:**
-   - **"Command not found"**: Path to Python or manage.py is incorrect
-   - **"User not found"**: Username doesn't exist, create it with `python manage.py createsuperuser`
-   - **"Database is locked"**: Ensure web server isn't running simultaneously
-   - **Timeout errors**: Check `app.log` for stderr contamination issues
+   - **"Image not found"**: Run `docker pull public.ecr.aws/h1b6q4p0/mimir-mcp-facade:latest`
+   - **"Unauthorized"**: Token expired — regenerate at your profile page
+   - **"Connection refused"**: FOB not running — check `docker ps | grep mimir-fob`
 
 ### Database Locked
 
