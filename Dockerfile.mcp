@@ -1,0 +1,46 @@
+FROM python:3.14-slim
+
+LABEL maintainer="Denis Petelin <denis.petelin@example.com>"
+LABEL description="Mimir MCP Facade — HTTP-client MCP server (no Django, no ORM)"
+
+# Minimal environment
+ENV PYTHONUNBUFFERED=1 \
+  PYTHONDONTWRITEBYTECODE=1 \
+  PIP_NO_CACHE_DIR=1
+
+# curl is used by the entrypoint to health-check the web service and fetch token
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install only facade dependencies (fastmcp + httpx)
+COPY requirements-facade.txt .
+RUN pip install --no-cache-dir -r requirements-facade.txt
+
+# Copy only the facade package
+COPY mcp_integration/__init__.py ./mcp_integration/__init__.py
+COPY mcp_integration/facade/ ./mcp_integration/facade/
+
+# Copy startup script
+COPY docker/facade-entrypoint.sh /app/facade-entrypoint.sh
+RUN chmod +x /app/facade-entrypoint.sh
+
+# Runtime configuration — token OR user/password must be provided
+ENV MIMIR_SERVER_URL=http://web:8000
+ENV MIMIR_TOKEN=""
+ENV MIMIR_USER=admin
+ENV MIMIR_PASSWORD=changeme
+ENV MCP_TRANSPORT=sse
+ENV MCP_HOST=0.0.0.0
+ENV MCP_PORT=8001
+
+# Expose SSE port
+EXPOSE 8001
+
+# Health check — verify SSE endpoint responds
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD curl -sf http://localhost:${MCP_PORT}/health 2>/dev/null || exit 1
+
+# Entrypoint auto-fetches token and launches server
+ENTRYPOINT ["/app/facade-entrypoint.sh"]

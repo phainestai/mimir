@@ -1,0 +1,14 @@
+{
+  "app": ".venv/bin/python app.py",
+  "context": {
+    "account": "411113550285",
+    "region": "us-east-1",
+    "domain": "featurefactory.io",
+    "vpc_id": "vpc-a2af05df",
+    "huginn_rds_sg_id": "sg-04b61b87c5f63a6aa",
+    "acm_cert_arn": "arn:aws:acm:us-east-1:411113550285:certificate/b0d774c7-b9e4-46a5-ad27-3197d61b46f6",
+    "@aws-cdk/aws-route53:optimizeHostedZoneDelegationRecordsTtl": true,
+    "@aws-cdk/core:enablePartitionLiterals": true,
+    "@aws-cdk/aws-ec2:restrictDefaultSecurityGroup": true
+  }
+}

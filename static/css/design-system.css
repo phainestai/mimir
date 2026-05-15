@@ -1,0 +1,9 @@
+/* Mimir design tokens — typography (Bootstrap 5.3 variables). */
+
+:root,
+[data-bs-theme="light"],
+[data-bs-theme="dark"] {
+    --bs-font-sans-serif: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto,
+        "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+    --bs-body-font-family: var(--bs-font-sans-serif);
+}

@@ -1,0 +1,60 @@
+# Mimir FOB — Full Stack
+# Two services: Django web app (port 8000) + MCP HTTP facade (port 8001).
+#
+# Quick start:
+#   cp .env.example .env        # edit MIMIR_USER / MIMIR_PASSWORD
+#   docker compose up -d
+#
+# The MCP facade auto-fetches an auth token from the web service on startup.
+# Point your MCP client at: http://localhost:8001/sse
+
+services:
+
+  # ── Web service: Django + gunicorn + stdio MCP server ──────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mimir-web:local
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    volumes:
+      - mimir-data:/app/data
+    environment:
+      MIMIR_USER: "${MIMIR_USER:-admin}"
+      MIMIR_EMAIL: "${MIMIR_EMAIL:-admin@localhost}"
+      MIMIR_DB_PATH: /app/data/mimir.db
+      DJANGO_DEBUG: "${DJANGO_DEBUG:-False}"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,web"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health/"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+    restart: unless-stopped
+
+  # ── MCP facade: HTTP facade → Mimir REST API ────────────────────────────────
+  mcp-facade:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    image: mimir-mcp-facade:local
+    ports:
+      - "${MCP_PORT:-8001}:8001"
+    environment:
+      MIMIR_SERVER_URL: "http://web:8000"
+      MIMIR_USER: "${MIMIR_USER:-admin}"
+      MIMIR_PASSWORD: "${MIMIR_PASSWORD:-changeme}"
+      MIMIR_TOKEN: "${MIMIR_TOKEN:-}"   # optional — entrypoint fetches one if blank
+      MCP_TRANSPORT: "sse"
+      MCP_HOST: "0.0.0.0"
+      MCP_PORT: "8001"
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mimir-data:
+    driver: local

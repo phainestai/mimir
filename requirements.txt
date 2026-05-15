@@ -1,6 +1,7 @@
 # Django Framework
 django>=5.0
 asgiref>=3.8.0
+djangorestframework>=3.14.0
 
 # WSGI Server for Production
 gunicorn>=21.2.0
@@ -19,8 +20,17 @@ pymdown-extensions>=10.5.0
 # Configuration
 python-dotenv>=1.0.0
 
+# Database
+dj-database-url>=2.1.0
+psycopg[binary]>=3.1.0
+
 # HTTP Client (for Docker healthcheck)
 requests>=2.31.0
+
+# Production dependencies
+whitenoise>=6.6.0
+python-json-logger>=2.0.7
+boto3>=1.34.0  # AWS SDK for SES email
 
 # Testing
 pytest>=7.4.0

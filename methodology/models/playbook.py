@@ -59,6 +59,12 @@ class Playbook(models.Model):
     
     # Relationships
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='playbooks')
+    shared_with_groups = models.ManyToManyField(
+        'auth.Group',
+        blank=True,
+        related_name='shared_playbooks',
+        help_text='Groups that have access to this playbook'
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

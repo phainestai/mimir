@@ -1,0 +1,37 @@
+# EB deployment template — variables substituted by CI before packaging.
+#
+# CI substitutes ONLY: IMAGE_WEB, IMAGE_MCP  (via envsubst '$IMAGE_WEB $IMAGE_MCP')
+#
+# All other ${VAR} references are intentionally left as-is.
+# EB exports every environment property as a host shell variable before invoking
+# docker compose, so Docker Compose resolves them at container start time.
+# (Same pattern as huginn/docker-compose.prod.yml)
+#
+# EB env vars required (set via aws elasticbeanstalk update-environment or CDK):
+#   DJANGO_SECRET_KEY, DATABASE_URL, DJANGO_ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS
+
+services:
+  web:
+    image: ${IMAGE_WEB}
+    ports:
+      - "80:8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: mimir.settings
+      MIMIR_ENV: prod
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DATABASE_URL: ${DATABASE_URL}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
+    restart: unless-stopped
+
+  mcp-facade:
+    image: ${IMAGE_MCP}
+    ports:
+      - "8001:8001"
+    environment:
+      MCP_TRANSPORT: sse
+      MCP_PORT: "8001"
+      MIMIR_BASE_URL: "http://web:8000"
+    restart: unless-stopped
+    depends_on:
+      - web

@@ -7,6 +7,18 @@
         "mcp_server",
         "--user=admin"
       ]
+    },
+    "mimir-facade": {
+      "command": "/Users/denispetelin/GitHub/mimir/.venv/bin/python",
+      "args": [
+        "-m",
+        "mcp_integration.facade.server",
+        "--server=http://localhost:8000"
+      ],
+      "env": {
+        "MIMIR_TOKEN": "${MIMIR_TOKEN}",
+        "PYTHONPATH": "/Users/denispetelin/GitHub/mimir"
+      }
     }
   }
 }

@@ -1,0 +1,4 @@
+# MCP HTTP Facade — minimal dependencies
+# No Django, no ORM — runs as a pure HTTP client MCP server
+fastmcp>=0.1.0
+httpx>=0.27.0

@@ -2370,11 +2370,30 @@ async def get_phase(phase_id: int) -> dict:
     from methodology.services.phase_service import PhaseService
     phase_data = await sync_to_async(PhaseService.get_phase_with_activities)(phase_id, user)
     
-    # Convert phase object to dict
+    # Convert phase object to dict — serialize ORM objects to JSON-safe primitives
+    raw_activities = phase_data['workflow_activities']
+    serialized_activities = [
+        {
+            'workflow_id': wf.id,
+            'workflow_name': wf.name,
+            'activities': [
+                {'id': a.id, 'name': a.name, 'order': a.order}
+                for a in acts
+            ]
+        }
+        for wf, acts in raw_activities.items()
+    ] if isinstance(raw_activities, dict) else list(raw_activities)
+
+    raw_artifacts = phase_data['artifacts']
+    serialized_artifacts = [
+        {'id': a.id, 'name': a.name, 'type': a.type}
+        for a in raw_artifacts
+    ]
+
     result = {
         **_phase_to_dict(phase_data['phase']),
-        'activities': phase_data['workflow_activities'],
-        'artifacts': phase_data['artifacts']
+        'activities': serialized_activities,
+        'artifacts': serialized_artifacts,
     }
     
     logger.info(f'MCP Tool: Retrieved phase {phase_id}')

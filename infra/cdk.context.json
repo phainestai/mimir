@@ -1,0 +1,56 @@
+{
+  "vpc-provider:account=411113550285:filter.vpc-id=vpc-a2af05df:region=us-east-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-a2af05df",
+    "vpcCidrBlock": "172.31.0.0/16",
+    "ownerAccountId": "411113550285",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-f82d49d9",
+            "cidr": "172.31.80.0/20",
+            "availabilityZone": "us-east-1a",
+            "routeTableId": "rtb-3b447545"
+          },
+          {
+            "subnetId": "subnet-40a08e0d",
+            "cidr": "172.31.16.0/20",
+            "availabilityZone": "us-east-1b",
+            "routeTableId": "rtb-3b447545"
+          },
+          {
+            "subnetId": "subnet-686df637",
+            "cidr": "172.31.32.0/20",
+            "availabilityZone": "us-east-1c",
+            "routeTableId": "rtb-3b447545"
+          },
+          {
+            "subnetId": "subnet-6d56c80b",
+            "cidr": "172.31.0.0/20",
+            "availabilityZone": "us-east-1d",
+            "routeTableId": "rtb-3b447545"
+          },
+          {
+            "subnetId": "subnet-f5ea47c4",
+            "cidr": "172.31.48.0/20",
+            "availabilityZone": "us-east-1e",
+            "routeTableId": "rtb-3b447545"
+          },
+          {
+            "subnetId": "subnet-b18edebf",
+            "cidr": "172.31.64.0/20",
+            "availabilityZone": "us-east-1f",
+            "routeTableId": "rtb-3b447545"
+          }
+        ]
+      }
+    ]
+  },
+  "hosted-zone:account=411113550285:domainName=featurefactory.io:region=us-east-1": {
+    "Id": "/hostedzone/Z02538982P10I9062HOIE",
+    "Name": "featurefactory.io."
+  }
+}

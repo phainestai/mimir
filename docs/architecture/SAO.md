@@ -2709,3 +2709,516 @@ def global_search(request):
 - Unit tests: `tests/unit/test_global_search_service.py` (3 scenarios)
 - Integration tests: `tests/integration/test_global_search.py` (7 scenarios)
 - Feature coverage: NAV-06 Global Search from `docs/features/act-0-auth/navigation.feature`
+
+---
+
+## REST API Specification (AWS Deployment)
+
+### Overview
+
+For AWS Elastic Beanstalk deployment at `mimir.featurefactory.io`, Mimir exposes a Django REST Framework (DRF) API that provides HTTP access to all MCP tool functionality. This enables:
+
+1. **MCP Facade Container**: Lightweight MCP server that proxies stdio requests to HTTP API
+2. **External Integrations**: Third-party tools can integrate via standard REST API
+3. **Multi-user Access**: Token-based authentication with group-based visibility
+
+**Architecture**:
+```
+AI Assistant (Claude Desktop, Cursor, Windsurf)
+    ↓ stdio (MCP protocol)
+MCP Facade Container (localhost)
+    ↓ HTTPS + Token Auth
+Django REST API (mimir.featurefactory.io)
+    ↓
+Business Logic (Services Layer)
+    ↓
+PostgreSQL RDS (huginn-db)
+```
+
+### API Design Principles
+
+1. **1:1 MCP Tool Parity**: Every MCP tool has exactly one corresponding API endpoint
+2. **RESTful Resource Mapping**: 8 primary resources (Playbooks, Workflows, Activities, Skills, Agents, Artifacts, Phases, Rules)
+3. **Token Authentication**: DRF `TokenAuthentication` for all endpoints (except `/health/`)
+4. **Group-Based Visibility**: Users only see playbooks owned by them or shared via group membership
+5. **JSON Request/Response**: All payloads use `application/json`
+6. **Consistent Error Format**: `{"error": "message", "code": "ERROR_CODE"}`
+
+### Authentication
+
+**Token Acquisition**:
+```http
+POST /api/auth/token/
+Content-Type: application/json
+
+{
+  "username": "user@example.com",
+  "password": "password123"
+}
+
+Response 200:
+{
+  "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+  "user_id": 42,
+  "username": "user@example.com"
+}
+```
+
+**Using Token**:
+```http
+GET /api/playbooks/
+Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+```
+
+### Resource Endpoints
+
+#### 1. Playbooks (`/api/playbooks/`)
+
+| MCP Tool | HTTP Method | Endpoint | Description |
+|----------|-------------|----------|-------------|
+| `create_playbook` | POST | `/api/playbooks/` | Create new draft playbook (v0.1) |
+| `list_playbooks` | GET | `/api/playbooks/` | List playbooks (filter by status) |
+| `get_playbook` | GET | `/api/playbooks/{id}/` | Get playbook details with workflows |
+| `update_playbook` | PATCH | `/api/playbooks/{id}/` | Update draft playbook (increments version) |
+| `delete_playbook` | DELETE | `/api/playbooks/{id}/` | Delete draft playbook |
+
+**Example: Create Playbook**
+```http
+POST /api/playbooks/
+Authorization: Token {token}
+Content-Type: application/json
+
+{
+  "name": "React Component Development",
+  "description": "Best practices for building React components",
+  "category": "frontend"
+}
+
+Response 201:
+{
+  "id": 1,
+  "name": "React Component Development",
+  "description": "Best practices for building React components",
+  "category": "frontend",
+  "status": "draft",
+  "version": "0.1",
+  "author_id": 42,
+  "created_at": "2026-05-07T18:00:00Z",
+  "updated_at": "2026-05-07T18:00:00Z"
+}
+```
+
+**Example: List Playbooks**
+```http
+GET /api/playbooks/?status=draft
+Authorization: Token {token}
+
+Response 200:
+[
+  {
+    "id": 1,
+    "name": "React Component Development",
+    "status": "draft",
+    "version": "0.1",
+    "category": "frontend",
+    "workflow_count": 3
+  },
+  {
+    "id": 2,
+    "name": "API Design Patterns",
+    "status": "draft",
+    "version": "0.3",
+    "category": "backend",
+    "workflow_count": 5
+  }
+]
+```
+
+#### 2. Workflows (`/api/workflows/`)
+
+| MCP Tool | HTTP Method | Endpoint | Description |
+|----------|-------------|----------|-------------|
+| `create_workflow` | POST | `/api/workflows/` | Create workflow in draft playbook |
+| `list_workflows` | GET | `/api/workflows/?playbook_id={id}` | List workflows for playbook |
+| `get_workflow` | GET | `/api/workflows/{id}/` | Get workflow details with activities |
+| `update_workflow` | PATCH | `/api/workflows/{id}/` | Update workflow (increments parent version) |
+| `delete_workflow` | DELETE | `/api/workflows/{id}/` | Delete workflow from draft playbook |
+
+**Example: Create Workflow**
+```http
+POST /api/workflows/
+Authorization: Token {token}
+Content-Type: application/json
+
+{
+  "playbook_id": 1,
+  "name": "Component Development",
+  "description": "Steps to build reusable components"
+}
+
+Response 201:
+{
+  "id": 1,
+  "playbook_id": 1,
+  "name": "Component Development",
+  "description": "Steps to build reusable components",
+  "order": 1,
+  "activity_count": 0
+}
+```
+
+#### 3. Activities (`/api/activities/`)
+
+| MCP Tool | HTTP Method | Endpoint | Description |
+|----------|-------------|----------|-------------|
+| `create_activity` | POST | `/api/activities/` | Create activity in workflow |
+| `list_activities` | GET | `/api/activities/?workflow_id={id}` | List activities for workflow |
+| `get_activity` | GET | `/api/activities/{id}/` | Get activity details with dependencies |
+| `update_activity` | PATCH | `/api/activities/{id}/` | Update activity (increments grandparent version) |
+| `delete_activity` | DELETE | `/api/activities/{id}/` | Delete activity from draft playbook |
+| `set_predecessor` | PUT | `/api/activities/{id}/predecessor/` | Set predecessor dependency |
+
+**Example: Create Activity**
+```http
+POST /api/activities/
+Authorization: Token {token}
+Content-Type: application/json
+
+{
+  "workflow_id": 1,
+  "name": "Design Component API",
+  "guidance": "## API Design\n\nDefine component props and events...",
+  "phase_id": 3,
+  "order": 1
+}
+
+Response 201:
+{
+  "id": 1,
+  "workflow_id": 1,
+  "name": "Design Component API",
+  "guidance": "## API Design\n\nDefine component props and events...",
+  "phase_id": 3,
+  "order": 1,
+  "predecessor_id": null,
+  "agent_id": null,
+  "skill_id": null
+}
+```
+
+**Example: Set Predecessor**
+```http
+PUT /api/activities/2/predecessor/
+Authorization: Token {token}
+Content-Type: application/json
+
+{
+  "predecessor_id": 1
+}
+
+Response 200:
+{
+  "id": 2,
+  "name": "Implement Component",
+  "predecessor_id": 1,
+  "predecessor_name": "Design Component API"
+}
+```
+
+#### 4. Skills (`/api/skills/`)
+
+| MCP Tool | HTTP Method | Endpoint | Description |
+|----------|-------------|----------|-------------|
+| `create_skill` | POST | `/api/skills/` | Create skill in draft playbook |
+| `list_skills` | GET | `/api/skills/?playbook_id={id}` | List skills for playbook |
+| `get_skill` | GET | `/api/skills/{id}/` | Get skill details with activity count |
+| `update_skill` | PATCH | `/api/skills/{id}/` | Update skill (increments parent version) |
+| `delete_skill` | DELETE | `/api/skills/{id}/` | Delete skill from draft playbook |
+| `link_skill_to_activity` | PUT | `/api/activities/{id}/skill/` | Link skill to activity |
+| `unlink_skill_from_activity` | DELETE | `/api/activities/{id}/skill/` | Unlink skill from activity |
+
+**Example: Link Skill to Activity**
+```http
+PUT /api/activities/1/skill/
+Authorization: Token {token}
+Content-Type: application/json
+
+{
+  "skill_id": 5
+}
+
+Response 200:
+{
+  "activity_id": 1,
+  "skill_id": 5,
+  "skill_title": "Build Login Form"
+}
+```
+
+#### 5. Agents (`/api/agents/`)
+
+| MCP Tool | HTTP Method | Endpoint | Description |
+|----------|-------------|----------|-------------|
+| `create_agent` | POST | `/api/agents/` | Create agent in draft playbook |
+| `list_agents` | GET | `/api/agents/?playbook_id={id}` | List agents for playbook |
+| `get_agent` | GET | `/api/agents/{id}/` | Get agent details with activity count |
+| `update_agent` | PATCH | `/api/agents/{id}/` | Update agent (increments parent version) |
+| `delete_agent` | DELETE | `/api/agents/{id}/` | Delete agent from draft playbook |
+| `link_agent_to_activity` | PUT | `/api/activities/{id}/agent/` | Link agent to activity |
+| `unlink_agent_from_activity` | DELETE | `/api/activities/{id}/agent/` | Unlink agent from activity |
+
+**Example: Link Agent to Activity**
+```http
+PUT /api/activities/1/agent/
+Authorization: Token {token}
+Content-Type: application/json
+
+{
+  "agent_id": 3
+}
+
+Response 200:
+{
+  "activity_id": 1,
+  "agent_id": 3,
+  "agent_name": "Code Reviewer"
+}
+```
+
+#### 6. Artifacts (`/api/artifacts/`)
+
+| MCP Tool | HTTP Method | Endpoint | Description |
+|----------|-------------|----------|-------------|
+| `create_artifact` | POST | `/api/artifacts/` | Create artifact in draft playbook |
+| `list_artifacts` | GET | `/api/artifacts/?playbook_id={id}` | List artifacts for playbook |
+| `get_artifact` | GET | `/api/artifacts/{id}/` | Get artifact details with consumer count |
+| `update_artifact` | PATCH | `/api/artifacts/{id}/` | Update artifact (increments parent version) |
+| `delete_artifact` | DELETE | `/api/artifacts/{id}/` | Delete artifact from draft playbook |
+| `link_artifact_to_activity` | POST | `/api/artifacts/{id}/consumers/` | Link artifact as input to activity |
+| `unlink_artifact_from_activity` | DELETE | `/api/artifact-inputs/{id}/` | Unlink artifact from activity |
+
+**Example: Link Artifact to Activity**
+```http
+POST /api/artifacts/1/consumers/
+Authorization: Token {token}
+Content-Type: application/json
+
+{
+  "activity_id": 5,
+  "is_required": true
+}
+
+Response 201:
+{
+  "id": 1,
+  "artifact_id": 1,
+  "activity_id": 5,
+  "is_required": true
+}
+```
+
+#### 7. Phases (`/api/phases/`)
+
+| MCP Tool | HTTP Method | Endpoint | Description |
+|----------|-------------|----------|-------------|
+| `create_phase` | POST | `/api/phases/` | Create phase in draft playbook |
+| `list_phases` | GET | `/api/phases/?playbook_id={id}` | List phases for playbook |
+| `get_phase` | GET | `/api/phases/{id}/` | Get phase details with activities |
+| `update_phase` | PATCH | `/api/phases/{id}/` | Update phase (increments parent version) |
+| `delete_phase` | DELETE | `/api/phases/{id}/` | Delete phase from draft playbook |
+| `reorder_phases` | PUT | `/api/playbooks/{id}/phases/reorder/` | Reorder phases in playbook |
+
+**Example: Reorder Phases**
+```http
+PUT /api/playbooks/1/phases/reorder/
+Authorization: Token {token}
+Content-Type: application/json
+
+{
+  "phase_order": [3, 1, 2]
+}
+
+Response 200:
+{
+  "reordered": true,
+  "count": 3
+}
+```
+
+#### 8. Rules (`/api/rules/`)
+
+| MCP Tool | HTTP Method | Endpoint | Description |
+|----------|-------------|----------|-------------|
+| `create_rule` | POST | `/api/rules/` | Create rule in draft playbook |
+| `list_rules` | GET | `/api/rules/?playbook_id={id}` | List rules for playbook |
+| `get_rule` | GET | `/api/rules/{id}/` | Get rule details |
+| `update_rule` | PATCH | `/api/rules/{id}/` | Update rule (increments parent version) |
+| `delete_rule` | DELETE | `/api/rules/{id}/` | Delete rule from draft playbook |
+| `set_activity_rules` | PUT | `/api/activities/{id}/rules/` | Replace activity's linked rules |
+
+**Example: Set Activity Rules**
+```http
+PUT /api/activities/1/rules/
+Authorization: Token {token}
+Content-Type: application/json
+
+{
+  "rule_ids": [1, 3, 5]
+}
+
+Response 200:
+{
+  "activity_id": 1,
+  "rule_ids": [1, 3, 5],
+  "count": 3
+}
+```
+
+### Workflow Import/Export
+
+| MCP Tool | HTTP Method | Endpoint | Description |
+|----------|-------------|----------|-------------|
+| `export_workflow_to_local` | POST | `/api/workflows/{id}/export/` | Export workflow to markdown files |
+| `import_workflow_from_local` | POST | `/api/workflows/{id}/import/` | Import workflow from markdown files |
+| `apply_upload_protocol` | POST | `/api/workflows/{id}/apply-protocol/` | Apply upload protocol to draft |
+| `create_pip_from_protocol` | POST | `/api/workflows/{id}/create-pip/` | Create PIP from protocol (released) |
+
+### Error Responses
+
+**Standard Error Format**:
+```json
+{
+  "error": "Human-readable error message",
+  "code": "ERROR_CODE",
+  "details": {}
+}
+```
+
+**Common Error Codes**:
+- `NOT_FOUND`: Resource does not exist or user lacks access (404)
+- `PERMISSION_DENIED`: Cannot modify released playbook (403)
+- `VALIDATION_ERROR`: Invalid input data (400)
+- `UNAUTHORIZED`: Missing or invalid token (401)
+- `CIRCULAR_DEPENDENCY`: Activity dependency creates cycle (400)
+- `CROSS_PLAYBOOK`: Cannot link resources across playbooks (400)
+
+**Example Error**:
+```http
+PATCH /api/playbooks/1/
+Authorization: Token {token}
+Content-Type: application/json
+
+{
+  "name": "Updated Name"
+}
+
+Response 403:
+{
+  "error": "Cannot modify released playbook \"React Dev\". Use create_pip instead.",
+  "code": "PERMISSION_DENIED"
+}
+```
+
+### API Versioning
+
+- **Current Version**: v1 (implicit in `/api/` prefix)
+- **Future Versions**: `/api/v2/` when breaking changes needed
+- **Deprecation Policy**: 6-month notice before removing endpoints
+
+### Rate Limiting
+
+- **Authenticated Requests**: 1000 requests/hour per token
+- **Health Endpoint**: Unlimited (ALB health checks)
+- **Response Header**: `X-RateLimit-Remaining: 987`
+
+### CORS Policy
+
+- **Allowed Origins**: `https://mimir.featurefactory.io`, `http://localhost:*` (dev)
+- **Allowed Methods**: GET, POST, PUT, PATCH, DELETE, OPTIONS
+- **Allowed Headers**: Authorization, Content-Type
+- **Credentials**: Allowed
+
+### Implementation Notes
+
+**DRF ViewSets**:
+```python
+# methodology/api/viewsets.py
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from methodology.services.playbook_service import PlaybookService
+
+class PlaybookViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request):
+        """List playbooks (maps to list_playbooks MCP tool)."""
+        service = PlaybookService()
+        status_filter = request.query_params.get('status', 'all')
+        playbooks = service.list_playbooks(request.user, status_filter)
+        return Response(playbooks)
+    
+    def create(self, request):
+        """Create playbook (maps to create_playbook MCP tool)."""
+        service = PlaybookService()
+        playbook = service.create_playbook(
+            user=request.user,
+            name=request.data['name'],
+            description=request.data['description'],
+            category=request.data['category']
+        )
+        return Response(playbook, status=status.HTTP_201_CREATED)
+```
+
+**URL Configuration**:
+```python
+# mimir/urls.py
+from rest_framework.routers import DefaultRouter
+from methodology.api.viewsets import (
+    PlaybookViewSet, WorkflowViewSet, ActivityViewSet,
+    SkillViewSet, AgentViewSet, ArtifactViewSet,
+    PhaseViewSet, RuleViewSet
+)
+
+router = DefaultRouter()
+router.register(r'playbooks', PlaybookViewSet, basename='playbook')
+router.register(r'workflows', WorkflowViewSet, basename='workflow')
+router.register(r'activities', ActivityViewSet, basename='activity')
+router.register(r'skills', SkillViewSet, basename='skill')
+router.register(r'agents', AgentViewSet, basename='agent')
+router.register(r'artifacts', ArtifactViewSet, basename='artifact')
+router.register(r'phases', PhaseViewSet, basename='phase')
+router.register(r'rules', RuleViewSet, basename='rule')
+
+urlpatterns = [
+    path('api/', include(router.urls)),
+    path('api/auth/', include('rest_framework.urls')),
+]
+```
+
+### Testing Strategy
+
+**API Parity Tests**:
+```python
+# tests/integration/test_api_mcp_parity.py
+def test_all_mcp_tools_have_api_endpoints():
+    """Verify every MCP tool has corresponding API endpoint."""
+    mcp_tools = extract_mcp_tools('mcp_integration/tools.py')
+    api_endpoints = extract_api_endpoints('methodology/api/viewsets.py')
+    
+    for tool in mcp_tools:
+        assert tool in api_endpoints, f"MCP tool {tool} missing API endpoint"
+```
+
+**Parity Checker Script**:
+```bash
+# scripts/check_tool_api_parity.py
+python scripts/check_tool_api_parity.py
+# Output:
+# ✓ create_playbook → POST /api/playbooks/
+# ✓ list_playbooks → GET /api/playbooks/
+# ✓ get_playbook → GET /api/playbooks/{id}/
+# ...
+# ✓ 53/53 MCP tools have API endpoints
+```
