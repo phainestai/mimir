@@ -7,6 +7,21 @@ logger = logging.getLogger(__name__)
 # Shared mock data
 # ---------------------------------------------------------------------------
 
+_STATUS_CSS = {
+    "Draft": "bg-secondary",
+    "Submitted": "bg-primary",
+    "Processing (Galdr)": "bg-warning text-dark",
+    "Reviewed": "pip-status-reviewed",
+    "Accepted": "bg-success",
+    "Rejected": "bg-danger",
+}
+
+_CHANGE_TYPE_CSS = {
+    "ADD": "bg-success",
+    "ALTER": "bg-warning text-dark",
+    "DROP": "bg-danger",
+}
+
 MOCK_PIPS = [
     {
         "id": 42,
@@ -16,11 +31,11 @@ MOCK_PIPS = [
         "target_version": "v1.0",
         "changes_count": 1,
         "status": "Reviewed",
-        "status_css": "pip-status-reviewed",
+        "status_css": _STATUS_CSS["Reviewed"],
         "submitted": "2026-05-14",
         "last_updated": "2026-05-15",
         "submitted_by": "maria",
-        "status_changed": True,   # blue-dot indicator
+        "status_changed": True,
     },
     {
         "id": 38,
@@ -30,7 +45,7 @@ MOCK_PIPS = [
         "target_version": "v1.0",
         "changes_count": 2,
         "status": "Accepted",
-        "status_css": "pip-status-accepted",
+        "status_css": _STATUS_CSS["Accepted"],
         "submitted": "2026-04-20",
         "last_updated": "2026-04-22",
         "submitted_by": "maria",
@@ -44,7 +59,7 @@ MOCK_PIPS = [
         "target_version": "v1.0",
         "changes_count": 1,
         "status": "Rejected",
-        "status_css": "pip-status-rejected",
+        "status_css": _STATUS_CSS["Rejected"],
         "submitted": "2026-04-10",
         "last_updated": "2026-04-11",
         "submitted_by": "maria",
@@ -58,7 +73,7 @@ MOCK_PIPS = [
         "target_version": "v2.1",
         "changes_count": 3,
         "status": "Draft",
-        "status_css": "pip-status-draft",
+        "status_css": _STATUS_CSS["Draft"],
         "submitted": "2026-03-05",
         "last_updated": "2026-03-05",
         "submitted_by": "maria",
@@ -72,7 +87,7 @@ MOCK_PIPS = [
         "target_version": "v2.1",
         "changes_count": 1,
         "status": "Submitted",
-        "status_css": "pip-status-submitted",
+        "status_css": _STATUS_CSS["Submitted"],
         "submitted": "2026-03-01",
         "last_updated": "2026-03-01",
         "submitted_by": "maria",
@@ -86,7 +101,7 @@ MOCK_PIPS = [
         "target_version": "v2.1",
         "changes_count": 1,
         "status": "Processing (Galdr)",
-        "status_css": "pip-status-processing",
+        "status_css": _STATUS_CSS["Processing (Galdr)"],
         "submitted": "2026-02-28",
         "last_updated": "2026-02-28",
         "submitted_by": "maria",
@@ -104,7 +119,7 @@ MOCK_PIP_42 = {
     "target_version": "v1.0",
     "target_playbook_id": 1,
     "status": "Reviewed",
-    "status_css": "pip-status-reviewed",
+    "status_css": _STATUS_CSS["Reviewed"],
     "submitted_by": "Maria Rodriguez",
     "submitted_at": "2026-05-14 09:00",
     "last_updated": "2026-05-15 08:00",
@@ -112,7 +127,7 @@ MOCK_PIP_42 = {
         {
             "number": 1,
             "change_type": "ADD",
-            "change_type_css": "pip-change-add",
+            "change_type_css": _CHANGE_TYPE_CSS["ADD"],
             "entity_type": "Activity",
             "name": "Accessibility Audit",
             "target_id": None,
@@ -140,7 +155,7 @@ MOCK_PIP_42 = {
         {
             "number": 2,
             "change_type": "ALTER",
-            "change_type_css": "pip-change-alter",
+            "change_type_css": _CHANGE_TYPE_CSS["ALTER"],
             "entity_type": "Activity",
             "name": None,
             "target_id": 22,
@@ -173,7 +188,7 @@ MOCK_PIP_30 = {
     "target_version": "v2.1",
     "target_playbook_id": 2,
     "status": "Draft",
-    "status_css": "pip-status-draft",
+    "status_css": _STATUS_CSS["Draft"],
     "submitted_by": "Maria Rodriguez",
     "submitted_at": None,
     "last_updated": "2026-03-05",
@@ -181,9 +196,9 @@ MOCK_PIP_30 = {
         {
             "number": 1,
             "change_type": "ADD",
-            "change_type_css": "pip-change-add",
-            "entity_type": "Activity",
-            "name": "Export Design Tokens",
+                "change_type_css": _CHANGE_TYPE_CSS["ADD"],
+                "entity_type": "Activity",
+                "name": "Export Design Tokens",
             "target_id": None,
             "target_name": None,
             "position": "Append at end of Workflow: Design Delivery",
@@ -195,9 +210,9 @@ MOCK_PIP_30 = {
         {
             "number": 2,
             "change_type": "ADD",
-            "change_type_css": "pip-change-add",
-            "entity_type": "Activity",
-            "name": "Figma Handoff Checklist",
+                "change_type_css": _CHANGE_TYPE_CSS["ADD"],
+                "entity_type": "Activity",
+                "name": "Figma Handoff Checklist",
             "target_id": None,
             "target_name": None,
             "position": "After: Export Design Tokens",
@@ -209,8 +224,8 @@ MOCK_PIP_30 = {
         {
             "number": 3,
             "change_type": "ALTER",
-            "change_type_css": "pip-change-alter",
-            "entity_type": "Workflow",
+                "change_type_css": _CHANGE_TYPE_CSS["ALTER"],
+                "entity_type": "Workflow",
             "name": None,
             "target_id": 5,
             "target_name": "Design Delivery",
@@ -232,7 +247,7 @@ MOCK_PIP_38_ADMIN = {
     "target_version": "v1.0",
     "target_playbook_id": 1,
     "status": "Reviewed",
-    "status_css": "pip-status-reviewed",
+    "status_css": _STATUS_CSS["Reviewed"],
     "submitted_by": "Maria Rodriguez",
     "submitted_at": "2026-04-20 14:30",
     "last_updated": "2026-04-21 10:00",
@@ -240,7 +255,7 @@ MOCK_PIP_38_ADMIN = {
         {
             "number": 1,
             "change_type": "ADD",
-            "change_type_css": "pip-change-add",
+            "change_type_css": _CHANGE_TYPE_CSS["ADD"],
             "entity_type": "Activity",
             "name": "Redux Setup & Patterns",
             "target_id": None,
@@ -261,7 +276,7 @@ MOCK_PIP_38_ADMIN = {
         {
             "number": 2,
             "change_type": "ALTER",
-            "change_type_css": "pip-change-alter",
+            "change_type_css": _CHANGE_TYPE_CSS["ALTER"],
             "entity_type": "Activity",
             "name": None,
             "target_id": 22,
@@ -289,20 +304,14 @@ MOCK_PIP_38_ADMIN = {
 def pip_list(request):
     """FOB-PIP-LIST-1: My PIPs with filter bar, status badges, count pill."""
     logger.info("Mockup: pip_list | user=%s", getattr(request.user, "username", "anonymous"))
-    statuses = [
-        ("Draft", "pip-status-draft"),
-        ("Submitted", "pip-status-submitted"),
-        ("Processing (Galdr)", "pip-status-processing"),
-        ("Reviewed", "pip-status-reviewed"),
-        ("Accepted", "pip-status-accepted"),
-        ("Rejected", "pip-status-rejected"),
-    ]
+    statuses = list(_STATUS_CSS.items())
     context = {
         "pips": MOCK_PIPS,
         "pip_count": len(MOCK_PIPS),
         "unread_count": sum(1 for p in MOCK_PIPS if p["status_changed"]),
         "playbooks": ["React Frontend Dev", "UX Research"],
         "statuses": statuses,
+        "is_admin": getattr(request.user, "is_staff", False),
         "active_page": "pips",
     }
     return render(request, "mockups/pips/list.html", context)
@@ -335,7 +344,7 @@ def pip_create(request):
             {
                 "number": 1,
                 "change_type": "ADD",
-                "change_type_css": "pip-change-add",
+                "change_type_css": _CHANGE_TYPE_CSS["ADD"],
                 "entity_type": "Activity",
                 "name": "Accessibility Audit",
                 "position": "After: Component Testing (id=22)",

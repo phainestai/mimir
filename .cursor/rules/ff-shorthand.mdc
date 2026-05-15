@@ -1,0 +1,27 @@
+---
+description: Shorthand vocabulary for FeatureFactory and BPE readiness assessments
+alwaysApply: true
+---
+
+# FeatureFactory Shorthand
+
+## "FF" means FeatureFactory Playbook via Mimir MCP
+
+When the user says **"FF"**, they mean the **FeatureFactory Playbook** accessible through the Mimir MCP server (not a local file).
+
+## "Are we ready for the BPE workflow on milestone X?"
+
+This is a **readiness assessment command**. When you hear any variant of it, immediately:
+
+1. Connect to Mimir via MCP — fetch the FeatureFactory Playbook
+2. Fetch the **BPE workflow** from that playbook
+3. Fetch **milestone X** via GitHub CLI (`gh`) or GitLab CLI (`glab`) — whichever is configured for the current repo
+4. Run a readiness assessment: check that all prerequisite scenarios/issues exist, dependencies are satisfied, and the milestone is in a state where BPE execution can begin
+5. Report findings: what's ready, what's missing, what needs to happen before BPE can start
+
+## Trigger phrases (non-exhaustive)
+
+- "Are we ready for BPE on milestone X?"
+- "Can we start BPE for milestone X?"
+- "FF BPE readiness for milestone X"
+- "Is milestone X ready for the FF workflow?"

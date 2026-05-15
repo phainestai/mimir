@@ -74,7 +74,7 @@ Feature: FOB-PIP-LIST-1 View and Filter PIPs
 
   Scenario: FOB-PIP-LIST-07 Row actions available based on status
     Given Maria is on FOB-PIP-LIST-1
-    Then PIP-30 (Draft) row actions dropdown shows: View, Edit, Discard
+    Then PIP-30 (Draft) row actions dropdown shows: View, Edit, Cancel
     And PIP-28 (Submitted) row actions dropdown shows: View, Cancel
     And PIP-42 (Reviewed) row actions dropdown shows: View only
     And PIP-38 (Accepted) row actions dropdown shows: View only

@@ -1,467 +1,210 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Admin Review — PIP-{{ pip.id }} — Mockup{% endblock %}
-
-{% block extra_css %}
-<style>
-  /* ── Status / change badge colours ──────────────────────────── */
-  .pip-status-reviewed   { background-color: #5856d6; }
-  .pip-change-add    { background-color: #198754; }
-  .pip-change-alter  { background-color: #0d6efd; }
-  .pip-change-drop   { background-color: #dc3545; }
-  .galdr-accept { background-color: #198754; }
-  .galdr-reject { background-color: #dc3545; }
-
-  /* ── Review table ─────────────────────────────────────────────── */
-  .review-table th { font-size: 0.8125rem; font-weight: 600; white-space: nowrap; }
-  .review-table td { vertical-align: top; padding: .875rem 1rem; }
-  .review-table .entity-cell { font-weight: 500; }
-  .review-table .galdr-reasoning { font-size: 0.8125rem; color: var(--bs-secondary-color); }
-
-  /* ── Admin decision select ─────────────────────────────────────── */
-  .decision-select {
-    min-width: 110px;
-    font-weight: 600;
-    font-size: 0.875rem;
-    border-radius: 0.375rem;
-  }
-  .decision-select.accept { border-color: #198754; color: #198754; }
-  .decision-select.reject { border-color: #dc3545; color: #dc3545; }
-
-  /* ── Admin banner ───────────────────────────────────────────────── */
-  .admin-banner {
-    background: linear-gradient(90deg,#7f1d1d,#dc3545);
-    color:#fff; font-size: 0.875rem;
-    padding: .5rem 1.25rem;
-    border-radius: 0.5rem;
-  }
-
-  /* ── Mockup banner ──────────────────────────────────────────────── */
-  .mockup-banner {
-    background: linear-gradient(90deg,#5856d6,#0d6efd);
-    color:#fff; font-size:0.8125rem;
-    padding:.375rem 1rem; text-align:center;
-  }
-
-  /* ── Impact preview ─────────────────────────────────────────────── */
-  .impact-panel {
-    background: #f8f9fa;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
-    font-size: 0.8125rem;
-  }
-
-  /* ── Sticky footer ──────────────────────────────────────────────── */
-  .actions-footer {
-    position: sticky; bottom: 0;
-    background: var(--bs-body-bg);
-    border-top: 1px solid var(--bs-border-color);
-    padding: .875rem 0;
-    z-index: 10;
-  }
-</style>
-{% endblock %}
+{% block title %}Admin Review: PIP-{{ pip.id }} — Mockup{% endblock %}
 
 {% block content %}
-<div class="mockup-banner">
-  🎨 MOCKUP — FOB-PIP-ADMIN-1 &nbsp;·&nbsp;
-  <a href="{% url 'mockup_pip_list' %}" class="text-white text-decoration-underline">← PIP List</a> &nbsp;·&nbsp;
-  <a href="{% url 'mockup_pip_detail' pip_id=pip.id %}" class="text-white text-decoration-underline">← PIP Detail</a>
-</div>
+<div class="container mt-4" data-testid="pip-admin-review-page">
 
-<div class="container-fluid px-4 py-4" data-testid="pip-admin-review-page">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mockup_pip_list' %}">PIPs</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mockup_pip_detail' pip_id=pip.id %}">PIP-{{ pip.id }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Admin Review</li>
+        </ol>
+    </nav>
 
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'mockup_pip_list' %}">PIPs</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'mockup_pip_detail' pip_id=pip.id %}">PIP-{{ pip.id }}</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Admin Review</li>
-    </ol>
-  </nav>
-
-  <!-- Admin role banner -->
-  <div class="admin-banner d-flex align-items-center gap-3 mb-4" data-testid="admin-role-banner">
-    <i class="fa-solid fa-shield-halved fa-lg flex-shrink-0"></i>
-    <div>
-      <strong>Administrator Review Mode</strong> — You are reviewing as Mike Chen (Administrator).
-      Your decisions are final and will trigger playbook update and submitter email notification.
-    </div>
-  </div>
-
-  <div class="row g-4">
-
-    <!-- ── Main review area ───────────────────────────────────────── -->
-    <div class="col-lg-9">
-
-      <!-- PIP summary card -->
-      <div class="card mb-4" data-testid="pip-summary-card">
-        <div class="card-body">
-          <div class="d-flex align-items-start gap-3">
-            <div class="flex-grow-1">
-              <h2 class="h4 mb-1">
-                <i class="fa-solid fa-lightbulb text-warning me-2"></i>
-                PIP-{{ pip.id }}: {{ pip.title }}
-              </h2>
-              <div class="d-flex flex-wrap gap-2 align-items-center">
-                <span class="badge text-white {{ pip.status_css }}">{{ pip.status }}</span>
-                <span class="text-muted small">
-                  <i class="fa-solid fa-book-sparkles me-1"></i>
-                  {{ pip.target_playbook }} {{ pip.target_version }}
-                </span>
-                <span class="text-muted small">
-                  <i class="fa-solid fa-user me-1"></i> Submitted by {{ pip.submitted_by }}
-                  on {{ pip.submitted_at }}
-                </span>
-              </div>
-              {% if pip.summary %}
-              <p class="text-muted mt-2 mb-0 small">{{ pip.summary }}</p>
-              {% endif %}
-            </div>
-          </div>
+    <!-- Administrator context alert -->
+    <div class="alert alert-warning d-flex align-items-center mb-4" role="alert" data-testid="admin-context-alert">
+        <i class="fa-solid fa-shield-halved me-3 fa-lg"></i>
+        <div>
+            <strong>Administrator review.</strong>
+            You are reviewing Galdr's recommendations for PIP-{{ pip.id }}.
+            Finalize your decisions below — accepted changes will be applied and the playbook version will be bumped.
         </div>
-      </div>
+    </div>
 
-      <!-- Review table -->
-      <div class="card mb-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4" data-testid="admin-review-header">
+        <div>
+            <h2>
+                <i class="fa-solid fa-robot me-2"></i>Review: PIP-{{ pip.id }}: {{ pip.title }}
+            </h2>
+            <p class="text-muted small">
+                <span class="badge {{ pip.status_css }}">{{ pip.status }}</span>
+                &middot;
+                {{ pip.target_playbook }} {{ pip.target_version }}
+                &middot;
+                Submitted by {{ pip.submitted_by }}
+                &middot;
+                {{ pip.submitted_at }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Summary card -->
+    <div class="card mb-4" data-testid="admin-pip-summary-card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fa-solid fa-align-left me-2"></i>Summary</h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-0">{{ pip.summary }}</p>
+        </div>
+    </div>
+
+    <!-- Per-change decisions -->
+    <div class="card mb-4" data-testid="admin-changes-card">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span class="fw-semibold">
-            <i class="fa-solid fa-list-check me-2 text-primary"></i>
-            Changes — Per-Change Decisions
-          </span>
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-success btn-sm" onclick="acceptAll()"
-                    data-testid="accept-all-btn"
-                    data-bs-toggle="tooltip" title="Set all decisions to ACCEPT">
-              <i class="fa-solid fa-check-double me-1"></i> Accept All
-            </button>
-            <button class="btn btn-outline-danger btn-sm" onclick="rejectAll()"
-                    data-testid="reject-all-btn"
-                    data-bs-toggle="tooltip" title="Set all decisions to REJECT">
-              <i class="fa-solid fa-ban me-1"></i> Reject All
-            </button>
-          </div>
+            <h5 class="mb-0">
+                <i class="fa-solid fa-list-check me-2"></i>Changes
+                <span class="badge bg-secondary ms-1">{{ pip.changes|length }}</span>
+            </h5>
+            <div class="btn-group btn-group-sm" data-testid="admin-bulk-actions">
+                <button type="button" class="btn btn-outline-success btn-sm"
+                        data-testid="accept-all-btn"
+                        data-bs-toggle="tooltip" title="Set all decisions to ACCEPT">
+                    <i class="fa-solid fa-check-double me-1"></i> Accept All
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm"
+                        data-testid="reject-all-btn"
+                        data-bs-toggle="tooltip" title="Set all decisions to REJECT">
+                    <i class="fa-solid fa-xmark me-1"></i> Reject All
+                </button>
+            </div>
         </div>
         <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table review-table mb-0" data-testid="review-table">
-              <thead class="table-light">
-                <tr>
-                  <th style="width:2rem">#</th>
-                  <th style="width:5rem">Type</th>
-                  <th>Entity / Change</th>
-                  <th style="width:14rem">Galdr Recommendation</th>
-                  <th style="width:10rem">Admin Decision</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for change in pip.changes %}
-                <tr data-change-number="{{ change.number }}"
-                    data-testid="review-row-{{ change.number }}">
-
-                  <!-- # -->
-                  <td class="text-muted fw-semibold">#{{ change.number }}</td>
-
-                  <!-- Type + entity -->
-                  <td>
-                    <span class="badge text-white {{ change.change_type_css }} d-block mb-1">
-                      {{ change.change_type }}
-                    </span>
-                    <span class="badge bg-light text-dark border" style="font-size:.7rem;">
-                      {{ change.entity_type }}
-                    </span>
-                  </td>
-
-                  <!-- Entity detail + proposed content (collapsed) -->
-                  <td class="entity-cell">
-                    <div class="fw-semibold">
-                      {% if change.name %}{{ change.name }}
-                      {% else %}{{ change.target_name }} (id={{ change.target_id }}){% endif %}
-                    </div>
-                    {% if change.position %}
-                    <div class="text-muted small">
-                      <i class="fa-solid fa-arrow-turn-down-right me-1"></i>{{ change.position }}
-                    </div>
-                    {% endif %}
-                    {% if change.content %}
-                    <button class="btn btn-link btn-sm p-0 text-muted mt-1"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#content-{{ change.number }}">
-                      <i class="fa-solid fa-angle-right me-1"></i> Show content
-                    </button>
-                    <div class="collapse mt-1" id="content-{{ change.number }}">
-                      <pre class="p-2 bg-light border rounded mb-0"
-                           style="font-size:0.75rem; white-space:pre-wrap;">{{ change.content }}</pre>
-                    </div>
-                    {% endif %}
-                  </td>
-
-                  <!-- Galdr recommendation -->
-                  <td>
-                    <span class="badge text-white
-                      {% if change.galdr_recommendation == 'ACCEPT' %}galdr-accept
-                      {% else %}galdr-reject{% endif %} mb-1"
-                      data-testid="galdr-verdict-{{ change.number }}">
-                      <i class="fa-solid fa-robot me-1"></i>
-                      {{ change.galdr_recommendation }}
-                    </span>
-                    <p class="galdr-reasoning mb-0 mt-1"
-                       data-testid="galdr-reasoning-{{ change.number }}">
-                      {{ change.galdr_reasoning }}
-                    </p>
-                  </td>
-
-                  <!-- Admin decision dropdown -->
-                  <td>
-                    <select class="form-select decision-select {% if change.admin_decision == 'ACCEPT' %}accept{% elif change.admin_decision == 'REJECT' %}reject{% endif %}"
-                            id="decision-{{ change.number }}"
-                            onchange="onDecisionChange(this, {{ change.number }})"
-                            data-testid="admin-decision-{{ change.number }}">
-                      <option value="" {% if not change.admin_decision %}selected{% endif %}>— decide —</option>
-                      <option value="ACCEPT" {% if change.admin_decision == 'ACCEPT' %}selected{% endif %}>✓ ACCEPT</option>
-                      <option value="REJECT" {% if change.admin_decision == 'REJECT' %}selected{% endif %}>✗ REJECT</option>
-                    </select>
-                    <div class="invalid-feedback" id="decision-error-{{ change.number }}">
-                      Decision required.
-                    </div>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
+            <table class="table table-hover mb-0 align-middle" data-testid="admin-changes-table">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 4%">#</th>
+                        <th style="width: 8%">Type</th>
+                        <th style="width: 12%">Entity</th>
+                        <th style="width: 18%">Name / Target</th>
+                        <th style="width: 28%">Galdr Recommendation &amp; Reasoning</th>
+                        <th style="width: 16%">Admin Decision</th>
+                        <th style="width: 14%">Admin Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ch in pip.changes %}
+                    <tr data-testid="admin-change-row-{{ ch.number }}">
+                        <td class="text-muted small">{{ ch.number }}</td>
+                        <td>
+                            <span class="badge {{ ch.change_type_css }}">{{ ch.change_type }}</span>
+                        </td>
+                        <td class="small text-muted">{{ ch.entity_type }}</td>
+                        <td class="small">
+                            {% if ch.name %}
+                            <strong>{{ ch.name }}</strong>
+                            {% else %}
+                            <strong>{{ ch.target_name }}</strong>
+                            <span class="text-muted">(id={{ ch.target_id }})</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if ch.galdr_recommendation %}
+                            <span class="badge {% if ch.galdr_recommendation == 'ACCEPT' %}bg-success{% else %}bg-danger{% endif %} mb-1"
+                                  data-testid="galdr-rec-{{ ch.number }}">
+                                {{ ch.galdr_recommendation }}
+                            </span>
+                            <br>
+                            <span class="text-muted" data-testid="galdr-reasoning-{{ ch.number }}">
+                                {{ ch.galdr_reasoning }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm"
+                                    name="decision_{{ ch.number }}"
+                                    data-testid="admin-decision-{{ ch.number }}"
+                                    data-bs-toggle="tooltip"
+                                    title="Your decision for this change">
+                                <option value="">— decide —</option>
+                                <option value="ACCEPT"
+                                    {% if ch.admin_decision == "ACCEPT" %}selected{% endif %}>
+                                    ACCEPT
+                                </option>
+                                <option value="REJECT"
+                                    {% if ch.admin_decision == "REJECT" %}selected{% endif %}>
+                                    REJECT
+                                </option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control form-control-sm"
+                                   name="note_{{ ch.number }}"
+                                   placeholder="Optional note"
+                                   data-testid="admin-note-{{ ch.number }}">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
-          </div>
         </div>
-      </div><!-- /review table card -->
+    </div>
 
-      <!-- Impact preview -->
-      <div class="card mb-4 impact-panel" id="impact-preview" data-testid="impact-preview">
-        <div class="card-body p-3">
-          <h6 class="fw-semibold mb-3">
-            <i class="fa-solid fa-code-compare me-2 text-primary"></i>
-            Projected Impact
-          </h6>
-          <div id="impact-content" class="text-muted small">
-            Set at least one decision above to see projected impact.
-          </div>
+    <!-- Decision summary + version bump note -->
+    <div class="card mb-4" data-testid="admin-decision-summary">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fa-solid fa-layer-group me-2"></i>Decision Summary</h5>
         </div>
-      </div>
-
-    </div><!-- /main -->
-
-    <!-- ── Sidebar ─────────────────────────────────────────────────── -->
-    <aside class="col-lg-3">
-      <!-- Decision summary -->
-      <div class="card mb-3" id="decision-summary-card">
-        <div class="card-header fw-semibold">
-          <i class="fa-solid fa-gavel me-2 text-muted"></i> Decision Summary
-        </div>
-        <div class="card-body p-3" style="font-size: 0.875rem;">
-          <div class="d-flex justify-content-between mb-2">
-            <span class="text-muted">Total changes</span>
-            <strong>{{ pip.changes|length }}</strong>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <span class="text-success">
-              <i class="fa-solid fa-check me-1"></i> Accept
-            </span>
-            <strong id="accept-count" class="text-success">
-              {{ pip.changes|length }}
-            </strong>
-          </div>
-          <div class="d-flex justify-content-between mb-2">
-            <span class="text-danger">
-              <i class="fa-solid fa-ban me-1"></i> Reject
-            </span>
-            <strong id="reject-count" class="text-danger">0</strong>
-          </div>
-          <div class="d-flex justify-content-between">
-            <span class="text-muted">
-              <i class="fa-solid fa-clock me-1"></i> Pending
-            </span>
-            <strong id="pending-count" class="text-muted">0</strong>
-          </div>
-          <hr>
-          <div class="text-muted small">
-            <i class="fa-solid fa-tag me-1"></i>
-            Accepting changes will publish <strong>{{ pip.target_playbook }} v2.0</strong>.
-          </div>
-        </div>
-      </div>
-
-      <!-- Submitter info -->
-      <div class="card mb-3">
-        <div class="card-header fw-semibold">
-          <i class="fa-solid fa-user me-2 text-muted"></i> Submitter
-        </div>
-        <div class="card-body p-3" style="font-size:0.875rem;">
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                 style="width:32px;height:32px;font-size:.875rem;">MR</div>
-            <div>
-              <div class="fw-semibold">Maria Rodriguez</div>
-              <div class="text-muted small">maria@example.com</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4 text-center">
+                    <p class="fs-4 fw-bold text-success mb-0" data-testid="accepted-count">
+                        {{ pip.changes|length }}
+                    </p>
+                    <p class="text-muted small mb-0">Accepted</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <p class="fs-4 fw-bold text-danger mb-0" data-testid="rejected-count">0</p>
+                    <p class="text-muted small mb-0">Rejected</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <p class="fs-4 fw-bold text-muted mb-0" data-testid="pending-count">0</p>
+                    <p class="text-muted small mb-0">Pending</p>
+                </div>
             </div>
-          </div>
-          <div class="text-muted small">
-            <i class="fa-solid fa-envelope me-1"></i>
-            Email notification will be sent automatically when you finalise.
-          </div>
+            <hr>
+            <p class="small text-muted mb-0" data-testid="version-bump-note">
+                <i class="fa-solid fa-code-branch me-1"></i>
+                <strong>Version bump:</strong>
+                If any change is accepted, the playbook will be bumped from
+                <code>{{ pip.target_version }}</code> to
+                <code>v1.1</code> (minor bump for ADD/ALTER; patch for DROP-only PIPs).
+                If all changes are rejected, no version change occurs.
+            </p>
         </div>
-      </div>
-    </aside>
-  </div><!-- /row -->
-
-  <!-- Sticky action footer -->
-  <div class="actions-footer" data-testid="admin-actions-footer">
-    <div class="d-flex gap-2 justify-content-end align-items-center">
-      <span class="text-muted small me-2" id="footer-hint">
-        Set all decisions to enable Finalize.
-      </span>
-      <a href="{% url 'mockup_pip_detail' pip_id=pip.id %}"
-         class="btn btn-outline-secondary">
-        <i class="fa-solid fa-xmark me-1"></i> Cancel
-      </a>
-      <button class="btn btn-primary" id="finalize-btn"
-              disabled
-              onclick="showFinalizeModal()"
-              data-testid="finalize-btn"
-              data-bs-toggle="tooltip"
-              title="All changes must have a decision before you can finalise">
-        <i class="fa-solid fa-gavel me-1"></i> Finalize Decision
-      </button>
     </div>
-  </div>
 
-</div>
-
-<!-- Finalize confirmation modal -->
-<div class="modal fade" id="finalizeModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="fa-solid fa-gavel me-2"></i> Confirm Decision
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="finalize-modal-body">
-        <!-- Populated by JS -->
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Go Back</button>
-        <button type="button" class="btn btn-primary"
-                onclick="confirmFinalise()"
-                data-testid="confirm-finalize-btn">
-          <i class="fa-solid fa-check me-1"></i> Confirm &amp; Apply
+    <!-- Actions -->
+    <div class="d-flex justify-content-between mt-4" data-testid="admin-form-actions">
+        <a href="{% url 'mockup_pip_detail' pip_id=pip.id %}"
+           class="btn btn-secondary"
+           data-testid="cancel-review-btn"
+           data-bs-toggle="tooltip" title="Return to PIP detail without saving decisions">
+            <i class="fa-solid fa-times me-1"></i> Cancel
+        </a>
+        <button type="button" class="btn btn-primary" disabled
+                data-testid="finalize-btn"
+                data-bs-toggle="tooltip" title="Set all decisions before finalizing">
+            <i class="fa-solid fa-check me-1"></i> Finalize Decision
         </button>
-      </div>
     </div>
-  </div>
+
+    <!-- Mockup nav -->
+    <div class="alert alert-light border small">
+        <strong>Mockup screens:</strong>
+        <a href="{% url 'mockup_pip_list' %}">List</a> ·
+        <a href="{% url 'mockup_pip_create' %}">Create</a> ·
+        <a href="{% url 'mockup_pip_detail' pip_id=42 %}">Detail — Reviewed (PIP-42)</a> ·
+        <a href="{% url 'mockup_pip_detail' pip_id=30 %}">Detail — Draft (PIP-30)</a> ·
+        <a href="{% url 'mockup_pip_admin_review' pip_id=38 %}">Admin Review (PIP-38)</a>
+    </div>
+
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-const TOTAL = {{ pip.changes|length }};
-
-function countDecisions() {
-  let accept = 0, reject = 0, pending = 0;
-  for (let i = 1; i <= TOTAL; i++) {
-    const val = document.getElementById("decision-" + i)?.value;
-    if (val === "ACCEPT") accept++;
-    else if (val === "REJECT") reject++;
-    else pending++;
-  }
-  return { accept, reject, pending };
-}
-
-function updateSummary() {
-  const { accept, reject, pending } = countDecisions();
-  document.getElementById("accept-count").textContent  = accept;
-  document.getElementById("reject-count").textContent  = reject;
-  document.getElementById("pending-count").textContent = pending;
-
-  const finalBtn = document.getElementById("finalize-btn");
-  finalBtn.disabled = pending > 0;
-
-  const hint = document.getElementById("footer-hint");
-  if (pending === 0) {
-    hint.textContent = `${accept} accepted, ${reject} rejected — ready to finalise.`;
-    hint.className = "small me-2 text-success fw-semibold";
-  } else {
-    hint.textContent = `${pending} decision(s) still needed.`;
-    hint.className = "small me-2 text-muted";
-  }
-
-  updateImpact(accept, reject);
-}
-
-function updateImpact(accept, reject) {
-  const content = document.getElementById("impact-content");
-  if (accept + reject === 0) {
-    content.textContent = "Set at least one decision above to see projected impact.";
-    return;
-  }
-  let html = "";
-  if (accept > 0) {
-    html += `<div class="text-success mb-1"><i class="fa-solid fa-check me-1"></i>`
-          + `${accept} change(s) will be <strong>applied</strong> to `
-          + `{{ pip.target_playbook }} → version <strong>v2.0</strong> published.</div>`;
-  }
-  if (reject > 0) {
-    html += `<div class="text-danger mb-1"><i class="fa-solid fa-ban me-1"></i>`
-          + `${reject} change(s) will be <strong>discarded</strong>.</div>`;
-  }
-  html += `<div class="text-muted mt-2"><i class="fa-solid fa-envelope me-1"></i>`
-        + `Email notification sent to Maria Rodriguez.</div>`;
-  content.innerHTML = html;
-}
-
-function onDecisionChange(select, num) {
-  select.className = "form-select decision-select";
-  if (select.value === "ACCEPT") select.classList.add("accept");
-  else if (select.value === "REJECT") select.classList.add("reject");
-  updateSummary();
-}
-
-function acceptAll() {
-  for (let i = 1; i <= TOTAL; i++) {
-    const sel = document.getElementById("decision-" + i);
-    if (sel) { sel.value = "ACCEPT"; onDecisionChange(sel, i); }
-  }
-}
-
-function rejectAll() {
-  for (let i = 1; i <= TOTAL; i++) {
-    const sel = document.getElementById("decision-" + i);
-    if (sel) { sel.value = "REJECT"; onDecisionChange(sel, i); }
-  }
-}
-
-function showFinalizeModal() {
-  const { accept, reject } = countDecisions();
-  const verb = reject === 0 ? "Accepting all" : accept === 0 ? "Rejecting all" : "Partially accepting";
-  let body = `<p>${verb} <strong>${TOTAL} change(s)</strong> in PIP-{{ pip.id }}.</p>`;
-  if (accept > 0) {
-    body += `<div class="alert alert-success"><i class="fa-solid fa-check me-2"></i>${accept} change(s) will be applied to <strong>{{ pip.target_playbook }}</strong>. Version <strong>v2.0</strong> will be published.</div>`;
-  }
-  if (reject > 0) {
-    body += `<div class="alert alert-danger"><i class="fa-solid fa-ban me-2"></i>${reject} change(s) will be discarded.</div>`;
-  }
-  body += `<div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation me-2"></i>This action cannot be undone. Maria Rodriguez will receive an email notification.</div>`;
-  document.getElementById("finalize-modal-body").innerHTML = body;
-  new bootstrap.Modal(document.getElementById("finalizeModal")).show();
-}
-
-function confirmFinalise() {
-  bootstrap.Modal.getInstance(document.getElementById("finalizeModal")).hide();
-  // In a real implementation this would POST to the API.
-  // For the mockup, just redirect to the PIP list.
-  window.location = "{% url 'mockup_pip_list' %}";
-}
-
-// Initialise
-updateSummary();
-</script>
 {% endblock %}

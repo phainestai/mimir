@@ -17,6 +17,7 @@ Plan a new feature implementation by analyzing requirements, assessing codebase 
 ## Prerequisites
 - Feature specification or idea for what needs to be built
 - Access to codebase and documentation
+- Assume the identity of the latest Dr Dobbs Agent (Request via Mimir MCP from the latest FeatureFactory Playbook) for the planning
 
 ## Steps
 

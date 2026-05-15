@@ -3,351 +3,203 @@
 
 {% block title %}PIPs — Mockup{% endblock %}
 
-{% block extra_css %}
-<style>
-  /* ── PIP status badge colours ─────────────────────────────── */
-  .pip-status-draft      { background-color: #6c757d; }
-  .pip-status-submitted  { background-color: #0d6efd; }
-  .pip-status-processing { background-color: #ffc107; color: #212529 !important; }
-  .pip-status-reviewed   { background-color: #5856d6; }
-  .pip-status-accepted   { background-color: #198754; }
-  .pip-status-rejected   { background-color: #dc3545; }
-
-  /* ── Blue-dot unread indicator ────────────────────────────── */
-  .pip-row-unread .pip-unread-dot {
-    display: inline-block !important;
-  }
-  .pip-unread-dot {
-    display: none;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background-color: #0d6efd;
-    flex-shrink: 0;
-    margin-top: 4px;
-  }
-
-  /* ── PIPs nav count pill (override disabled state for mockup) ─ */
-  [data-testid="nav-pips"] {
-    pointer-events: auto !important;
-    opacity: 1 !important;
-    color: rgba(255,255,255,.75) !important;
-  }
-  [data-testid="nav-pips"].active {
-    color: #fff !important;
-  }
-  .pip-nav-pill {
-    font-size: 0.65rem;
-    padding: 1px 5px;
-    border-radius: 50rem;
-    background: #dc3545;
-    color: #fff;
-    vertical-align: top;
-    margin-left: 2px;
-  }
-
-  /* ── Filter bar ────────────────────────────────────────────── */
-  .filter-bar {
-    background: var(--bs-light);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
-    padding: 0.875rem 1rem;
-  }
-  .filter-bar label { font-size: 0.8125rem; }
-
-  /* ── Table tweaks ──────────────────────────────────────────── */
-  .pip-table th { font-size: 0.8125rem; font-weight: 600; white-space: nowrap; }
-  .pip-table td { vertical-align: middle; }
-  .pip-id-cell  { font-family: var(--bs-font-monospace); font-size: 0.8125rem; color: var(--bs-secondary-color); }
-  .pip-title-cell { font-weight: 500; }
-
-  /* ── Mockup banner ─────────────────────────────────────────── */
-  .mockup-banner {
-    background: linear-gradient(90deg,#5856d6,#0d6efd);
-    color:#fff; font-size:0.8125rem;
-    padding:.375rem 1rem; text-align:center;
-    letter-spacing:.02em;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<!-- Mockup banner -->
-<div class="mockup-banner">
-  🎨 MOCKUP — FOB-PIP-LIST-1 &nbsp;·&nbsp;
-  <a href="{% url 'mockup_pip_create' %}" class="text-white text-decoration-underline">Create</a> &nbsp;·&nbsp;
-  <a href="{% url 'mockup_pip_detail' pip_id=42 %}" class="text-white text-decoration-underline">Detail (Reviewed)</a> &nbsp;·&nbsp;
-  <a href="{% url 'mockup_pip_detail' pip_id=30 %}" class="text-white text-decoration-underline">Detail (Draft)</a> &nbsp;·&nbsp;
-  <a href="{% url 'mockup_pip_admin_review' pip_id=38 %}" class="text-white text-decoration-underline">Admin Review</a>
-</div>
+<div class="container mt-4" data-testid="pip-list-page">
 
-<div class="container-fluid px-4 py-4" data-testid="pip-list-page">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">PIPs</li>
+        </ol>
+    </nav>
 
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-      <li class="breadcrumb-item active" aria-current="page">PIPs</li>
-    </ol>
-  </nav>
-
-  <!-- Page header -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="h4 mb-0">
-      <i class="fa-solid fa-lightbulb text-warning me-2"></i>
-      PIPs
-      <span class="badge bg-secondary ms-1 fw-normal" data-testid="pip-total-count">{{ pip_count }}</span>
-    </h2>
-    <a href="{% url 'mockup_pip_create' %}"
-       class="btn btn-primary"
-       data-testid="pip-new-btn"
-       data-bs-toggle="tooltip" title="Create a new Playbook Improvement Proposal">
-      <i class="fa-solid fa-plus me-1"></i> New PIP
-    </a>
-  </div>
-
-  <!-- Filter bar -->
-  <div class="filter-bar mb-3" data-testid="pip-filter-bar">
-    <div class="row g-2 align-items-center">
-      <!-- Status multi-select -->
-      <div class="col-auto">
-        <span class="fw-semibold me-2" style="font-size:0.8125rem;">Status</span>
-        {% for status, css in statuses %}
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="filter-{{ status|lower }}" value="{{ status }}"
-                 data-testid="filter-status-{{ status|lower }}"
-                 onchange="applyFilters()">
-          <label class="form-check-label" for="filter-{{ status|lower }}" style="font-size:0.8125rem;">
-            <span class="badge {{ css }} text-white" style="font-size:0.7rem;">{{ status }}</span>
-          </label>
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2>
+                <i class="fa-solid fa-lightbulb"></i> PIPs
+                <span class="badge bg-secondary ms-1">{{ pip_count }}</span>
+            </h2>
+            <p class="text-muted">Playbook Improvement Proposals — structured change requests for Released playbooks</p>
         </div>
-        {% endfor %}
-      </div>
-
-      <!-- Playbook dropdown -->
-      <div class="col-auto ms-lg-3">
-        <select class="form-select form-select-sm" id="filter-playbook"
-                style="min-width:160px;" data-testid="filter-playbook"
-                onchange="applyFilters()">
-          <option value="">All Playbooks</option>
-          {% for pb in playbooks %}
-          <option value="{{ pb }}">{{ pb }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- Clear -->
-      <div class="col-auto ms-auto">
-        <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()"
-                data-testid="filter-clear">
-          <i class="fa-solid fa-xmark me-1"></i> Clear
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tabs -->
-  <ul class="nav nav-tabs mb-0" role="tablist" data-testid="pip-tabs">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="my-pips-tab"
-              data-bs-toggle="tab" data-bs-target="#my-pips"
-              type="button" role="tab" data-testid="tab-my-pips">
-        <i class="fa-solid fa-user me-1"></i> My PIPs
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="all-pips-tab"
-              data-bs-toggle="tab" data-bs-target="#all-pips"
-              type="button" role="tab" data-testid="tab-all-pips"
-              data-bs-toggle="tooltip" title="Visible to Administrators only">
-        <i class="fa-solid fa-users-gear me-1"></i> All PIPs
-        <span class="badge bg-secondary ms-1 fw-normal">10</span>
-      </button>
-    </li>
-  </ul>
-
-  <!-- Tab content -->
-  <div class="tab-content">
-    <!-- My PIPs tab -->
-    <div class="tab-pane fade show active" id="my-pips" role="tabpanel">
-      <div class="card border-top-0 rounded-top-0">
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover pip-table mb-0" data-testid="pip-table">
-              <thead class="table-light">
-                <tr>
-                  <th style="width:0"></th><!-- unread dot column -->
-                  <th>PIP</th>
-                  <th>Title</th>
-                  <th>Target Playbook</th>
-                  <th class="text-center">Changes</th>
-                  <th>Status</th>
-                  <th>Submitted</th>
-                  <th>Last Updated</th>
-                  <th class="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="pip-table-body">
-                {% for pip in pips %}
-                <tr class="{% if pip.status_changed %}pip-row-unread{% endif %}"
-                    data-pip-id="{{ pip.id }}"
-                    data-pip-status="{{ pip.status }}"
-                    data-pip-playbook="{{ pip.target_playbook }}"
-                    data-testid="pip-row-{{ pip.id }}">
-
-                  <!-- Unread indicator -->
-                  <td class="ps-3">
-                    <span class="pip-unread-dot"
-                          data-bs-toggle="tooltip"
-                          title="Status changed since your last visit"
-                          data-testid="pip-unread-dot-{{ pip.id }}"></span>
-                  </td>
-
-                  <!-- PIP ID -->
-                  <td class="pip-id-cell">PIP-{{ pip.id }}</td>
-
-                  <!-- Title -->
-                  <td class="pip-title-cell">{{ pip.title }}</td>
-
-                  <!-- Target playbook -->
-                  <td class="text-muted small">
-                    {{ pip.target_playbook }} <span class="text-muted">{{ pip.target_version }}</span>
-                  </td>
-
-                  <!-- Changes count -->
-                  <td class="text-center">
-                    <span class="badge bg-light text-dark border">{{ pip.changes_count }}</span>
-                  </td>
-
-                  <!-- Status badge -->
-                  <td>
-                    <span class="badge text-white {{ pip.status_css }}" data-testid="pip-status-{{ pip.id }}">
-                      {{ pip.status }}
-                    </span>
-                  </td>
-
-                  <td class="text-muted small">{{ pip.submitted }}</td>
-                  <td class="text-muted small">{{ pip.last_updated }}</td>
-
-                  <!-- Actions dropdown -->
-                  <td class="text-end">
-                    <div class="dropdown">
-                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                              type="button" data-bs-toggle="dropdown"
-                              data-testid="pip-actions-{{ pip.id }}">
-                        Actions
-                      </button>
-                      <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                          <a class="dropdown-item"
-                             href="{% url 'mockup_pip_detail' pip_id=pip.id %}">
-                            <i class="fa-solid fa-eye me-2 text-secondary"></i> View
-                          </a>
-                        </li>
-                        {% if pip.status == "Draft" %}
-                        <li>
-                          <a class="dropdown-item" href="#">
-                            <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Edit
-                          </a>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                          <a class="dropdown-item text-danger" href="#"
-                             onclick="return confirm('Discard PIP-{{ pip.id }} permanently?')">
-                            <i class="fa-solid fa-trash-can me-2"></i> Discard
-                          </a>
-                        </li>
-                        {% elif pip.status == "Submitted" %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                          <a class="dropdown-item text-warning" href="#"
-                             onclick="return confirm('Cancel PIP-{{ pip.id }}?')">
-                            <i class="fa-solid fa-ban me-2"></i> Cancel
-                          </a>
-                        </li>
-                        {% endif %}
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Empty state (hidden by default; shown by JS when filters return nothing) -->
-          <div id="pip-empty-state" class="text-center py-5 d-none" data-testid="pip-empty-state">
-            <i class="fa-light fa-inbox fa-3x text-muted mb-3"></i>
-            <h5 class="h6 text-muted">No PIPs match the selected filters.</h5>
-            <button class="btn btn-sm btn-outline-secondary mt-2" onclick="clearFilters()">
-              <i class="fa-solid fa-xmark me-1"></i> Clear Filters
-            </button>
-          </div>
-        </div>
-      </div>
+        <a href="{% url 'mockup_pip_create' %}"
+           class="btn btn-primary"
+           data-testid="pip-new-btn"
+           data-bs-toggle="tooltip"
+           title="Create a new Playbook Improvement Proposal">
+            <i class="fa-solid fa-plus"></i> New PIP
+        </a>
     </div>
 
-    <!-- All PIPs tab (admin) -->
-    <div class="tab-pane fade" id="all-pips" role="tabpanel">
-      <div class="card border-top-0 rounded-top-0">
+    <!-- Filters -->
+    <div class="card mb-4" data-testid="pip-filter-bar">
         <div class="card-body">
-          <p class="text-muted">
-            <i class="fa-solid fa-lock me-2"></i>
-            All-PIPs view is visible to <strong>Administrators</strong> only.
-            It adds a "Submitted By" column and shows PIPs from all users.
-          </p>
+            <form method="get" action="." role="search">
+                <div class="row g-2 align-items-end">
+                    <div class="col">
+                        <label class="form-label small fw-semibold">Status</label>
+                        <select class="form-select form-select-sm" name="status" data-testid="filter-status">
+                            <option value="">All statuses</option>
+                            {% for status, _ in statuses %}
+                            <option value="{{ status }}" {% if request.GET.status == status %}selected{% endif %}>{{ status }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col">
+                        <label class="form-label small fw-semibold">Target Playbook</label>
+                        <select class="form-select form-select-sm" name="playbook" data-testid="filter-playbook">
+                            <option value="">All playbooks</option>
+                            {% for pb in playbooks %}
+                            <option value="{{ pb }}" {% if request.GET.playbook == pb %}selected{% endif %}>{{ pb }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto ms-auto">
+                        <button class="btn btn-outline-secondary btn-sm" type="submit"
+                                data-bs-toggle="tooltip" title="Apply filters">
+                            <i class="fa-solid fa-filter me-1"></i> Filter
+                        </button>
+                        <a href="{% url 'mockup_pip_list' %}" class="btn btn-outline-secondary btn-sm ms-1"
+                           data-testid="filter-clear"
+                           data-bs-toggle="tooltip" title="Clear all filters">
+                            <i class="fa-solid fa-xmark me-1"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
         </div>
-      </div>
     </div>
-  </div><!-- /tab-content -->
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-0" role="tablist" data-testid="pip-tabs">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#my-pips"
+                    type="button" role="tab" data-testid="tab-my-pips">
+                My PIPs
+                {% if unread_count %}
+                <span class="badge bg-primary ms-1" data-testid="pip-unread-count">{{ unread_count }}</span>
+                {% endif %}
+            </button>
+        </li>
+        {% if is_admin %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#all-pips"
+                    type="button" role="tab" data-testid="tab-all-pips">
+                All PIPs
+                <span class="badge bg-secondary ms-1">10</span>
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+
+    <div class="tab-content">
+        <!-- My PIPs -->
+        <div class="tab-pane fade show active" id="my-pips" role="tabpanel">
+            {% if pips %}
+            <div class="card border-top-0 rounded-top-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0" data-testid="pip-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 8%">PIP</th>
+                                <th style="width: 28%">Title</th>
+                                <th style="width: 18%">Target Playbook</th>
+                                <th style="width: 7%" class="text-center">Changes</th>
+                                <th style="width: 12%">Status</th>
+                                <th style="width: 10%">Submitted</th>
+                                <th style="width: 10%">Updated</th>
+                                <th style="width: 10%" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pip in pips %}
+                            <tr data-testid="pip-row-{{ pip.id }}">
+                                <td class="text-muted small font-monospace text-nowrap">{% if pip.status_changed %}<span class="text-primary me-1" data-bs-toggle="tooltip" title="Status changed since your last visit" data-testid="pip-unread-dot-{{ pip.id }}">●</span>{% endif %}PIP-{{ pip.id }}</td>
+                                <td>
+                                    <strong>{{ pip.title }}</strong>
+                                </td>
+                                <td class="text-muted small">
+                                    {{ pip.target_playbook }}
+                                    <span class="badge bg-light text-dark border ms-1">{{ pip.target_version }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary">{{ pip.changes_count }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge {{ pip.status_css }}" data-testid="pip-status-{{ pip.id }}">
+                                        {{ pip.status }}
+                                    </span>
+                                </td>
+                                <td class="text-muted small">{{ pip.submitted }}</td>
+                                <td class="text-muted small">{{ pip.last_updated }}</td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'mockup_pip_detail' pip_id=pip.id %}"
+                                           class="btn btn-outline-primary btn-sm"
+                                           data-testid="view-pip-{{ pip.id }}"
+                                           data-bs-toggle="tooltip" title="View PIP details">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                        {% if pip.status == "Draft" %}
+                                        <a href="{% url 'mockup_pip_create' %}"
+                                           class="btn btn-outline-secondary btn-sm"
+                                           data-testid="edit-pip-{{ pip.id }}"
+                                           data-bs-toggle="tooltip" title="Edit draft PIP">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </a>
+                                        {% elif pip.status == "Submitted" or pip.status == "Processing (Galdr)" %}
+                                        <button type="button"
+                                                class="btn btn-outline-danger btn-sm"
+                                                data-testid="cancel-pip-{{ pip.id }}"
+                                                data-bs-toggle="tooltip" title="Cancel this PIP">
+                                            <i class="fa-solid fa-ban"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <div class="card border-top-0 rounded-top-0 border-0 shadow-sm" data-testid="pip-empty-state">
+                <div class="card-body text-center py-5">
+                    <i class="fa-solid fa-lightbulb fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No PIPs yet</h4>
+                    <p class="text-muted">Find a Released playbook you'd like to improve and submit a PIP.</p>
+                    <a href="{% url 'mockup_pip_create' %}" class="btn btn-primary mt-2"
+                       data-testid="create-first-pip-btn">
+                        <i class="fa-solid fa-plus me-1"></i> New PIP
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- All PIPs (admin only) -->
+        <div class="tab-pane fade" id="all-pips" role="tabpanel">
+            <div class="card border-top-0 rounded-top-0">
+                <div class="card-body text-center py-4">
+                    <i class="fa-solid fa-lock fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Visible to <strong>Administrators</strong> only — shows all users' PIPs with a Submitted By column.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mockup nav -->
+    <div class="alert alert-light border mt-4 small">
+        <strong>Mockup screens:</strong>
+        <a href="{% url 'mockup_pip_list' %}">List</a> ·
+        <a href="{% url 'mockup_pip_create' %}">Create</a> ·
+        <a href="{% url 'mockup_pip_detail' pip_id=42 %}">Detail — Reviewed (PIP-42)</a> ·
+        <a href="{% url 'mockup_pip_detail' pip_id=30 %}">Detail — Draft (PIP-30)</a> ·
+        <a href="{% url 'mockup_pip_admin_review' pip_id=38 %}">Admin Review (PIP-38)</a>
+    </div>
 
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-  // ── Inject count pill on PIPs nav link ─────────────────────────────────────
-  (function () {
-    const pill = document.createElement("span");
-    pill.className = "pip-nav-pill";
-    pill.textContent = "{{ unread_count }}";
-    pill.id = "pip-nav-count";
-    const navLink = document.querySelector('[data-testid="nav-pips"]');
-    if (navLink && {{ unread_count }} > 0) {
-      navLink.classList.add("active");
-      navLink.appendChild(pill);
-    }
-  })();
-
-  // ── Filter logic ───────────────────────────────────────────────────────────
-  function applyFilters() {
-    const selectedStatuses = [...document.querySelectorAll("#pip-table [type=checkbox]:checked")]
-      .map(cb => cb.value);
-    const selectedPlaybook = document.getElementById("filter-playbook").value;
-
-    let visible = 0;
-    document.querySelectorAll("#pip-table-body tr").forEach(row => {
-      const rowStatus   = row.dataset.pipStatus || "";
-      const rowPlaybook = row.dataset.pipPlaybook || "";
-      const matchStatus   = selectedStatuses.length === 0 || selectedStatuses.includes(rowStatus);
-      const matchPlaybook = !selectedPlaybook || rowPlaybook === selectedPlaybook;
-      const show = matchStatus && matchPlaybook;
-      row.style.display = show ? "" : "none";
-      if (show) visible++;
-    });
-
-    document.getElementById("pip-empty-state").classList.toggle("d-none", visible > 0);
-    document.querySelector("[data-testid='pip-total-count']").textContent = visible;
-  }
-
-  // Fix: checkbox inputs are in filter-bar, not in #pip-table
-  document.querySelectorAll(".filter-bar [type=checkbox]").forEach(cb => {
-    cb.setAttribute("onchange", "applyFilters()");
-  });
-
-  function clearFilters() {
-    document.querySelectorAll(".filter-bar [type=checkbox]").forEach(cb => cb.checked = false);
-    document.getElementById("filter-playbook").value = "";
-    applyFilters();
-  }
-</script>
+<style>.pip-status-reviewed { background-color: var(--bs-purple); color: #fff; }</style>
 {% endblock %}

@@ -9,6 +9,8 @@
 #
 # EB env vars required (set via aws elasticbeanstalk update-environment or CDK):
 #   DJANGO_SECRET_KEY, DATABASE_URL, DJANGO_ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS
+#   ANTHROPIC_API_KEY   — Galdr AI engine (secret, set manually in EB env)
+#   GALDR_MODEL         — set by CDK (default: claude-sonnet-4-5)
 
 services:
   web:
@@ -22,6 +24,8 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GALDR_MODEL: ${GALDR_MODEL}
     restart: unless-stopped
 
   mcp-facade:

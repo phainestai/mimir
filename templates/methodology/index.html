@@ -45,6 +45,13 @@
                 </h5>
                 <p class="text-muted mb-4">Add the config below to your IDE, restart it, and your AI assistant will have direct access to all playbooks.</p>
 
+                <!-- Prerequisites -->
+                <div class="alert alert-info py-2 mb-3">
+                    <i class="fas fa-circle-info me-1"></i>
+                    <strong>Prerequisites:</strong> Mimir web server must be running (<code>python manage.py runserver 8000</code>)
+                    and you need an API token — get it from <a href="/admin/authtoken/tokenproxy/" class="alert-link" target="_blank">Django Admin → Auth Tokens</a>.
+                </div>
+
                 <ul class="nav nav-tabs mb-3" id="mcpTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="tab-windsurf" data-bs-toggle="tab" data-bs-target="#pane-windsurf" type="button" role="tab">
@@ -69,18 +76,16 @@
                         <pre class="bg-dark text-light rounded p-3 small"><code>{
   "mcpServers": {
     "mimir": {
-      "command": "/absolute/path/to/mimir/venv/bin/python",
+      "command": "/absolute/path/to/mimir/.venv/bin/python",
       "args": [
-        "/absolute/path/to/mimir/manage.py",
-        "mcp_server",
-        "--user=admin"
+        "-m",
+        "mcp_integration.facade.server",
+        "--server=http://localhost:8000"
       ],
       "env": {
-        "DJANGO_SETTINGS_MODULE": "mimir.settings",
-        "PYTHONPATH": "/absolute/path/to/mimir",
-        "MIMIR_MCP_MODE": "1"
-      },
-      "disabled": false
+        "MIMIR_TOKEN": "your-api-token",
+        "PYTHONPATH": "/absolute/path/to/mimir"
+      }
     }
   }
 }</code></pre>
@@ -90,38 +95,34 @@
                         <pre class="bg-dark text-light rounded p-3 small"><code>{
   "mcpServers": {
     "mimir": {
-      "command": "/absolute/path/to/mimir/venv/bin/python",
+      "command": "/absolute/path/to/mimir/.venv/bin/python",
       "args": [
-        "/absolute/path/to/mimir/manage.py",
-        "mcp_server",
-        "--user=admin"
+        "-m",
+        "mcp_integration.facade.server",
+        "--server=http://localhost:8000"
       ],
       "env": {
-        "DJANGO_SETTINGS_MODULE": "mimir.settings",
-        "PYTHONPATH": "/absolute/path/to/mimir",
-        "MIMIR_MCP_MODE": "true"
+        "MIMIR_TOKEN": "your-api-token",
+        "PYTHONPATH": "/absolute/path/to/mimir"
       }
     }
   }
 }</code></pre>
                     </div>
                     <div class="tab-pane fade" id="pane-cursor" role="tabpanel">
-                        <p class="text-muted small mb-2">File: workspace <code>.cursorrules</code> or Cursor settings</p>
+                        <p class="text-muted small mb-2">File: <code>~/.cursor/mcp.json</code></p>
                         <pre class="bg-dark text-light rounded p-3 small"><code>{
-  "mcp": {
-    "servers": {
-      "mimir": {
-        "command": "/absolute/path/to/mimir/venv/bin/python",
-        "args": [
-          "/absolute/path/to/mimir/manage.py",
-          "mcp_server",
-          "--user=admin"
-        ],
-        "env": {
-          "DJANGO_SETTINGS_MODULE": "mimir.settings",
-          "PYTHONPATH": "/absolute/path/to/mimir",
-          "MIMIR_MCP_MODE": "true"
-        }
+  "mcpServers": {
+    "mimir": {
+      "command": "/absolute/path/to/mimir/.venv/bin/python",
+      "args": [
+        "-m",
+        "mcp_integration.facade.server",
+        "--server=http://localhost:8000"
+      ],
+      "env": {
+        "MIMIR_TOKEN": "your-api-token",
+        "PYTHONPATH": "/absolute/path/to/mimir"
       }
     }
   }
@@ -131,7 +132,8 @@
 
                 <div class="alert alert-warning mt-3 mb-0 py-2">
                     <i class="fas fa-triangle-exclamation"></i>
-                    Replace <code>/absolute/path/to/mimir</code> with your actual project path and <code>admin</code> with your username. Restart your IDE after saving.
+                    Replace <code>/absolute/path/to/mimir</code> with your actual project path and <code>your-api-token</code> with the token from Django Admin.
+                    For hosted Mimir, change <code>http://localhost:8000</code> to your server URL. Restart your IDE after saving.
                 </div>
             </div>
         </div>

@@ -230,7 +230,7 @@ Feature: FOB-PIP-CREATE-1 Create Playbook Improvement Proposal with Structured C
   Scenario: FOB-PIP-CREATE-19 Cancel returns to PIPs list without saving
     Given Maria is on FOB-PIP-CREATE-1 with unsaved changes
     When she clicks [Cancel]
-    Then a confirmation modal appears: "Discard this PIP?"
-    When she clicks [Discard]
+    Then a confirmation modal appears: "Cancel this PIP?"
+    When she clicks [Cancel]
     Then she is redirected to FOB-PIP-LIST-1
     And no PIP was created

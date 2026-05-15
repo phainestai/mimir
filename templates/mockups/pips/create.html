@@ -3,469 +3,315 @@
 
 {% block title %}New PIP — Mockup{% endblock %}
 
-{% block extra_css %}
-<style>
-  .pip-status-draft      { background-color: #6c757d; }
-  .pip-change-add    { background-color: #198754; }
-  .pip-change-alter  { background-color: #0d6efd; }
-  .pip-change-drop   { background-color: #dc3545; }
-
-  .change-card {
-    border: 1px solid var(--bs-border-color);
-    border-left: 4px solid #198754;
-    border-radius: 0.5rem;
-    background: var(--bs-body-bg);
-    transition: box-shadow 0.15s ease;
-  }
-  .change-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-  .change-card.change-alter { border-left-color: #0d6efd; }
-  .change-card.change-drop  { border-left-color: #dc3545; }
-
-  .change-form-panel {
-    background: #f8f9fa;
-    border: 1px dashed var(--bs-border-color);
-    border-radius: 0.5rem;
-  }
-
-  .mockup-banner {
-    background: linear-gradient(90deg,#5856d6,#0d6efd);
-    color:#fff; font-size:0.8125rem;
-    padding:.375rem 1rem; text-align:center;
-    letter-spacing:.02em;
-  }
-
-  /* Sticky actions footer */
-  .actions-footer {
-    position: sticky; bottom: 0;
-    background: var(--bs-body-bg);
-    border-top: 1px solid var(--bs-border-color);
-    padding: .875rem 0;
-    z-index: 10;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="mockup-banner">
-  🎨 MOCKUP — FOB-PIP-CREATE-1 &nbsp;·&nbsp;
-  <a href="{% url 'mockup_pip_list' %}" class="text-white text-decoration-underline">← PIP List</a>
-</div>
+<div class="container mt-4" data-testid="pip-create-page">
 
-<div class="container-fluid px-4 py-4" data-testid="pip-create-page">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mockup_pip_list' %}">PIPs</a></li>
+            <li class="breadcrumb-item active" aria-current="page">New PIP</li>
+        </ol>
+    </nav>
 
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'mockup_pip_list' %}">PIPs</a></li>
-      <li class="breadcrumb-item active" aria-current="page">New PIP</li>
-    </ol>
-  </nav>
-
-  <h2 class="h4 mb-4">
-    <i class="fa-solid fa-lightbulb text-warning me-2"></i>
-    New Playbook Improvement Proposal
-  </h2>
-
-  <div class="row g-4">
-
-    <!-- ── Left column: PIP details ─────────────────────────────────────── -->
-    <div class="col-lg-8">
-
-      <!-- Target playbook (locked because arrived from playbook detail) -->
-      <div class="card mb-4">
-        <div class="card-header fw-semibold">
-          <i class="fa-solid fa-book-sparkles me-2 text-primary"></i> Target Playbook
-        </div>
-        <div class="card-body">
-          <div class="input-group">
-            <span class="input-group-text bg-light">
-              <i class="fa-solid fa-lock text-muted"></i>
-            </span>
-            <input type="text" class="form-control bg-light fw-semibold"
-                   value="{{ target_playbook }} {{ target_version }}"
-                   readonly data-testid="pip-target-playbook"
-                   data-bs-toggle="tooltip"
-                   title="PIPs can only target Released playbooks. This is locked to the playbook you came from.">
-          </div>
-          <div class="form-text">Only Released playbooks can receive PIPs.</div>
-        </div>
-      </div>
-
-      <!-- PIP details -->
-      <div class="card mb-4">
-        <div class="card-header fw-semibold">
-          <i class="fa-solid fa-file-pen me-2 text-primary"></i> PIP Details
-        </div>
-        <div class="card-body">
-          <div class="mb-3">
-            <label for="pip-title" class="form-label">
-              Title <span class="text-danger">*</span>
-            </label>
-            <input type="text" class="form-control" id="pip-title"
-                   placeholder="e.g. Add Accessibility Audit Activity"
-                   value="Add Accessibility Audit"
-                   data-testid="pip-title-input"
-                   oninput="checkSubmitEnabled()">
-            <div class="form-text">A short, clear name for your improvement proposal.</div>
-          </div>
-          <div class="mb-0">
-            <label for="pip-summary" class="form-label">Summary</label>
-            <textarea class="form-control" id="pip-summary" rows="3"
-                      placeholder="Why is this improvement needed? What problem does it solve?"
-                      data-testid="pip-summary-input">The React Frontend Dev playbook lacks WCAG 2.1 AA coverage. All components we build need accessibility checks but there is no dedicated activity for it.</textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- Change list -->
-      <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span class="fw-semibold">
-            <i class="fa-solid fa-list-check me-2 text-primary"></i>
-            Changes
-            <span class="badge bg-secondary ms-1 fw-normal" id="change-count">{{ draft_changes|length }}</span>
-          </span>
-          <button class="btn btn-sm btn-outline-primary" id="add-change-btn"
-                  onclick="toggleAddChangeForm()"
-                  data-testid="add-change-btn"
-                  data-bs-toggle="tooltip" title="Add a typed change (ADD / ALTER / DROP)">
-            <i class="fa-solid fa-plus me-1"></i> Add Change
-          </button>
-        </div>
-        <div class="card-body">
-
-          <!-- Existing changes -->
-          <div id="change-list">
-            {% for ch in draft_changes %}
-            <div class="change-card mb-3 p-3 {% if ch.change_type == 'ALTER' %}change-alter{% elif ch.change_type == 'DROP' %}change-drop{% endif %}"
-                 data-testid="change-card-{{ ch.number }}">
-              <div class="d-flex align-items-start gap-2">
-                <span class="badge text-white {{ ch.change_type_css }} flex-shrink-0">{{ ch.change_type }}</span>
-                <div class="flex-grow-1">
-                  <div class="fw-semibold">
-                    {{ ch.entity_type }}{% if ch.name %}: {{ ch.name }}{% endif %}
-                  </div>
-                  {% if ch.position %}
-                  <div class="text-muted small mt-1">
-                    <i class="fa-solid fa-arrow-turn-down-right me-1"></i>{{ ch.position }}
-                  </div>
-                  {% endif %}
-                  {% if ch.content %}
-                  <div class="text-muted small mt-1 font-monospace" style="font-size:0.75rem;">
-                    {{ ch.content|truncatechars:80 }}
-                  </div>
-                  {% endif %}
-                </div>
-                <button class="btn btn-sm btn-link text-danger p-0 flex-shrink-0"
-                        onclick="removeChange(this)"
-                        data-testid="remove-change-{{ ch.number }}"
-                        data-bs-toggle="tooltip" title="Remove this change">
-                  <i class="fa-solid fa-xmark"></i>
-                </button>
-              </div>
-            </div>
-            {% endfor %}
-
-            <!-- Empty state -->
-            <div id="change-empty" class="text-center py-4 text-muted {% if draft_changes %}d-none{% endif %}">
-              <i class="fa-light fa-list-check fa-2x mb-2"></i>
-              <div class="small">No changes yet. Click <strong>Add Change</strong> to define what you want to modify.</div>
-            </div>
-          </div>
-
-          <!-- Add-change form (collapsible panel) -->
-          <div class="change-form-panel p-3 mt-3 d-none" id="add-change-panel">
-            <h6 class="mb-3 fw-semibold">
-              <i class="fa-solid fa-plus-circle text-primary me-2"></i>Add Change
-            </h6>
-            <div class="row g-3">
-              <!-- Type -->
-              <div class="col-md-3">
-                <label class="form-label fw-semibold" style="font-size:0.8125rem;">
-                  Type <span class="text-danger">*</span>
-                </label>
-                <select class="form-select form-select-sm" id="new-change-type"
-                        onchange="onChangeTypeSwitch()"
-                        data-testid="new-change-type">
-                  <option value="">— select —</option>
-                  {% for ct in change_types %}
-                  <option value="{{ ct }}">{{ ct }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <!-- Entity type -->
-              <div class="col-md-3">
-                <label class="form-label fw-semibold" style="font-size:0.8125rem;">
-                  Entity Type <span class="text-danger">*</span>
-                </label>
-                <select class="form-select form-select-sm" id="new-change-entity"
-                        data-testid="new-change-entity">
-                  <option value="">— select —</option>
-                  {% for et in entity_types %}
-                  <option value="{{ et }}">{{ et }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <!-- Name / Target (for ADD: text input; for ALTER/DROP: select existing) -->
-              <div class="col-md-6" id="name-field">
-                <label class="form-label fw-semibold" style="font-size:0.8125rem;">
-                  Name <span class="text-danger">*</span>
-                </label>
-                <input type="text" class="form-control form-control-sm"
-                       id="new-change-name" placeholder="e.g. Accessibility Audit"
-                       data-testid="new-change-name">
-              </div>
-              <!-- Position (ADD only) -->
-              <div class="col-md-6" id="position-section">
-                <label class="form-label fw-semibold" style="font-size:0.8125rem;">Position</label>
-                <div class="d-flex gap-2">
-                  <select class="form-select form-select-sm" id="new-change-position-type"
-                          onchange="toggleAfterSibling()"
-                          data-testid="new-change-position-type">
-                    <option value="append">Append at end of parent</option>
-                    <option value="after">After existing entity</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-6 d-none" id="after-sibling-section">
-                <label class="form-label fw-semibold" style="font-size:0.8125rem;">After sibling</label>
-                <select class="form-select form-select-sm" id="new-change-after"
-                        data-testid="new-change-after">
-                  <option value="">— select sibling —</option>
-                  {% for act in activities %}
-                  <option value="{{ act.id }}">{{ act.name }} ({{ act.workflow }})</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <!-- Content / Rationale -->
-              <div class="col-12">
-                <label class="form-label fw-semibold" style="font-size:0.8125rem;" id="content-label">
-                  Content <span class="text-danger">*</span>
-                </label>
-                <textarea class="form-control form-control-sm" id="new-change-content"
-                          rows="3"
-                          placeholder="Detailed guidance or replacement content (Markdown supported)"
-                          data-testid="new-change-content"></textarea>
-              </div>
-            </div>
-            <!-- Form actions -->
-            <div class="d-flex gap-2 mt-3">
-              <button class="btn btn-sm btn-primary" onclick="addChange()"
-                      data-testid="add-change-confirm">
-                <i class="fa-solid fa-check me-1"></i> Add Change
-              </button>
-              <button class="btn btn-sm btn-outline-secondary" onclick="toggleAddChangeForm()">
-                Cancel
-              </button>
-            </div>
-          </div><!-- /add-change-panel -->
-
-          <!-- Preview Diff button -->
-          <div class="mt-3 d-flex justify-content-end">
-            <button class="btn btn-sm btn-outline-secondary"
-                    data-bs-toggle="tooltip" title="Preview how the playbook would look with these changes applied"
-                    data-testid="preview-diff-btn">
-              <i class="fa-solid fa-code-compare me-1"></i> Preview Diff
-            </button>
-          </div>
-
-        </div><!-- /card-body -->
-      </div><!-- /change card -->
-    </div><!-- /left column -->
-
-    <!-- ── Right column: info sidebar ───────────────────────────────────── -->
-    <div class="col-lg-4">
-      <div class="card mb-3">
-        <div class="card-header fw-semibold">
-          <i class="fa-solid fa-circle-info me-2 text-muted"></i> Status
-        </div>
-        <div class="card-body">
-          <span class="badge pip-status-draft text-white mb-2">Draft</span>
-          <p class="text-muted small mb-0">
-            Your PIP is not yet submitted. Add at least one Change and click
-            <strong>Submit for Review</strong> to start Galdr processing.
-          </p>
-        </div>
-      </div>
-
-      <div class="card mb-3">
-        <div class="card-header fw-semibold">
-          <i class="fa-solid fa-circle-question me-2 text-muted"></i> Change Types
-        </div>
-        <div class="card-body p-3">
-          <dl class="mb-0" style="font-size:0.8125rem;">
-            <dt><span class="badge pip-change-add text-white me-1">ADD</span></dt>
-            <dd class="text-muted ps-2 mb-2">
-              Create a new entity (Workflow, Activity, Skill, Agent, Artifact).
-              Choose <em>append</em> or <em>insert after sibling</em>.
-            </dd>
-            <dt><span class="badge pip-change-alter text-white me-1">ALTER</span></dt>
-            <dd class="text-muted ps-2 mb-2">
-              Replace or update an existing entity's content.
-            </dd>
-            <dt><span class="badge pip-change-drop text-white me-1">DROP</span></dt>
-            <dd class="text-muted ps-2 mb-0">
-              Remove an existing entity. Requires a rationale.
-            </dd>
-          </dl>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header fw-semibold">
-          <i class="fa-solid fa-robot me-2 text-muted"></i> What happens next?
-        </div>
-        <div class="card-body p-3" style="font-size:0.8125rem;">
-          <ol class="ps-3 text-muted mb-0">
-            <li class="mb-1">Your PIP is submitted for review.</li>
-            <li class="mb-1"><strong>Galdr AI</strong> assesses each Change against the playbook context.</li>
-            <li class="mb-1">An <strong>Administrator</strong> reviews Galdr's recommendations in Django Admin.</li>
-            <li class="mb-0">You receive an <strong>email</strong> with the outcome per Change.</li>
-          </ol>
-        </div>
-      </div>
-    </div><!-- /right column -->
-  </div><!-- /row -->
-
-  <!-- Sticky actions footer -->
-  <div class="actions-footer mt-4" data-testid="pip-create-actions">
-    <div class="d-flex gap-2 justify-content-end">
-      <a href="{% url 'mockup_pip_list' %}" class="btn btn-outline-secondary"
-         data-testid="pip-cancel-btn">
-        <i class="fa-solid fa-xmark me-1"></i> Cancel
-      </a>
-      <button class="btn btn-outline-primary" id="save-draft-btn"
-              data-testid="pip-save-draft-btn"
-              data-bs-toggle="tooltip" title="Save without submitting — you can come back and edit">
-        <i class="fa-regular fa-floppy-disk me-1"></i> Save as Draft
-      </button>
-      <button class="btn btn-primary" id="submit-btn"
-              data-testid="pip-submit-btn"
-              data-bs-toggle="tooltip"
-              title="Submit for Galdr AI review. You need at least one Change."
-              onclick="confirmSubmit()">
-        <i class="fa-solid fa-paper-plane me-1"></i> Submit for Review
-      </button>
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <h2><i class="fa-solid fa-lightbulb"></i> New PIP</h2>
     </div>
-  </div>
 
-</div>
+    <div class="row">
+        <!-- Main form column -->
+        <div class="col-md-8">
+            <form method="post" data-testid="pip-form">
+                {% csrf_token %}
 
-<!-- Preview Diff Modal -->
-<div class="modal fade" id="previewDiffModal" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="fa-solid fa-code-compare me-2"></i> Preview Diff
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-info">
-          <i class="fa-solid fa-circle-info me-2"></i>
-          This diff shows how <strong>React Frontend Dev v1.0</strong> would look if all Changes in this PIP are accepted.
+                <!-- Header fields card -->
+                <div class="card mb-4" data-testid="pip-header-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fa-solid fa-circle-info me-2"></i>Header</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label" for="target_playbook">
+                                Target Playbook <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="target_playbook" name="target_playbook"
+                                    data-testid="pip-target-playbook" required>
+                                <option value="">— Select a Released playbook —</option>
+                                {% for pb in released_playbooks %}
+                                <option value="{{ pb.id }}" {% if pb.id == 1 %}selected{% endif %}>
+                                    {{ pb.name }} ({{ pb.version }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Only Released (v≥1.0) playbooks can receive PIPs.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="title">
+                                Title <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title"
+                                   maxlength="200" value="Add Accessibility Audit"
+                                   placeholder="Brief descriptive title for this PIP"
+                                   data-testid="pip-title" required>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label" for="summary">
+                                Summary <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="summary" name="summary" rows="4"
+                                      data-testid="pip-summary"
+                                      placeholder="Describe the problem or opportunity. What's missing or wrong in the playbook today?">The React Frontend Dev playbook lacks WCAG 2.1 AA coverage. All components we build need accessibility checks but the playbook currently has no dedicated activity for it.</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Changes card -->
+                <div class="card mb-4" data-testid="pip-changes-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fa-solid fa-list-check me-2"></i>Changes
+                            <span class="badge bg-secondary ms-1">{{ draft_changes|length }}</span>
+                        </h5>
+                        <button type="button" class="btn btn-success btn-sm"
+                                data-bs-toggle="collapse" data-bs-target="#add-change-form"
+                                data-testid="show-add-change-btn"
+                                data-bs-toggle="tooltip" title="Add a structured change">
+                            <i class="fa-solid fa-plus me-1"></i> Add Change
+                        </button>
+                    </div>
+
+                    <!-- Add Change inline form -->
+                    <div class="collapse show" id="add-change-form">
+                        <div class="card-body border-bottom bg-light" data-testid="add-change-form">
+                            <h6 class="mb-3 text-muted small fw-semibold text-uppercase">New Change</h6>
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-4">
+                                    <label class="form-label small">Type <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm" name="change_type"
+                                            data-testid="change-type-select">
+                                        <option value="">— pick type —</option>
+                                        {% for t in change_types %}
+                                        <option value="{{ t }}" {% if t == "ADD" %}selected{% endif %}>{{ t }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Entity <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm" name="entity_type"
+                                            data-testid="change-entity-select">
+                                        <option value="">— pick entity —</option>
+                                        {% for e in entity_types %}
+                                        <option value="{{ e }}" {% if e == "Activity" %}selected{% endif %}>{{ e }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">
+                                        Name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control form-control-sm"
+                                           name="change_name" value="Accessibility Audit"
+                                           placeholder="New entity name"
+                                           data-testid="change-name-input">
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-6" id="position-field">
+                                    <label class="form-label small">
+                                        Position
+                                        <i class="fa-solid fa-circle-question text-muted ms-1"
+                                           data-bs-toggle="tooltip"
+                                           title="Append at end of a workflow, or insert after a named sibling activity."></i>
+                                    </label>
+                                    <select class="form-select form-select-sm" name="insert_after"
+                                            data-testid="change-insert-after">
+                                        <option value="">Append at end of workflow</option>
+                                        {% for act in activities %}
+                                        <option value="{{ act.id }}" {% if act.id == 22 %}selected{% endif %}>
+                                            After: {{ act.name }} ({{ act.workflow }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6" id="parent-workflow-field">
+                                    <label class="form-label small">
+                                        Parent Workflow
+                                        <i class="fa-solid fa-circle-question text-muted ms-1"
+                                           data-bs-toggle="tooltip"
+                                           title="Required for ADD — which workflow does the new entity belong to?"></i>
+                                    </label>
+                                    <select class="form-select form-select-sm" name="parent_workflow"
+                                            data-testid="change-parent-workflow">
+                                        <option value="">— select workflow —</option>
+                                        {% for wf in workflows %}
+                                        <option value="{{ wf.id }}">{{ wf.name }} (id={{ wf.id }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">
+                                    Content / Rationale <span class="text-danger">*</span>
+                                    <span class="text-muted">(for DROP: explain why the entity should be removed)</span>
+                                </label>
+                                <textarea class="form-control form-control-sm font-monospace" rows="5"
+                                          name="change_content" data-testid="change-content-textarea"
+                                          placeholder="Full content / guidance text for the new or updated entity.">Ensure all React components meet WCAG 2.1 AA standards.
+
+**Setup:** Install `axe-core` and `jest-axe`.
+
+**Tests:** Add `@axe-core/react` checks to each component's test suite. Configure CI/CD pipeline to fail on any a11y violation.
+
+**Checklist:**
+- [ ] All interactive elements keyboard-accessible
+- [ ] ARIA labels on icon-only buttons
+- [ ] Colour contrast ≥ 4.5:1
+- [ ] Focus trap in modals</textarea>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        data-bs-toggle="collapse" data-bs-target="#add-change-form">
+                                    <i class="fa-solid fa-xmark me-1"></i> Cancel
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm"
+                                        data-testid="add-change-save-btn">
+                                    <i class="fa-solid fa-check me-1"></i> Add Change
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Draft change list -->
+                    {% if draft_changes %}
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0" data-testid="draft-changes-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 5%">#</th>
+                                    <th style="width: 10%">Type</th>
+                                    <th style="width: 15%">Entity</th>
+                                    <th style="width: 30%">Name / Target</th>
+                                    <th style="width: 30%">Position / Content preview</th>
+                                    <th style="width: 10%" class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ch in draft_changes %}
+                                <tr data-testid="change-row-{{ ch.number }}">
+                                    <td class="text-muted small">{{ ch.number }}</td>
+                                    <td><span class="badge {{ ch.change_type_css }}">{{ ch.change_type }}</span></td>
+                                    <td class="small text-muted">{{ ch.entity_type }}</td>
+                                    <td class="small"><strong>{{ ch.name }}</strong></td>
+                                    <td class="small text-muted text-truncate" style="max-width: 200px;">
+                                        {% if ch.position %}{{ ch.position }}{% else %}{{ ch.content|truncatechars:60 }}{% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                    data-testid="edit-change-{{ ch.number }}"
+                                                    data-bs-toggle="tooltip" title="Edit this change">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                                    data-testid="remove-change-{{ ch.number }}"
+                                                    data-bs-toggle="tooltip" title="Remove this change">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="card-body text-center py-4 text-muted" data-testid="changes-empty">
+                        <i class="fa-solid fa-list-check fa-2x mb-2"></i>
+                        <p class="mb-0">No changes yet — add at least one ADD, ALTER, or DROP change.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Preview Diff -->
+                <div class="mt-3 mb-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                            data-testid="preview-diff-btn"
+                            data-bs-toggle="tooltip" title="Preview cumulative impact on the playbook">
+                        <i class="fa-solid fa-code-compare me-1"></i> Preview Diff
+                    </button>
+                </div>
+
+                <!-- Form actions -->
+                <div class="d-flex justify-content-between mt-3" data-testid="pip-form-actions">
+                    <a href="{% url 'mockup_pip_list' %}" class="btn btn-secondary"
+                       data-testid="cancel-btn"
+                       data-bs-toggle="tooltip" title="Discard and return to PIP list">
+                        <i class="fa-solid fa-times me-1"></i> Cancel
+                    </a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary"
+                                data-testid="save-draft-btn"
+                                data-bs-toggle="tooltip" title="Save as a draft to finish later">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Save as Draft
+                        </button>
+                        <button type="submit" class="btn btn-primary"
+                                data-testid="submit-pip-btn"
+                                data-bs-toggle="tooltip" title="Save and submit to Galdr for review">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Submit for Review
+                        </button>
+                    </div>
+                </div>
+
+            </form>
         </div>
-        <div class="border rounded p-3 bg-light font-monospace" style="font-size:0.8125rem;">
-          <div class="text-success">+ Activity "Accessibility Audit" (after Component Testing)</div>
-          <div class="text-muted ms-3">  Ensure React components meet WCAG 2.1 AA standards…</div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card mb-4" data-testid="pip-sidebar-types">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fa-solid fa-circle-question me-2"></i>Change types</h6>
+                </div>
+                <div class="card-body small">
+                    <p class="mb-1">
+                        <span class="badge bg-success">ADD</span>
+                        Create a new entity (Activity, Workflow, Skill, Agent, or Artifact).
+                    </p>
+                    <p class="mb-1">
+                        <span class="badge bg-warning text-dark">ALTER</span>
+                        Update the content of an existing entity.
+                    </p>
+                    <p class="mb-0">
+                        <span class="badge bg-danger">DROP</span>
+                        Remove an existing entity from the playbook.
+                    </p>
+                </div>
+            </div>
+            <div class="card border-0 bg-light" data-testid="pip-sidebar-flow">
+                <div class="card-body small text-muted">
+                    <h6 class="card-title">
+                        <i class="fa-solid fa-diagram-next text-warning me-1"></i> What happens next
+                    </h6>
+                    <ol class="ps-3 mb-0">
+                        <li class="mb-1">You submit the PIP.</li>
+                        <li class="mb-1">Galdr AI reviews each change for conflicts.</li>
+                        <li class="mb-1">An Administrator accepts or rejects Galdr's recommendations.</li>
+                        <li>You receive an email with the decision.</li>
+                    </ol>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
     </div>
-  </div>
+
+    <!-- Mockup nav -->
+    <div class="alert alert-light border mt-4 small">
+        <strong>Mockup screens:</strong>
+        <a href="{% url 'mockup_pip_list' %}">List</a> ·
+        <a href="{% url 'mockup_pip_create' %}">Create</a> ·
+        <a href="{% url 'mockup_pip_detail' pip_id=42 %}">Detail — Reviewed (PIP-42)</a> ·
+        <a href="{% url 'mockup_pip_detail' pip_id=30 %}">Detail — Draft (PIP-30)</a> ·
+        <a href="{% url 'mockup_pip_admin_review' pip_id=38 %}">Admin Review (PIP-38)</a>
+    </div>
+
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-let changeCounter = {{ draft_changes|length }};
-
-function checkSubmitEnabled() {
-  const titleFilled = document.getElementById("pip-title").value.trim().length > 0;
-  const hasChanges = changeCounter > 0;
-  document.getElementById("submit-btn").disabled = !(titleFilled && hasChanges);
-}
-
-function toggleAddChangeForm() {
-  const panel = document.getElementById("add-change-panel");
-  const btn = document.getElementById("add-change-btn");
-  const isHidden = panel.classList.contains("d-none");
-  panel.classList.toggle("d-none", !isHidden);
-  btn.innerHTML = isHidden
-    ? '<i class="fa-solid fa-xmark me-1"></i> Cancel'
-    : '<i class="fa-solid fa-plus me-1"></i> Add Change';
-}
-
-function onChangeTypeSwitch() {
-  const type = document.getElementById("new-change-type").value;
-  const posSection   = document.getElementById("position-section");
-  const contentLabel = document.getElementById("content-label");
-  posSection.classList.toggle("d-none", type !== "ADD");
-  contentLabel.querySelector("span.text-danger").style.display = type === "DROP" ? "none" : "";
-  if (type === "DROP") contentLabel.firstChild.textContent = "Rationale ";
-  else contentLabel.firstChild.textContent = "Content ";
-}
-
-function toggleAfterSibling() {
-  const posType  = document.getElementById("new-change-position-type").value;
-  const siblingRow = document.getElementById("after-sibling-section");
-  siblingRow.classList.toggle("d-none", posType !== "after");
-}
-
-function addChange() {
-  const type    = document.getElementById("new-change-type").value;
-  const entity  = document.getElementById("new-change-entity").value;
-  const name    = document.getElementById("new-change-name").value.trim();
-  const content = document.getElementById("new-change-content").value.trim();
-
-  if (!type || !entity || !name) {
-    alert("Please fill in Type, Entity Type, and Name.");
-    return;
-  }
-
-  changeCounter++;
-  const cssMap = { ADD: "pip-change-add", ALTER: "pip-change-alter", DROP: "pip-change-drop" };
-  const cardCss = type === "ALTER" ? "change-alter" : type === "DROP" ? "change-drop" : "";
-
-  const card = document.createElement("div");
-  card.className = `change-card mb-3 p-3 ${cardCss}`;
-  card.innerHTML = `
-    <div class="d-flex align-items-start gap-2">
-      <span class="badge text-white ${cssMap[type]} flex-shrink-0">${type}</span>
-      <div class="flex-grow-1">
-        <div class="fw-semibold">${entity}: ${name}</div>
-        ${content ? `<div class="text-muted small mt-1 font-monospace" style="font-size:.75rem;">${content.slice(0,80)}${content.length>80?'…':''}</div>` : ""}
-      </div>
-      <button class="btn btn-sm btn-link text-danger p-0 flex-shrink-0"
-              onclick="removeChange(this)">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    </div>`;
-  document.getElementById("change-list").insertBefore(card, document.getElementById("change-empty"));
-  document.getElementById("change-empty").classList.add("d-none");
-  document.getElementById("change-count").textContent = changeCounter;
-  toggleAddChangeForm();
-  checkSubmitEnabled();
-}
-
-function removeChange(btn) {
-  btn.closest(".change-card").remove();
-  changeCounter = Math.max(0, changeCounter - 1);
-  document.getElementById("change-count").textContent = changeCounter;
-  if (changeCounter === 0) document.getElementById("change-empty").classList.remove("d-none");
-  checkSubmitEnabled();
-}
-
-function confirmSubmit() {
-  if (confirm('Submit this PIP for Galdr AI review? You cannot edit it after submission.')) {
-    window.location = "{% url 'mockup_pip_detail' pip_id=42 %}";
-  }
-}
-
-// Init
-checkSubmitEnabled();
-</script>
 {% endblock %}

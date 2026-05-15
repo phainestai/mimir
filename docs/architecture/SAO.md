@@ -64,6 +64,8 @@ A container that exposes Playbook context, guidance, and PIP submission to AI as
 **Galdr AI Engine**
 Background worker that processes each submitted PIP: reads the target Playbook in full, assesses each Change for consistency with Workflow goals and entity relationships, and writes a structured recommendation (`ACCEPT` / `REJECT` / `NEEDS_CLARIFICATION` + reasoning) per Change. Output is surfaced in Django Admin for the human Admin to review.
 
+**LLM target: Anthropic — default model `claude-sonnet-4-5` (configurable via `GALDR_MODEL` env var).** Galdr uses the Anthropic Python SDK (`anthropic` package). The model is swappable for any Anthropic model via `.env`; a `StubGaldrClient` is used in tests to avoid real API calls. API key: `ANTHROPIC_API_KEY` in `.env`.
+
 **Django Admin**
 Used by Administrators (users with Accept/Reject PIP permissions) to review Galdr's recommendations and apply final Accept/Reject decisions per Change. Accepted Changes are applied atomically to the Playbook, publishing a new version.
 
@@ -101,8 +103,8 @@ This is where Playbooks are authored, consumed, judged practical/impractical, re
   - **Web UI**: For authoring Playbooks, creating and tracking PIPs, team management
   - **REST API** (`/api/…`): Serves the Web UI (HTMX), the MCP server, and future integrations
   - **MCP Interface** (FastMCP → REST): For AI assistants (Cursor, Windsurf) to query Playbooks and submit PIPs
-- **Galdr AI**: Built-in AI engine that pre-processes PIPs and provides Change-level recommendations before human Admin review
-- Technology: Django 5 + SQLite + FastMCP (REST wrapper) + Galdr (background worker)
+- **Galdr AI**: Built-in AI engine (Anthropic Claude, default `claude-sonnet-4-5`) that pre-processes PIPs and provides Change-level recommendations before human Admin review
+- Technology: Django 5 + SQLite + FastMCP (REST wrapper) + Galdr (background worker, Anthropic SDK)
 
 ### 2. Hybrid MCP Access: Draft CRUD + Released PIP Workflow
 

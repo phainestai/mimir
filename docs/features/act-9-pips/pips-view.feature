@@ -136,11 +136,11 @@ Feature: FOB-PIP-DETAIL-1 View PIP Details with Galdr Recommendations
   # ACTIONS AVAILABLE TO SUBMITTER
   # ============================================================================
 
-  Scenario: FOB-PIP-DETAIL-12 Draft PIP shows Edit and Discard buttons
+  Scenario: FOB-PIP-DETAIL-12 Draft PIP shows Edit and Cancel buttons
     Given PIP-30 has status "Draft"
     When Maria opens FOB-PIP-DETAIL-1 for PIP-30
     Then she sees [Edit PIP] button
-    And she sees [Discard] button
+    And she sees [Cancel] button
     And she sees [Submit for Review] button
 
   Scenario: FOB-PIP-DETAIL-13 Submitted PIP shows Cancel button
@@ -158,8 +158,8 @@ Feature: FOB-PIP-DETAIL-1 View PIP Details with Galdr Recommendations
 
   Scenario: FOB-PIP-DETAIL-15 Discard Draft PIP from detail page
     Given PIP-30 has status "Draft"
-    When Maria opens FOB-PIP-DETAIL-1 for PIP-30 and clicks [Discard]
-    Then a confirmation modal appears: "Discard PIP-30 permanently?"
+    When Maria opens FOB-PIP-DETAIL-1 for PIP-30 and clicks [Cancel]
+    Then a confirmation modal appears: "Cancel PIP-30 permanently?"
     When she clicks [Confirm]
     Then PIP-30 is deleted
     And she is redirected to FOB-PIP-LIST-1

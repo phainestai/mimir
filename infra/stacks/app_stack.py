@@ -137,12 +137,25 @@ class MimirApp(Stack):
             opt("aws:elasticbeanstalk:cloudwatch:logs", "StreamLogs", "true"),
             opt("aws:elasticbeanstalk:cloudwatch:logs", "DeleteOnTerminate", "false"),
             opt("aws:elasticbeanstalk:cloudwatch:logs", "RetentionInDays", "30"),
-            # ── Django app env vars (sourced from SSM at deploy time) ─────────
-            # Actual secret values live in SSM Parameter Store under /mimir/prod/
-            # and are injected via a Dockerrun.aws.json env block in the CI job.
+            # ── Django app env vars ────────────────────────────────────────────
+            # Non-secret static values are set here.
+            # Secrets (DJANGO_SECRET_KEY, DATABASE_URL, ANTHROPIC_API_KEY, etc.)
+            # must be set manually via AWS Console or CLI:
+            #   aws elasticbeanstalk update-environment \
+            #     --environment-name mimir-blue \
+            #     --option-settings \
+            #       Namespace=aws:elasticbeanstalk:application:environment,\
+            #       OptionName=ANTHROPIC_API_KEY,Value=sk-ant-...
+            # Or store in SSM Parameter Store at /mimir/prod/ANTHROPIC_API_KEY
+            # and inject at deploy time.
             opt("aws:elasticbeanstalk:application:environment", "DJANGO_SETTINGS_MODULE",
                 "mimir.settings.prod"),
             opt("aws:elasticbeanstalk:application:environment", "MIMIR_ENV", "prod"),
+            # ── Galdr AI Engine ────────────────────────────────────────────────
+            # ANTHROPIC_API_KEY is a secret — set manually (see comment above).
+            # GALDR_MODEL is non-secret: default Anthropic model for Galdr assessment.
+            opt("aws:elasticbeanstalk:application:environment", "GALDR_MODEL",
+                "claude-sonnet-4-5"),
         ]
 
     # ── CloudWatch Alarms ──────────────────────────────────────────────────────
