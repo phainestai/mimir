@@ -90,7 +90,7 @@ def test_pip_fk_nullable():
         status="released",
     )
     pip = ProcessImprovementProposal.objects.create(
-        playbook=playbook, title="T", status="open"
+        playbook=playbook, title="T", status=ProcessImprovementProposal.STATUS_DRAFT
     )
     v1 = PlaybookVersion.objects.create(
         playbook=playbook,

@@ -45,7 +45,7 @@ def playbook_with_history(db, hist_user):
     pip = ProcessImprovementProposal.objects.create(
         playbook=pb,
         title="Adjust minor",
-        status="implemented",
+        status=ProcessImprovementProposal.STATUS_ACCEPTED,
         created_by=hist_user,
     )
     PlaybookVersion.objects.create(

@@ -54,7 +54,7 @@ def test_pip_with_n_changes_produces_single_minor_bump(pip_owner, released_with_
     pip = ProcessImprovementProposal.objects.create(
         playbook=pb,
         title="Batch rename",
-        status="approved",
+        status=ProcessImprovementProposal.STATUS_ACCEPTED,
         created_by=pip_owner,
     )
 
@@ -83,7 +83,7 @@ def test_pip_with_n_changes_produces_single_minor_bump(pip_owner, released_with_
     assert row.is_major is False
 
     pip.refresh_from_db()
-    assert pip.status == "implemented"
+    assert pip.status == ProcessImprovementProposal.STATUS_ACCEPTED
 
 
 @pytest.mark.django_db
@@ -96,7 +96,7 @@ def test_sequential_pips_increment_minor(pip_owner, released_with_activities):
         pip = ProcessImprovementProposal.objects.create(
             playbook=pb,
             title=f"Sequential {i}",
-            status="approved",
+            status=ProcessImprovementProposal.STATUS_ACCEPTED,
             created_by=pip_owner,
         )
 
@@ -125,7 +125,7 @@ def test_pip_manage_05_minor_bump_contract(pip_owner, released_with_activities):
     pip = ProcessImprovementProposal.objects.create(
         playbook=pb,
         title="Manage flow PIP",
-        status="approved",
+        status=ProcessImprovementProposal.STATUS_ACCEPTED,
         created_by=pip_owner,
     )
 
