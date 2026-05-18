@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile — Mimir{% endblock %}
+
+{% block content %}
+<div class="container" data-testid="profile-edit-page">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'profile' %}">My profile</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol>
+    </nav>
+
+    <h1 class="h3 mb-4"><i class="fas fa-pencil me-2"></i>Edit profile</h1>
+
+    <div class="row">
+        <div class="col-lg-7 col-xl-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post"
+                          action="{% url 'profile_edit' %}"
+                          data-testid="profile-edit-form">
+                        {% csrf_token %}
+
+                        {% if errors.non_field_errors %}
+                        <div class="alert alert-danger" data-testid="profile-edit-error">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                            {{ errors.non_field_errors|join:", " }}
+                        </div>
+                        {% endif %}
+
+                        <div class="row mb-3">
+                            <label for="id_first_name" class="col-sm-3 col-form-label">First name</label>
+                            <div class="col-sm-9">
+                                <input type="text"
+                                       class="form-control {% if errors.first_name %}is-invalid{% endif %}"
+                                       id="id_first_name"
+                                       name="first_name"
+                                       value="{{ first_name }}"
+                                       maxlength="150"
+                                       data-testid="profile-edit-first-name">
+                                {% if errors.first_name %}
+                                <div class="invalid-feedback">
+                                    <i class="fa-solid fa-circle-exclamation me-1"></i>
+                                    {{ errors.first_name|join:", " }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label for="id_last_name" class="col-sm-3 col-form-label">Last name</label>
+                            <div class="col-sm-9">
+                                <input type="text"
+                                       class="form-control {% if errors.last_name %}is-invalid{% endif %}"
+                                       id="id_last_name"
+                                       name="last_name"
+                                       value="{{ last_name }}"
+                                       maxlength="150"
+                                       data-testid="profile-edit-last-name">
+                                {% if errors.last_name %}
+                                <div class="invalid-feedback">
+                                    <i class="fa-solid fa-circle-exclamation me-1"></i>
+                                    {{ errors.last_name|join:", " }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label for="id_email" class="col-sm-3 col-form-label">
+                                Email <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="email"
+                                       class="form-control {% if errors.email %}is-invalid{% endif %}"
+                                       id="id_email"
+                                       name="email"
+                                       value="{{ email }}"
+                                       required
+                                       maxlength="254"
+                                       data-testid="profile-edit-email">
+                                {% if errors.email %}
+                                <div class="invalid-feedback">
+                                    <i class="fa-solid fa-circle-exclamation me-1"></i>
+                                    {{ errors.email|join:", " }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label text-muted">Username</label>
+                            <div class="col-sm-9">
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ username }}"
+                                       disabled
+                                       data-bs-toggle="tooltip"
+                                       title="Username cannot be changed">
+                                <div class="form-text">Username cannot be changed.</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 flex-wrap">
+                            <a href="{% url 'profile' %}"
+                               class="btn btn-outline-secondary"
+                               data-testid="profile-edit-cancel">
+                                Cancel
+                            </a>
+                            <button type="submit"
+                                    class="btn btn-primary"
+                                    data-testid="profile-edit-save">
+                                <i class="fas fa-save me-1"></i> Save changes
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

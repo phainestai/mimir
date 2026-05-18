@@ -239,6 +239,8 @@ python manage.py create_demo_fdd
 
 Both processes share the same SQLite DB with a 20-second timeout for concurrent access.
 
+**Contributors:** `mimir.db` is tracked in git; when migrations or committed demo data change the DB file, **commit `mimir.db` in the same change**—do not drop it from PRs by habit.
+
 ---
 
 ## Key Reference Files

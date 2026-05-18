@@ -129,13 +129,26 @@ Mike is satisfied with the playbook and clicks **[Release]** on the playbook det
 
 #### Screen: FOB Registration Page
 Maria navigates to the FOB registration page at `http://localhost:8000/register`:
-- Email: maria@uxconsulting.com
+- Email: dpetelin@gmail.com
 - Password: (creates secure password)
-- Full Name: Maria Rodriguez
-- Clicks "Register"
+- First name / Last name: Maria Rodriguez
+- ☐ **"I agree to the [Terms of Service] and [Privacy Policy]"** (required checkbox; links open in new tab)
+- Clicks **[Create account]**
+
+The [Create account] button is **disabled** until the checkbox is ticked. If Maria submits without ticking (e.g. via keyboard), a validation error appears: *"You must accept the Terms of Service to register."*
+
+`accepted_tos_at` (timestamp) is recorded on the user record at the moment of registration.
 
 #### Screen: FOB Email Verification
-Maria receives a verification email from FOB and clicks the confirmation link. She's redirected back to the FOB login page.
+
+After registration Maria is redirected to the **login page** with the message:
+> Account created. Please check your inbox and verify your email before logging in.
+
+She cannot log in until she verifies. If she tries:
+- Login is refused with: *"Please verify your email address before logging in. Check your inbox for a verification link."*
+- A **[Re-send verification email]** link is shown inline on the login form.
+
+She clicks the link in the email → her address is marked **Verified** → she is redirected to the login page with a success message and can now authenticate normally.
 
 #### Screen: FOB Registration Success — Authentication Token
 After email verification, Maria sees her account details page in FOB:
@@ -197,17 +210,54 @@ Maria's FOB web GUI (http://localhost:8000) has a consistent layout:
 - **Logo**: "Mimir" (links to Dashboard)
 - **Search**: Global search bar (playbooks, teams, activities)
 - **Navigation Menu**:
-  - Dashboard
-  - Playbooks (with count badge)
-  - Teams (with count badge)
+  - Home (Dashboard)
+  - Playbooks
+  - Workflows, Phases, Activities, Artifacts, Agents, Skills, Rules
   - PIPs (with **status-change count pill** — see below)
-  - Settings
-- **Notifications**: Bell icon with badge count (unread notifications)
-- **User Menu**: Maria Rodriguez dropdown
-  - My Profile
-  - Account Settings
-  - My Token (view / regenerate MCP auth token)
-  - Log Out
+- **Notifications**: Bell icon with badge count (unread notifications) — *when implemented*
+- **User Menu**: Click **your username** in the top-right to open a dropdown:
+  - **[View Profile]** → **FOB-PROFILE-1** (`/auth/user/profile/`) — name, email, API token (show / copy / **regenerate** with password), PIPs you created, playbooks you own
+  - **[Log Out]**
+
+Staff users may also use dashboard shortcuts (e.g. Django admin) where applicable; primary account + token management for everyone is **FOB-PROFILE-1**.
+
+#### Screen: FOB-PROFILE-1 (My Profile)
+
+Maria opens **View Profile** from the username menu.
+
+- **Account card**:
+  - First name, last name, username (Django user fields).
+  - **Email** — shown alongside a status pill:
+    - ✅ **Verified** (green badge) — email has been confirmed.
+    - ⚠️ **Not verified** (orange badge) — email unconfirmed; a **[Re-send verification email]** button appears inline. An unverified email means the account cannot log in — this badge should only be visible if a staff admin is viewing the profile on behalf of the user, or immediately after an email change before the session terminates.
+  - **[Edit]** button in the card header → `FOB-PROFILE-EDIT-1`.
+- **API token (MCP / REST)**: DRF `Token` used as `Authorization: Token <key>`; [Show] / [Copy]; **Regenerate token** requires **current password** and invalidates the previous key immediately.
+- **My PIPs**: PIPs where Maria is the submitter (`created_by`), with links to each PIP.
+- **My playbooks**: Playbooks Maria authors (`author`), with links to each playbook.
+
+#### Email Verification Flow
+
+**Registration:**
+1. FOB sends a verification email with a one-click link (`/auth/user/verify-email/<token>/`).
+2. Maria cannot log in until the link is clicked — the login view refuses unverified credentials.
+3. The login page shows a **[Re-send verification email]** link for users who are blocked.
+4. Clicking the link marks the email **Verified** → redirects to login with success message.
+5. Token expires after **24 hours**; an expired link shows an error with a fresh [Re-send] option.
+6. Staff / superuser accounts are automatically considered verified and are never blocked.
+
+**Changing email** (`FOB-PROFILE-EDIT-1`):
+- The edit form shows an orange warning banner **client-side** as soon as the email field is changed:
+  > ⚠️ Changing your email will require re-verification. You will be logged out and your API token invalidated until the new address is verified.
+- On **[Save changes]**:
+  1. New email is saved.
+  2. Active session is terminated immediately.
+  3. API (DRF) token is invalidated — MCP sessions using that token stop working.
+  4. Verification email is sent to the new address.
+  5. Maria is redirected to the login page: *"Email updated. Please verify your new address before logging in again."*
+- After verifying the new email, a **new API token is generated automatically** on first login.
+- Staff / superuser accounts skip all of the above — no logout, no token invalidation, email saved immediately.
+
+---
 
 **Left Sidebar** (contextual, shown on detail pages):
 - Quick links based on current context
@@ -2578,8 +2628,12 @@ Maria: `> mimir: Open playbook in browser`
 
 **Context**: Maria needs to configure her FOB and account settings.
 
+**MVP (implemented today)** — **FOB-PROFILE-1** (`/auth/user/profile/`): profile fields, **MCP/REST API token** (show, copy, regenerate with password), my PIPs, my playbooks. Reach it from the **username** dropdown in the top navigation bar.
+
+**Target (full FOB Settings)** — **FOB-SETTINGS-1** below: multi-section settings UI (storage, MCP snippet builder, notifications, etc.).
+
 #### Screen: FOB Settings - Main
-Maria clicks **Settings** in navigation menu:
+Maria opens the full FOB Settings experience (target — not fully implemented in MVP):
 - **Sidebar navigation**:
   - Account
   - Storage
@@ -2589,11 +2643,11 @@ Maria clicks **Settings** in navigation menu:
   - Advanced
 - **Account section** (default):
   - Profile information
-  - Email: maria@uxconsulting.com
+  - Email: dpetelin@gmail.com
   - Full name: Maria Rodriguez
   - [Change Password] button
   - [Two-Factor Authentication] toggle
-  - **Authentication Token** (for MCP):
+  - **Authentication Token** (for MCP) — *in MVP, viewing and regenerating this token is on **FOB-PROFILE-1**; this screen duplicates the story for the full Settings UX*:
     - Token: `mimir_a8f3...45678` [Show] [Copy]
     - Token created: Nov 15, 2024
     - [Regenerate Token] button (invalidates old token, requires re-entering password)
@@ -2662,7 +2716,8 @@ Maria clicks **Notifications**:
   - To: 08:00
 
 **Act 13 Summary**: Maria configures FOB:
-- ✅ Account settings (profile, password, 2FA, MCP authentication token)
+- ✅ **MVP:** Profile and MCP authentication token (including regenerate) on **FOB-PROFILE-1** via username menu **(shipped)**; full multi-section Account UI below is the target
+- ✅ Account settings (profile, password, 2FA, MCP authentication token) — *target*
 - ✅ Storage management and cleanup
 - ✅ FastMCP configuration (BASE_URL + TOKEN snippet)
 - ✅ Notification preferences (including PIP decision emails)

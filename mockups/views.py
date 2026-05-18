@@ -297,6 +297,44 @@ MOCK_PIP_38_ADMIN = {
 }
 
 
+MOCK_PROFILE = {
+    "first_name": "Denis",
+    "last_name": "Petelin",
+    "email": "dpetelin@gmail.com",
+    "username": "dpetelin",
+    "email_verified": True,   # toggle to False to see unverified state
+    "api_token": "mimir_a8f3d9e2b1c4567890abcdef12345678",
+    "pips": [
+        {
+            "pk": 42,
+            "title": "Add Accessibility Audit",
+            "playbook_name": "React Frontend Dev",
+            "status_display": "Submitted",
+            "status_css": _STATUS_CSS["Submitted"],
+        },
+        {
+            "pk": 38,
+            "title": "State Management Patterns",
+            "playbook_name": "React Frontend Dev",
+            "status_display": "Accepted",
+            "status_css": _STATUS_CSS["Accepted"],
+        },
+        {
+            "pk": 30,
+            "title": "Add Figma Integration Activity",
+            "playbook_name": "UX Research",
+            "status_display": "Draft",
+            "status_css": _STATUS_CSS["Draft"],
+        },
+    ],
+    "playbooks": [
+        {"pk": 1, "name": "React Frontend Development", "version": "1.0", "status_display": "Released", "status_css": "bg-success"},
+        {"pk": 2, "name": "UX Research", "version": "2.1", "status_display": "Released", "status_css": "bg-success"},
+        {"pk": 5, "name": "Agile Sprint Retrospectives", "version": "0.3", "status_display": "Draft", "status_css": "bg-secondary"},
+    ],
+}
+
+
 # ---------------------------------------------------------------------------
 # Views
 # ---------------------------------------------------------------------------
@@ -365,6 +403,60 @@ def pip_detail(request, pip_id):
         "active_page": "pips",
     }
     return render(request, "mockups/pips/detail.html", context)
+
+
+_LOGIN_STATES = {
+    "post-register": "Post-registration — check inbox",
+    "unverified":    "Login refused — email not verified",
+    "email-changed": "Login refused — email changed, re-verification required",
+    "normal":        "Normal",
+}
+
+
+def auth_register(request):
+    """FOB-LOCAL-USER-CREATE-01: Registration form with ToS checkbox."""
+    logger.info("Mockup: auth_register | user=%s", getattr(request.user, "username", "anonymous"))
+    return render(request, "mockups/auth/register.html", {})
+
+
+def auth_login(request):
+    """FOB-AUTH-LOGIN-1: Login page — three states driven by ?state= query param.
+
+    States:
+      (none / normal)   Plain login form.
+      post-register     Info banner: "check your inbox".
+      unverified        Warning banner: login refused + re-send link.
+      email-changed     Warning banner: email updated, re-verify to log in + re-send link.
+    """
+    state = request.GET.get("state", "normal")
+    if state not in _LOGIN_STATES:
+        state = "normal"
+    logger.info("Mockup: auth_login | state=%s | user=%s", state, getattr(request.user, "username", "anonymous"))
+    return render(request, "mockups/auth/login.html", {
+        "state": state,
+        "state_label": _LOGIN_STATES[state],
+        "prefill_username": request.GET.get("username", ""),
+    })
+
+
+def profile_view(request):
+    """FOB-PROFILE-VIEW-1: My profile — account fields, API token, PIPs, playbooks.
+
+    Toggle MOCK_PROFILE["email_verified"] to preview the unverified state.
+    Add ?unverified=1 to the URL to force the unverified state in the browser.
+    """
+    logger.info("Mockup: profile_view | user=%s", getattr(request.user, "username", "anonymous"))
+    ctx = dict(MOCK_PROFILE)
+    if request.GET.get("unverified"):
+        ctx["email_verified"] = False
+        logger.info("Mockup: profile_view forcing unverified state via ?unverified=1")
+    return render(request, "mockups/profile/view.html", ctx)
+
+
+def profile_edit(request):
+    """FOB-PROFILE-EDIT-1 (account fields): Edit first name, last name, email."""
+    logger.info("Mockup: profile_edit | user=%s", getattr(request.user, "username", "anonymous"))
+    return render(request, "mockups/profile/edit.html", {**MOCK_PROFILE, "errors": {}})
 
 
 def pip_admin_review(request, pip_id):

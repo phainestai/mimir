@@ -7,10 +7,39 @@ from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
+from rest_framework.authtoken.models import Token
 
 from accounts.models import mark_onboarding_completed
+from methodology.models import Playbook, ProcessImprovementProposal
 
 logger = logging.getLogger(__name__)
+
+_PROFILE_PLAYBOOKS_LIMIT = 50
+_PROFILE_PIPS_LIMIT = 50
+
+
+def _profile_playbooks_for(user):
+    """Return playbooks authored by user (newest first), capped for the profile page."""
+    return list(
+        Playbook.objects.filter(author=user)
+        .order_by("-updated_at")[:_PROFILE_PLAYBOOKS_LIMIT]
+    )
+
+
+def _profile_pips_for(user):
+    """Return PIPs created by user (newest first), capped for the profile page."""
+    return list(
+        ProcessImprovementProposal.objects.filter(created_by=user)
+        .select_related("playbook")
+        .order_by("-updated_at")[:_PROFILE_PIPS_LIMIT]
+    )
+
+
+def _regenerate_api_token_for_user(user):
+    """Replace the user's DRF API token; old key is invalidated immediately."""
+    Token.objects.filter(user=user).delete()
+    new_token = Token.objects.create(user=user)
+    return new_token
 
 
 def _validate_login_data(username, password):
@@ -140,6 +169,140 @@ def custom_logout_view(request):
         logger.warning("Logout attempted by unauthenticated user")
     
     return redirect(reverse('login'))
+
+
+@login_required
+def profile_view(request):
+    """FOB profile: account fields, API token, PIPs and playbooks for the current user."""
+    user = request.user
+    logger.info(
+        "[PROFILE] Page GET user_id=%s username=%s",
+        user.pk,
+        user.username,
+    )
+    token, _ = Token.objects.get_or_create(user=user)
+    playbooks = _profile_playbooks_for(user)
+    pips = _profile_pips_for(user)
+    logger.info(
+        "[PROFILE] Render user_id=%s playbook_count=%s pip_count=%s",
+        user.pk,
+        len(playbooks),
+        len(pips),
+    )
+    return render(
+        request,
+        "accounts/profile.html",
+        {
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "username": user.username,
+            "api_token": token.key,
+            "playbooks": playbooks,
+            "pips": pips,
+        },
+    )
+
+
+def _validate_profile_edit(first_name, last_name, email, current_user):
+    """Validate profile edit fields; return errors dict (empty = valid)."""
+    errors = {}
+    if not email:
+        errors["email"] = ["Email is required."]
+    elif "@" not in email or "." not in email.split("@")[-1]:
+        errors["email"] = ["Enter a valid email address."]
+    elif (
+        current_user.model.__name__ if hasattr(current_user, "model") else
+        current_user.__class__.__name__
+    ) and (
+        current_user.__class__.objects.filter(email=email)
+        .exclude(pk=current_user.pk)
+        .exists()
+    ):
+        errors["email"] = ["That email is already used by another account."]
+    return errors
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def profile_edit_view(request):
+    """Edit profile: first name, last name, email."""
+    user = request.user
+    logger.info("[PROFILE-EDIT] %s user_id=%s", request.method, user.pk)
+
+    if request.method == "GET":
+        return render(request, "accounts/profile_edit.html", {
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "username": user.username,
+            "errors": {},
+        })
+
+    first_name = (request.POST.get("first_name") or "").strip()
+    last_name = (request.POST.get("last_name") or "").strip()
+    email = (request.POST.get("email") or "").strip()
+
+    errors = _validate_profile_edit(first_name, last_name, email, user)
+    if errors:
+        logger.warning("[PROFILE-EDIT] validation failed user_id=%s errors=%s", user.pk, list(errors))
+        return render(request, "accounts/profile_edit.html", {
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+            "username": user.username,
+            "errors": errors,
+        })
+
+    user.first_name = first_name
+    user.last_name = last_name
+    user.email = email
+    user.save(update_fields=["first_name", "last_name", "email"])
+    logger.info("[PROFILE-EDIT] saved user_id=%s email=%s", user.pk, email)
+    messages.success(request, "Profile updated.")
+    return redirect(reverse("profile"))
+
+
+@login_required
+@require_http_methods(["POST"])
+def profile_regenerate_token(request):
+    """Invalidate the current API token and issue a new one (password required)."""
+    user = request.user
+    password = (request.POST.get("current_password") or "").strip()
+    logger.info(
+        "[PROFILE] Token regenerate POST user_id=%s username=%s password_provided=%s",
+        user.pk,
+        user.username,
+        bool(password),
+    )
+    if not password:
+        messages.error(
+            request,
+            "Enter your current password to regenerate the API token.",
+        )
+        logger.warning(
+            "[PROFILE] Token regenerate rejected: missing password user_id=%s",
+            user.pk,
+        )
+        return redirect(reverse("profile"))
+    if not user.check_password(password):
+        messages.error(request, "Incorrect password. Your API token was not changed.")
+        logger.warning(
+            "[PROFILE] Token regenerate rejected: invalid password user_id=%s",
+            user.pk,
+        )
+        return redirect(reverse("profile"))
+    _regenerate_api_token_for_user(user)
+    messages.success(
+        request,
+        "Your API token was regenerated. Update MCP, scripts, and any clients that use the old token.",
+    )
+    logger.info(
+        "[PROFILE] Token regenerated successfully user_id=%s username=%s",
+        user.pk,
+        user.username,
+    )
+    return redirect(reverse("profile"))
 
 
 @login_required

@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}Create account — Mockup{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6 col-lg-5">
+
+        <div class="text-center mb-4">
+            <h1 class="h3 mb-1"><i class="fas fa-user-plus me-2"></i>Create your Mimir account</h1>
+            <p class="text-muted small">Already have an account?
+                <a href="{% url 'mockup_auth_login' %}">Sign in</a>
+            </p>
+        </div>
+
+        <span class="badge bg-warning text-dark mb-2 d-block text-start">Mockup — FOB-LOCAL-USER-CREATE-01</span>
+
+        <div class="alert alert-secondary py-2 px-3 mb-3 small d-flex align-items-center gap-2 flex-wrap">
+            <i class="fas fa-map-signs"></i>
+            <strong>Auth flow:</strong>
+            <strong>① Register (here)</strong> →
+            <a href="{% url 'mockup_auth_login' %}?state=post-register">② Login (post-register)</a> →
+            <a href="{% url 'mockup_auth_login' %}?state=unverified">③ Login (unverified)</a> →
+            <a href="{% url 'mockup_auth_login' %}">④ Login (normal)</a> →
+            <a href="{% url 'mockup_profile' %}">⑤ Profile</a> →
+            <a href="{% url 'mockup_profile_edit' %}">⑥ Edit Profile</a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+
+                <div id="mock-reg-error"
+                     class="alert alert-danger d-none"
+                     data-testid="register-error">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <span id="mock-reg-error-text"></span>
+                </div>
+
+                <form id="mock-register-form" data-testid="register-form" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="id_first_name" class="form-label">
+                                First name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="id_first_name"
+                                   name="first_name"
+                                   placeholder="Denis"
+                                   maxlength="150"
+                                   required
+                                   data-testid="register-first-name">
+                            <div class="invalid-feedback">
+                                <i class="fa-solid fa-circle-exclamation me-1"></i>
+                                First name is required.
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="id_last_name" class="form-label">
+                                Last name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="id_last_name"
+                                   name="last_name"
+                                   placeholder="Petelin"
+                                   maxlength="150"
+                                   required
+                                   data-testid="register-last-name">
+                            <div class="invalid-feedback">
+                                <i class="fa-solid fa-circle-exclamation me-1"></i>
+                                Last name is required.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">
+                            Username <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               id="id_username"
+                               name="username"
+                               placeholder="dpetelin"
+                               maxlength="30"
+                               required
+                               data-testid="register-username"
+                               data-bs-toggle="tooltip"
+                               title="3–30 characters. Used to sign in.">
+                        <div class="invalid-feedback" id="mock-username-feedback">
+                            <i class="fa-solid fa-circle-exclamation me-1"></i>
+                            Username is required (3–30 characters).
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label">
+                            Email address <span class="text-danger">*</span>
+                        </label>
+                        <input type="email"
+                               class="form-control"
+                               id="id_email"
+                               name="email"
+                               placeholder="dpetelin@gmail.com"
+                               maxlength="254"
+                               required
+                               data-testid="register-email">
+                        <div class="invalid-feedback" id="mock-email-feedback">
+                            <i class="fa-solid fa-circle-exclamation me-1"></i>
+                            Enter a valid email address.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_password1" class="form-label">
+                            Password <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="password"
+                                   class="form-control"
+                                   id="id_password1"
+                                   name="password1"
+                                   required
+                                   minlength="8"
+                                   data-testid="register-password">
+                            <button class="btn btn-outline-secondary" type="button"
+                                    id="mock-pw-toggle" title="Show / hide password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Minimum 8 characters.</div>
+                        <div class="invalid-feedback">
+                            <i class="fa-solid fa-circle-exclamation me-1"></i>
+                            Password must be at least 8 characters.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_password2" class="form-label">
+                            Confirm password <span class="text-danger">*</span>
+                        </label>
+                        <input type="password"
+                               class="form-control"
+                               id="id_password2"
+                               name="password2"
+                               required
+                               data-testid="register-password-confirm">
+                        <div class="invalid-feedback" id="mock-pw2-feedback">
+                            <i class="fa-solid fa-circle-exclamation me-1"></i>
+                            Passwords do not match.
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <div class="mb-4">
+                        <div class="form-check" data-testid="register-tos-row">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="id_tos"
+                                   name="accepted_tos"
+                                   data-testid="register-tos-checkbox">
+                            <label class="form-check-label" for="id_tos">
+                                I agree to the
+                                <a href="#" target="_blank" rel="noopener noreferrer"
+                                   data-testid="register-tos-link">Terms of Service</a>
+                                and
+                                <a href="#" target="_blank" rel="noopener noreferrer"
+                                   data-testid="register-privacy-link">Privacy Policy</a>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="invalid-feedback" id="mock-tos-feedback">
+                                <i class="fa-solid fa-circle-exclamation me-1"></i>
+                                You must accept the Terms of Service to register.
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-primary w-100"
+                            id="mock-create-btn"
+                            disabled
+                            data-testid="register-submit">
+                        <i class="fas fa-user-plus me-1"></i> Create account
+                    </button>
+
+                </form>
+            </div>
+        </div>
+
+        <div class="text-center mt-3 small text-muted">
+            Demo errors: username <code>taken</code> → duplicate username ·
+            email <code>used@example.com</code> → duplicate email ·
+            mismatched passwords → password error.
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var tosCheckbox = document.getElementById('id_tos');
+    var createBtn   = document.getElementById('mock-create-btn');
+    var pw1         = document.getElementById('id_password1');
+    var pw2         = document.getElementById('id_password2');
+    var emailInp    = document.getElementById('id_email');
+    var errBanner   = document.getElementById('mock-reg-error');
+    var errText     = document.getElementById('mock-reg-error-text');
+    var pwToggle    = document.getElementById('mock-pw-toggle');
+
+    /* ── enable/disable Create account button on ToS toggle ── */
+    tosCheckbox.addEventListener('change', function () {
+        createBtn.disabled = !tosCheckbox.checked;
+        console.log('[mockup:register] ToS checked=' + tosCheckbox.checked);
+    });
+
+    /* ── password show/hide ── */
+    pwToggle.addEventListener('click', function () {
+        var t = pw1.type === 'password' ? 'text' : 'password';
+        pw1.type = t;
+        pw2.type = t;
+        pwToggle.querySelector('i').className = t === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+    });
+
+    /* ── submit ── */
+    createBtn.addEventListener('click', function () {
+        var valid = true;
+        errBanner.classList.add('d-none');
+
+        /* required fields */
+        ['id_first_name', 'id_last_name', 'id_username', 'id_email', 'id_password1', 'id_password2'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el.value.trim()) { el.classList.add('is-invalid'); valid = false; }
+            else { el.classList.remove('is-invalid'); }
+        });
+
+        /* username length */
+        var usernameInp = document.getElementById('id_username');
+        if (usernameInp.value.trim().length > 0 && (usernameInp.value.trim().length < 3 || usernameInp.value.trim().length > 30)) {
+            usernameInp.classList.add('is-invalid');
+            document.getElementById('mock-username-feedback').textContent = 'Username must be between 3 and 30 characters.';
+            valid = false;
+        }
+
+        /* duplicate username */
+        if (usernameInp.value.trim() === 'taken') {
+            usernameInp.classList.add('is-invalid');
+            document.getElementById('mock-username-feedback').textContent = 'That username is already taken.';
+            valid = false;
+        }
+
+        /* password match */
+        if (pw1.value && pw2.value && pw1.value !== pw2.value) {
+            pw2.classList.add('is-invalid');
+            document.getElementById('mock-pw2-feedback').textContent = 'Passwords do not match.';
+            valid = false;
+        }
+
+        /* duplicate email */
+        if (emailInp.value.trim() === 'used@example.com') {
+            emailInp.classList.add('is-invalid');
+            document.getElementById('mock-email-feedback').textContent = 'That email is already registered.';
+            valid = false;
+        }
+
+        if (!valid) {
+            console.log('[mockup:register] validation failed');
+            return;
+        }
+
+        console.log('[mockup:register] account created, redirecting to login (post-register state)');
+        window.location.href = "{% url 'mockup_auth_login' %}?state=post-register&email=" + encodeURIComponent(emailInp.value.trim());
+    });
+})();
+</script>
+{% endblock %}

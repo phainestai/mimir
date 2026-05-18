@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile — Mockup{% endblock %}
+
+{% block content %}
+<div class="container" data-testid="profile-edit-page">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'mockup_profile' %}">My profile</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 h3"><i class="fas fa-pencil me-2"></i>Edit profile</h2>
+        <span class="badge bg-warning text-dark">Mockup — FOB-PROFILE-EDIT-1</span>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-7 col-xl-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+
+                    <div id="mock-email-error-banner"
+                         class="alert alert-danger d-none"
+                         data-testid="profile-edit-error">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                        That email is already used by another account.
+                    </div>
+
+                    <form id="mock-edit-form"
+                          data-testid="profile-edit-form">
+                        {% csrf_token %}
+
+                        <div class="row mb-3">
+                            <label for="id_first_name" class="col-sm-3 col-form-label">First name</label>
+                            <div class="col-sm-9">
+                                <input type="text"
+                                       class="form-control"
+                                       id="id_first_name"
+                                       name="first_name"
+                                       value="{{ first_name }}"
+                                       maxlength="150"
+                                       data-testid="profile-edit-first-name">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label for="id_last_name" class="col-sm-3 col-form-label">Last name</label>
+                            <div class="col-sm-9">
+                                <input type="text"
+                                       class="form-control"
+                                       id="id_last_name"
+                                       name="last_name"
+                                       value="{{ last_name }}"
+                                       maxlength="150"
+                                       data-testid="profile-edit-last-name">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <label for="id_email" class="col-sm-3 col-form-label">
+                                Email <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="email"
+                                       class="form-control"
+                                       id="id_email"
+                                       name="email"
+                                       value="{{ email }}"
+                                       required
+                                       maxlength="254"
+                                       data-testid="profile-edit-email">
+                                <div class="invalid-feedback" id="mock-email-inline-err">
+                                    <i class="fa-solid fa-circle-exclamation me-1"></i>
+                                    That email is already used by another account.
+                                </div>
+                                <div id="mock-email-change-warning"
+                                     class="alert alert-warning py-2 px-3 mt-2 mb-0 small d-none"
+                                     data-testid="email-change-warning">
+                                    <i class="fas fa-triangle-exclamation me-1"></i>
+                                    <strong>Changing your email will require re-verification.</strong>
+                                    You will be logged out and your API token invalidated
+                                    until the new address is verified.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label text-muted">Username</label>
+                            <div class="col-sm-9">
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ username }}"
+                                       disabled
+                                       data-bs-toggle="tooltip"
+                                       title="Username cannot be changed">
+                                <div class="form-text">Username cannot be changed.</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 flex-wrap">
+                            <a href="{% url 'mockup_profile' %}"
+                               class="btn btn-outline-secondary"
+                               data-testid="profile-edit-cancel">
+                                Cancel
+                            </a>
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    id="mock-save-btn"
+                                    data-testid="profile-edit-save">
+                                <i class="fas fa-save me-1"></i> Save changes
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="alert alert-info small mt-4 mb-0">
+                        <strong>Demo:</strong> type <code>used@example.com</code> and click Save to see the
+                        duplicate-email error. Any other valid email redirects back to the profile view.
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var saveBtn     = document.getElementById('mock-save-btn');
+    var emailInp    = document.getElementById('id_email');
+    var errBanner   = document.getElementById('mock-email-error-banner');
+    var errInline   = document.getElementById('mock-email-inline-err');
+    var warnBanner  = document.getElementById('mock-email-change-warning');
+    var originalEmail = emailInp.value.trim();
+
+    /* ── show/hide email-change warning on input ── */
+    emailInp.addEventListener('input', function () {
+        var current = emailInp.value.trim();
+        var changed = current !== '' && current !== originalEmail;
+        console.log('[mockup:profile-edit] email changed=' + changed + ' value=' + current);
+        if (changed) {
+            warnBanner.classList.remove('d-none');
+        } else {
+            warnBanner.classList.add('d-none');
+        }
+    });
+
+    /* ── save button ── */
+    saveBtn.addEventListener('click', function () {
+        var email = emailInp.value.trim();
+        console.log('[mockup:profile-edit] save clicked, email=' + email);
+
+        errBanner.classList.add('d-none');
+        emailInp.classList.remove('is-invalid');
+
+        if (email === 'used@example.com') {
+            emailInp.classList.add('is-invalid');
+            errBanner.classList.remove('d-none');
+            console.log('[mockup:profile-edit] duplicate email validation triggered');
+            return;
+        }
+
+        var emailChanged = emailInp.value.trim() !== originalEmail;
+        console.log('[mockup:profile-edit] saved OK, emailChanged=' + emailChanged);
+        if (emailChanged) {
+            window.location.href = "{% url 'mockup_auth_login' %}?state=email-changed";
+        } else {
+            window.location.href = "{% url 'mockup_profile' %}";
+        }
+    });
+})();
+</script>
+{% endblock %}

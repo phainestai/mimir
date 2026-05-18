@@ -780,8 +780,10 @@ apt-get install graphviz
 
 **User Model**:
 - Extends Django's standard User model (`AbstractUser`)
-- Custom fields added via `User` model extension
-- Email used as primary identifier for authentication
+- **Username** is the primary login identifier (3–30 chars); email is stored separately and must be unique
+- Additional custom fields:
+  - `accepted_tos_at: DateTimeField (null, blank)` — timestamp recorded at registration when the user accepts ToS
+- `UserEmailVerification` (one-to-one to `User`): `is_verified: bool`, `verification_token: str (64)`, `token_created_at: DateTimeField` — tracks whether the current email address has been verified; staff/superuser accounts are auto-verified
 - Password hashing via Django's built-in PBKDF2 algorithm
 
 **Forms and Templates**:
@@ -813,6 +815,10 @@ Format: `/{system-part}/{entity}/{action}/{id}`
 /auth/user/login/                      # Authentication endpoints
 /auth/user/logout/
 /auth/user/register/
+/auth/user/verify-email/<token>/       # Email verification one-click link
+/auth/user/profile/                    # View profile (name, email+badge, token, PIPs, playbooks)
+/auth/user/profile/edit/               # Edit first name, last name, email
+/auth/user/profile/regenerate-token/  # POST — rotate API token (requires current password)
 ```
 
 **URL Structure Rules**:
@@ -1332,13 +1338,13 @@ With HTMX:
 
 **Location**: `docs/features/act-*/`
 
-The FOB Web UI is comprehensively documented through **46 BDD-style Gherkin feature files** organized by user journey Acts (0-15). These serve as both specifications and test scenarios.
+The FOB Web UI is comprehensively documented through **62 BDD-style Gherkin feature files** organized by user journey Acts (0-15). These serve as both specifications and test scenarios.
 
 ### Feature File Organization
 
 ```
 docs/features/
-├── act-0-auth/              # Authentication, Onboarding, Navigation (3 files)
+├── act-0-auth/              # Authentication, Registration, Email Verification, Onboarding, Navigation (4 files)
 ├── act-2-playbooks/         # Playbooks CRUDLF (5 files)
 ├── act-3-workflows/         # Workflows CRUDLF (5 files)
 ├── act-4-phases/            # Phases CRUDLF (5 files) - OPTIONAL entity
@@ -1351,7 +1357,7 @@ docs/features/
 ├── act-11-family/           # Family Management (1 file)
 ├── act-12-sync/             # Sync Scenarios (1 file)
 ├── act-13-mcp/              # MCP Integration (1 file)
-├── act-14-settings/         # Settings & Configuration (1 file)
+├── act-14-profile/          # User profile — view + edit/token (2 files)
 └── act-15-errors/           # Error Recovery (1 file)
 ```
 
@@ -1384,7 +1390,7 @@ Examples:
 
 ### Feature File Coverage
 
-**Total Coverage**: 46 feature files, ~3,200 lines of Gherkin
+**Total Coverage**: 47 feature files, ~3,500 lines of Gherkin
 - **Acts 0-1**: Foundation (auth, onboarding, dashboard, navigation)
 - **Acts 2-8**: Full CRUDLF for 7 core entities (35 files)
 - **Acts 9-15**: Supporting features (PIPs, import/export, family, sync, MCP, settings, errors)
@@ -2074,9 +2080,10 @@ Mimir sends transactional emails on two paths:
 | Path | Trigger | Template | Service |
 |------|---------|----------|---------|
 | PIP decision notification | Admin finalises a PIP (all accept / partial / reject) | `templates/pips/email_decision.txt` | `methodology/services/pip_notification_service.py` → `send_decision_email()` |
-| Auth emails (welcome, password reset) | User registration / password reset | Inline in `accounts/services/email_service.py` | `accounts/services/email_service.py` (direct boto3) |
+| Email verification | Registration; email address change on profile edit | `templates/accounts/email_verify.txt` + `.html` | `accounts/services/email_service.py` → `send_verification_email()` |
+| Password reset | User clicks [Forgot password?] | Inline in `accounts/services/email_service.py` | `accounts/services/email_service.py` → `send_password_reset_email()` |
 
-Both paths ultimately need SES credentials at runtime.
+All paths need SES credentials at runtime. **Note:** `accounts/services/email_service.py` currently calls boto3 directly; it will be migrated to use Django's `EMAIL_BACKEND` (see Email Backend Strategy below) so that dev uses the console backend and tests use `locmem` without any AWS config.
 
 ### Email Backend Strategy
 
@@ -2406,11 +2413,28 @@ async def create_playbook(name: str, description: str, category: str) -> dict:
 
 ### FOB
 
-**No Authentication**: Single-user desktop app
+**Authentication**: Session-based (Django contrib.auth) for the web UI; DRF `TokenAuthentication` for REST API and MCP clients.
 
-**PIP Transmission**: Uses API key to transmit PIPs to HOMEBASE
+**Registration flow**:
+1. User fills registration form (username, first/last name, email, password, ToS checkbox) → `accepted_tos_at` recorded
+2. Verification email sent to provided address (SES in prod, console in dev, locmem in test)
+3. User cannot log in until email is verified via one-click link (`/auth/user/verify-email/<token>/`, 24h expiry)
+4. After first verified login → onboarding screen
 
-**Data Privacy**: All work orders and execution data stay local
+**Email change flow**:
+- On profile edit, changing email triggers: session termination + API token invalidation + new verification email
+- User is locked out until the new address is verified
+- Staff/superuser accounts bypass the verification lock entirely
+
+**Authorization**:
+- All web views require `@login_required`; unauthenticated requests redirect to `/auth/user/login/`
+- Login view additionally checks `UserEmailVerification.is_verified`; unverified users are shown an error with a re-send link
+- Staff/superuser: full access including Django Admin; bypass email-verification gate
+- Regular users: access scoped to their own playbooks and PIPs (group-based visibility planned)
+
+**PIP Transmission**: Uses DRF API token to transmit PIPs to HOMEBASE (future)
+
+**API Token**: DRF `Token` — shown on the profile page; rotated via password-confirmed POST; invalidated on email change
 
 ## Activity Access Tracking
 

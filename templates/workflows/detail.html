@@ -11,7 +11,12 @@
             <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
             <li class="breadcrumb-item"><a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a></li>
             <li class="breadcrumb-item"><a href="{% url 'workflow_list' playbook.pk %}">Workflows</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ workflow.name }}</li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {% if workflow.abbreviation %}
+                <span class="badge bg-secondary font-monospace me-1" data-testid="workflow-code-crumb">{{ workflow.abbreviation }}</span>
+                {% endif %}
+                {{ workflow.name }}
+            </li>
         </ol>
     </nav>
 
@@ -20,6 +25,10 @@
         <div>
             <h2 data-testid="workflow-name">
                 <i class="fa-solid fa-diagram-project"></i>
+                {% if workflow.abbreviation %}
+                <span class="badge bg-secondary font-monospace align-middle me-1"
+                      data-testid="workflow-code">{{ workflow.abbreviation }}</span>
+                {% endif %}
                 {{ workflow.name }}
                 <span class="badge bg-secondary" data-testid="workflow-order">#{{ workflow.order }}</span>
             </h2>

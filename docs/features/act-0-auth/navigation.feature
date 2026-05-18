@@ -43,11 +43,12 @@ Feature: FOB-DASHBOARD-1 Dashboard and Navigation
     When she clicks a recent playbook
     Then she is redirected to that playbook's view page
 
-  Scenario: FOB-DASHBOARD-07 Access settings
+  Scenario: FOB-DASHBOARD-07 Open profile from navbar
     Given Maria is on the dashboard
-    When she clicks her profile menu
-    And she clicks [Settings]
-    Then she is redirected to FOB-SETTINGS-1
+    When she clicks her username in the top navigation bar
+    Then a dropdown opens with items: [View Profile], [Logout]
+    When she clicks [View Profile]
+    Then she is redirected to FOB-PROFILE-VIEW-1 at /auth/user/profile/
 
   Scenario: FOB-DASHBOARD-08 Global search
     Given Maria is anywhere in FOB

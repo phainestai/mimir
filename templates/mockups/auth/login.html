@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Sign in — Mockup{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6 col-lg-4">
+
+        <div class="text-center mb-4">
+            <h1 class="h3 mb-1"><i class="fas fa-sign-in-alt me-2"></i>Sign in to Mimir</h1>
+            <p class="text-muted small">New here?
+                <a href="{% url 'mockup_auth_register' %}">Create an account</a>
+            </p>
+        </div>
+
+        <span class="badge bg-warning text-dark mb-3 d-block text-start">
+            Mockup — FOB-AUTH-LOGIN-1
+            &nbsp;·&nbsp;
+            State:
+            <span id="mock-state-label">{{ state_label }}</span>
+            &nbsp;·&nbsp;
+            <a href="{% url 'mockup_auth_login' %}" class="text-dark">normal</a>
+            &nbsp;|&nbsp;
+            <a href="{% url 'mockup_auth_login' %}?state=post-register" class="text-dark">post-register</a>
+            &nbsp;|&nbsp;
+            <a href="{% url 'mockup_auth_login' %}?state=unverified" class="text-dark">unverified</a>
+        </span>
+
+        <div class="alert alert-secondary py-2 px-3 mb-3 small d-flex align-items-center gap-2 flex-wrap">
+            <i class="fas fa-map-signs"></i>
+            <strong>Auth flow:</strong>
+            <a href="{% url 'mockup_auth_register' %}">① Register</a> →
+            <a href="{% url 'mockup_auth_login' %}?state=post-register">② post-register</a> →
+            <a href="{% url 'mockup_auth_login' %}?state=unverified">③ unverified</a> →
+            <strong>④ Login (here)</strong> →
+            <a href="{% url 'mockup_profile' %}">⑤ Profile</a> →
+            <a href="{% url 'mockup_profile_edit' %}">⑥ Edit Profile</a>
+        </div>
+
+        <!-- ── Post-registration banner ────────────────────────────────── -->
+        {% if state == "post-register" %}
+        <div class="alert alert-info d-flex gap-2 align-items-start"
+             data-testid="login-post-register-banner">
+            <i class="fas fa-envelope-circle-check mt-1 flex-shrink-0"></i>
+            <div>
+                <strong>Account created.</strong>
+                Please check your inbox and verify your email before logging in.
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ── Unverified banner ───────────────────────────────────────── -->
+        {% if state == "unverified" %}
+        <div class="alert alert-warning d-flex gap-2 align-items-start"
+             data-testid="login-unverified-banner">
+            <i class="fas fa-triangle-exclamation mt-1 flex-shrink-0"></i>
+            <div>
+                <strong>Please verify your email address before logging in.</strong>
+                <br>Check your inbox for a verification link.
+                <br>
+                <button type="button"
+                        class="btn btn-sm btn-warning mt-2"
+                        id="mock-resend-btn"
+                        data-testid="login-resend-btn">
+                    <i class="fas fa-paper-plane me-1"></i>Re-send verification email
+                </button>
+                <div id="mock-resend-success"
+                     class="text-success small mt-2 d-none"
+                     data-testid="login-resend-success">
+                    <i class="fas fa-circle-check me-1"></i>
+                    A new verification email has been sent.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ── Email-change-lockout banner ────────────────────────────── -->
+        {% if state == "email-changed" %}
+        <div class="alert alert-warning d-flex gap-2 align-items-start"
+             data-testid="login-email-changed-banner">
+            <i class="fas fa-envelope mt-1 flex-shrink-0"></i>
+            <div>
+                <strong>Email updated.</strong>
+                Please verify your new address before logging in again.
+                <br>
+                <button type="button"
+                        class="btn btn-sm btn-warning mt-2"
+                        id="mock-resend-btn"
+                        data-testid="login-resend-btn">
+                    <i class="fas fa-paper-plane me-1"></i>Re-send verification email
+                </button>
+                <div id="mock-resend-success"
+                     class="text-success small mt-2 d-none"
+                     data-testid="login-resend-success">
+                    <i class="fas fa-circle-check me-1"></i>
+                    A new verification email has been sent.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ── Login form ──────────────────────────────────────────────── -->
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+
+                <div id="mock-login-error"
+                     class="alert alert-danger d-none"
+                     data-testid="login-error">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <span id="mock-login-error-text">Invalid username or password.</span>
+                </div>
+
+                <form id="mock-login-form" data-testid="login-form" novalidate>
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Username</label>
+                        <input type="text"
+                               class="form-control"
+                               id="id_username"
+                               name="username"
+                               value="{{ prefill_username }}"
+                               required
+                               autofocus
+                               data-testid="login-username">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">Password</label>
+                        <input type="password"
+                               class="form-control"
+                               id="id_password"
+                               name="password"
+                               required
+                               data-testid="login-password">
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox"
+                               class="form-check-input"
+                               id="id_remember_me"
+                               name="remember_me"
+                               data-testid="login-remember">
+                        <label class="form-check-label" for="id_remember_me">
+                            Remember me for 30 days
+                        </label>
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-primary w-100"
+                            id="mock-login-btn"
+                            data-testid="login-submit">
+                        <i class="fas fa-sign-in-alt me-1"></i> Sign in
+                    </button>
+
+                    <div class="text-center mt-3">
+                        <a href="#" class="text-muted text-decoration-none small">
+                            <i class="fa-solid fa-key me-1"></i>Forgot password?
+                        </a>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+        <div class="text-center mt-3 small text-muted">
+            Demo credentials: <code>wrong / anything</code> → invalid error.
+            <code>unverified / any</code> → unverified state.
+            <code>maria / demo</code> → success → profile.
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var loginBtn  = document.getElementById('mock-login-btn');
+    var userInp   = document.getElementById('id_username');
+    var errBanner = document.getElementById('mock-login-error');
+    var errText   = document.getElementById('mock-login-error-text');
+    var resendBtn = document.getElementById('mock-resend-btn');
+
+    /* ── sign-in logic ── */
+    loginBtn.addEventListener('click', function () {
+        var username = userInp.value.trim().toLowerCase();
+        var password = document.getElementById('id_password').value;
+        console.log('[mockup:login] sign-in attempt username=' + username);
+
+        errBanner.classList.add('d-none');
+
+        if (username === 'unverified') {
+            console.log('[mockup:login] unverified user blocked');
+            window.location.href = "{% url 'mockup_auth_login' %}?state=unverified";
+            return;
+        }
+
+        if (username === 'maria' && password === 'demo') {
+            console.log('[mockup:login] authenticated, redirecting to profile');
+            window.location.href = "{% url 'mockup_profile' %}";
+            return;
+        }
+
+        errText.textContent = 'Invalid username or password.';
+        errBanner.classList.remove('d-none');
+        console.log('[mockup:login] invalid credentials');
+    });
+
+    /* ── re-send verification ── */
+    if (resendBtn) {
+        resendBtn.addEventListener('click', function () {
+            console.log('[mockup:login] re-send verification clicked');
+            resendBtn.disabled = true;
+            resendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending…';
+            setTimeout(function () {
+                resendBtn.textContent = 'Email sent';
+                resendBtn.classList.replace('btn-warning', 'btn-success');
+                var ok = document.getElementById('mock-resend-success');
+                if (ok) ok.classList.remove('d-none');
+                console.log('[mockup:login] verification email "sent" (simulated)');
+            }, 1200);
+        });
+    }
+})();
+</script>
+{% endblock %}

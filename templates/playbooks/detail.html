@@ -301,6 +301,10 @@
                                     {% for workflow in workflows %}
                                         <li class="list-group-item">
                                             <i class="fa-solid fa-diagram-project text-primary"></i>
+                                            {% if workflow.abbreviation %}
+                                            <span class="badge bg-secondary font-monospace me-1"
+                                                  data-testid="workflow-code-{{ workflow.pk }}">{{ workflow.abbreviation }}</span>
+                                            {% endif %}
                                             <strong>{{ workflow.name }}</strong>
                                             {% if workflow.description %}
                                                 <p class="mb-0 text-muted small">{{ workflow.description }}</p>

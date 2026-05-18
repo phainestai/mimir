@@ -6,6 +6,7 @@ This test would have caught the /accounts/ vs /auth/user/ discrepancy.
 import pytest
 from django.contrib.auth.models import User
 from django.test import Client
+from django.urls import reverse
 
 
 @pytest.mark.django_db
@@ -79,6 +80,6 @@ class TestNavbarLinks:
         assert 'maria' in html
         assert 'data-testid="user-display"' in html
         
-        # Should show logout, not login
-        assert 'data-testid="logout-link"' in html
-        assert 'data-testid="login-link"' not in html
+        # Should have profile entry point
+        assert 'data-testid="nav-view-profile"' in html
+        assert reverse("profile") in html

@@ -185,15 +185,29 @@
                         </form>
                         <div id="global-search-suggestions-container"></div>
                     </li>
-                    <li class="nav-item d-flex align-items-center">
-                        <span class="navbar-text me-2" data-testid="user-display">
+                    <li class="nav-item dropdown d-flex align-items-center">
+                        <a class="nav-link dropdown-toggle text-white py-2"
+                           href="#"
+                           id="navbar-user-menu"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false"
+                           data-testid="user-display">
                             <i class="fas fa-user"></i> {{ user.username }}
-                        </span>
-                        <a class="btn btn-sm btn-outline-light" href="{% url 'logout' %}" data-testid="logout-link"
-                           data-bs-toggle="tooltip" data-bs-placement="bottom"
-                           title="Sign out of your Mimir session">
-                            <i class="fas fa-sign-out-alt"></i> Logout
                         </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbar-user-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'profile' %}" data-testid="nav-view-profile">
+                                    <i class="fas fa-id-card me-1"></i> View Profile
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'logout' %}" data-testid="logout-link">
+                                    <i class="fas fa-sign-out-alt me-1"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     {% else %}
                     <li class="nav-item">

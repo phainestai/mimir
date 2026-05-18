@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}My Profile — Mimir{% endblock %}
+
+{% block content %}
+<div class="container" data-testid="profile-page">
+    <h1 class="h3 mb-4"><i class="fas fa-user-circle me-2"></i>My profile</h1>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-id-card me-1"></i> Account</span>
+                    <a href="{% url 'profile_edit' %}"
+                       class="btn btn-sm btn-outline-secondary"
+                       data-testid="profile-edit-btn"
+                       data-bs-toggle="tooltip"
+                       title="Edit your name and email">
+                        <i class="fas fa-pencil me-1"></i> Edit
+                    </a>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">First name</dt>
+                        <dd class="col-sm-8" data-testid="profile-first-name">{{ first_name|default:"—" }}</dd>
+                        <dt class="col-sm-4">Last name</dt>
+                        <dd class="col-sm-8" data-testid="profile-last-name">{{ last_name|default:"—" }}</dd>
+                        <dt class="col-sm-4">Email</dt>
+                        <dd class="col-sm-8" data-testid="profile-email">{{ email|default:"—" }}</dd>
+                        <dt class="col-sm-4">Username</dt>
+                        <dd class="col-sm-8"><code>{{ username }}</code></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <i class="fas fa-key me-1"></i> API token (MCP / REST)
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">
+                        Use this token as <code>Authorization: Token …</code> for the Mimir API and MCP when configured.
+                    </p>
+                    <div class="input-group input-group-sm mb-3">
+                        <input type="password"
+                               class="form-control font-monospace"
+                               readonly
+                               id="profile-api-token"
+                               value="{{ api_token }}"
+                               data-testid="profile-token-field"
+                               autocomplete="off">
+                        <button class="btn btn-outline-secondary" type="button"
+                                id="profile-token-toggle"
+                                data-testid="profile-token-toggle"
+                                title="Show or hide token">Show</button>
+                        <button class="btn btn-outline-primary" type="button"
+                                id="profile-token-copy"
+                                data-testid="profile-token-copy"
+                                title="Copy token to clipboard">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <form method="post"
+                          action="{% url 'profile_regenerate_token' %}"
+                          class="border rounded p-3 bg-body-secondary"
+                          data-testid="profile-token-regenerate-form">
+                        {% csrf_token %}
+                        <label for="profile-current-password" class="form-label small mb-1">
+                            Regenerate token <span class="text-muted">(requires current password)</span>
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <input type="password"
+                                   name="current_password"
+                                   id="profile-current-password"
+                                   class="form-control"
+                                   placeholder="Current password"
+                                   autocomplete="current-password"
+                                   data-testid="profile-token-regenerate-password"
+                                   required>
+                            <button type="submit"
+                                    class="btn btn-warning"
+                                    data-testid="profile-token-regenerate-submit">
+                                <i class="fas fa-rotate me-1"></i> Regenerate token
+                            </button>
+                        </div>
+                        <p class="small text-muted mt-2 mb-0">
+                            The previous token stops working immediately. You can also rotate via
+                            <code>POST /api/auth/token/refresh/</code> when authenticated with the old token.
+                        </p>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-lightbulb me-1"></i> My PIPs</span>
+                    <a href="{% url 'pip_list' %}" class="btn btn-sm btn-outline-primary">All PIPs</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if pips %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle" data-testid="profile-pips-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Playbook</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pip in pips %}
+                                <tr>
+                                    <td>{{ pip.title }}</td>
+                                    <td>{{ pip.playbook.name }}</td>
+                                    <td><span class="badge bg-secondary">{{ pip.get_status_display }}</span></td>
+                                    <td class="text-end">
+                                        <a href="{% url 'pip_detail' pip.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted p-3 mb-0">You have not created any PIPs yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-book-sparkles me-1"></i> My playbooks</span>
+                    <a href="{% url 'playbook_list' %}" class="btn btn-sm btn-outline-primary">All playbooks</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if playbooks %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle" data-testid="profile-playbooks-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Version</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pb in playbooks %}
+                                <tr>
+                                    <td>{{ pb.name }}</td>
+                                    <td>v{{ pb.version }}</td>
+                                    <td><span class="badge bg-secondary">{{ pb.get_status_display }}</span></td>
+                                    <td class="text-end">
+                                        <a href="{% url 'playbook_detail' pb.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted p-3 mb-0">You do not own any playbooks yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var input = document.getElementById('profile-api-token');
+    var toggle = document.getElementById('profile-token-toggle');
+    var copyBtn = document.getElementById('profile-token-copy');
+    if (!input || !toggle || !copyBtn) return;
+
+    toggle.addEventListener('click', function () {
+        var showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        toggle.textContent = showing ? 'Show' : 'Hide';
+        console.log('[profile] token visibility toggled, revealed=' + (!showing));
+    });
+
+    copyBtn.addEventListener('click', function () {
+        var raw = input.value;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(raw).then(function () {
+                console.log('[profile] token copied to clipboard (length=' + raw.length + ')');
+            }).catch(function (err) {
+                console.warn('[profile] clipboard write failed', err);
+            });
+        } else {
+            console.warn('[profile] clipboard API not available');
+        }
+    });
+
+    var regenForm = document.querySelector('[data-testid="profile-token-regenerate-form"]');
+    if (regenForm) {
+        regenForm.addEventListener('submit', function () {
+            console.log('[profile] regenerate token form submitted');
+        });
+    }
+})();
+</script>
+{% endblock %}
