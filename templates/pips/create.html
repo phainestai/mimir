@@ -13,15 +13,27 @@
         {% csrf_token %}
         <div class="mb-3">
             <label class="form-label" for="id_playbook">Target playbook (released only)</label>
-            <select class="form-select" name="playbook" id="id_playbook" required data-testid="pip-create-playbook">
+            {% if prefill_playbook_id %}
+            {# Opened via playbook detail (?playbook=…): target must stay fixed (FOB-PIP-CREATE-01). #}
+            <input type="hidden" name="playbook" value="{{ prefill_playbook_id }}" data-testid="pip-create-playbook-hidden"/>
+            <select class="form-select" id="id_playbook" disabled required data-testid="pip-create-playbook"
+                    aria-disabled="true">
                 <option value="">— Select playbook —</option>
                 {% for pb in released_playbooks %}
-                <option value="{{ pb.pk }}"
-                        {% if prefill_playbook_id == pb.pk %}selected{% endif %}>
+                <option value="{{ pb.pk }}" {% if prefill_playbook_id == pb.pk %}selected{% endif %}>
                     {{ pb.name }} (v{{ pb.version }})
                 </option>
                 {% endfor %}
             </select>
+            <p class="form-text small mb-0">Target playbook is fixed because you opened this form from the playbook.</p>
+            {% else %}
+            <select class="form-select" name="playbook" id="id_playbook" required data-testid="pip-create-playbook">
+                <option value="">— Select playbook —</option>
+                {% for pb in released_playbooks %}
+                <option value="{{ pb.pk }}">{{ pb.name }} (v{{ pb.version }})</option>
+                {% endfor %}
+            </select>
+            {% endif %}
         </div>
         <div class="mb-3">
             <label class="form-label" for="id_title">Title</label>

@@ -139,9 +139,26 @@ LOGGING = {
     },
 }
 
-# Email configuration (AWS SES)
-# AWS credentials should be set via environment variables:
-# AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION
-
+# ─────────────────────────────────────────────────────────────────────────────
+# Email — AWS SES via django-ses
+# ─────────────────────────────────────────────────────────────────────────────
+# Required environment variables:
+#   AWS_SES_REGION_NAME       e.g. "us-east-1"          (mandatory)
+#   DEFAULT_FROM_EMAIL        e.g. "noreply@featurefactory.io"  (mandatory, must be SES-verified)
+#   AWS_ACCESS_KEY_ID         IAM key with ses:SendEmail  (or use EC2/EB instance role)
+#   AWS_SECRET_ACCESS_KEY     paired secret
+#
+# Optional tuning:
+#   AWS_SES_CONFIGURATION_SET  SES configuration set name for open/click tracking
+#
+# django-ses docs: https://github.com/django-ses/django-ses
+EMAIL_BACKEND = "django_ses.SESBackend"
+AWS_SES_REGION_NAME = os.getenv("AWS_SES_REGION_NAME", "us-east-1")
+AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@featurefactory.io")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://mimir.featurefactory.io")
+
+# SES Configuration Set (optional; enables CloudWatch bounce/complaint metrics)
+_ses_cfg_set = os.getenv("AWS_SES_CONFIGURATION_SET", "")
+if _ses_cfg_set:
+    AWS_SES_CONFIGURATION_SET = _ses_cfg_set

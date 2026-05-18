@@ -3,6 +3,7 @@ import aws_cdk as cdk
 from stacks.app_stack import MimirApp
 from stacks.dns_stack import MimirDns
 from stacks.network_stack import MimirNetwork
+from stacks.ses_stack import MimirSes
 
 app = cdk.App()
 
@@ -36,5 +37,15 @@ dns = MimirDns(
     acm_cert_arn=acm_cert_arn,
     env=env,
 )
+
+# SES configuration set + IAM send-email policy (domain identity is pre-existing).
+# DKIM/DNS are managed outside this stack if you add identities later.
+ses = MimirSes(
+    app, "MimirSes",
+    env=env,
+)
+# EB needs SES policy before it can send; MimirApp env vars reference the
+# configuration set name produced by MimirSes.
+app_stack.add_dependency(ses)
 
 app.synth()

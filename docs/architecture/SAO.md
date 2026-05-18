@@ -2065,6 +2065,68 @@ Improved PIP proposals next time
 - **Tyr AI**: Task planning and work order generation
 - **Saga AI**: Retrospection and improvement suggestions
 
+## Email Architecture
+
+### Overview
+
+Mimir sends transactional emails on two paths:
+
+| Path | Trigger | Template | Service |
+|------|---------|----------|---------|
+| PIP decision notification | Admin finalises a PIP (all accept / partial / reject) | `templates/pips/email_decision.txt` | `methodology/services/pip_notification_service.py` → `send_decision_email()` |
+| Auth emails (welcome, password reset) | User registration / password reset | Inline in `accounts/services/email_service.py` | `accounts/services/email_service.py` (direct boto3) |
+
+Both paths ultimately need SES credentials at runtime.
+
+### Email Backend Strategy
+
+Django's `EMAIL_BACKEND` setting governs all `send_mail` / `send_mass_mail` calls (the PIP notification path and Django's own contrib.auth flows).
+
+| Environment | Backend | Config |
+|-------------|---------|--------|
+| **test** | `django.core.mail.backends.locmem.EmailBackend` | No network; captured in `django.core.mail.outbox` |
+| **dev** (default) | `django.core.mail.backends.console.EmailBackend` | Prints to stdout |
+| **dev** with `USE_SES_IN_DEV=1` | `django_ses.SESBackend` | Live SES delivery for local smoke testing |
+| **prod** | `django_ses.SESBackend` | AWS SES via `django-ses` + boto3 |
+
+The `accounts/services/email_service.py` auth email path calls boto3 directly (pre-dates django-ses adoption) and is independent of `EMAIL_BACKEND`. It will be migrated to use `EMAIL_BACKEND` in a future cleanup ticket.
+
+### AWS SES Setup Requirements
+
+**Domain / address verification** (one-time, via AWS Console or CloudFormation):
+1. Verify sending domain `featurefactory.io` in SES (DNS TXT + DKIM).
+2. Move SES account out of sandbox: request production access (AWS Support ticket).
+3. Create IAM user / role with `ses:SendEmail` on resource `arn:aws:ses:<region>:<account>:identity/<domain>`.
+
+**Required environment variables for production:**
+
+| Variable | Example | Notes |
+|----------|---------|-------|
+| `AWS_SES_REGION_NAME` | `us-east-1` | Must match verified identity region |
+| `DEFAULT_FROM_EMAIL` | `noreply@featurefactory.io` | Must be SES-verified sender |
+| `AWS_ACCESS_KEY_ID` | `AKIAxxxxxxxx` | Or use EB instance role (preferred) |
+| `AWS_SECRET_ACCESS_KEY` | `…` | Pair for the above |
+| `AWS_SES_CONFIGURATION_SET` | `mimir-transactional` | Optional; enables CloudWatch metrics |
+
+**Elastic Beanstalk deployment:** Attach an IAM instance profile with `ses:SendEmail`; omit the key/secret env vars (boto3 picks up the instance role automatically).
+
+### PIP Decision Email Content
+
+The email body is rendered from `templates/pips/email_decision.txt` (plain text). It includes:
+- PIP title and overall verdict (Accepted / Partially Accepted / Rejected)
+- Per-change decision line: change type, entity, admin decision, Galdr reasoning
+- New playbook version number (when applicable)
+
+### Testing Strategy
+
+| Layer | Approach |
+|-------|----------|
+| **Unit / integration** (CI) | `locmem` backend; assert on `django.core.mail.outbox` — subject, recipient, body keywords |
+| **Live send smoke test** | Requires `USE_SES_IN_DEV=1` + real AWS creds + SES-verified `TEST_EMAIL_RECIPIENT` env var; skipped automatically when env var absent |
+| **SES receipt / receive** | Not implemented — SES inbound requires MX record change; out of scope for MVP. Delivery confirmed by non-bounce of outbound message IDs. |
+
+Integration tests for PIP decision email live in `tests/integration/test_pip_email.py`.
+
 ## MCP Integration: Implementation Patterns
 
 ### Critical Discovery: stdio Pollution Prevention

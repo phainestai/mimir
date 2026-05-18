@@ -152,3 +152,17 @@ LOGGING = {
         },
     },
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Email — dev default: console. Set USE_SES_IN_DEV=1 + AWS_* vars to test
+# live SES delivery without deploying.
+# ─────────────────────────────────────────────────────────────────────────────
+if os.getenv("USE_SES_IN_DEV", "").strip():
+    EMAIL_BACKEND = "django_ses.SESBackend"
+    AWS_SES_REGION_NAME = os.getenv("AWS_SES_REGION_NAME", "us-east-1")
+    AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@mimir.local")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8000")

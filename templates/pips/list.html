@@ -140,9 +140,11 @@
                         </td>
                         <td class="small text-muted">{{ pip.updated_at|date:"Y-m-d H:i" }}</td>
                         <td class="text-end">
-                            <div class="dropdown">
+                            {# position-static: Bootstrap — dropdown in .table-responsive otherwise clips / mis-hit-tests #}
+                            <div class="dropdown position-static">
                                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                        data-bs-toggle="dropdown" data-testid="pip-actions-{{ pip.pk }}"
+                                        data-bs-toggle="dropdown" data-bs-display="static"
+                                        data-testid="pip-actions-{{ pip.pk }}"
                                         aria-expanded="false">Actions</button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li>

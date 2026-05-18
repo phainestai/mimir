@@ -156,6 +156,19 @@ class MimirApp(Stack):
             # GALDR_MODEL is non-secret: default Anthropic model for Galdr assessment.
             opt("aws:elasticbeanstalk:application:environment", "GALDR_MODEL",
                 "claude-sonnet-4-5"),
+            # ── Email (AWS SES via django-ses) ─────────────────────────────────
+            # Credentials come from the EB instance role (MimirSESSendEmail policy).
+            # No AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY needed.
+            # DEFAULT_FROM_EMAIL and AWS_SES_CONFIGURATION_SET are set here;
+            # they are not secrets.
+            opt("aws:elasticbeanstalk:application:environment",
+                "AWS_SES_REGION_NAME", "us-east-1"),
+            opt("aws:elasticbeanstalk:application:environment",
+                "DEFAULT_FROM_EMAIL", "noreply@featurefactory.io"),
+            opt("aws:elasticbeanstalk:application:environment",
+                "AWS_SES_CONFIGURATION_SET", "mimir-transactional"),
+            opt("aws:elasticbeanstalk:application:environment",
+                "FRONTEND_URL", "https://mimir.featurefactory.io"),
         ]
 
     # ── CloudWatch Alarms ──────────────────────────────────────────────────────

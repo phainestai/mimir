@@ -30,7 +30,8 @@ requests>=2.31.0
 # Production dependencies
 whitenoise>=6.6.0
 python-json-logger>=2.0.7
-boto3>=1.34.0  # AWS SDK for SES email
+boto3>=1.34.0       # AWS SDK (SES direct boto3 calls + django-ses transport)
+django-ses>=4.0.0  # Django EMAIL_BACKEND → AWS SES (PIP decision emails, auth emails)
 
 # Testing
 pytest>=7.4.0
