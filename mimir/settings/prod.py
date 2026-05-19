@@ -5,6 +5,7 @@ Hardened for AWS Elastic Beanstalk deployment with Postgres RDS.
 """
 
 import os
+import urllib.request
 
 import dj_database_url
 
@@ -23,6 +24,29 @@ DEBUG = False
 ALLOWED_HOSTS = os.getenv(
     "DJANGO_ALLOWED_HOSTS", "mimir.featurefactory.io,.elasticbeanstalk.com,localhost"
 ).split(",")
+
+# Append the EC2 instance's private IP so ELB target-group health checks
+# (Host: <instance-ip>) are accepted instead of returning 400.
+def _ec2_private_ip() -> str | None:
+    """Fetch private IPv4 from IMDSv2; return None if not on EC2."""
+    try:
+        token_req = urllib.request.Request(
+            "http://169.254.169.254/latest/api/token",
+            headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"},
+            method="PUT",
+        )
+        token = urllib.request.urlopen(token_req, timeout=1).read().decode()
+        ip_req = urllib.request.Request(
+            "http://169.254.169.254/latest/meta-data/local-ipv4",
+            headers={"X-aws-ec2-metadata-token": token},
+        )
+        return urllib.request.urlopen(ip_req, timeout=1).read().decode()
+    except Exception:
+        return None
+
+_instance_ip = _ec2_private_ip()
+if _instance_ip:
+    ALLOWED_HOSTS.append(_instance_ip)
 
 # CSRF trusted origins (HTTPS only in prod)
 CSRF_TRUSTED_ORIGINS = os.getenv(
