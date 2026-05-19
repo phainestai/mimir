@@ -1,7 +1,7 @@
 FROM python:3.14-slim
 
 LABEL maintainer="Denis Petelin <denis.petelin@example.com>"
-LABEL description="Mimir - Your Self-Evolving Engineering Playbook"
+LABEL description="Mimir - Your Ever-Evolving Engineering Playbook"
 LABEL version="1.0.0"
 
 # Set environment variables

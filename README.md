@@ -1,6 +1,6 @@
 # Mimir
 
-**Your Self-Evolving Engineering Playbook**
+**Your Ever-Evolving Engineering Playbook**
 
 Mimir helps you work more effectively by providing structured playbooks that your AI assistant can access directly in your IDE. Get guidance, generate work plans, track progress, and continuously improve your development process.
 

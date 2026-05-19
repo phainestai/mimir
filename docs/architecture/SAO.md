@@ -767,7 +767,7 @@ apt-get install graphviz
 
 **Visual Identity**:
 - **Primary Icon**: `fa-book-sparkles` (Font Awesome Pro) represents playbooks/methodologies throughout the application
-- **Branding**: "Your Self-Evolving Engineering Playbook" - emphasizes practical, modular, AI-enhanced approach
+- **Branding**: "Your Ever-Evolving Engineering Playbook" - emphasizes practical, modular, AI-enhanced approach
 - **Terminology**: User-facing language uses "playbook" (accessible, modern) while internal code uses "Methodology" models (technical accuracy)
 
 **Icon Usage**:

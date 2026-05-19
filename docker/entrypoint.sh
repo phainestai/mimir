@@ -10,7 +10,7 @@ export MIMIR_EMAIL=${MIMIR_EMAIL:-admin@localhost}
 export MIMIR_DB_PATH=/app/data/mimir.db
 
 echo "═══════════════════════════════════════════════════════"
-echo "🎭 Mimir - Your Self-Evolving Engineering Playbook"
+echo "🎭 Mimir - Your Ever-Evolving Engineering Playbook"
 echo "═══════════════════════════════════════════════════════"
 echo ""
 echo "Container Configuration:"

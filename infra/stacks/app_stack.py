@@ -143,7 +143,7 @@ class MimirApp(Stack):
             self,
             "EbApp",
             application_name="mimir",
-            description="Mimir - Self-Evolving Engineering Playbook (FOB)",
+            description="Mimir - Ever-Evolving Engineering Playbook (FOB)",
         )
 
         # t3.small is not available in us-east-1e — limit to AZs that support it.
