@@ -3,6 +3,10 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
   I want to view complete playbook details
   So that I can understand the methodology structure and content
 
+  # MVP simplified: Public playbooks — any authenticated user may view (read-only for non-owners).
+  # Private playbooks — owner-only view, edit, and delete.
+  # Edit and Delete actions are shown only to the owner regardless of visibility.
+
   Background:
     Given Maria is authenticated in FOB
     And the playbook "React Frontend Development" exists with:
@@ -55,6 +59,17 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
       | Tags     | react, frontend, component-architecture |
       | Created  |                            3 months ago |
       | Source   | Downloaded from Usability family        |
+
+  # MVP simplified: public playbooks are readable by any authenticated user.
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-04b Non-owner views Public playbook read-only
+    Given Mike owns a Public Released playbook "React Frontend Development"
+    And Maria is authenticated in FOB and is not the owner
+    When Maria opens the playbook detail page for "React Frontend Development"
+    Then she sees Visibility "Public" in the metadata header
+    And she can read Overview, Workflows, and Activities tabs
+    And [Edit] and [Delete] are not available to Maria (owner-only)
+    And [Submit PIP] is not available to Maria (owner-only in MVP)
+    # MVP: PIP submission is owner-only. Public viewers can view the playbook and its PIPs but cannot propose changes.
 
   Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-05 View workflows list in Overview ✅ IMPLEMENTED
     Given Maria is on the Overview tab

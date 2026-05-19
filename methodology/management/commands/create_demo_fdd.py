@@ -39,7 +39,7 @@ class Command(BaseCommand):
             tags=['agile', 'fdd', 'iterative', 'feature-driven'],
             status='active',
             source='owned',
-            visibility='public',
+            visibility='private',
             author=admin_user
         )
         self.stdout.write(self.style.SUCCESS(f'Created playbook: {playbook.name}'))

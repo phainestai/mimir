@@ -144,9 +144,10 @@
                             id="{{ form.visibility.id_for_label }}"
                             data-testid="visibility-select">
                         <option value="private" {% if form.visibility.value == 'private' or not form.visibility.value %}selected{% endif %}>Private (only me)</option>
-                        <option value="family" {% if form.visibility.value == 'family' %}selected{% endif %}>Family</option>
-                        <option value="local" {% if form.visibility.value == 'local' %}selected{% endif %}>Local only (not uploaded to Homebase)</option>
+                        <option value="family" disabled title="Coming soon — stored as metadata only">Family (coming soon)</option>
+                        <option value="local" disabled title="Coming soon — stored as metadata only">Local only (coming soon)</option>
                     </select>
+                    {% include "playbooks/_visibility_field_help.html" %}
                 </div>
 
                 <!-- Action Buttons -->

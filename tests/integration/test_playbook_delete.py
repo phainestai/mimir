@@ -223,10 +223,34 @@ class TestDependencyWarnings:
 class TestAdvancedFeatures:
     """PB-DELETE-12 to PB-DELETE-15: Advanced features"""
     
-    @pytest.mark.skip(reason="Family/Homebase features deferred")
-    def test_delete_family_playbook(self):
-        """PB-DELETE-12: Delete playbook from family affects members (deferred)"""
-        pass
+    def test_delete_family_visibility_shows_metadata_note_only(self, client):
+        """PB-DELETE-12: family visibility label shows metadata note, not member loss warning."""
+        user = User.objects.create_user(
+            username="maria",
+            email="maria@example.com",
+            password="SecurePass123",
+        )
+        client.force_login(user)
+
+        playbook = Playbook.objects.create(
+            name="Family Shared Playbook",
+            description="Shared with family",
+            category="development",
+            visibility="family",
+            status="disabled",
+            version=1,
+            source="owned",
+            author=user,
+        )
+
+        confirm_url = reverse("playbook_delete_confirm", kwargs={"pk": playbook.pk})
+        response = client.get(confirm_url)
+
+        assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert 'data-testid="visibility-metadata-note"' in content
+        assert "metadata only" in content
+        assert "shared with your family" not in content.lower()
     
     def test_delete_active_vs_disabled(self, maria):
         """PB-DELETE-13: Delete active vs disabled playbook"""
@@ -580,7 +604,8 @@ class TestPlaybookDeleteModalEndpoint:
         content = response.content.decode("utf-8")
         assert 'data-testid="playbook-delete-modal"' not in content
 
-    def test_modal_shows_family_warning_for_shared_playbook(self, client):
+    def test_modal_shows_family_metadata_note_for_family_visibility(self, client):
+        """Delete modal explains family visibility is metadata-only in FOB."""
         user = User.objects.create_user(
             username="maria",
             email="maria@example.com",
@@ -605,8 +630,8 @@ class TestPlaybookDeleteModalEndpoint:
 
         assert response.status_code == 200
         content = response.content.decode("utf-8")
-        assert "shared with your family" in content
-        assert "lose" in content.lower() and "access" in content.lower()
+        assert 'data-testid="visibility-metadata-note"' in content
+        assert "metadata only" in content
 
     def test_modal_shows_active_warning_for_active_playbook(self, client):
         user = User.objects.create_user(

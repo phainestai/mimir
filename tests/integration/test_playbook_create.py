@@ -182,7 +182,7 @@ class TestPlaybookCreateWizard:
         assert response.status_code == 200
         assert b'Must be 10-500 characters' in response.content or b'500 characters' in response.content
     
-    # PB-CREATE-07: Select visibility options
+    # PB-CREATE-07: Visibility — owner-only help and deferred family/local
     def test_select_visibility_private(self):
         """Test selecting private visibility."""
         data = {
@@ -190,13 +190,24 @@ class TestPlaybookCreateWizard:
             'description': 'Test description here',
             'category': 'product',
             'visibility': 'private',
-            'visibility': 'private'
         }
         response = self.client.post(reverse('playbook_create'), data=data)
-        
+
         assert response.status_code == 302  # Success
         session = self.client.session
         assert session['wizard_data']['visibility'] == 'private'
+
+    def test_visibility_help_and_disabled_options_on_step1(self):
+        """Step 1 shows owner-only help; family/local are coming soon."""
+        response = self.client.get(reverse('playbook_create'))
+
+        assert response.status_code == 200
+        content = response.content.decode('utf-8')
+        assert 'data-testid="visibility-help"' in content
+        assert 'only you (the owner)' in content
+        assert 'Family (coming soon)' in content
+        assert 'Local only (coming soon)' in content
+        assert 'disabled' in content
     
     # PB-CREATE-08: Add optional tags
     def test_add_tags(self):
@@ -272,23 +283,31 @@ class TestPlaybookCreateWizard:
         assert response.status_code == 200
         assert b'Skip' in response.content or b'Cancel' in response.content
     
-    # PB-CREATE-12: Complete Step 3 with Active status
-    def test_complete_step3_active_status(self):
-        """Test publishing playbook as Active."""
-        # Complete Steps 1 & 2
+    # PB-CREATE-12: Complete Step 3 with Released status
+    def test_complete_step3_released_status(self):
+        """Test creating playbook as Released at v1.0."""
         self._complete_steps_1_and_2()
-        
-        # Publish as Active
+
+        publish_data = {'status': 'released'}
+        response = self.client.post(reverse('playbook_create_step3'), data=publish_data)
+
+        assert response.status_code == 302
+        playbook = Playbook.objects.get(name='Test Playbook')
+        assert playbook.status == 'released'
+        assert playbook.version == Decimal("1.0")
+        assert PlaybookVersion.objects.filter(playbook=playbook).exists()
+
+    def test_complete_step3_active_status_legacy_post(self):
+        """Legacy active status still accepted on POST (not offered in wizard UI)."""
+        self._complete_steps_1_and_2()
+
         publish_data = {'status': 'active'}
         response = self.client.post(reverse('playbook_create_step3'), data=publish_data)
-        
+
         assert response.status_code == 302
-        # Check playbook was created
         playbook = Playbook.objects.get(name='Test Playbook')
         assert playbook.status == 'active'
         assert playbook.version == Decimal("1.0")
-        # Check version history created
-        assert PlaybookVersion.objects.filter(playbook=playbook).exists()
     
     # PB-CREATE-13: Complete Step 3 with Draft status
     def test_complete_step3_draft_status(self):
@@ -313,6 +332,9 @@ class TestPlaybookCreateWizard:
         assert b'Test Playbook' in response.content
         assert b'Test description' in response.content
         assert b'data-testid="summary-card"' in response.content
+        assert b'owner-only access' in response.content
+        assert b'Released' in response.content
+        assert b'Draft' in response.content
     
     # PB-CREATE-15: Cancel wizard at any step
     def test_cancel_wizard_step1(self):
@@ -333,7 +355,7 @@ class TestPlaybookCreateWizard:
         self._complete_steps_1_and_2()
         
         response = self.client.get(reverse('playbook_create_step2'))
-        assert b'Back' in response.content or b'\u2190' in response.content
+        assert b'Back' in response.content or '←'.encode() in response.content
         assert b'data-testid="back-button"' in response.content
     
     # PB-CREATE-18: Playbook appears in list after creation
@@ -348,18 +370,20 @@ class TestPlaybookCreateWizard:
         response = self.client.get(reverse('playbook_list'))
         assert b'Test Playbook' in response.content
     
-    # PB-CREATE-19: Create playbook with Family visibility (deferred)
+    # PB-CREATE-19/20: Family/local visibility deferred in GUI
     def test_family_visibility_option_deferred(self):
-        """Test Family visibility option exists but is marked as TODO."""
+        """Family option is disabled (coming soon)."""
         response = self.client.get(reverse('playbook_create'))
-        # Should have family option but may be disabled or marked as coming soon
-        assert b'family' in response.content.lower() or b'Family' in response.content
-    
-    # PB-CREATE-20: Create playbook with Local only visibility (deferred)
+        content = response.content.decode('utf-8')
+        assert 'Family (coming soon)' in content
+        assert 'value="family"' in content and 'disabled' in content
+
     def test_local_visibility_option_deferred(self):
-        """Test Local only visibility option exists but is marked as TODO."""
+        """Local option is disabled (coming soon)."""
         response = self.client.get(reverse('playbook_create'))
-        assert b'local' in response.content.lower() or b'Local' in response.content
+        content = response.content.decode('utf-8')
+        assert 'Local only (coming soon)' in content
+        assert 'value="local"' in content and 'disabled' in content
     
     # PB-CREATE-21: Auto-increment version on creation
     def test_version_auto_increment(self):

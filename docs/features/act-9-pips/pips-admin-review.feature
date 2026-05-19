@@ -1,9 +1,17 @@
-Feature: FOB-PIP-ADMIN-1 Administrator Reviews PIP via Django Admin
-  As an Administrator (Mike)
+Feature: FOB-PIP-ACCEPT-1 Accept PIP — owner or Administrator
+  As a playbook owner or Administrator
   I want to review Galdr's per-Change recommendations and make Accept/Reject decisions
-  So that only well-reasoned, conflict-free changes are applied to Released playbooks
+  So that only well-reasoned changes are applied to Released playbooks
 
-  Status: 🔲 TODO
+  # TARGET: After Galdr review, playbook OWNER or ADMINISTRATOR may finalize (accept/reject).
+  # Public viewers and other authenticated users cannot finalize PIPs.
+  #
+  # MVP simplified implementation:
+  # - Staff Administrator finalizes via Django Admin (implemented path).
+  # - Playbook owner finalizes via FOB web UI (@mvp_gap — first post-MVP feature).
+  # - Public viewers: can view the playbook and its PIPs but cannot finalize.
+
+  Status: 🔲 TODO (Admin path); owner path @mvp_gap
   Related: act-9-pips/pips-view.feature, act-9-pips/pips-list.feature
 
   Background:
@@ -178,6 +186,30 @@ Feature: FOB-PIP-ADMIN-1 Administrator Reviews PIP via Django Admin
     Given user "maria" does not have Administrator role
     When Maria tries to access "/admin/methodology/pip/42/change/"
     Then she receives HTTP 403 or is redirected to Django Admin login
+
+  # MVP simplified: owner finalizes PIPs via FOB UI is the first post-MVP item.
+  # For MVP, owner submits the PIP and staff Administrator finalizes via Django Admin.
+  @mvp_gap
+  Scenario: FOB-PIP-OWNER-01 Playbook owner finalizes PIP on own Released playbook in FOB
+    # MVP gap: owner finalize UI in FOB not yet built. Finalize goes through Django Admin (Administrator).
+    Given Maria owns Released playbook "UX Research Methodology"
+    And PIP-50 targets that playbook with status "Reviewed"
+    And Galdr has completed recommendations on all Changes
+    When Maria opens FOB-PIP-DETAIL-1 for PIP-50
+    Then she sees [Finalize decision] or equivalent owner accept controls
+    When she accepts Change #1 and rejects Change #2 and confirms finalize
+    Then PIP-50 moves to Accepted or Accepted (partial)
+    And the playbook version bumps per versioning rules
+
+  # MVP simplified: public viewers can see the playbook but cannot finalize its PIPs.
+  Scenario: FOB-PIP-OWNER-02 Public viewer cannot finalize someone else's PIP
+    Given Mike owns a Public playbook "React Frontend Development"
+    And Maria is authenticated in FOB but is not the owner
+    And PIP-99 on that playbook has status "Reviewed"
+    When Maria opens the PIP detail page for PIP-99
+    Then she can read the PIP details (title, Changes, Galdr recommendations)
+    And she does not see [Finalize decision] or [Accept] / [Reject] controls
+    And a POST to finalize PIP-99 returns HTTP 403
 
   Scenario: FOB-PIP-ADMIN-17 Admin cannot modify an already-decided PIP
     Given PIP-35 has status "Accepted" (already finalised)

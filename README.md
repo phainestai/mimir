@@ -144,8 +144,8 @@ See [docs/DOCKER_QUICK_START.md](docs/DOCKER_QUICK_START.md) for docker-compose 
 
 2. **Create virtual environment**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. **Install dependencies**

@@ -5,6 +5,6 @@ alwaysApply: false
 # Rule: Test Runners
 
 Use the following runners:
-- **Unit and integration tests**: pytest (`uv run pytest tests/`)
+- **Unit and integration tests**: `.venv/bin/python -m pytest tests/` (or `source .venv/bin/activate` then `pytest tests/`; see `do-use-project-venv.mdc`)
 - **API view tests**: Django test client
 - **Acceptance (end-to-end) tests**: Playwright via pytest (`uv run pytest tests/e2e/` from repo root; `tests/e2e/pytest.ini` disables the Playwright plugin so prefer root). **Full suite (BPE-07 / release gate)**: `uv run pytest tests/ tests/e2e/ -o addopts='--tb=short --strict-markers --reuse-db'`

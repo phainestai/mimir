@@ -1,0 +1,35 @@
+---
+description: Use the project virtual environment at .venv for Python, pytest, and Django commands
+alwaysApply: true
+---
+
+# Use `.venv` in the repo root
+
+This workspace keeps its virtual environment at **`.venv/`** (not `venv/`). It is gitignored but always present locally.
+
+## Commands
+
+Prefer the venv interpreter explicitly:
+
+```bash
+.venv/bin/python -m pytest tests/
+.venv/bin/python manage.py runserver
+.venv/bin/python manage.py migrate
+```
+
+Or activate once per shell:
+
+```bash
+source .venv/bin/activate
+pytest tests/
+```
+
+## Do not
+
+- Do not claim there is no venv without checking `.venv/bin/python`.
+- Do not use system `python3` when `.venv/bin/python` exists.
+- VS Code/Cursor is already configured: `python.defaultInterpreterPath` → `${workspaceFolder}/.venv/bin/python`.
+
+## Optional
+
+`uv run pytest tests/` works if `uv` is installed; still resolves against project deps.

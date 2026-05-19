@@ -69,7 +69,10 @@
                 {% endif %}
 
                 <dt class="col-sm-3">Visibility:</dt>
-                <dd class="col-sm-9">{{ wizard_data.visibility|title }}</dd>
+                <dd class="col-sm-9">
+                    {% if wizard_data.visibility == 'private' %}Private (only me){% else %}{{ wizard_data.visibility|title }}{% endif %}
+                    <span class="text-muted small">— owner-only access in FOB/MCP</span>
+                </dd>
 
                 {% if wizard_data.workflows %}
                 <dt class="col-sm-3">Workflows:</dt>

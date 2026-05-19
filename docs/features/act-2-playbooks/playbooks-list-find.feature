@@ -3,6 +3,10 @@ Feature: FOB-PLAYBOOKS-LIST+FIND-1 Playbooks List and Search
   I want to view, search, and filter my playbooks
   So that I can quickly find and manage methodologies I need
 
+  # MVP simplified: list shows "My Playbooks" (owned) and "Public Playbooks" (public by others).
+  # Any authenticated user can browse and view Public playbooks.
+  # Write/edit/delete actions are visible only to the owner on their own playbooks.
+
   Background:
     Given Maria is authenticated in FOB
     And she is on the FOB Dashboard
@@ -216,3 +220,13 @@ Feature: FOB-PLAYBOOKS-LIST+FIND-1 Playbooks List and Search
     When she clicks "Playbooks" in the main navbar
     Then she is redirected to FOB-PLAYBOOKS-LIST+FIND-1
     And the Playbooks nav link is highlighted as active
+
+  # MVP simplified: public browsing is in scope for MVP.
+  Scenario: FOB-PLAYBOOKS-LIST+FIND-25 Browse Public playbooks from other owners
+    Given Mike owns a Public playbook "React Frontend Development"
+    And Maria is authenticated in FOB
+    When Maria opens the "Public Playbooks" section or searches with visibility filter "Public"
+    Then she sees "React Frontend Development" with author "Mike Chen"
+    And she can [View] the playbook detail page
+    And she does not see [Edit] or [Delete] actions for it in her list
+    # MVP: Maria's list may show only her own playbooks until public catalog ships.

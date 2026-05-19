@@ -159,29 +159,29 @@ class PlaybookWorkflowForm(forms.Form):
 class PlaybookPublishingForm(forms.Form):
     """
     Step 3: Publishing form.
-    
-    Allows user to select status (Active or Draft) before final save.
+
+    Draft (v0.1) is editable via GUI/MCP; released (v1.0) is read-only except PIP.
     """
-    
+
     STATUS_CHOICES = [
-        ('draft', 'Save as Draft (not visible to others)'),
-        ('active', 'Publish as Active (ready to use)'),
+        ('draft', 'Draft'),
+        ('released', 'Released'),
     ]
-    
+
     status = forms.ChoiceField(
         choices=STATUS_CHOICES,
         initial='draft',
         widget=forms.RadioSelect(attrs={
-            'data-testid': 'status-radio'
+            'data-testid': 'status-radio',
         }),
-        help_text='Choose whether to save as draft or publish'
+        help_text='Draft playbooks are editable; released playbooks require a PIP for changes.',
     )
-    
+
     def clean_status(self):
         """Validate status choice."""
         status = self.cleaned_data.get('status')
-        
-        if status not in ['draft', 'active']:
+
+        if status not in ('draft', 'released'):
             raise forms.ValidationError('Invalid status selected.')
-        
+
         return status

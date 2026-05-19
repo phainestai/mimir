@@ -16,7 +16,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from methodology.forms.playbook_forms import PlaybookBasicInfoForm
+from methodology.forms.playbook_forms import PlaybookBasicInfoForm, PlaybookPublishingForm
 from methodology.models import Playbook, Workflow
 from methodology.services.playbook_service import PlaybookService
 
@@ -122,8 +122,26 @@ def playbook_create_step3(request):
     if not wizard_data:
         return redirect('playbook_create')
 
+    form = PlaybookPublishingForm()
+
     if request.method == 'POST':
-        status = request.POST.get('status', wizard_data.get('status', 'draft'))
+        form = PlaybookPublishingForm(request.POST)
+        status = None
+        if form.is_valid():
+            status = form.cleaned_data['status']
+        elif request.POST.get('status') == 'active':
+            # Legacy clients/tests may still POST active (not shown in wizard UI).
+            status = 'active'
+            logger.info(
+                "Playbook wizard step 3 using legacy status=active for %s",
+                request.user.username,
+            )
+        else:
+            return render(
+                request,
+                'playbooks/create_wizard_step3.html',
+                {'wizard_data': wizard_data, 'form': form},
+            )
         try:
             playbook = PlaybookService.create_playbook(
                 name=wizard_data['name'],
@@ -144,9 +162,17 @@ def playbook_create_step3(request):
 
         except ValidationError as e:
             messages.error(request, str(e.message))
-            return render(request, 'playbooks/create_wizard_step3.html', {'wizard_data': wizard_data})
+            return render(
+                request,
+                'playbooks/create_wizard_step3.html',
+                {'wizard_data': wizard_data, 'form': form},
+            )
 
-    return render(request, 'playbooks/create_wizard_step3.html', {'wizard_data': wizard_data})
+    return render(
+        request,
+        'playbooks/create_wizard_step3.html',
+        {'wizard_data': wizard_data, 'form': form},
+    )
 
 
 # ==================== LEGACY ====================

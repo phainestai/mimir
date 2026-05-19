@@ -3,6 +3,11 @@ Feature: FOB-PIP-DETAIL-1 View PIP Details with Galdr Recommendations
   I want to view the full detail of a PIP including Galdr's per-Change assessment
   So that I understand what decision was made and why
 
+  # MVP simplified: Owner or Administrator finalizes after Reviewed status.
+  # Public viewers (authenticated but not owner) can view PIP details but cannot finalize.
+  # MVP: banner says "owner or Administrator"; owner finalize in FOB is @mvp_gap (post-MVP).
+  # For MVP the banner may read "Administrator" only until owner finalize UI ships.
+
   Status: 🔲 TODO
   Related: act-9-pips/pips-list.feature, act-9-pips/pips-admin-review.feature
 
@@ -102,10 +107,12 @@ Feature: FOB-PIP-DETAIL-1 View PIP Details with Galdr Recommendations
   # STATUS BANNERS
   # ============================================================================
 
-  Scenario: FOB-PIP-DETAIL-08 Status banner for Reviewed — awaiting Admin
+  Scenario: FOB-PIP-DETAIL-08 Status banner for Reviewed — awaiting owner or Admin
     Given PIP-42 has status "Reviewed"
     When Maria is on FOB-PIP-DETAIL-1 for PIP-42
-    Then she sees the status banner "Reviewed — awaiting Administrator decision."
+    Then she sees the status banner "Reviewed — awaiting owner or Administrator decision."
+    # MVP simplified: copy says "owner or Administrator". For MVP the banner may read
+    # "Administrator" only until the owner finalize UI in FOB ships (@mvp_gap).
 
   Scenario: FOB-PIP-DETAIL-09 Status banner for Accepted
     Given PIP-38 has status "Accepted" and was decided on "2026-04-22"

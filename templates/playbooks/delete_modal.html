@@ -21,12 +21,10 @@
         <p class="mt-2 mb-0">
           All workflows, activities, artifacts, agents, skills and version history related to this playbook will be permanently deleted.
         </p>
-        {% if playbook.visibility == 'family' %}
-        <p class="text-warning mt-3 mb-1">
-          This playbook is shared with your family.
-        </p>
-        <p class="text-warning mb-0">
-          Family members who had access via this playbook will lose that access.
+        {% if playbook.visibility == 'family' or playbook.visibility == 'local' %}
+        <p class="text-muted small mt-3 mb-0" data-testid="visibility-metadata-note">
+          Visibility is labeled <strong>{{ playbook.get_visibility_display }}</strong>.
+          Family and local labels are metadata only in FOB today; no other users lose GUI access when you delete.
         </p>
         {% endif %}
 

@@ -3,6 +3,11 @@ Feature: FOB-PLAYBOOKS-EDIT_PLAYBOOK-1 Edit Playbook
   I want to edit my playbook's details
   So that I can update and improve my methodology
 
+  # Access: only the owner can edit draft playbooks in FOB (released → PIP only).
+  # Visibility: Private (owner-only view) or Public (any authenticated user can view).
+  # Family and Local only are deferred (Homebase); not available in MVP edit form.
+  # MVP simplified: write/delete always owner-only regardless of visibility.
+
   Background:
     Given Maria is authenticated in FOB
     And Maria owns the playbook "Product Discovery Framework" with:
@@ -10,7 +15,7 @@ Feature: FOB-PLAYBOOKS-EDIT_PLAYBOOK-1 Edit Playbook
       | version    | v1.0    |
       | status     | Active  |
       | category   | Product |
-      | visibility | Private |
+      | visibility | private |
       | workflows  |       1 |
 
   Scenario: FOB-PLAYBOOKS-EDIT_PLAYBOOK-01 Open edit form from playbook detail page
@@ -28,7 +33,7 @@ Feature: FOB-PLAYBOOKS-EDIT_PLAYBOOK-1 Edit Playbook
       | Description | Comprehensive methodology for discovering and validating product |
       | Category    | Product                                                          |
       | Tags        | product management, discovery, validation                        |
-      | Visibility  | Private (only me)                                                |
+      | Visibility  | Private                                                          |
       | Status      | Active                                                           |
       | Version     | v1.0 (read-only)                                                 |
 
@@ -71,24 +76,36 @@ Feature: FOB-PLAYBOOKS-EDIT_PLAYBOOK-1 Edit Playbook
     Then "discovery" tag is removed from the playbook
     And "validation" tag remains
 
-  Scenario: FOB-PLAYBOOKS-EDIT_PLAYBOOK-08 Change visibility from Private to Family
-    Given Maria is on the edit form
-    And current visibility is "Private (only me)"
-    And Maria is a member of "UX" family
-    When she selects "Family" for Visibility
-    And she selects "UX" from the family dropdown
-    And she clicks [Save Changes]
-    Then the playbook visibility is changed to "Family (UX)"
-    And a notice shows "Playbook will be available to UX family after syncing to Homebase"
+  # MVP simplified: Private/Public are the two selectable values.
+  # Family and Local only remain deferred (Homebase).
+  Scenario: FOB-PLAYBOOKS-EDIT_PLAYBOOK-08a Visibility field shows Private/Public toggle
+    Given Maria is on the edit form for her draft playbook
+    Then the Visibility field shows the current value (Private or Public)
+    And the available options are "Private" and "Public"
+    And she sees help text:
+      """
+      Private — only you can view this playbook.
+      Public — any authenticated user can view; only you can edit or delete it.
+      """
 
-  Scenario: FOB-PLAYBOOKS-EDIT_PLAYBOOK-09 Change visibility from Family to Private
-    Given Maria is on the edit form
-    And current visibility is "Family (UX)"
-    When she selects "Private (only me)"
-    Then she sees warning "Changing to Private will recall this playbook from family members"
-    When she confirms and clicks [Save Changes]
-    Then the playbook visibility is changed to Private
-    And the playbook is no longer available to family members
+  Scenario: FOB-PLAYBOOKS-EDIT_PLAYBOOK-08b Change visibility Private → Public
+    Given Maria is on the edit form and the playbook is currently Private
+    When she selects "Public"
+    And she clicks [Save Changes]
+    Then the playbook visibility is updated to public
+    And any authenticated user can now open and read the playbook in FOB
+    And Maria remains the only person who can edit or delete it
+
+  Scenario: FOB-PLAYBOOKS-EDIT_PLAYBOOK-08c Change visibility Public → Private
+    Given Maria is on the edit form and the playbook is currently Public
+    When she selects "Private"
+    And she clicks [Save Changes]
+    Then the playbook visibility is updated to private
+    And non-owners can no longer open the playbook in FOB
+
+  @deferred @homebase
+  Scenario: FOB-PLAYBOOKS-EDIT_PLAYBOOK-09 Change visibility with Homebase Family sync
+    # Deferred: Family (share with Homebase family) and Local only not in MVP.
 
   Scenario: FOB-PLAYBOOKS-EDIT_PLAYBOOK-10 Change status from Active to Draft
     Given Maria is on the edit form

@@ -108,10 +108,8 @@ Mike structures his playbook using the FOB editor:
 - Adds Artifacts: "Component Library", "State Diagram", "Test Suite"
 - Links Activities with upstream/downstream artifact relationships
 
-#### Screen: FOB Team Assignment
-Mike assigns the playbook to the "Usability" team:
-- Selects "Usability" from the team dropdown in playbook settings
-- Sets visibility to "Public" (anyone in the team can access)
+#### Screen: Playbook visibility (FOB today)
+Mike keeps visibility **Private (only me)** on the playbook wizard. In the current FOB build, only the owner can access and edit playbooks via the GUI and MCP. **Family** and **Local only** are stored as metadata for future Homebase sync; they do not grant access to other users yet. Team assignment and public/team visibility are planned (Act 11 / Homebase); REST API group sharing exists outside the GUI.
 
 #### Action: Release Playbook
 Mike is satisfied with the playbook and clicks **[Release]** on the playbook detail page:
@@ -428,9 +426,11 @@ Maria clicks [Create New Playbook]. The creation wizard opens:
   - Options: Design, Development, Research, Management, Product, Other
 - **Tags**: Multi-select/token input (optional)
   - Example: "product management, discovery, validation, user research"
-- **Visibility**: Radio buttons
-  - ○ Private (only me)
-  - ○ Team (select team from dropdown)
+- **Visibility**: Dropdown
+  - Private (only me) — default; owner-only access in FOB/MCP
+  - Family (coming soon) — disabled; metadata for future Homebase
+  - Local only (coming soon) — disabled; metadata for future Homebase
+  - Help text explains owner-only access today
 - [Cancel] [Next: Add Workflows →] buttons
 
 **Wizard Step 2: Add Workflows** (optional first workflow)
@@ -443,12 +443,10 @@ Maria clicks [Create New Playbook]. The creation wizard opens:
 
 **Wizard Step 3: Publishing Settings**
 - **Status**: Radio buttons
-  - ○ Draft (work in progress - editable, starts at v0.1)
-  - ○ Released (production-ready - v1.0, requires PIP for changes)
+  - ○ Draft (v0.1 — fully editable via GUI and MCP)
+  - ○ Released (v1.0 — read-only; changes via PIP only)
   - Note: "Draft playbooks can be edited directly. Released playbooks require PIP (Process Improvement Proposal) for any changes."
-- **Initial Version**: Auto-set based on status
-  - Draft: v0.1
-  - Released: v1.0
+- **Initial Version**: Auto-set based on status (Draft → v0.1, Released → v1.0)
 - Review summary of playbook being created
 - [Cancel] [Create Playbook] buttons
 
@@ -619,8 +617,8 @@ Maria clicks [Edit] on her "Product Discovery Framework" draft playbook (v0.3). 
   - Description: Pre-populated, editable textarea (triggers version increment)
   - Category: Pre-populated dropdown (triggers version increment)
   - Tags: Pre-populated multi-select (triggers version increment)
-  - Visibility: Pre-populated radio buttons
-    - Note: "Changing visibility from Team to Private will remove access for team members"
+  - Visibility: Pre-populated dropdown (Private default; Family/Local disabled with help text)
+    - Note: Owner-only access in FOB/MCP; visibility does not share playbooks with others today
 
 - **Status Section**:
   - Current Version: v0.3 (read-only, shows current version)
@@ -648,7 +646,7 @@ Maria clicks [Edit] on her "Product Discovery Framework" draft playbook (v0.3). 
 - Changes saved
 - Version automatically incremented (v0.3 → v0.4)
 - Success notification: "Playbook updated successfully (v0.4)"
-- If visibility changed: Additional notification about impact
+- If visibility changed: Value saved as metadata only (no sharing impact in FOB today)
 - Returns to FOB-PLAYBOOKS-VIEW_PLAYBOOK-1
 - Updated data and new version visible in FOB-PLAYBOOKS-LIST+FIND-1
 
@@ -686,8 +684,8 @@ Maria clicks [Delete] on an old "Test Playbook 123" she no longer needs. A confi
 - "This action cannot be undone"
 - If playbook has external work items linked:
   - Warning: "This playbook has 3 GitHub issues linked. Work items will remain but lose playbook context."
-- If playbook is shared with a team:
-  - Warning: "This playbook is shared with UX team (12 members). Team members will lose access."
+- If visibility is family or local (metadata label only):
+  - Note: Label is informational; no other FOB users lose access on delete
 
 **Confirmation**:
 - Checkbox: ☐ "I understand this will permanently delete the playbook and all related content"
@@ -706,7 +704,7 @@ Maria clicks [Delete] on an old "Test Playbook 123" she no longer needs. A confi
 - Modal closes
 - Returns to FOB-PLAYBOOKS-LIST+FIND-1
 - Deleted playbook no longer in list
-- If was shared with a team: Team members notified of deletion
+- Team/family sharing notifications: not implemented in FOB
 
 **Special Cases**:
 - **Cannot Delete Downloaded Playbooks**: Modal shows:

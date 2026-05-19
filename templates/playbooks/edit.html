@@ -88,9 +88,10 @@
                     <label for="visibility" class="form-label">Visibility</label>
                     <select class="form-select" id="visibility" name="visibility" data-testid="playbook-visibility-select">
                         <option value="private" {% if playbook.visibility == 'private' %}selected{% endif %}>Private (only me)</option>
-                        <option value="family" {% if playbook.visibility == 'family' %}selected{% endif %}>Family</option>
-                        <option value="local" {% if playbook.visibility == 'local' %}selected{% endif %}>Local only</option>
+                        <option value="family" {% if playbook.visibility == 'family' %}selected{% endif %}{% if playbook.visibility != 'family' %} disabled{% endif %} title="Coming soon — stored as metadata only">Family{% if playbook.visibility != 'family' %} (coming soon){% endif %}</option>
+                        <option value="local" {% if playbook.visibility == 'local' %}selected{% endif %}{% if playbook.visibility != 'local' %} disabled{% endif %} title="Coming soon — stored as metadata only">Local only{% if playbook.visibility != 'local' %} (coming soon){% endif %}</option>
                     </select>
+                    {% include "playbooks/_visibility_field_help.html" %}
                 </div>
 
                 <!-- Status Field -->

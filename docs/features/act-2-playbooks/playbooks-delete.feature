@@ -95,13 +95,22 @@ Feature: FOB-PLAYBOOKS-DELETE_PLAYBOOK-1 Delete Playbook ✅
     And pressing Enter does not trigger deletion
     And the modal does not auto-submit
 
-  Scenario: FOB-PLAYBOOKS-DELETE_PLAYBOOK-12 ⏭️ Delete playbook from family affects members
-    Given Maria owns playbook "Shared UX Methodology"
-    And the playbook visibility is "Family (UX)"
-    And the playbook is published to Homebase
+  # MVP simplified: Public playbooks are visible to all authenticated users, so deleting one ends their access.
+  Scenario: FOB-PLAYBOOKS-DELETE_PLAYBOOK-12 Delete Public playbook shows access-loss warning
+    Given Maria owns playbook "Shared UX Methodology" with visibility "public"
     When she opens the delete confirmation modal
-    Then she sees additional warning "This playbook is shared with UX family"
-    And she sees "Family members will lose access after next sync"
+    Then she sees a warning "This playbook is public — deleting it will remove access for all other users who can currently view it"
+    And she still sees the "All of this data will be permanently lost" notice
+    And she can confirm deletion with the standard [Delete Playbook] button
+
+  Scenario: FOB-PLAYBOOKS-DELETE_PLAYBOOK-12b Delete Private playbook — no access-loss warning
+    Given Maria owns playbook "Internal Workflow" with visibility "private"
+    When she opens the delete confirmation modal
+    Then she does not see a public access-loss warning (only she could see it)
+
+  @deferred @homebase
+  Scenario: FOB-PLAYBOOKS-DELETE_PLAYBOOK-12c Homebase family sync on delete
+    # Deferred: Homebase family member access and sync messaging not in MVP.
 
   Scenario: FOB-PLAYBOOKS-DELETE_PLAYBOOK-13 ✅ Delete active vs disabled playbook
     Given Maria owns an Active playbook "Current Methodology"

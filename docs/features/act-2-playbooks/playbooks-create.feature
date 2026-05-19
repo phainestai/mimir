@@ -2,8 +2,16 @@ Feature: FOB-PLAYBOOKS-CREATE_PLAYBOOK-1 Create New Playbook ✅
   As a methodology author (Maria)
   I want to create a new playbook using a wizard
   So that I can define and organize my methodology
-  
-  Status: ✅ COMPLETE - 25/25 tests passing (100%)
+
+  # Access control (MVP simplified):
+  # - Visibility: Private (owner-only view) or Public (any authenticated user can view).
+  # - Write (draft edit, delete) always owner-only regardless of visibility.
+  # - Draft: editable by owner; Released: read-only except PIP.
+  # - PIP finalize: owner or staff admin. Public viewers cannot finalize.
+  # - Family, Local only, Homebase sync: deferred (not in MVP).
+  # - MCP always author-scoped even for public playbooks (GUI-only public read).
+
+  Status: ✅ COMPLETE - core wizard scenarios implemented
   Branch: feature/playbooks-crudv
   Issue: #28
 
@@ -24,7 +32,7 @@ Feature: FOB-PLAYBOOKS-CREATE_PLAYBOOK-1 Create New Playbook ✅
     And she enters "Comprehensive methodology for discovering and validating product opportunities" in the Description field
     And she selects "Product" from the Category dropdown
     And she enters tags: "product management, discovery, validation, user research"
-    And she selects "Private (only me)" for Visibility
+    And she selects "Private" for Visibility
     And she clicks [Next: Add Workflows →]
     Then she proceeds to "Step 2: Add Workflows"
     And her input is saved
@@ -71,17 +79,24 @@ Feature: FOB-PLAYBOOKS-CREATE_PLAYBOOK-1 Create New Playbook ✅
     And she clicks [Next: Add Workflows →]
     Then she sees validation error "Description must not exceed 500 characters."
 
-  Scenario Outline: FOB-PLAYBOOKS-CREATE_PLAYBOOK-07 Select visibility options
+  # MVP simplified: visibility is Private (default) or Public.
+  # Family and Local only are deferred (Homebase). See playbooks-access-control.md.
+  Scenario: FOB-PLAYBOOKS-CREATE_PLAYBOOK-07a Create private playbook (default)
     Given Maria is on the playbook creation wizard Step 1
-    When she selects "<visibility>" for Visibility
-    Then the visibility option "<visibility>" is selected
-    And additional fields are displayed: <additional_fields>
+    Then the Visibility field shows "Private" selected by default
+    And she sees help text "Only you can view and edit this playbook"
+    When she keeps "Private" selected and completes the wizard
+    Then the playbook is created with visibility private
+    And only Maria can list and open the playbook in FOB
 
-    Examples:
-      | visibility        | additional_fields              |
-      | Private (only me) | none                           |
-      | Family            | family dropdown selector       |
-      | Local only        | warning about no Homebase sync |
+  Scenario: FOB-PLAYBOOKS-CREATE_PLAYBOOK-07b Create public playbook
+    Given Maria is on the playbook creation wizard Step 1
+    When she selects "Public" for Visibility
+    And she sees help text "Any authenticated user can view this playbook; only you can edit or delete it"
+    And she completes all required fields and proceeds through Steps 2 and 3
+    Then the playbook is created with visibility public
+    And any authenticated user can open and read the playbook in FOB
+    And only Maria can edit or delete it
 
   Scenario: FOB-PLAYBOOKS-CREATE_PLAYBOOK-08 Add optional tags
     Given Maria is on the playbook creation wizard Step 1
@@ -120,25 +135,25 @@ Feature: FOB-PLAYBOOKS-CREATE_PLAYBOOK-1 Create New Playbook ✅
     And she is back to the Step 2 main view
     And she can choose [Skip for Now] or [Add First Workflow] again
 
-  Scenario: FOB-PLAYBOOKS-CREATE_PLAYBOOK-12 Complete Step 3 with Active status
+  @implemented
+  Scenario: FOB-PLAYBOOKS-CREATE_PLAYBOOK-12 Complete Step 3 with Released status
     Given Maria has completed Steps 1 and 2
     And she is on "Step 3: Publishing Settings"
     Then she sees a summary of the playbook being created
-    And she sees Status options: Active (selected by default), Draft
-    And she sees "Initial Version: v1.0" (auto-set)
-    When she selects "Active (ready to use)"
+    And she sees Status options: Draft and Released
+    When she selects "Released" with note v1.0 controlled via PIP
     And she clicks [Create Playbook]
-    Then the playbook is created successfully
-    And she sees success notification "Playbook 'Product Discovery Framework' created successfully"
+    Then the playbook is created with Released status at v1.0
     And she is redirected to FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 for the new playbook
+    And direct edit is blocked until a PIP is applied
 
+  @implemented
   Scenario: FOB-PLAYBOOKS-CREATE_PLAYBOOK-13 Complete Step 3 with Draft status
     Given Maria has completed Steps 1 and 2
     And she is on "Step 3: Publishing Settings"
-    When she selects "Draft (work in progress)"
+    When she selects "Draft" with note v0.1 fully editable
     And she clicks [Create Playbook]
-    Then the playbook is created with Draft status
-    And she sees success notification "Playbook 'Product Discovery Framework' created as draft"
+    Then the playbook is created with Draft status at v0.1
     And she is redirected to FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 for the new playbook
     And the playbook status badge shows "Draft" (yellow)
 
@@ -151,7 +166,7 @@ Feature: FOB-PLAYBOOKS-CREATE_PLAYBOOK-1 Create New Playbook ✅
       | Description | Comprehensive methodology for discovering and validating product... |
       | Category    | Product                                                             |
       | Tags        | product management, discovery, validation, user research            |
-      | Visibility  | Private (only me)                                                   |
+      | Visibility  | Private                                                             |
       | Workflows   |                             1 (Discovery Phase) OR "None added yet" |
 
   Scenario: FOB-PLAYBOOKS-CREATE_PLAYBOOK-15 Cancel wizard at any step
@@ -194,28 +209,13 @@ Feature: FOB-PLAYBOOKS-CREATE_PLAYBOOK-1 Create New Playbook ✅
       | Source        | Owned                       |
       | Last Modified | Just now OR Today           |
 
+  @deferred @homebase
   Scenario: FOB-PLAYBOOKS-CREATE_PLAYBOOK-19 Create playbook with Family visibility
-    Given Maria is on the playbook creation wizard Step 1
-    And Maria is a member of "UX" family
-    When she selects "Family" for Visibility
-    Then she sees a family dropdown selector
-    When she selects "UX" from the family dropdown
-    And she completes all required fields
-    And she proceeds through Steps 2 and 3
-    And she clicks [Create Playbook]
-    Then the playbook is created with Family visibility
-    And it is available to "UX" family members (after publishing to Homebase)
+    # Deferred: Family (share with Homebase family) not in MVP. Visibility options are Private / Public only.
 
+  @deferred @homebase
   Scenario: FOB-PLAYBOOKS-CREATE_PLAYBOOK-20 Create playbook with Local only visibility
-    Given Maria is on the playbook creation wizard Step 1
-    When she selects "Local only (not uploaded to Homebase)"
-    Then she sees a warning "This playbook will not be synced to Homebase"
-    When she completes all required fields
-    And she proceeds through Steps 2 and 3
-    And she clicks [Create Playbook]
-    Then the playbook is created as local-only
-    And it cannot be synced to Homebase
-    And it does not appear in sync operations
+    # Deferred: Local only (exclude from Homebase) not in MVP. Visibility options are Private / Public only.
 
   Scenario: FOB-PLAYBOOKS-CREATE_PLAYBOOK-21 Auto-increment version on creation
     Given Maria is creating a new playbook
