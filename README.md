@@ -108,8 +108,8 @@ The MCP facade is published as a **public Docker Hub image** (`featurefactory/mi
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
-        "-e", "BASE_URL=http://localhost:8000",
-        "-e", "TOKEN=<your-token>",
+        "-e", "MIMIR_SERVER_URL=http://localhost:8000",
+        "-e", "MIMIR_TOKEN=<your-token>",
         "-e", "MCP_TRANSPORT=stdio",
         "featurefactory/mimir-mcp:latest"
       ]
@@ -120,7 +120,7 @@ The MCP facade is published as a **public Docker Hub image** (`featurefactory/mi
 
 Replace `<your-token>` with the token from Step 2. Restart your IDE after saving.
 
-> **Multi-platform**: amd64 + arm64 · **Data safety**: SQLite in mounted volume · **Hosted FOB**: change `BASE_URL` to `https://mimir.featurefactory.io`
+> **Multi-platform**: amd64 + arm64 · **Data safety**: SQLite in mounted volume · **Hosted FOB**: change `MIMIR_SERVER_URL` to `https://mimir.featurefactory.io`
 
 See [docs/DOCKER_QUICK_START.md](docs/DOCKER_QUICK_START.md) for docker-compose setup and full reference.
 
@@ -250,8 +250,8 @@ Register at [mimir.featurefactory.io](https://mimir.featurefactory.io/auth/regis
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
-        "-e", "BASE_URL=https://mimir.featurefactory.io",
-        "-e", "TOKEN=<your-token>",
+        "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
+        "-e", "MIMIR_TOKEN=<your-token>",
         "-e", "MCP_TRANSPORT=stdio",
         "featurefactory/mimir-mcp:latest"
       ]
@@ -260,7 +260,7 @@ Register at [mimir.featurefactory.io](https://mimir.featurefactory.io/auth/regis
 }
 ```
 
-For a local FOB, set `BASE_URL=http://localhost:8000`. Restart your IDE after saving.
+For a local FOB, set `MIMIR_SERVER_URL=http://localhost:8000`. Restart your IDE after saving.
 
 ### 3. Use MCP Tools in Your IDE
 
@@ -349,8 +349,8 @@ All tools support async operations and validate user permissions automatically.
 2. **Test the MCP facade manually:**
    ```bash
    docker run --rm -i \
-     -e BASE_URL=http://localhost:8000 \
-     -e TOKEN=<your-token> \
+     -e MIMIR_SERVER_URL=http://localhost:8000 \
+     -e MIMIR_TOKEN=<your-token> \
      -e MCP_TRANSPORT=stdio \
      featurefactory/mimir-mcp:latest
    ```

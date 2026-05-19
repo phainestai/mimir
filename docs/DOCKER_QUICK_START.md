@@ -78,8 +78,8 @@ The MCP facade (`featurefactory/mimir-mcp:latest`) is a public Docker Hub image 
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
-        "-e", "BASE_URL=https://mimir.featurefactory.io",
-        "-e", "TOKEN=<your-token>",
+        "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
+        "-e", "MIMIR_TOKEN=<your-token>",
         "-e", "MCP_TRANSPORT=stdio",
         "featurefactory/mimir-mcp:latest"
       ]
@@ -97,8 +97,8 @@ The MCP facade (`featurefactory/mimir-mcp:latest`) is a public Docker Hub image 
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
-        "-e", "BASE_URL=https://mimir.featurefactory.io",
-        "-e", "TOKEN=<your-token>",
+        "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
+        "-e", "MIMIR_TOKEN=<your-token>",
         "-e", "MCP_TRANSPORT=stdio",
         "featurefactory/mimir-mcp:latest"
       ]
@@ -116,8 +116,8 @@ The MCP facade (`featurefactory/mimir-mcp:latest`) is a public Docker Hub image 
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
-        "-e", "BASE_URL=https://mimir.featurefactory.io",
-        "-e", "TOKEN=<your-token>",
+        "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
+        "-e", "MIMIR_TOKEN=<your-token>",
         "-e", "MCP_TRANSPORT=stdio",
         "featurefactory/mimir-mcp:latest"
       ]
@@ -127,7 +127,7 @@ The MCP facade (`featurefactory/mimir-mcp:latest`) is a public Docker Hub image 
 ```
 
 Replace `<your-token>` with your token from Step 2.
-For a local FOB, change `BASE_URL` to `http://localhost:8000`.
+For a local FOB, change `MIMIR_SERVER_URL` to `http://localhost:8000`.
 Restart your IDE after saving.
 
 ---
@@ -149,10 +149,10 @@ Restart your IDE after saving.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `BASE_URL` | `http://web:8000` | FOB URL (local or hosted) |
-| `TOKEN` | — | FOB auth token |
-| `MIMIR_USER` | `admin` | Used to auto-fetch token if TOKEN is blank |
-| `MIMIR_PASSWORD` | `changeme` | Used to auto-fetch token if TOKEN is blank |
+| `MIMIR_SERVER_URL` | `http://web:8000` | FOB URL (local or hosted) |
+| `MIMIR_TOKEN` | — | FOB auth token |
+| `MIMIR_USER` | `admin` | Used to auto-fetch token if MIMIR_TOKEN is blank |
+| `MIMIR_PASSWORD` | `changeme` | Used to auto-fetch token if MIMIR_TOKEN is blank |
 | `MCP_TRANSPORT` | `sse` | `stdio` for IDE, `sse` for server |
 | `MCP_PORT` | `8001` | Port for SSE transport |
 
