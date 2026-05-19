@@ -308,6 +308,7 @@ class TestListActivitiesForPlaybook:
             author=u1,
             source='owned',
             visibility='public',
+            status='released',
         )
         wf = Workflow.objects.create(playbook=pb, name='W', description='d', order=1)
         a1 = Activity.objects.create(workflow=wf, name='SharedAct', guidance='g', order=1)
