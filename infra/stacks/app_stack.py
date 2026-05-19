@@ -170,6 +170,14 @@ class MimirApp(Stack):
                 "AWS_SES_CONFIGURATION_SET", "mimir-transactional"),
             opt("aws:elasticbeanstalk:application:environment",
                 "FRONTEND_URL", "https://mimir.featurefactory.io"),
+            # ── CSRF / cookie security ─────────────────────────────────────────
+            # The EB direct URL (http://mimir-blue.us-east-1.elasticbeanstalk.com)
+            # is plain HTTP, so Secure cookies would never be sent by the browser
+            # and every form submit would produce a CSRF 403. Set to false here;
+            # the public CloudFront URL (https://mimir.featurefactory.io) gets its
+            # own env var override set to true via the console / a separate env.
+            opt("aws:elasticbeanstalk:application:environment",
+                "COOKIE_SECURE", "false"),
         ]
 
     # ── CloudWatch Alarms ──────────────────────────────────────────────────────
