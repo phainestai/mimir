@@ -48,9 +48,11 @@ _instance_ip = _ec2_private_ip()
 if _instance_ip:
     ALLOWED_HOSTS.append(_instance_ip)
 
-# CSRF trusted origins (HTTPS only in prod)
+# CSRF trusted origins — include the EB direct URL so blue/green testing works.
+# In production, CloudFront always uses HTTPS; EB direct URL is HTTP only.
 CSRF_TRUSTED_ORIGINS = os.getenv(
-    "CSRF_TRUSTED_ORIGINS", "https://mimir.featurefactory.io"
+    "CSRF_TRUSTED_ORIGINS",
+    "https://mimir.featurefactory.io,http://mimir-blue.us-east-1.elasticbeanstalk.com,https://mimir-blue.us-east-1.elasticbeanstalk.com",
 ).split(",")
 
 
@@ -66,9 +68,12 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # always speak HTTPS at the CloudFront edge.
 SECURE_SSL_REDIRECT = False
 
-# Secure cookies — viewers always connect via HTTPS through CloudFront.
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# Secure cookies — opt-in via env var.
+# Default True when behind CloudFront (production); set to False for EB direct access
+# (e.g. blue/green testing over plain HTTP on the EB URL).
+_cookie_secure = os.getenv("COOKIE_SECURE", "true").lower() == "true"
+SESSION_COOKIE_SECURE = _cookie_secure
+CSRF_COOKIE_SECURE = _cookie_secure
 
 # HSTS — start at 1 hour; bump to 31536000 after a week of stable operation.
 SECURE_HSTS_SECONDS = 3600
