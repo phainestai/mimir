@@ -1,0 +1,33 @@
+# Production Docker Compose — consumed by AWS Elastic Beanstalk.
+# EB exports all environment properties as shell env vars before running
+# docker compose, so ${VAR} substitution here is satisfied automatically.
+#
+# No local build — ECR_IMAGE is the pre-built web container image.
+# No db service — production uses RDS PostgreSQL via DATABASE_URL.
+
+services:
+  web:
+    image: ${ECR_IMAGE}
+    restart: always
+    ports:
+      - "80:8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      DATABASE_URL: ${DATABASE_URL}
+      MIMIR_ENV: ${MIMIR_ENV:-prod}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      GALDR_MODEL: ${GALDR_MODEL:-claude-sonnet-4-5}
+      AWS_SES_REGION_NAME: ${AWS_SES_REGION_NAME:-us-east-1}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@featurefactory.io}
+      AWS_SES_CONFIGURATION_SET: ${AWS_SES_CONFIGURATION_SET:-}
+      FRONTEND_URL: ${FRONTEND_URL:-https://mimir.featurefactory.io}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health/', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
