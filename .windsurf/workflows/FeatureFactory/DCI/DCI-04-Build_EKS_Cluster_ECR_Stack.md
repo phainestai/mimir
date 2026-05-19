@@ -2,7 +2,7 @@
 
 **Activity ID**: 77
 **Order**: 4
-**Phase**: Provision
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -157,13 +157,28 @@ git commit -m "infra: implement EKS cluster with node group, ECR repo, blue/gree
 - ✅ **Blue/green namespaces** created
 - ✅ **ECR repo** accessible, test push successful
 
+## Agent
+
+None
+
+## Skill
+
+**Title**: K8s in EKS Deployment Patterns
+**Capability Domain**: CONTAINER_ORCHESTRATION
+**Technology Stack**: Kubernetes + AWS EKS
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Infra Repo Scaffold** (Template) - Required
+- **CDK Stack Templates** (Code) - Required
 
 ## Notes
 

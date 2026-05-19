@@ -2,7 +2,7 @@
 
 **Activity ID**: 71
 **Order**: 6
-**Phase**: Estimation
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -148,13 +148,41 @@ Extending an existing component still consumes tokens for reading, understanding
 - L1/L2 cross-check performed and delta documented
 - WBS Features and Detailed Estimates tabs complete
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **User Journey** (Document, Required) — produced by Define User Journey (#36).
+- **Screen Flow / Dialogue Map** (Diagram, Required) — produced by Create Dialogue Maps (#38).
+- **Feature Files** (Document, Required) — produced by Write Feature Files (#39).
+- **HTML Mockups** (Code, Optional) — produced by Create Mockups (#40).
+- **Estimation Reference Table** (Document, Required) — produced by Calibrate Reference Stories (#67).
+- **Estimation Template (Excel)** (Document, Required) — produced by Size Scenarios (Level 1 SWAG) (#68).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **User Journey** (Document) - Required
+- **Screen Flow / Dialogue Map** (Diagram) - Required
+- **Feature Files** (Document) - Required
+- **HTML Mockups** (Code) - Optional
+- **Estimation Reference Table** (Document) - Required
+- **Estimation Template (Excel)** (Document) - Required
 
 ## Notes
 

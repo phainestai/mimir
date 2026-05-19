@@ -2,7 +2,7 @@
 
 **Activity ID**: 68
 **Order**: 3
-**Phase**: Estimation
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -119,13 +119,26 @@ Every piece of work that will consume tokens must map to a scenario. Infrastruct
 - Assumptions flagged
 - Scenario List tab of ESTIMATION_TEMPLATE.xlsx complete
 
-## Artifacts Produced
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
+## Artifacts Produced
+
+- **Estimation Template (Excel)** (Document) - Required
 
 ## Artifacts Consumed
 
-None
+- **Feature Files** (Document) - Required
+- **Estimation Reference Table** (Document) - Required
 
 ## Notes
 

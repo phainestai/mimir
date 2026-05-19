@@ -2,7 +2,7 @@
 
 **Activity ID**: 62
 **Order**: 3
-**Phase**: Prerequisite Check
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -104,13 +104,25 @@ Architecture & Code Organization Check:
 - ✅ **All prerequisites met** — or user redirected to specific DTA/ESM activities
 - ✅ **Ready to proceed** to DSP-04
 
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **System Architecture Overview Template** (Template) - Required
 
 ## Notes
 

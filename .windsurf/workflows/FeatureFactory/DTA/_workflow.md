@@ -1,11 +1,11 @@
 # Define Architecture
 
-**Playbook**: FeatureFactory v11.6 (Draft)
+**Playbook**: FeatureFactory v13.0 (Released)
 **Workflow ID**: 9
 **Description**: Analyze ESM artifacts, make architectural decisions across 16 domains (application structure through documentation strategy), scan available Skills for coverage, and compile all decisions into docs/architecture/SAO.md.
 **Phase Organization**: Uses phases
 **Total Activities**: 18
-**Export Date**: 2026-04-13 15:41 UTC
+**Export Date**: 2026-05-19 20:35 UTC
 
 ## Activities
 

@@ -2,7 +2,7 @@
 
 **Activity ID**: 84
 **Order**: 4
-**Phase**: Build
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -145,9 +145,23 @@ git commit -m "ci: add CI pipeline (test → lint → build → push)"
 - ✅ **OIDC auth** configured (no stored AWS keys)
 - ✅ **Pipeline tested** — commit triggers CI, image appears in ECR
 
-## Artifacts Produced
+## Agent
 
 None
+
+## Skill
+
+**Title**: GitHub Actions Patterns
+**Capability Domain**: CI_CD
+**Technology Stack**: GitHub Actions
+
+## Rules
+
+None
+
+## Artifacts Produced
+
+- **CI Pipeline (GitHub Actions)** (Code) - Required
 
 ## Artifacts Consumed
 

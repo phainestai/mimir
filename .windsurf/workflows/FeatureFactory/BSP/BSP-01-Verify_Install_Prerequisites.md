@@ -2,7 +2,7 @@
 
 **Activity ID**: 88
 **Order**: 1
-**Phase**: Provision
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -117,13 +117,25 @@ All prerequisites satisfied. ✅
 - ✅ **Summary report** printed
 - ✅ **Idempotent** — safe to re-run
 
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Makefile Template** (Code) - Optional
 
 ## Notes
 

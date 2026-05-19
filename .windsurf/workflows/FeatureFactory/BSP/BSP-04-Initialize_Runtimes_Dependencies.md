@@ -2,7 +2,7 @@
 
 **Activity ID**: 91
 **Order**: 4
-**Phase**: Initialize
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -150,13 +150,33 @@ git commit -m "chore(deps): initialize Python venv, requirements.txt, Django pro
 - ✅ **All dependencies** installed and verified
 - ✅ **Dependencies committed**
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **System Architecture Overview Template** (Template, Required) — produced by Write SAO.md (#59).
+- **Makefile Template** (Code, Required) — produced by Create Makefile (#93).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **System Architecture Overview Template** (Template) - Required
+- **Makefile Template** (Code) - Required
 
 ## Notes
 

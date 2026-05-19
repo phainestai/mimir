@@ -1,0 +1,7 @@
+---
+alwaysApply: false
+---
+
+Failing tests are major problem - we don't start new development until we fix them.
+If its a test problem - fix it.
+If its a implementation details VS test diff - either fix the test, or ask user what takes precedence.

@@ -2,7 +2,7 @@
 
 **Activity ID**: 76
 **Order**: 3
-**Phase**: Provision
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -121,13 +121,25 @@ git commit -m "infra: implement VPC stack with 2 AZ, NAT Gateway, security group
 - ✅ **`make synth`** succeeds
 - ✅ **VPC deployed** and verified in AWS Console
 
-## Artifacts Produced
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
+## Artifacts Produced
+
+- **CDK Stack Templates** (Code) - Required
 
 ## Artifacts Consumed
 
-None
+- **Infra Repo Scaffold** (Template) - Required
 
 ## Notes
 

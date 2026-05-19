@@ -2,7 +2,7 @@
 
 **Activity ID**: 65
 **Order**: 6
-**Phase**: Finalization
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -90,13 +90,27 @@ docs(dsp): generate AI IDE configuration for {target}
 - ✅ **Committed to repository**
 - ✅ **AI IDE ready** to consume project context and start building features
 
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **CLAUDE.md Template** (Template) - Required
+- **Copilot Instructions Template** (Template) - Optional
+- **Windsurf/Cursor Rules Template** (Template) - Optional
 
 ## Notes
 

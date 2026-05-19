@@ -2,7 +2,7 @@
 
 **Activity ID**: 89
 **Order**: 2
-**Phase**: Initialize
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -140,13 +140,31 @@ git commit -m "chore(init): initialize repository with .gitignore, README, LICEN
 - ✅ **LICENSE** file created
 - ✅ **Initial commit** made
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Makefile Template** (Code, Required) — produced by Create Makefile (#93).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Makefile Template** (Code) - Required
 
 ## Notes
 

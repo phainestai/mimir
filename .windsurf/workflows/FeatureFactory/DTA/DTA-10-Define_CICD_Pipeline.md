@@ -2,7 +2,7 @@
 
 **Activity ID**: 51
 **Order**: 10
-**Phase**: Operations
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -84,6 +84,18 @@ Report coverage and gaps.
 - ✅ **Trunk-based flow** documented
 - ✅ **Skill coverage** assessed for this domain
 - ✅ **Decision recorded** for inclusion in SAO.md (DTA-18)
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
 
 ## Artifacts Produced
 

@@ -1,11 +1,11 @@
 # Design & Deploy CICD
 
-**Playbook**: FeatureFactory v11.6 (Draft)
+**Playbook**: FeatureFactory v13.0 (Released)
 **Workflow ID**: 13
 **Description**: Design and deploy CI/CD pipeline using GitHub Actions in the application monorepo. Create Helm chart with per-environment values, add container and deployment make targets, then wire them into GitHub Actions workflows for CI (test → build → push) and CD (deploy → smoke → approve → switch).
 **Phase Organization**: Uses phases
 **Total Activities**: 7
-**Export Date**: 2026-04-13 15:41 UTC
+**Export Date**: 2026-05-19 20:35 UTC
 
 ## Activities
 

@@ -2,7 +2,7 @@
 
 **Activity ID**: 103
 **Order**: 8
-**Phase**: Change Management
+**Phase**: Construction
 **Dependencies**: None
 
 ## Description
@@ -62,13 +62,35 @@ If unclear - ASK. Never guess user intent or implementation details.
 - All commits made (but not pushed until approved)
 - Tests passing
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Implementation Plan Template** (Template, Required) — produced by Plan Feature (#96).
+- **Definition of Done Checklist Template** (Template, Required) — produced by Check Definition of Done (#101).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+- **Check Before Deleting** (`do-check-before-deleting`)
+- **Check Previous Commits** (`do-check-previous-commits`)
+- **Update Tests After Bugfixing** (`do-update-tests-after-bugfixing`)
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Implementation Plan Template** (Template) - Required
+- **Definition of Done Checklist Template** (Template) - Required
 
 ## Notes
 

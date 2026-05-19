@@ -2,7 +2,7 @@
 
 **Activity ID**: 83
 **Order**: 3
-**Phase**: Build
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -170,13 +170,33 @@ git commit -m "feat(deploy): add container and deployment make targets"
 - ✅ **Local deploy** verified (`make deploy-local`)
 - ✅ **All new `make` targets** functional
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Helm Chart Template** (Template, Required) — produced by Create Helm Chart & Values (#82).
+- **Makefile Template** (Code, Required) — produced by Create Makefile (#93).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Helm Chart Template** (Template) - Required
+- **Makefile Template** (Code) - Required
 
 ## Notes
 

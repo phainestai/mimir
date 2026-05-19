@@ -2,7 +2,7 @@
 
 **Activity ID**: 48
 **Order**: 7
-**Phase**: Design
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -89,6 +89,18 @@ Report coverage and gaps.
 - ✅ **Capacity plan** with cost model
 - ✅ **Skill coverage** assessed for this domain
 - ✅ **Decision recorded** for inclusion in SAO.md (DTA-18)
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
 
 ## Artifacts Produced
 

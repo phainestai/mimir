@@ -2,7 +2,7 @@
 
 **Activity ID**: 61
 **Order**: 2
-**Phase**: Prerequisite Check
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -84,13 +84,25 @@ If SAO.md exists but is missing key sections:
 - ✅ **All sections present** — or user redirected to DTA workflow
 - ✅ **Ready to proceed** to DSP-03
 
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **System Architecture Overview Template** (Template) - Required
 
 ## Notes
 

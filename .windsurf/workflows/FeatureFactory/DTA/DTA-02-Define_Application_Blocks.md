@@ -2,7 +2,7 @@
 
 **Activity ID**: 43
 **Order**: 2
-**Phase**: Design
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -125,6 +125,18 @@ If gaps exist: "No Skill for Dependency Injection — will need to define patter
 - ✅ **UI architecture patterns** defined (if applicable): rendering model, layout, interaction model, visualization
 - ✅ **Skill coverage** assessed for this domain with reference implementations
 - ✅ **Decision recorded** for inclusion in SAO.md (DTA-18)
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+- **Skeletons First** (`do-skeletons-first`)
 
 ## Artifacts Produced
 

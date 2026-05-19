@@ -2,7 +2,7 @@
 
 **Activity ID**: 38
 **Order**: 4
-**Phase**: Design
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -66,13 +66,36 @@ Visualize screen-to-screen flows and entity relationships using Draw.io diagrams
 - ✅ Screen state documentation
 - ✅ Navigation flow clarity
 
-## Artifacts Produced
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **User Journey** (Document, Required) — produced by Define User Journey (#36).
+- **IA Guidelines** (Document, Required) — produced by Define Information Architecture (#37).
+
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+- **Diagrams Element By Element** (`do-diagrams-element-by-element`)
+- **Look Via Human Eye** (`do-look-via-human-eye`)
+- **View Drawio Diagrams** (`do-view-drawio-diagrams`)
+- **Write Scenarios** (`do-write-scenarios`)
+
+## Artifacts Produced
+
+- **Screen Flow / Dialogue Map** (Diagram) - Required
 
 ## Artifacts Consumed
 
-None
+- **User Journey** (Document) - Required
+- **IA Guidelines** (Document) - Required
 
 ## Notes
 

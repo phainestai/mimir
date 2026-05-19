@@ -2,7 +2,7 @@
 
 **Activity ID**: 75
 **Order**: 2
-**Phase**: Design
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -169,9 +169,23 @@ git commit -m "infra: scaffold CDK project with VPC/EKS/DNS stack placeholders"
 - ✅ **Directory structure** matching the scaffold template
 - ✅ **Committed** to infra repo
 
-## Artifacts Produced
+## Agent
 
 None
+
+## Skill
+
+**Title**: AWS CDK with Python
+**Capability Domain**: INFRASTRUCTURE_AS_CODE
+**Technology Stack**: AWS CDK + Python
+
+## Rules
+
+None
+
+## Artifacts Produced
+
+- **Infra Repo Scaffold** (Template) - Required
 
 ## Artifacts Consumed
 

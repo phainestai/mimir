@@ -2,7 +2,7 @@
 
 **Activity ID**: 102
 **Order**: 7
-**Phase**: Finalization
+**Phase**: Construction
 **Dependencies**: None
 
 ## Description
@@ -82,13 +82,35 @@ Follow Angular convention with proper type, scope, subject, body, and footer.
 - Implementation plan marked complete
 - Feature file updated with completion markers
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Screen Flow / Dialogue Map** (Diagram, Optional) — produced by Create Dialogue Maps (#38).
+- **Implementation Plan Template** (Template, Required) — produced by Plan Feature (#96).
+- **Definition of Done Checklist Template** (Template, Required) — produced by Check Definition of Done (#101).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+- **Add Todos For Incomplete Items** (`do-add-todos-for-incomplete-items`)
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Screen Flow / Dialogue Map** (Diagram) - Optional
+- **Implementation Plan Template** (Template) - Required
+- **Definition of Done Checklist Template** (Template) - Required
 
 ## Notes
 

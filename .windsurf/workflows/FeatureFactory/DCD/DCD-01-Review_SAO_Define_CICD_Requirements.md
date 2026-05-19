@@ -2,7 +2,7 @@
 
 **Activity ID**: 81
 **Order**: 1
-**Phase**: Design
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -96,13 +96,31 @@ Create `docs/architecture/CICD_REQUIREMENTS.md`:
 - ✅ **Pipeline stages mapped** to `make` targets
 - ✅ **`docs/architecture/CICD_REQUIREMENTS.md`** created
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **System Architecture Overview Template** (Template, Required) — produced by Write SAO.md (#59).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **System Architecture Overview Template** (Template) - Required
 
 ## Notes
 

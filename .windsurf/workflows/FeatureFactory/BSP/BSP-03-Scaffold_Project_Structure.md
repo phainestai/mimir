@@ -2,7 +2,7 @@
 
 **Activity ID**: 90
 **Order**: 3
-**Phase**: Initialize
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -95,13 +95,35 @@ git commit -m "chore(scaffold): create project directory structure per DTA-04"
 - ✅ **Static assets** directories created
 - ✅ **Scaffold committed**
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **IA Guidelines** (Document, Required) — produced by Define Information Architecture (#37).
+- **System Architecture Overview Template** (Template, Required) — produced by Write SAO.md (#59).
+- **Makefile Template** (Code, Required) — produced by Create Makefile (#93).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+- **Skeletons First** (`do-skeletons-first`)
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **IA Guidelines** (Document) - Required
+- **System Architecture Overview Template** (Template) - Required
+- **Makefile Template** (Code) - Required
 
 ## Notes
 

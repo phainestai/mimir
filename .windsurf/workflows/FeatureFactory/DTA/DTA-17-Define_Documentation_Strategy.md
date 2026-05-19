@@ -2,7 +2,7 @@
 
 **Activity ID**: 58
 **Order**: 17
-**Phase**: Support
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -78,6 +78,18 @@ Report coverage and gaps.
 - ✅ **Knowledge base** structure defined
 - ✅ **Skill coverage** assessed for this domain
 - ✅ **Decision recorded** for inclusion in SAO.md (DTA-18)
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
 
 ## Artifacts Produced
 

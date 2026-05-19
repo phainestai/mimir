@@ -2,7 +2,7 @@
 
 **Activity ID**: 72
 **Order**: 7
-**Phase**: Simulation
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -157,13 +157,27 @@ Tokens × API rate = internal cost of delivery. This informs margin analysis and
 - MC_SNAPSHOT saved to `docs/plans/`
 - Monte Carlo tab and Client Quote tab updated
 
+## Agent
+
+None
+
+## Skill
+
+**Title**: Generate Estimation XLS
+**Capability Domain**: ESTIMATION
+**Technology Stack**: Python+openpyxl
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Estimation Template (Excel)** (Document) - Required
 
 ## Notes
 

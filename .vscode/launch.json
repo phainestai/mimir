@@ -14,7 +14,11 @@
             "justMyCode": false,
             "env": {
                 "DJANGO_SETTINGS_MODULE": "mimir.settings",
-                "PYTHONUNBUFFERED": "1"
+                "PYTHONUNBUFFERED": "1",
+                "USE_SES_IN_DEV": "1",
+                "DEFAULT_FROM_EMAIL": "noreply@featurefactory.io",
+                "AWS_SES_REGION_NAME": "us-east-1",
+                "AWS_SES_CONFIGURATION_SET": "mimir-transactional"
             },
             "python": "${workspaceFolder}/.venv/bin/python",
             "console": "integratedTerminal"

@@ -2,7 +2,7 @@
 
 **Activity ID**: 101
 **Order**: 6
-**Phase**: Validation
+**Phase**: Construction
 **Dependencies**: None
 
 ## Description
@@ -119,13 +119,34 @@ All checkboxes must be completed before considering the story "Done". Any deviat
 - Code production-ready
 - Ready for PR
 
-## Artifacts Produced
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Feature Files** (Document, Required) — produced by Write Feature Files (#39).
+- **Implementation Plan Template** (Template, Required) — produced by Plan Feature (#96).
+
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+- **Fix Tests** (`do-fix-tests`)
+- **Update Tests After Bugfixing** (`do-update-tests-after-bugfixing`)
+
+## Artifacts Produced
+
+- **Definition of Done Checklist Template** (Template) - Required
 
 ## Artifacts Consumed
 
-None
+- **Feature Files** (Document) - Required
+- **Implementation Plan Template** (Template) - Required
 
 ## Notes
 

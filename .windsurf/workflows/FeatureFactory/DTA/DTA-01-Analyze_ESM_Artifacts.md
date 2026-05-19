@@ -2,7 +2,7 @@
 
 **Activity ID**: 42
 **Order**: 1
-**Phase**: Analysis
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -89,13 +89,33 @@ Domain: Data Architecture (DTA-05)
 - ✅ **Structured requirements list** produced for all 16 architectural domains
 - ✅ **Ready to proceed** with DTA-02 through DTA-17
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **User Journey** (Document, Required) — produced by Define User Journey (#36).
+- **IA Guidelines** (Document, Required) — produced by Define Information Architecture (#37).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **User Journey** (Document) - Required
+- **IA Guidelines** (Document) - Required
 
 ## Notes
 

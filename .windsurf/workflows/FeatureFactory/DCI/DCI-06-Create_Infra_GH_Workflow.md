@@ -2,7 +2,7 @@
 
 **Activity ID**: 79
 **Order**: 6
-**Phase**: Deploy
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -147,13 +147,33 @@ git commit -m "ci: add GitHub Actions workflow for infra deploy and traffic swit
 - ✅ **Manual approval** required for traffic-switch
 - ✅ **Workflow tested** — deploy on push, manual switch
 
-## Artifacts Produced
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Infra Repo Scaffold** (Template, Required) — produced by Scaffold Infra Repo & CDK Project (#75).
+- **CDK Stack Templates** (Code, Required) — produced by Build VPC & Networking Stack (#76).
+
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
+## Artifacts Produced
+
+- **Infra GH Actions Workflow** (Code) - Required
 
 ## Artifacts Consumed
 
-None
+- **Infra Repo Scaffold** (Template) - Required
+- **CDK Stack Templates** (Code) - Required
 
 ## Notes
 

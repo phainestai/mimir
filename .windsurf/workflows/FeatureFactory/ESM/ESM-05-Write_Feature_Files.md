@@ -2,7 +2,7 @@
 
 **Activity ID**: 39
 **Order**: 5
-**Phase**: Specification
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -71,13 +71,35 @@ Feature: FOB-{ENTITY}-{OPERATION}-{VERSION} {Description}
 - ✅ Error handling scenarios
 - ✅ Edge case coverage
 
-## Artifacts Produced
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **User Journey** (Document, Required) — produced by Define User Journey (#36).
+- **Screen Flow / Dialogue Map** (Diagram, Required) — produced by Create Dialogue Maps (#38).
+
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+- **Github Issues** (`do-github-issues`)
+- **Write Scenarios** (`do-write-scenarios`)
+
+## Artifacts Produced
+
+- **Feature File Template (Gherkin)** (Template) - Required
+- **Feature Files** (Document) - Required
 
 ## Artifacts Consumed
 
-None
+- **User Journey** (Document) - Required
+- **Screen Flow / Dialogue Map** (Diagram) - Required
 
 ## Notes
 

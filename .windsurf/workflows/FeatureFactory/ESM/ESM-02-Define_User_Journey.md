@@ -2,7 +2,7 @@
 
 **Activity ID**: 36
 **Order**: 2
-**Phase**: Design
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -100,9 +100,24 @@ Establish the high-level user experience narrative with personas, user flows, an
 - ✅ **Entry point screens (LIST+FIND) clearly marked**
 - ✅ **Screen IDs are unique and traceable**
 
-## Artifacts Produced
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+- **Look Via Human Eye** (`do-look-via-human-eye`)
+- **View Drawio Diagrams** (`do-view-drawio-diagrams`)
+- **Write Scenarios** (`do-write-scenarios`)
+
+## Artifacts Produced
+
+- **User Journey** (Document) - Required
+- **User Journey Template** (Template) - Required
 
 ## Artifacts Consumed
 

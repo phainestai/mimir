@@ -2,7 +2,7 @@
 
 **Activity ID**: 66
 **Order**: 1
-**Phase**: Foundation
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -156,6 +156,18 @@ BSP and DSP overhead FP must appear as a separate line item on the Client Quote 
 - Estimation level selected with rationale
 - ESTIMATION_STRATEGY.md created/updated
 - Excel template open and verified
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
 
 ## Artifacts Produced
 

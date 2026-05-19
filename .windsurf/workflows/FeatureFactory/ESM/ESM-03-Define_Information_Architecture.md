@@ -2,7 +2,7 @@
 
 **Activity ID**: 37
 **Order**: 3
-**Phase**: Design
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -86,9 +86,24 @@ Establish the design system foundation, layout patterns, and component standards
 - ✅ Icon system (Font Awesome Pro) documented
 - ✅ Bootstrap customization approach clear
 
-## Artifacts Produced
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+- **Diagrams Element By Element** (`do-diagrams-element-by-element`)
+- **Look Via Human Eye** (`do-look-via-human-eye`)
+- **View Drawio Diagrams** (`do-view-drawio-diagrams`)
+
+## Artifacts Produced
+
+- **IA Guidelines** (Document) - Required
+- **IA Guidelines Template** (Template) - Required
 
 ## Artifacts Consumed
 

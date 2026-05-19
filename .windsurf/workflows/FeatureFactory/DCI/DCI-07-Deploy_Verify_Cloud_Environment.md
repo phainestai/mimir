@@ -2,7 +2,7 @@
 
 **Activity ID**: 80
 **Order**: 7
-**Phase**: Verify
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -154,13 +154,37 @@ git commit -m "docs: add infrastructure verification checklist"
 - ✅ **GH Actions** — deploy on push, manual switch with approval
 - ✅ **`docs/architecture/INFRA_VERIFICATION.md`** — checklist documented
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Infra Repo Scaffold** (Template, Required) — produced by Scaffold Infra Repo & CDK Project (#75).
+- **CDK Stack Templates** (Code, Required) — produced by Build VPC & Networking Stack (#76).
+- **Infra GH Actions Workflow** (Code, Required) — produced by Create Infra GH Workflow (#79).
+
+## Agent
+
+None
+
+## Skill
+
+**Title**: K8s in EKS Deployment Patterns
+**Capability Domain**: CONTAINER_ORCHESTRATION
+**Technology Stack**: Kubernetes + AWS EKS
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Infra Repo Scaffold** (Template) - Required
+- **CDK Stack Templates** (Code) - Required
+- **Infra GH Actions Workflow** (Code) - Required
 
 ## Notes
 

@@ -1,11 +1,11 @@
 # Design & Deploy Cloud Infra
 
-**Playbook**: FeatureFactory v11.6 (Draft)
+**Playbook**: FeatureFactory v13.0 (Released)
 **Workflow ID**: 12
 **Description**: Design and deploy cloud infrastructure using AWS CDK with Python. Create a separate infra repo with VPC, EKS, ECR, and Route53 stacks. Establish Makefile targets for infra operations and GitHub Actions workflow for automated deployment and blue/green traffic switching.
 **Phase Organization**: Uses phases
 **Total Activities**: 7
-**Export Date**: 2026-04-13 15:41 UTC
+**Export Date**: 2026-05-19 20:35 UTC
 
 ## Activities
 

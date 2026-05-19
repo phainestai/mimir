@@ -2,7 +2,7 @@
 
 **Activity ID**: 67
 **Order**: 2
-**Phase**: Foundation
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -120,13 +120,33 @@ After each sprint close (EST-08), update K-token actuals and $/FP_actual. After 
 - $/FP, Stack Factor, Org Factor recorded in Setup tab
 - Setup tab of ESTIMATION_TEMPLATE.xlsx complete
 
-## Artifacts Produced
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **GitHub Release** (Other, Optional) — produced by Close Iteration (#118).
+- **Lessons Learned Document** (Document, Optional) — produced by Close Iteration (#118).
+
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
+## Artifacts Produced
+
+- **Estimation Reference Table** (Document) - Required
 
 ## Artifacts Consumed
 
-None
+- **GitHub Release** (Other) - Optional
+- **Lessons Learned Document** (Document) - Optional
 
 ## Notes
 

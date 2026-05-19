@@ -2,7 +2,7 @@
 
 **Activity ID**: 35
 **Order**: 1
-**Phase**: Foundation
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -119,13 +119,27 @@ Establish the foundational conventions and standards that will be used throughou
 - ✅ **Important guidelines reviewed**
 - ✅ **Ready to proceed with User Journey definition**
 
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **User Journey Template** (Template) - Optional
+- **IA Guidelines Template** (Template) - Optional
+- **Feature File Template (Gherkin)** (Template) - Optional
 
 ## Notes
 

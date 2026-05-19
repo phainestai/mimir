@@ -2,7 +2,7 @@
 
 **Activity ID**: 56
 **Order**: 15
-**Phase**: Operations
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -73,6 +73,18 @@ Report coverage and gaps.
 - ✅ **Data export/import** procedures defined
 - ✅ **Skill coverage** assessed for this domain
 - ✅ **Decision recorded** for inclusion in SAO.md (DTA-18)
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
 
 ## Artifacts Produced
 

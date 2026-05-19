@@ -1,11 +1,11 @@
 # Bootstrap Project
 
-**Playbook**: FeatureFactory v11.6 (Draft)
+**Playbook**: FeatureFactory v13.0 (Released)
 **Workflow ID**: 14
 **Description**: Bootstrap a greenfield project from SAO.md and MODUS_OPERANDI.md decisions. Install prerequisites, initialize repository, scaffold structure, configure tooling, create Makefile, and verify with a welcome page. Make-centric, *nix-oriented, idempotent.
 **Phase Organization**: Uses phases
 **Total Activities**: 8
-**Export Date**: 2026-04-13 15:41 UTC
+**Export Date**: 2026-05-19 20:35 UTC
 
 ## Activities
 

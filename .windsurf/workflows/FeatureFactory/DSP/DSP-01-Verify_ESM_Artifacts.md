@@ -2,7 +2,7 @@
 
 **Activity ID**: 60
 **Order**: 1
-**Phase**: Prerequisite Check
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -67,13 +67,26 @@ If one or more artifacts are missing:
 - ✅ **All artifacts present** — or user redirected to ESM workflow
 - ✅ **Ready to proceed** to DSP-02
 
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **User Journey** (Document) - Required
+- **IA Guidelines** (Document) - Required
 
 ## Notes
 

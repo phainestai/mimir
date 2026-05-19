@@ -1,11 +1,11 @@
 # Envision the System
 
-**Playbook**: FeatureFactory v11.6 (Draft)
+**Playbook**: FeatureFactory v13.0 (Released)
 **Workflow ID**: 8
 **Description**: Turn your vision into formal design artifacts - user journey, screen flow, mockups, feature files, and design system
 **Phase Organization**: Uses phases
 **Total Activities**: 7
-**Export Date**: 2026-04-13 15:41 UTC
+**Export Date**: 2026-05-19 20:35 UTC
 
 ## Activities
 

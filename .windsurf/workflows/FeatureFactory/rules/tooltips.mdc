@@ -1,0 +1,8 @@
+---
+alwaysApply: false
+---
+
+Font Awesome Pro Icons Required - Every action button/link needs an icon; if not specified, you shall propose 3 options
+Bootstrap Tooltips Required - Every button needs hover text that:
+Explains the action for active buttons
+Explains why it's disabled and how to enable it for disabled buttons

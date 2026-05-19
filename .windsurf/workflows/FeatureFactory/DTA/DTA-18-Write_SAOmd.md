@@ -2,7 +2,7 @@
 
 **Activity ID**: 59
 **Order**: 18
-**Phase**: Documentation
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -184,9 +184,21 @@ Each update should reference the original DTA decision and explain what changed 
 - ✅ **User approval** obtained
 - ✅ **Ready to proceed** to Define Software Process (DSP) or Bootstrap Project
 
-## Artifacts Produced
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
+## Artifacts Produced
+
+- **System Architecture Overview Template** (Template) - Required
 
 ## Artifacts Consumed
 

@@ -1,0 +1,86 @@
+---
+alwaysApply: false
+---
+
+Every service call or controller action must log to `app.log` at **INFO**. Configure logging if missing; `app.log` is cleared on restart for clean diagnosis.
+
+**Ask yourself:** Where did it break? Why? What data and decisions led here?
+
+## Logging setup
+
+```python
+import logging
+import io
+from pprint import pformat
+from tabulate import tabulate
+
+logger = logging.getLogger(__name__)
+buffer = io.StringIO()  # structured dumps
+```
+
+**Buffers:** use `StringIO`; log `buffer.getvalue()`, then `truncate(0)` (and `seek(0)` if reusing). **Summaries:** include shape/types, `head`/`tail`/`describe`, null counts where useful.
+
+## Patterns (examples)
+
+**1. Entry**
+
+```python
+def method_name(self, param1, param2):
+    logger.info(
+        f'Starting {method_name} param1={param1} param2_shape={getattr(param2, "shape", type(param2))}'
+    )
+```
+
+**2. Structures**
+
+```python
+df.info(buf=buffer)
+logger.info(f'{dataset_name}:\n{buffer.getvalue()}')
+buffer.truncate(0)
+logger.info(f'Config:\n{pformat(config_dict)}')
+logger.info(f'Preview:\n{tabulate(df.head(), headers=df.columns.tolist())}')
+```
+
+**3. Branches**
+
+```python
+if condition:
+    logger.info(f'Column {column_name} present; processing...')
+else:
+    logger.warning(f'Column {column_name} missing; default={default}')
+```
+
+**4. Validation / transforms**
+
+```python
+logger.debug(f'Input dtypes: {df.dtypes.to_dict()}')
+# after transform
+logger.info(f'{operation_name}:\n{result.describe()}')
+```
+
+**5. Errors**
+
+```python
+try:
+    logger.info(f'Completed {operation_name}')
+except Exception as e:
+    logger.error(f'{operation_name} failed: {e} param1={param1} data_shape={getattr(data, "shape", None)}')
+    logger.info('Attempting recovery...')
+```
+
+## Minimum on each major step
+
+Method entry (name, key params, shapes/types), config used, validation results, processing steps (before/after where it matters), branch rationale, results, error context.
+
+## Levels
+
+- **DEBUG:** flow, dtypes, internal state; sample data (`head`/`tail`/`describe`) when feasible.
+- **INFO:** entry/exit, config, main steps, outcomes.
+- **WARNING:** recoverable issues, fallbacks, data quality.
+- **ERROR:** failures needing attention.
+
+## INFO line must answer (when relevant)
+
+Who acted, what changed, why, where (class/method/line if possible), inputs/ids, operation name, error if any, context (user, env, txn). Optional: next debug step.
+
+Design messages so you can find root cause without reproducing blindly.

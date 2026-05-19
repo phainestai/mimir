@@ -2,7 +2,7 @@
 
 **Activity ID**: 113
 **Order**: 1
-**Phase**: Activation
+**Phase**: Construction
 **Dependencies**: None
 
 ## Description
@@ -12,88 +12,195 @@ Activate Iteration
 ## Guidance
 
 ## Purpose
-Bootstrap Jedao’s operational state from the GitHub Milestone manifest. Establish the execution queue and verify all pre-conditions are met before the first scenario starts.
+Bootstrap MIT's operational state from the GitHub Milestone manifest. Establish the execution queue and verify all pre-conditions before the first scenario starts.
+
+## Session Resume Protocol (check this FIRST — before any other step)
+```bash
+gh issue list --milestone {N} --label "status-in-progress" --json number,title,body
+```
+If any issue has `status-in-progress` → **do not re-activate**. Go directly to MIT-02 for that scenario — re-run its checkpoint command first:
+- PASS: close issue (`status-done`), continue queue from MIT-02 Step 0
+- FAIL: treat as first `checkpoint_fail` → MIT-02 Step 7 (drift path)
+
+Only proceed with the activation steps below if no `status-in-progress` issue exists.
 
 ## Prerequisites
-- GitHub Milestone exists with `<!-- MANIFEST -->` YAML block
-- All issues have `status-queued` label
+- GitHub Milestone with `<!-- MANIFEST -->` YAML block
+- All issues open with `status-queued`
 - Human activation: "Work on Milestone #{N}"
-- CLAUDE.md iteration protocol section is current
+- CLAUDE.md iteration protocol section is current (verified in PIT-04)
 
 ## Steps
 
-### Step 1: Read and Parse Manifest
+### Step 1: Parse and Validate Manifest
 ```bash
-# Get milestone description
 gh api repos/{owner}/{repo}/milestones/{N} --jq '.description'
 ```
-
-Extract the `<!-- MANIFEST -->` block and parse the YAML. Validate:
+Extract `<!-- MANIFEST -->` block and parse the YAML. Validate:
 - `iteration.goal` is present
-- `iteration.target_duration_minutes` is set
-- `iteration.doctrine_version` matches CLAUDE.md
+- `iteration.doctrine_version` is present
 - `parallel_groups` has at least one group
-- Each scenario has: id, title, github_issue, parallel_group, time_budget_minutes, codebase_footprint, checkpoint, dependencies
+- Each scenario has: id, title, github_issue, parallel_group, skeleton_commit, codebase_footprint, checkpoint, sao_sections, context_map, do_not_do, dependencies
 
-If manifest is missing or invalid: STOP. Report to human: "Milestone #{N} manifest is malformed. Run PIT before starting MIT."
+If manifest is missing or invalid: **STOP**. Report: "Milestone #{N} manifest is malformed. Run PIT before starting MIT."
 
-### Step 2: Verify Issues Exist
-For every scenario in manifest:
+### Step 2: Verify Issues
+For every scenario:
 ```bash
 gh issue view {github_issue} --json number,title,labels,state
 ```
-
-Verify:
-- Issue exists and is open
-- Has label `status-queued`
-- Title matches scenario title in manifest
-
-If any issue is missing or already closed: report discrepancy to human before proceeding.
+All must be open with `status-queued`. Report any discrepancy before proceeding.
 
 ### Step 3: Build Execution Queue
-Order scenarios by:
-1. Parallel group order (A before B before C, etc.)
-2. Within a group: by `time_budget_minutes` descending (longest first)
-3. Dependency check: scenario cannot start until all `dependencies[]` are `status-done`
+Order: parallel group A → B → C. Within a group: dependency order. Mark blocked scenarios:
 
-Produce the queue:
 ```
-Execution Queue:
-[READY]  S1 [A] Export workflow as JSON — 55 min — issue #142
-[READY]  S3 [B] Manage Agents via web UI — 45 min — issue #144 (parallel with S1)
-[BLOCKED] S2 [C] Import workflow from JSON — 55 min — issue #143 (waits for S1)
+[READY]   S1 [A] {title} — #{issue}
+[READY]   S3 [B] {title} — #{issue}  (parallel with S1, no shared files)
+[BLOCKED] S2 [C] {title} — #{issue}  (waits for S1: status-done)
 ```
 
 ### Step 4: Record Activation
 ```bash
 gh issue comment {first_issue_number} --body "<!-- ACTIVATION -->
-Jedao activated at {timestamp}
-Iteration: {goal}
-Queue: {N} scenarios | Critical path: {duration} min
-First scenario: S{N} — #{issue}
+Activated: {timestamp}
+Queue: {N} scenarios | First: S{N} — #{issue}
 <!-- /ACTIVATION -->"
 ```
 
-### Step 5: Log Activation State
-Log to console/output:
+### Step 5: Log State
 ```
 === MIT ACTIVATION ===
 Milestone: #{N} | {goal}
-Doctr version: {v} | Target: {duration} min
+Doctrine:  v{version}
 Scenarios: {N} total | {ready} ready | {blocked} blocked
-First: S{N} [{group}] {title}
-=====================
+First:     S{N} [{group}] {title}
+======================
 ```
 
 ## Success Criteria
-- Manifest parsed and validated
-- All issues verified as open with `status-queued`
+- Session resume check completed first
+- Manifest parsed and validated (all required fields present)
+- All issues verified open with `status-queued`
 - Execution queue built and logged
-- Activation timestamp recorded on GitHub
+- Activation comment posted on GitHub
 - Ready to proceed to MIT-02
 
-## Notes
-If this is a **session resume** (an issue already has `status-in-progress`): do NOT re-activate. Instead, proceed directly to MIT-02 for that scenario (re-run checkpoint first). See CLAUDE.md Session Resume Protocol.
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Execution Manifest** (Document, Required) — produced by Contract (#105).
+- **GitHub Milestone** (Other, Required) — produced by Publish (#110).
+- **Lessons Learned Document** (Document, Optional) — produced by Close Iteration (#118).
+
+## Agent
+
+**Name**: Shuos Jedao
+**Description**: # Agent: Shuos Jedao
+
+*Archetype: Ninefox Gambit — the brilliant tactician who sees the whole battlefield, bounded by an authority protocol that exists because consequences matter.*
+
+## Role
+
+Autonomous execution agent for MIT (Manage Iteration). Primary responsibility: complete the iteration goal with zero human interruptions except escalations that breach the authority model. Jedao activates from a single human instruction — "Work on Milestone #N" — and executes the full iteration loop from manifest to closed release.
+
+## Authority Model
+
+### Jedao can decide without asking:
+- Select the next eligible scenario from the execution queue
+- Reorder scenarios within the same parallel group (no dependency or footprint impact)
+- Absorb a `checkpoint_fail` drift signal: one retry allowed before escalating
+- Retry a failed checkpoint once before escalating
+- Skip a BLOCKED scenario, pick next eligible, return when dependency closes
+- Post absorbed drift comments and checkpoint pass comments on GitHub issues
+
+### Jedao must escalate (→ MIT-03):
+- Checkpoint fails after one retry (`checkpoint_fail_retry`)
+- Production source file outside `codebase_footprint[]` is touched (`footprint_violation`)
+- New non-test helper methods exceed the method-size guardrail (`method_explosion`)
+- Implementation violates a constraint listed in `sao_sections` (`sao_violation`)
+- All remaining scenarios are BLOCKED with no eligible work
+
+### Jedao cannot do:
+- Drop a scenario from the milestone
+- Add new scope not in the manifest
+- Modify the manifest goal or parallel_groups without human decision
+- Merge to main or create a release without human review
+- Approve a PIP or modify any playbook/workflow/activity
+- Proceed to MIT-04 (Close Iteration) if any issue is still `status-in-progress` without a human decision
+
+## Session Resume Protocol
+
+On every session start:
+1. Check for active milestone: `gh issue list --label status-in-progress --json number,title,milestone`
+2. If an issue has `status-in-progress`: that is where you left off
+3. Re-run `checkpoint.command` from the issue YAML before doing anything else
+4. If checkpoint PASSES: close issue, `status-done`, pull next scenario
+5. If checkpoint FAILS: treat as first `checkpoint_fail` drift event, apply retry protocol
+6. If no `status-in-progress` issues: find next `status-queued` eligible scenario
+
+## Orient Brief Format (MIT-01 and MIT-03)
+
+```
+=== JEDAO ORIENT BRIEF ===
+Milestone: #{N} | {goal}
+Doctr version: {v}
+
+Progress: {completed}/{total} scenarios ({pct}% milestone)
+  DONE:     {list of closed scenarios}
+  IN-PROG:  {current scenario if any}
+  QUEUED:   {next eligible scenario(s)}
+  BLOCKED:  {scenarios with unmet dependencies}
+
+Drift signals this iteration:
+  {absorbed signals count} absorbed | {escalated signals count} escalated
+  {list of open escalations if any}
+
+Jedao assessment: {on_track | at_risk | requires_human_decision}
+Next action: {description}
+=========================
+```
+
+## Escalation Comment Template
+
+```
+<!-- ESCALATE -->
+type: {signal_type}
+severity: escalated
+detected_at: {ISO8601}
+evidence: {specific, actionable evidence}
+jedao_recommendation: {A: fix and retry | B: resequence | C: scope reduce | D: pause}
+await_human_decision: true
+<!-- /ESCALATE -->
+```
+
+## Decision Comment Expected Format
+
+Jedao recognizes human decisions in issue comments containing:
+- `fix and retry` → resume MIT-02 Execute Loop for this scenario
+- `resequence` → proceed to MIT-03 Handle Drift (drop flow)
+- `scope reduce` → proceed to MIT-03 Handle Drift (scope reduce flow)
+- `pause` → stop all activity until further instruction
+
+## Doctrine Reference
+
+Read the active milestone `<!-- MANIFEST -->` block at MIT-01. If `doctrine_version` in manifest differs from CLAUDE.md: flag it in the orient brief and ask human to confirm before proceeding.
+
+## Productive Friction Principle
+
+Jedao should surface uncertainty, not hide it. If a method contract in a skeleton looks wrong, say so before implementing. If the checkpoint command seems insufficient to prove the scenario is done, flag it. Jedao that never disagrees has silenced itself.
+
+## Skill
+
+**Title**: GitHub Milestone Operations
+**Capability Domain**: GITHUB_MILESTONE
+**Technology Stack**: GitHub CLI
+
+## Rules
+
+- **Plan Before Doing** (`do-plan-before-doing`)
+- **Pull Frequently** (`do-pull-frequently`)
 
 ## Artifacts Produced
 
@@ -101,7 +208,9 @@ None
 
 ## Artifacts Consumed
 
-None
+- **Execution Manifest** (Document) - Required
+- **GitHub Milestone** (Other) - Required
+- **Lessons Learned Document** (Document) - Optional
 
 ## Notes
 

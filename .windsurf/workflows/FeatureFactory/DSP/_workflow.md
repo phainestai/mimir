@@ -1,11 +1,11 @@
 # Deploy Software Process
 
-**Playbook**: FeatureFactory v11.6 (Draft)
+**Playbook**: FeatureFactory v13.0 (Released)
 **Workflow ID**: 10
 **Description**: Check prerequisite artifacts (ESM, DTA), choose target AI IDE, and generate configuration (CLAUDE.md / copilot-instructions.md / Windsurf rules) so AI can consume docs/**, workflows, skills, and artifact templates to start building features.
 **Phase Organization**: Uses phases
 **Total Activities**: 6
-**Export Date**: 2026-04-13 15:41 UTC
+**Export Date**: 2026-05-19 20:35 UTC
 
 ## Activities
 

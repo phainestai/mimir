@@ -1,11 +1,11 @@
 # Manage Iteration
 
-**Playbook**: FeatureFactory v18.7 (Draft)
+**Playbook**: FeatureFactory v13.0 (Released)
 **Workflow ID**: 17
 **Description**: Jedao-driven autonomous execution workflow. Activates from the PIT-produced execution manifest, executes scenarios sequentially within conflict-safe parallel groups, detects and classifies drift events, surfaces escalations to the human, course-corrects the manifest when needed, and closes the iteration with a GitHub Release, Lessons Learned document, and EST-08 sprint rebaseline.
 **Phase Organization**: Uses phases
-**Total Activities**: 6
-**Export Date**: 2026-04-13 18:30 UTC
+**Total Activities**: 4
+**Export Date**: 2026-05-19 20:35 UTC
 
 ## Activities
 

@@ -2,7 +2,7 @@
 
 **Activity ID**: 87
 **Order**: 7
-**Phase**: Verify
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -164,13 +164,35 @@ git commit -m "docs: add CI/CD verification checklist — pipeline fully operati
 - ✅ **`docs/architecture/CICD_VERIFICATION.md`** — checklist documented
 - ✅ **Local and CI/CD parity** — all `make` targets work identically in both
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Helm Chart Template** (Template, Optional) — produced by Create Helm Chart & Values (#82).
+- **CI Pipeline (GitHub Actions)** (Code, Required) — produced by Build CI Pipeline (#84).
+- **CD Pipeline (GitHub Actions)** (Code, Required) — produced by Build CD Pipeline (#85).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Helm Chart Template** (Template) - Optional
+- **CI Pipeline (GitHub Actions)** (Code) - Required
+- **CD Pipeline (GitHub Actions)** (Code) - Required
 
 ## Notes
 

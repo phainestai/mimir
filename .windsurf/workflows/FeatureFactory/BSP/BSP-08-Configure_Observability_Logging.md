@@ -2,7 +2,7 @@
 
 **Activity ID**: 95
 **Order**: 8
-**Phase**: Configure
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -288,13 +288,35 @@ Refs: Activity EST-08 (Sprint Close and Rebaseline)"
 
 ---
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **System Architecture Overview Template** (Template, Required) — produced by Write SAO.md (#59).
+- **Makefile Template** (Code, Required) — produced by Create Makefile (#93).
+
+## Agent
+
+None
+
+## Skill
+
+**Title**: Django Logging Setup
+**Capability Domain**: BACKEND_LOGGING
+**Technology Stack**: Django+Python
+
+## Rules
+
+- **Informative Logging** (`do-informative-logging`)
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **System Architecture Overview Template** (Template) - Required
+- **Makefile Template** (Code) - Required
 
 ## Notes
 

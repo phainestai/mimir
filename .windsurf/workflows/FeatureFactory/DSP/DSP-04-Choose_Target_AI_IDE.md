@@ -2,7 +2,7 @@
 
 **Activity ID**: 63
 **Order**: 4
-**Phase**: Configuration
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -81,6 +81,18 @@ Explain to the user what will be generated:
 - ✅ **Target AI IDE** selected (one or more)
 - ✅ **Output format** understood by user
 - ✅ **Ready to proceed** to DSP-05 (Generate AI IDE Configuration)
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
 
 ## Artifacts Produced
 

@@ -2,7 +2,7 @@
 
 **Activity ID**: 73
 **Order**: 8
-**Phase**: Refinement
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -200,13 +200,39 @@ Monte Carlo achieves MMRE ~20% only after ~20 data points (ACM SAC 2021). Before
 - MC_SNAPSHOT saved, sprint report produced and reviewed
 - Client Quote tab $/FP updated
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Estimation Reference Table** (Document, Required) — produced by Calibrate Reference Stories (#67).
+- **Estimation Template (Excel)** (Document, Required) — produced by Size Scenarios (Level 1 SWAG) (#68).
+- **Execution Manifest** (Document, Required) — produced by Contract (#105).
+- **GitHub Release** (Other, Required) — produced by Close Iteration (#118).
+- **Lessons Learned Document** (Document, Optional) — produced by Close Iteration (#118).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Estimation Reference Table** (Document) - Required
+- **Estimation Template (Excel)** (Document) - Required
+- **Execution Manifest** (Document) - Required
+- **GitHub Release** (Other) - Required
+- **Lessons Learned Document** (Document) - Optional
 
 ## Notes
 

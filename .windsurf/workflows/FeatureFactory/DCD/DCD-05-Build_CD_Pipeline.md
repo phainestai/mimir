@@ -2,7 +2,7 @@
 
 **Activity ID**: 85
 **Order**: 5
-**Phase**: Deploy
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -197,13 +197,27 @@ git commit -m "ci: add CD pipeline (deploy idle → smoke → approve → switch
 - ✅ **GitHub environments** configured (staging, production)
 - ✅ **Pipeline tested** end-to-end
 
-## Artifacts Produced
+## Agent
 
 None
+
+## Skill
+
+**Title**: GitHub Actions Patterns
+**Capability Domain**: CI_CD
+**Technology Stack**: GitHub Actions
+
+## Rules
+
+None
+
+## Artifacts Produced
+
+- **CD Pipeline (GitHub Actions)** (Code) - Required
 
 ## Artifacts Consumed
 
-None
+- **Helm Chart Template** (Template) - Required
 
 ## Notes
 

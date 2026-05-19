@@ -2,7 +2,7 @@
 
 **Activity ID**: 69
 **Order**: 4
-**Phase**: Estimation
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -183,6 +183,18 @@ If the preview AFP produces a surprising total, diagnose which input is off (FP 
 - $/FP rate confirmed
 - AFP preview computed and reviewed
 - ECF, TCF tabs and Client Quote tab of ESTIMATION_TEMPLATE.xlsx updated
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
 
 ## Artifacts Produced
 

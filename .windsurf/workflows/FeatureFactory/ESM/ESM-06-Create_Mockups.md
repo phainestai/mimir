@@ -2,7 +2,7 @@
 
 **Activity ID**: 40
 **Order**: 6
-**Phase**: Prototyping
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -79,13 +79,37 @@ Build functional prototypes with mocked data to validate UX before full implemen
 - ✅ Proper accessibility attributes
 - ✅ Testable with `data-testid` attributes
 
-## Artifacts Produced
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **User Journey** (Document, Required) — produced by Define User Journey (#36).
+- **IA Guidelines** (Document, Required) — produced by Define Information Architecture (#37).
+- **Screen Flow / Dialogue Map** (Diagram, Required) — produced by Create Dialogue Maps (#38).
+
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+- **Diagrams Element By Element** (`do-diagrams-element-by-element`)
+- **Look Via Human Eye** (`do-look-via-human-eye`)
+- **View Drawio Diagrams** (`do-view-drawio-diagrams`)
+
+## Artifacts Produced
+
+- **HTML Mockups** (Code) - Required
 
 ## Artifacts Consumed
 
-None
+- **User Journey** (Document) - Required
+- **IA Guidelines** (Document) - Required
+- **Screen Flow / Dialogue Map** (Diagram) - Required
 
 ## Notes
 

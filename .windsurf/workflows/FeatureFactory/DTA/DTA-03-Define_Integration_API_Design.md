@@ -2,7 +2,7 @@
 
 **Activity ID**: 44
 **Order**: 3
-**Phase**: Design
+**Phase**: Inception
 **Dependencies**: None
 
 ## Description
@@ -94,6 +94,18 @@ Report coverage and gaps.
 - ✅ **Implementation patterns** placeholder created (populated during/after implementation)
 - ✅ **Skill coverage** assessed for this domain
 - ✅ **Decision recorded** for inclusion in SAO.md (DTA-18)
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+- **Validate Api Contracts** (`do-validate-api-contracts`)
 
 ## Artifacts Produced
 

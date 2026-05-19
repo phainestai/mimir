@@ -2,7 +2,7 @@
 
 **Activity ID**: 78
 **Order**: 5
-**Phase**: Provision
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -172,13 +172,26 @@ git commit -m "infra: implement Route53 DNS stack with blue/green traffic switch
 - ✅ **CDK tests** passing
 - ✅ **DNS resolving** for prod and idle subdomains
 
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Infra Repo Scaffold** (Template) - Required
+- **CDK Stack Templates** (Code) - Required
 
 ## Notes
 

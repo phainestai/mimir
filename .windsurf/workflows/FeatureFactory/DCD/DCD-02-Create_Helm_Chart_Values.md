@@ -2,7 +2,7 @@
 
 **Activity ID**: 82
 **Order**: 2
-**Phase**: Design
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -207,9 +207,21 @@ git commit -m "feat(deploy): add Helm chart with local/blue/green values"
 - ✅ **`helm lint`** passes
 - ✅ **`helm template`** renders correct manifests for each environment
 
-## Artifacts Produced
+## Agent
 
 None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
+## Artifacts Produced
+
+- **Helm Chart Template** (Template) - Required
 
 ## Artifacts Consumed
 

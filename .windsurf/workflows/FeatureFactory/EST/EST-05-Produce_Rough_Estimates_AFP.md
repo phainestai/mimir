@@ -2,7 +2,7 @@
 
 **Activity ID**: 70
 **Order**: 5
-**Phase**: Estimation
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -163,13 +163,35 @@ Every token estimate must declare its convergence phase. An "initial concept" es
 - Rough Estimates tab and Client Quote tab of ESTIMATION_TEMPLATE.xlsx complete
 - Internal summary and client summary prepared and reviewed
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Estimation Reference Table** (Document, Required) — produced by Calibrate Reference Stories (#67).
+- **Estimation Template (Excel)** (Document, Required) — produced by Size Scenarios (Level 1 SWAG) (#68).
+- **Lessons Learned Document** (Document, Optional) — produced by Close Iteration (#118).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Estimation Reference Table** (Document) - Required
+- **Estimation Template (Excel)** (Document) - Required
+- **Lessons Learned Document** (Document) - Optional
 
 ## Notes
 

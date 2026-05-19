@@ -2,7 +2,7 @@
 
 **Activity ID**: 86
 **Order**: 6
-**Phase**: Deploy
+**Phase**: Elaboration
 **Dependencies**: None
 
 ## Description
@@ -160,13 +160,35 @@ git commit -m "ci: add emergency rollback workflow with confirmation gate"
 - ✅ **Rollback time** < 60 seconds
 - ✅ **Runbook** documented
 
+## Inputs
+
+Read these before starting this activity. They are produced earlier in the playbook and are authoritative — raise a drift event instead of deviating.
+
+- **Helm Chart Template** (Template, Required) — produced by Create Helm Chart & Values (#82).
+- **CI Pipeline (GitHub Actions)** (Code, Required) — produced by Build CI Pipeline (#84).
+- **CD Pipeline (GitHub Actions)** (Code, Required) — produced by Build CD Pipeline (#85).
+
+## Agent
+
+None
+
+## Skill
+
+None
+
+## Rules
+
+None
+
 ## Artifacts Produced
 
 None
 
 ## Artifacts Consumed
 
-None
+- **Helm Chart Template** (Template) - Required
+- **CI Pipeline (GitHub Actions)** (Code) - Required
+- **CD Pipeline (GitHub Actions)** (Code) - Required
 
 ## Notes
 
