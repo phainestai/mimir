@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
+from django.contrib.auth.decorators import login_required
+from django.http import HttpRequest, HttpResponse
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 
@@ -13,27 +14,19 @@ from methodology.services.bug_report_service import BugReportService
 logger = logging.getLogger(__name__)
 
 
-def _resolve_reporter_email(request: HttpRequest, posted: str) -> str:
-    posted = (posted or "").strip()
-    if request.user.is_authenticated:
-        if posted:
-            return posted
-        return (getattr(request.user, "email", None) or "").strip()
-    return posted
-
-
+@login_required
 @require_POST
 def submit_feedback(request: HttpRequest) -> HttpResponse:
     """
     Accept HTMX POST from the offcanvas bug widget.
 
-    :param request: POST with description, reporter_email, page_url, form_data, app_version
+    Reporter email is always the authenticated user's account email (no form field).
+
+    :param request: POST with description, page_url, form_data, app_version
     :returns: HTML fragment for swap, or 400 with error fragment
     """
     description = (request.POST.get("description") or "").strip()
-    reporter_email = _resolve_reporter_email(
-        request, request.POST.get("reporter_email") or ""
-    )
+    reporter_email = (getattr(request.user, "email", None) or "").strip()
     page_url = (request.POST.get("page_url") or "").strip()
     form_data = (request.POST.get("form_data") or "").strip()
     client_version = (request.POST.get("app_version") or "").strip()
@@ -47,23 +40,28 @@ def submit_feedback(request: HttpRequest) -> HttpResponse:
     )
 
     if not description:
-        return HttpResponseBadRequest(
+        return HttpResponse(
             render_to_string(
                 "methodology/feedback_submit_result.html",
                 {"ok": False, "message": "Please describe what went wrong."},
                 request=request,
-            )
+            ),
+            status=200,
         )
     if not reporter_email:
-        return HttpResponseBadRequest(
+        return HttpResponse(
             render_to_string(
                 "methodology/feedback_submit_result.html",
                 {
                     "ok": False,
-                    "message": "Email is required so we can follow up.",
+                    "message": (
+                        "Your profile has no email address. Add one in your account settings "
+                        "so we can follow up on reports."
+                    ),
                 },
                 request=request,
-            )
+            ),
+            status=200,
         )
 
     try:
@@ -76,12 +74,13 @@ def submit_feedback(request: HttpRequest) -> HttpResponse:
         )
     except ValueError as e:
         logger.warning("submit_feedback validation/service error: %s", e)
-        return HttpResponseBadRequest(
+        return HttpResponse(
             render_to_string(
                 "methodology/feedback_submit_result.html",
                 {"ok": False, "message": str(e)},
                 request=request,
-            )
+            ),
+            status=200,
         )
 
     logger.info(

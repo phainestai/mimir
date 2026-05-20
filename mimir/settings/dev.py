@@ -6,6 +6,12 @@ Optimized for local development with SQLite or Postgres.
 
 import os
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load .env from repo root if present (only affects runserver; docker compose handles this itself)
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env", override=False)
+
 from .base import *  # noqa: F401, F403
 
 # Environment identifier
@@ -202,3 +208,10 @@ else:
     )
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8000")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Bug reports — optional GitHub filing from local UI / mcp_server
+# ─────────────────────────────────────────────────────────────────────────────
+# Dry-run by default locally so the form works without a GITHUB_TOKEN.
+# Set GITHUB_TOKEN env var to file real issues from dev.
+BUG_REPORT_DRY_RUN = not bool(os.environ.get("GITHUB_TOKEN", "").strip())

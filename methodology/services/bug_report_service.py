@@ -13,6 +13,8 @@ from typing import Any, Literal
 
 from django.conf import settings
 
+from mimir.versioning import get_deployed_revision
+
 logger = logging.getLogger(__name__)
 
 SourceKind = Literal["ui", "mcp"]
@@ -150,7 +152,7 @@ def _build_issue_body(
     page_context: str,
 ) -> str:
     env = getattr(settings, "MIMIR_ENV", "dev")
-    version = getattr(settings, "APP_VERSION", "0.0.0")
+    version = get_deployed_revision()
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     form_section = _format_form_data_section(form_data)
     ctx_block = (

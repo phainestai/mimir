@@ -35,6 +35,15 @@ class TestHealthEndpoint:
         # In test env, should be 'test'
         assert data['environment'] in ('test', 'dev', 'prod', 'unknown')
 
+    def test_health_endpoint_includes_revision(self):
+        """Deployed revision mirrors health JSON (same source as bug-report bodies)."""
+        client = Client()
+        response = client.get('/health/')
+        data = response.json()
+        assert 'revision' in data
+        assert isinstance(data['revision'], str)
+        assert len(data['revision']) > 0
+
     def test_health_endpoint_returns_503_on_db_failure(self):
         """Health endpoint should return 503 when database check fails."""
         client = Client()

@@ -2197,6 +2197,25 @@ The `accounts/services/email_service.py` auth email path calls boto3 directly (p
 
 **Elastic Beanstalk deployment:** Attach an IAM instance profile with `ses:SendEmail`; omit the key/secret env vars (boto3 picks up the instance role automatically).
 
+### Bug reports — GitHub Issues
+
+The web app can file structured issues from the global **Feedback** UI and from **`POST /api/feedback/report/`** (used by the MCP HTTP facade’s `report_bug` tool). Implementation: `methodology/services/bug_report_service.py` (PyGithub).
+
+**Required for live issue creation (typical production):**
+
+| Variable | Example | Notes |
+|----------|---------|-------|
+| `GITHUB_TOKEN` | `github_pat_…` or `ghp_…` | Classic PAT or fine-grained token with **Issues: write** on the repository below. Store as an EB environment property (plain or SSM-backed); **never** commit. |
+| `GITHUB_BUG_REPO` | `phainestai/mimir` | Default if unset |
+
+**Optional:**
+
+| Variable | Notes |
+|----------|--------|
+| `BUG_REPORT_DRY_RUN` | `1` / `true` — skip GitHub API (staging diagnostics only). |
+
+The **MCP facade** container talks to FOB over HTTP; it does **not** need `GITHUB_TOKEN`. Only the **web** service reads it.
+
 ### PIP Decision Email Content
 
 The email body is rendered from `templates/pips/email_decision.txt` (plain text). It includes:

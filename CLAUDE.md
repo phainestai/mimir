@@ -241,6 +241,8 @@ Both processes share the same SQLite DB with a 20-second timeout for concurrent 
 
 **Docker MCP (IDE / CI):** The public MCP facade image is **`featurefactory/mimir-mcp:latest`** on Docker Hub. End-user setup: README “Quick Start with Docker” and [`docs/DOCKER_QUICK_START.md`](docs/DOCKER_QUICK_START.md). CI publishes it from `.github/workflows/build-and-deploy.yml` using repository secrets **`DOCKERHUB_USERNAME`** and **`DOCKERHUB_TOKEN`**.
 
+**Bug reports (production):** Configure **`GITHUB_TOKEN`** (Issues: write) and optional **`GITHUB_BUG_REPO`** on the **FOB** host (Elastic Beanstalk environment properties or `docker-compose` web service). See [`docs/architecture/SAO.md`](docs/architecture/SAO.md) § *Bug reports — GitHub Issues*. The MCP facade does not need this token.
+
 **Contributors:** `mimir.db` is tracked in git; when migrations or committed demo data change the DB file, **commit `mimir.db` in the same change**—do not drop it from PRs by habit.
 
 ---

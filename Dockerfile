@@ -4,7 +4,9 @@ LABEL maintainer="Denis Petelin <denis.petelin@example.com>"
 LABEL description="Mimir - Your Ever-Evolving Engineering Playbook"
 LABEL version="1.0.0"
 
-# Set environment variables
+# Runtime-only (no secrets baked in). Common overrides:
+#   DATABASE_URL, DJANGO_SECRET_KEY — production
+#   GITHUB_TOKEN, GITHUB_BUG_REPO — bug reports → GitHub Issues (FOB process)
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \

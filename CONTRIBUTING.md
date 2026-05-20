@@ -5,8 +5,9 @@ Thank you for your interest in contributing to Mimir! This guide will help you u
 ## Prerequisites
 
 1. **Set up your development environment** (see [README.md](README.md))
-2. **Configure Mimir MCP** in your IDE (Windsurf, Claude Desktop, or Cursor)
-3. **Familiarize yourself with the FeatureFactory playbook** - it's already in the database!
+2. **Optional — bug reports:** To create real GitHub issues from the Feedback UI or MCP locally, set `GITHUB_TOKEN` and optional `GITHUB_BUG_REPO` (see [README.md](README.md) Quick Start → Bug reports).
+3. **Configure Mimir MCP** in your IDE (Windsurf, Claude Desktop, or Cursor)
+4. **Familiarize yourself with the FeatureFactory playbook** - it's already in the database!
 
 ## Development Workflow
 

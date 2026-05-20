@@ -189,6 +189,8 @@ jobs:
   # ── 3. Deploy to AWS Elastic Beanstalk ───────────────────────────────────
   deploy-to-eb:
     name: Deploy to Elastic Beanstalk (mimir-blue)
+    # Operators: add GITHUB_TOKEN (Issues: write) + optional GITHUB_BUG_REPO on the EB
+    # environment so the Feedback UI and /api/feedback/report/ can create GitHub issues.
     needs: build-and-push
     runs-on: ubuntu-latest
     # Only deploy on a published GitHub release or manual dispatch.
@@ -229,6 +231,13 @@ jobs:
           echo "suffix=${SUFFIX}" >> $GITHUB_OUTPUT
           # Include run_number so retries produce a unique label
           echo "label=v-${SUFFIX}-r${{ github.run_number }}" >> $GITHUB_OUTPUT
+          # revision: release tag (e.g. v1.4.0) when triggered by gh release publish,
+          # otherwise branch-sha (e.g. main-a3f9c12) for manual/workflow_dispatch deploys.
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "revision=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          else
+            echo "revision=${SUFFIX}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Generate docker-compose.yml from template
         env:
@@ -269,7 +278,9 @@ jobs:
           aws elasticbeanstalk update-environment \
             --application-name "${{ env.EB_APP }}" \
             --environment-name "${{ env.EB_ENV }}" \
-            --version-label "${{ steps.version.outputs.label }}"
+            --version-label "${{ steps.version.outputs.label }}" \
+            --option-settings \
+              "Namespace=aws:elasticbeanstalk:application:environment,OptionName=MIMIR_GIT_REVISION,Value=${{ steps.version.outputs.revision }}"
 
       - name: Wait for deployment to complete
         run: |
@@ -307,3 +318,5 @@ jobs:
           echo "| **Environment** | \`${{ env.EB_ENV }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Web image** | \`${{ steps.ecr-login.outputs.registry }}/mimir:${{ steps.version.outputs.suffix }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **MCP image** | \`${{ env.DOCKERHUB_IMAGE }}:${{ steps.version.outputs.suffix }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Set **GITHUB_TOKEN** (and optional **GITHUB_BUG_REPO**) on the EB environment so the Feedback widget and \`report_bug\` API can file issues." >> $GITHUB_STEP_SUMMARY

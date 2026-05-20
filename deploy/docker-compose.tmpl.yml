@@ -11,6 +11,8 @@
 #   DJANGO_SECRET_KEY, DATABASE_URL, DJANGO_ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS
 #   ANTHROPIC_API_KEY   — Galdr AI engine (secret, set manually in EB env)
 #   GALDR_MODEL         — set by CDK (default: claude-sonnet-4-5)
+#   GITHUB_TOKEN        — optional but recommended: PAT with Issues:write on GITHUB_BUG_REPO
+#   GITHUB_BUG_REPO     — optional; default phainestai/mimir when resolved on host
 
 services:
   web:
@@ -31,6 +33,9 @@ services:
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@featurefactory.io}
       AWS_SES_CONFIGURATION_SET: ${AWS_SES_CONFIGURATION_SET:-}
       FRONTEND_URL: ${FRONTEND_URL:-https://mimir.featurefactory.io}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_BUG_REPO: ${GITHUB_BUG_REPO:-phainestai/mimir}
+      BUG_REPORT_DRY_RUN: ${BUG_REPORT_DRY_RUN:-}
     restart: unless-stopped
 
   mcp-facade:
@@ -40,7 +45,7 @@ services:
     environment:
       MCP_TRANSPORT: sse
       MCP_PORT: "8001"
-      MIMIR_BASE_URL: "http://web:8000"
+      MIMIR_SERVER_URL: "http://web:8000"
     restart: unless-stopped
     depends_on:
       - web

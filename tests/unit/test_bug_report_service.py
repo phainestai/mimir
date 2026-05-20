@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
-from django.test import override_settings
+from django.test import override_settings  # still used for GITHUB_* settings
 
 from methodology.services.bug_report_service import BugReportService
 
@@ -33,7 +33,6 @@ def test_submit_bug_invalid_email():
     BUG_REPORT_DRY_RUN=True,
     GITHUB_TOKEN="",
     GITHUB_BUG_REPO="phainestai/mimir",
-    APP_VERSION="9.9.9",
     MIMIR_ENV="test",
 )
 def test_submit_bug_dry_run_short_circuits_github():
@@ -49,7 +48,18 @@ def test_submit_bug_dry_run_short_circuits_github():
 
 
 @pytest.mark.unit
-@override_settings(APP_VERSION="1.0.0", MIMIR_ENV="test")
+def test_build_body_uses_mimir_git_revision(monkeypatch):
+    monkeypatch.setenv("MIMIR_GIT_REVISION", "sha-from-deploy")
+    body = BugReportService.build_body_for_diagnostics(
+        "Desc",
+        "u@example.com",
+        source="ui",
+    )
+    assert "sha-from-deploy" in body
+
+
+@pytest.mark.unit
+@override_settings(MIMIR_ENV="test")
 def test_build_body_redacts_sensitive_keys():
     body = BugReportService.build_body_for_diagnostics(
         "Desc here",

@@ -14,14 +14,12 @@ logger = logging.getLogger(__name__)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-_version_file = BASE_DIR / "VERSION"
-try:
-    APP_VERSION = _version_file.read_text(encoding="utf-8").strip()
-except OSError:
-    logger.warning("VERSION file missing at %s; using 0.0.0", _version_file)
-    APP_VERSION = "0.0.0"
 
-# Bug reports filed to GitHub Issues (PyGithub). GITHUB_TOKEN required unless dry-run.
+# Bug reports → GitHub Issues (UI offcanvas + MCP `report_bug` / HTTP facade).
+#   GITHUB_TOKEN — PAT or fine-grained token with **Issues: write** on GITHUB_BUG_REPO.
+#   GITHUB_BUG_REPO — "owner/repo"; default phainestai/mimir.
+#   BUG_REPORT_DRY_RUN — if "1"/"true"/"yes", skip PyGithub (placeholder issue URL).
+# See README and docs/architecture/SAO.md for production / Elastic Beanstalk setup.
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "").strip()
 GITHUB_BUG_REPO = os.environ.get("GITHUB_BUG_REPO", "phainestai/mimir").strip()
 BUG_REPORT_DRY_RUN = os.environ.get("BUG_REPORT_DRY_RUN", "").lower() in (

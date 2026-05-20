@@ -10,6 +10,8 @@ from django.db import connection
 from django.conf import settings
 from django.views.decorators.http import require_GET
 
+from mimir.versioning import get_deployed_revision
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,5 +53,6 @@ def health_check(request):
     
     # Add environment info (non-sensitive)
     health_status['environment'] = getattr(settings, 'MIMIR_ENV', 'unknown')
-    
+    health_status['revision'] = get_deployed_revision()
+
     return JsonResponse(health_status, status=status_code)

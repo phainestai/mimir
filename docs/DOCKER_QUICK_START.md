@@ -39,6 +39,7 @@ cd mimir
 docker build -t mimir-web:local .
 
 # Run
+# Optional: add -e GITHUB_TOKEN=... -e GITHUB_BUG_REPO=phainestai/mimir for Feedback → GitHub Issues
 docker run -d \
   --name mimir-fob \
   -p 8000:8000 \
@@ -143,7 +144,9 @@ Restart your IDE after saving.
 | `MIMIR_EMAIL` | `admin@localhost` | Default superuser email |
 | `MIMIR_DB_PATH` | `/app/data/mimir.db` | SQLite database path |
 | `DJANGO_DEBUG` | `False` | Django debug mode |
-| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Allowed hosts |
+| `GITHUB_TOKEN` | — | PAT with **Issues: write** on `GITHUB_BUG_REPO` (web only) |
+| `GITHUB_BUG_REPO` | `phainestai/mimir` | Target repo for feedback issues |
+| `BUG_REPORT_DRY_RUN` | — | If `1`/`true`, skip GitHub API |
 
 ### MCP Facade Container
 

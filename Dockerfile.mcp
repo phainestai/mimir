@@ -26,7 +26,8 @@ COPY mcp_integration/facade/ ./mcp_integration/facade/
 COPY docker/facade-entrypoint.sh /app/facade-entrypoint.sh
 RUN chmod +x /app/facade-entrypoint.sh
 
-# Runtime configuration — token OR user/password must be provided
+# Bug reports are filed by the FOB (Django) process via PyGithub.
+# Pass GITHUB_TOKEN (+ optional GITHUB_BUG_REPO) into the **web** container only.
 ENV MIMIR_SERVER_URL=http://web:8000
 ENV MIMIR_TOKEN=""
 ENV MIMIR_USER=admin

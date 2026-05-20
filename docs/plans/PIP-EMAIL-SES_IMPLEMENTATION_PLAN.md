@@ -107,6 +107,8 @@ Set in AWS Console → Elastic Beanstalk → Environment → Configuration → S
 | `DEFAULT_FROM_EMAIL` | `noreply@featurefactory.io` |
 | `FRONTEND_URL` | `https://mimir.featurefactory.io` |
 | `AWS_SES_CONFIGURATION_SET` | `mimir-transactional` (optional) |
+| `GITHUB_TOKEN` | PAT with Issues: write (optional but recommended — bug-report widget / API) |
+| `GITHUB_BUG_REPO` | `phainestai/mimir` (optional) |
 
 Do **not** set `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` when using instance role.
 

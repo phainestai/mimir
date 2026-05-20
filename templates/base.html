@@ -25,20 +25,80 @@
         [data-testid="main-navbar"] .navbar-nav.me-auto .nav-link {
             font-size: 0.875rem;
         }
-        /* Global feedback tab (fixed right edge) */
+        /* Feedback tab: vertical strip on the right (writing-mode; no rotate — keeps pin math stable). */
         .feedback-edge-tab {
             position: fixed;
             right: 0;
-            top: 50%;
-            transform: translateY(-50%) rotate(-90deg);
-            transform-origin: center right;
-            z-index: 1030;
-            border-radius: 0.375rem 0.375rem 0 0;
-            padding: 0.5rem 0.85rem;
-            font-size: 0.8125rem;
+            left: auto;
+            top: 50vh;
+            top: 50dvh;
+            z-index: 1040;
+            margin: 0;
+            /* No flex — let vertical writing-mode flow icon then text top-to-bottom naturally */
+            display: inline-block;
+            padding: 0.9rem 0.35rem;
+            font-size: 0.72rem;
             font-weight: 600;
-            letter-spacing: 0.04em;
-            box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.18);
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            border-radius: 0.35rem 0 0 0.35rem;
+            box-shadow: -1px 1px 6px rgba(0, 0, 0, 0.12);
+            transform: translateY(-50%) translateX(var(--feedback-nudge-x, 0px));
+            cursor: pointer;
+            font-family: inherit;
+            line-height: 1.4;
+            text-align: center;
+            /* Muted slate (not primary blue) */
+            color: #f1f3f5;
+            background-color: #6d7b88;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .feedback-edge-tab:hover {
+            color: #fff;
+            background-color: #5a6670;
+        }
+        .feedback-edge-tab:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, 0.5);
+            outline-offset: 2px;
+        }
+        /* Keep the icon upright in vertical writing-mode */
+        .feedback-edge-tab i {
+            display: inline-block;
+            writing-mode: horizontal-tb;
+            font-size: 0.82rem;
+            opacity: 0.95;
+            margin-bottom: 0.25em;
+        }
+        /* Offcanvas: grow description so submit sits at panel bottom */
+        #feedbackOffcanvas .feedback-offcanvas-body {
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100dvh - 4rem);
+            min-height: calc(100vh - 4rem);
+        }
+        #feedback-form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+        #feedback-form .feedback-description-field {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            margin-bottom: 0.75rem;
+        }
+        #feedback-description {
+            flex: 1 1 auto;
+            min-height: 16rem;
+            resize: vertical;
+        }
+        #feedback-form .feedback-submit-row {
+            margin-top: auto;
+            flex-shrink: 0;
         }
     </style>
     
@@ -53,16 +113,19 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Global bug / feedback entry -->
+    {% if user.is_authenticated %}
+    <!-- Feedback: first direct child of body, fixed to viewport (no wrapper / absolute) -->
     <button type="button"
-            class="btn btn-primary feedback-edge-tab"
+            class="feedback-edge-tab"
             data-bs-toggle="offcanvas"
             data-bs-target="#feedbackOffcanvas"
             aria-controls="feedbackOffcanvas"
             aria-label="Open feedback and bug report form"
             data-testid="feedback-open-tab">
-        Feedback
+        <i class="fa-solid fa-comment-heart" aria-hidden="true"></i>
+        <span>Feedback</span>
     </button>
+    {% endif %}
 
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark" data-testid="main-navbar">
@@ -289,7 +352,8 @@
         </div>
     </footer>
 
-    <!-- Feedback offcanvas -->
+    {% if user.is_authenticated %}
+    <!-- Feedback offcanvas (same visibility as tab; version from /health/ revision) -->
     <div class="offcanvas offcanvas-end" tabindex="-1" id="feedbackOffcanvas"
          aria-labelledby="feedbackOffcanvasLabel">
         <div class="offcanvas-header border-bottom">
@@ -297,31 +361,19 @@
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
                     aria-label="Close"></button>
         </div>
-        <div class="offcanvas-body">
-            <p class="small text-muted mb-3">
-                App version <strong>{{ APP_VERSION }}</strong>. Submits a structured GitHub issue
-                (labels <code>bug</code>, <code>copilot</code>) with this page and your contact email.
-            </p>
+        <div class="offcanvas-body feedback-offcanvas-body">
             <form id="feedback-form"
                   hx-post="{% url 'feedback_report' %}"
                   hx-target="#feedback-result"
                   hx-swap="innerHTML">
                 {% csrf_token %}
-                <div class="mb-3">
-                    <label for="feedback-email" class="form-label">Your email</label>
-                    <input type="email" class="form-control" id="feedback-email" name="reporter_email"
-                           value="{% if request.user.is_authenticated %}{{ request.user.email }}{% endif %}"
-                           required autocomplete="email"
-                           data-testid="feedback-email-input"
-                           data-bs-toggle="tooltip" title="We use this only to follow up on your report">
-                </div>
-                <div class="mb-3">
+                <div class="feedback-description-field">
                     <label for="feedback-description" class="form-label">What happened?</label>
-                    <textarea class="form-control" id="feedback-description" name="description" rows="5"
+                    <textarea class="form-control" id="feedback-description" name="description" rows="12"
                               required data-testid="feedback-description-input"
                               placeholder="Steps to reproduce, what you expected, what you saw…"></textarea>
                 </div>
-                <div class="form-check mb-3">
+                <div class="form-check mb-3 flex-shrink-0">
                     <input class="form-check-input" type="checkbox" id="feedback-collect-forms"
                            data-testid="feedback-collect-forms">
                     <label class="form-check-label" for="feedback-collect-forms"
@@ -331,15 +383,22 @@
                     </label>
                 </div>
                 <input type="hidden" name="page_url" id="feedback-page-url" value="">
-                <input type="hidden" name="app_version" value="{{ APP_VERSION }}">
                 <input type="hidden" name="form_data" id="feedback-form-data" value="">
-                <button type="submit" class="btn btn-primary w-100 mb-2" data-testid="feedback-submit">
-                    Submit report
-                </button>
-                <div id="feedback-result" class="mt-2" data-testid="feedback-result"></div>
+                <input type="hidden" name="app_version" id="feedback-app-version-input"
+                       value="{{ DEPLOYED_REVISION }}">
+                <div class="feedback-submit-row">
+                    <button type="submit"
+                            class="btn btn-primary w-100 py-2 d-inline-flex align-items-center justify-content-center gap-2"
+                            data-testid="feedback-submit">
+                        <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+                        <span>Submit report</span>
+                    </button>
+                    <div id="feedback-result" class="mt-2 mb-0" data-testid="feedback-result"></div>
+                </div>
             </form>
         </div>
     </div>
+    {% endif %}
 
     <!-- Bootstrap 5.3.8 JS Bundle (includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" 
@@ -356,7 +415,64 @@
             });
         });
     </script>
-    
+
+    {% if user.is_authenticated %}
+    <!-- Pin feedback tab flush to layout viewport (handles iframe / host quirks; verified in browser) -->
+    <script>
+        (function () {
+            function pinFeedbackTabToViewport() {
+                var btn = document.querySelector('[data-testid="feedback-open-tab"]');
+                if (!btn) return;
+                var r = btn.getBoundingClientRect();
+                var targetRight = document.documentElement.clientWidth;
+                var gap = targetRight - r.right;
+                var nudge = gap > 0.5 ? gap : 0;
+                btn.style.setProperty('--feedback-nudge-x', nudge + 'px');
+                if (nudge > 0) {
+                    console.log('feedback: pinned to viewport, nudge x=' + nudge.toFixed(1) + 'px');
+                }
+            }
+            window.addEventListener('resize', pinFeedbackTabToViewport);
+            document.addEventListener('DOMContentLoaded', pinFeedbackTabToViewport);
+            window.addEventListener('load', pinFeedbackTabToViewport);
+            setTimeout(pinFeedbackTabToViewport, 0);
+            setTimeout(pinFeedbackTabToViewport, 300);
+        })();
+    </script>
+    <script>
+        (function () {
+            var healthUrl = '{% url "health_check" %}';
+            function applyRevision(rev) {
+                var label = rev && String(rev).trim() ? String(rev).trim() : 'unknown';
+                var span = document.getElementById('feedback-app-version');
+                var input = document.getElementById('feedback-app-version-input');
+                if (span) {
+                    span.textContent = label;
+                }
+                if (input) {
+                    input.value = label;
+                }
+                console.log('feedback: revision from /health/', label);
+            }
+            window.__mimirSyncFeedbackRevision = function () {
+                fetch(healthUrl, { credentials: 'same-origin', cache: 'no-store' })
+                    .then(function (r) {
+                        if (!r.ok) {
+                            throw new Error('health HTTP ' + r.status);
+                        }
+                        return r.json();
+                    })
+                    .then(function (data) {
+                        applyRevision(data && data.revision);
+                    })
+                    .catch(function (e) {
+                        console.log('feedback: /health/ fetch failed', e);
+                    });
+            };
+        })();
+    </script>
+    {% endif %}
+
     <script>
         document.body.addEventListener('htmx:configRequest', function (event) {
             var elt = event.detail.elt;
@@ -369,6 +485,9 @@
             }
         });
         document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.__mimirSyncFeedbackRevision === 'function') {
+                window.__mimirSyncFeedbackRevision();
+            }
             var form = document.getElementById('feedback-form');
             if (form) {
                 form.addEventListener('htmx:beforeRequest', function () {
@@ -412,6 +531,9 @@
                     var pageField = document.getElementById('feedback-page-url');
                     if (pageField) {
                         pageField.value = window.location.href;
+                    }
+                    if (typeof window.__mimirSyncFeedbackRevision === 'function') {
+                        window.__mimirSyncFeedbackRevision();
                     }
                     console.log('feedback: offcanvas open', window.location.href);
                 });

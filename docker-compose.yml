@@ -2,7 +2,7 @@
 # Two services: Django web app (port 8000) + MCP HTTP facade (port 8001).
 #
 # Quick start:
-#   cp .env.example .env        # edit MIMIR_USER / MIMIR_PASSWORD
+#   cp .env.example .env        # edit MIMIR_USER / MIMIR_PASSWORD / optional GITHUB_TOKEN
 #   docker compose up -d
 #
 # The MCP facade auto-fetches an auth token from the web service on startup.
@@ -26,6 +26,9 @@ services:
       MIMIR_DB_PATH: /app/data/mimir.db
       DJANGO_DEBUG: "${DJANGO_DEBUG:-False}"
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,web"
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
+      GITHUB_BUG_REPO: "${GITHUB_BUG_REPO:-phainestai/mimir}"
+      BUG_REPORT_DRY_RUN: "${BUG_REPORT_DRY_RUN:-}"
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8000/health/"]
       interval: 15s

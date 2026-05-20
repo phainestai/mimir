@@ -26,7 +26,6 @@ def test_submit_feedback_happy_path(client):
         url,
         data={
             "description": "Export button does nothing",
-            "reporter_email": user.email,
             "page_url": "http://testserver/playbooks/1/",
             "app_version": "0.1.0-rc1",
             "form_data": "",
@@ -36,6 +35,20 @@ def test_submit_feedback_happy_path(client):
     content = response.content.decode()
     assert "Thank you" in content
     assert "feedback-submit-result" in content
+
+
+@pytest.mark.django_db
+def test_submit_feedback_redirects_when_anonymous(client):
+    url = reverse("feedback_report")
+    response = client.post(
+        url,
+        data={
+            "description": "Something",
+            "reporter_email": "anon@example.com",
+        },
+    )
+    assert response.status_code == 302
+    assert "login" in response.url
 
 
 @pytest.mark.django_db
@@ -51,10 +64,9 @@ def test_submit_feedback_requires_description(client):
         url,
         data={
             "description": "",
-            "reporter_email": user.email,
         },
     )
-    assert response.status_code == 400
+    assert response.status_code == 200
     assert "Please describe" in response.content.decode()
 
 

@@ -191,3 +191,20 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "https://mimir.featurefactory.io")
 _ses_cfg_set = os.getenv("AWS_SES_CONFIGURATION_SET", "")
 if _ses_cfg_set:
     AWS_SES_CONFIGURATION_SET = _ses_cfg_set
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Bug reports — GitHub Issues (PyGithub)
+# ─────────────────────────────────────────────────────────────────────────────
+# Values are read in ``mimir.settings.base`` from the environment. Set on the EB
+# environment (recommended) or in the shell that starts Gunicorn:
+#
+#   GITHUB_TOKEN — classic PAT or fine-grained token with **Issues: write** on
+#                  the repo given by GITHUB_BUG_REPO.
+#   GITHUB_BUG_REPO — default ``phainestai/mimir`` (override for forks).
+#   BUG_REPORT_DRY_RUN — optional; ``1``/``true`` skips PyGithub (staging only).
+#
+# If GITHUB_TOKEN is unset, the feedback widget and ``POST /api/feedback/report/``
+# return a clear configuration error when users try to file a report.
+#
+# The MCP HTTP facade does **not** need GITHUB_TOKEN; it calls the web API, which
+# files issues using the token on the FOB container.

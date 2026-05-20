@@ -74,7 +74,7 @@ aws ecr get-login-password --region us-east-1 \
   | docker login --username AWS --password-stdin \
     411113550285.dkr.ecr.us-east-1.amazonaws.com
 
-# Run with persistent storage
+# Run with persistent storage (optional: pass GITHUB_TOKEN + GITHUB_BUG_REPO for Feedback → Issues)
 docker run -d \
   --name mimir-fob \
   -p 8000:8000 \
@@ -123,6 +123,18 @@ Replace `<your-token>` with the token from Step 2. Restart your IDE after saving
 > **Multi-platform**: amd64 + arm64 · **Data safety**: SQLite in mounted volume · **Hosted FOB**: change `MIMIR_SERVER_URL` to `https://mimir.featurefactory.io`
 
 See [docs/DOCKER_QUICK_START.md](docs/DOCKER_QUICK_START.md) for docker-compose setup and full reference.
+
+### Bug reports → GitHub Issues
+
+The **Feedback** tab (and MCP `report_bug` / HTTP facade) create structured issues on GitHub. On the **FOB (web) host** set:
+
+| Variable | Description |
+|----------|-------------|
+| `GITHUB_TOKEN` | Classic or fine-grained PAT with **Issues: write** on the target repo |
+| `GITHUB_BUG_REPO` | Optional; default `phainestai/mimir` |
+| `BUG_REPORT_DRY_RUN` | Optional; `1` / `true` skips the API (smoke tests) |
+
+Docker Compose: add these to `web` service env (see [.env.example](.env.example)). **Do not** put `GITHUB_TOKEN` on the MCP facade container — it calls the web API, which uses the token.
 
 Maintainers publishing from CI configure GitHub Actions secrets **`DOCKERHUB_USERNAME`** and **`DOCKERHUB_TOKEN`** — the workflow builds `Dockerfile.mcp` as **`featurefactory/mimir-mcp`** on each qualifying push (`main`, `release/**`, `feat/**`, releases, workflow dispatch). Legacy Azure Container Registry **`acrmimir`** was removed from the pipeline; when it is unused, tear it down in Azure (e.g. `az login` then `az acr delete --name acrmimir --yes`) and remove GitHub secrets **`ACR_USERNAME`** / **`ACR_PASSWORD`** if still present.
 

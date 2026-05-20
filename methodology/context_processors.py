@@ -4,22 +4,23 @@ from __future__ import annotations
 
 import logging
 
-from django.conf import settings
 from django.http import HttpRequest
+
+from mimir.versioning import get_deployed_revision
 
 logger = logging.getLogger(__name__)
 
 
 def app_version(request: HttpRequest) -> dict:
     """
-    Expose application semver from VERSION file (see ``settings.APP_VERSION``).
+    Expose deployed revision for templates — mirrors Huginn's ``MIMIR_GIT_REVISION`` pattern.
 
     :param request: Incoming HTTP request (unused; required for context processor signature).
-    :returns: Mapping with ``APP_VERSION`` for templates and feedback widget.
+    :returns: Mapping with ``DEPLOYED_REVISION`` (env var or ``"unknown"``).
     """
-    ver = getattr(settings, "APP_VERSION", "0.0.0")
-    logger.debug("Template context APP_VERSION=%s path=%s", ver, getattr(request, "path", ""))
-    return {"APP_VERSION": ver}
+    deployed = get_deployed_revision()
+    logger.debug("Template context DEPLOYED_REVISION=%s path=%s", deployed, getattr(request, "path", ""))
+    return {"DEPLOYED_REVISION": deployed}
 
 
 def primary_nav_section(request: HttpRequest) -> dict:

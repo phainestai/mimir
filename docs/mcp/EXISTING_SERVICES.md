@@ -93,6 +93,14 @@ def create_workflow_tool(playbook_id: int, name: str, description: str = ""):
     }
 ```
 
+## BugReportService
+
+**File**: `methodology/services/bug_report_service.py`
+
+**Purpose**: File GitHub Issues from the Feedback UI, `POST /api/feedback/report/` (MCP HTTP facade), and MCP `report_bug` (stdio server).
+
+**Production configuration**: `GITHUB_TOKEN` (Issues: write) and optional `GITHUB_BUG_REPO` on the FOB host — see [README.md](../../README.md), [docs/architecture/SAO.md](../architecture/SAO.md), and [.env.example](../../.env.example).
+
 ## Key Principles
 
 1. **No MCP-specific service methods** - Service layer is generic
