@@ -146,9 +146,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Static HTML mockups under /mockups/ (design reference). Disabled by default;
-# enabled in mimir.settings.dev only — see mimir.urls.
-ENABLE_UI_MOCKUPS = False
 
 # Galdr AI review worker
 GALDR_MODEL = os.environ.get("GALDR_MODEL", "claude-sonnet-4-20250514")

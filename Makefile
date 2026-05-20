@@ -115,19 +115,37 @@ backup: ## [prod] Dump prod Postgres to S3 — requires S3_BUCKET and DATABASE_U
 ##@ Deploy (AWS EB)
 
 # gh release → mimir-idle → make swap → mimir-prod (live)
+# Route53 aliases the mimir-prod ALB directly, so promotion = deploy idle's
+# version to mimir-prod (CNAME swap alone has no effect on live traffic).
 EB_APP    ?= mimir
 EB_IDLE   ?= mimir-idle
 EB_PROD   ?= mimir-prod
 AWS_REGION ?= us-east-1
 
 .PHONY: swap
-swap: ## [prod] Promote idle → prod (swap CNAMEs; idle becomes new prod, old prod becomes idle)
-	@echo "Promoting $(EB_IDLE) → $(EB_PROD)"
-	aws elasticbeanstalk swap-environment-cnames \
-	  --source-environment-name $(EB_IDLE) \
-	  --destination-environment-name $(EB_PROD) \
+swap: ## [prod] Promote idle → prod (deploys idle version to prod; Route53 stays on mimir-prod ALB)
+	$(eval VERSION := $(shell aws elasticbeanstalk describe-environments \
+	  --application-name $(EB_APP) \
+	  --environment-names $(EB_IDLE) \
+	  --query "Environments[0].VersionLabel" \
+	  --output text --region $(AWS_REGION)))
+	@echo "Promoting version '$(VERSION)' from $(EB_IDLE) → $(EB_PROD)"
+	aws elasticbeanstalk update-environment \
+	  --application-name $(EB_APP) \
+	  --environment-name $(EB_PROD) \
+	  --version-label $(VERSION) \
 	  --region $(AWS_REGION)
-	@echo "Swap complete. Verify: https://mimir.featurefactory.io/health/"
+	@echo "Waiting for $(EB_PROD) to be Ready..."
+	@until [ "$$(aws elasticbeanstalk describe-environments \
+	  --application-name $(EB_APP) \
+	  --environment-names $(EB_PROD) \
+	  --query 'Environments[0].Status' \
+	  --output text --region $(AWS_REGION))" = "Ready" ]; do \
+	  printf '.'; sleep 10; done
+	@echo ""
+	@echo "Swap complete — verifying:"
+	@curl -s https://mimir.featurefactory.io/health/ | python3 -c \
+	  "import sys,json; d=json.load(sys.stdin); print(f'  revision={d[\"revision\"]}  status={d[\"status\"]}')"
 
 .PHONY: eb-status
 eb-status: ## Show health and version of both EB environments

@@ -17,9 +17,6 @@ from .base import *  # noqa: F401, F403
 # Environment identifier
 MIMIR_ENV = 'dev'
 
-# PIP wireframes and other static UI mockups at /mockups/
-ENABLE_UI_MOCKUPS = True
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv(
     'DJANGO_SECRET_KEY',

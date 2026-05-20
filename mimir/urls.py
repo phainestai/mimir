@@ -116,7 +116,7 @@ urlpatterns = [
     path("artifacts/", artifact_views.artifact_list_global, name="artifact_list_global"),  # Global artifacts view
 ]
 
-if getattr(settings, "ENABLE_UI_MOCKUPS", False):
+if settings.DEBUG:
     urlpatterns.append(
         path("mockups/", include("mockups.urls")),
     )
