@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
 
 from methodology.models import (
     Playbook, Workflow, Activity, Skill, Agent, Artifact,
@@ -524,8 +525,15 @@ class ActivityViewSet(viewsets.ModelViewSet):
         
         # Set predecessor using service
         try:
-            ActivityService.set_predecessor(activity.id, predecessor_id)
-        except ValueError as e:
+            from methodology.models import Activity as ActivityModel
+            predecessor = ActivityModel.objects.get(pk=predecessor_id)
+            ActivityService.set_predecessor(activity, predecessor)
+        except ActivityModel.DoesNotExist:
+            return Response(
+                {'error': 'Predecessor activity not found', 'code': 'VALIDATION_ERROR'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except (ValueError, ValidationError) as e:
             return Response(
                 {'error': str(e), 'code': 'VALIDATION_ERROR'},
                 status=status.HTTP_400_BAD_REQUEST
