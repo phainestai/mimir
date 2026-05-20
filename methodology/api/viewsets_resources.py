@@ -198,20 +198,41 @@ class PhaseViewSet(viewsets.ModelViewSet):
     Maps to MCP tools: create_phase, list_phases, get_phase,
     update_phase, delete_phase, reorder_phases.
     """
-    
+
+    resource_name = "Phase"
     serializer_class = PhaseSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly, IsDraftPlaybook]
-    
+
     def get_queryset(self):
         """Get phases for playbooks owned by current user."""
         queryset = Phase.objects.filter(playbook__author=self.request.user)
-        
-        # Filter by playbook_id if provided
+
         playbook_id = self.request.query_params.get('playbook_id')
         if playbook_id:
             queryset = queryset.filter(playbook_id=playbook_id)
-        
+
         return queryset.order_by('order')
+
+    def create(self, request):
+        """
+        Create a phase via PhaseService (auto-increments order, enforces ownership).
+
+        Maps to: create_phase MCP tool
+        """
+        from methodology.services.phase_service import PhaseService
+
+        logger.info('API: create_phase user=%s data=%s', request.user.pk, request.data)
+        try:
+            phase = PhaseService.create_phase(
+                playbook_id=int(request.data['playbook_id']),
+                name=request.data['name'],
+                description=request.data.get('description', ''),
+                order=request.data.get('order'),
+                user=request.user,
+            )
+        except (ValidationError, KeyError, TypeError) as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(PhaseSerializer(phase).data, status=status.HTTP_201_CREATED)
 
 
 class RuleViewSet(viewsets.ModelViewSet):
