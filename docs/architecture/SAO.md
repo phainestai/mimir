@@ -2134,15 +2134,39 @@ git checkout main && git merge release/X.Y.Z && git push origin main
 ### Elastic Beanstalk Deployment
 
 - **Application**: `mimir`
-- **Environment**: `mimir-blue`
+- **Environments**: `mimir-idle` (staging, CI target) and `mimir-prod` (live)
 - **Region**: `us-east-1`
 - **Deploy mechanism**: docker-compose bundle uploaded to S3, applied via `update-environment`
 - **Version label format**: `v-{branch}-{sha}-r{run_number}` (run_number ensures uniqueness on retries)
 - **Health polling**: 15 s interval, 10-minute timeout, fails if environment stays non-Ready
 
 The deploy job generates `docker-compose.yml` from `deploy/docker-compose.tmpl.yml` by
-substituting `$IMAGE_WEB` (ECR) and `$IMAGE_MCP` (Docker Hub) with the exact SHA-tagged
-images built in the preceding job.
+substituting `$IMAGE_WEB` (ECR) with the exact SHA-tagged image built in the preceding job.
+The MCP facade (`featurefactory/mimir-mcp`) is a client-side component distributed via Docker Hub;
+it is **not** deployed to EB.
+
+### Blue/Green Deployment Workflow
+
+```
+gh release vX.Y.Z
+  → CI deploys to mimir-idle
+  → verify: http://mimir-idle.us-east-1.elasticbeanstalk.com/health/
+  → make swap          # swaps CNAMEs: idle → prod, prod → idle
+  → mimir.featurefactory.io now serves the new version
+  → old prod becomes mimir-idle (ready for next release)
+```
+
+**DNS**: `mimir.featurefactory.io` is a Route53 Alias record pointing directly at the
+`mimir-prod` ALB (`awseb--AWSEB-LliRnLW5hoTy-*.us-east-1.elb.amazonaws.com`, hosted zone `Z35SXDOTRQ7X7K`).
+CloudFront was removed — HTTPS is terminated at the ALB, which holds the
+`*.featurefactory.io` wildcard cert (`arn:aws:acm:us-east-1:411113550285:certificate/9d3ca541-…`).
+
+**Makefile targets:**
+
+| Target | What it does |
+|--------|-------------|
+| `make swap` | `swap-environment-cnames` between `mimir-idle` and `mimir-prod` |
+| `make eb-status` | Shows health, version, and CNAME for both environments |
 
 ### Known Operational Notes
 
@@ -2150,6 +2174,7 @@ images built in the preceding job.
 |-------|-----------|-------------|
 | ELB health checks returning 400 (Red for 8+ days) | Django `ALLOWED_HOSTS` did not include the EC2 instance's private IP; ELB target-group health checker uses `Host: <instance-ip>` | `prod.py` now fetches the private IP from IMDSv2 at startup and appends it to `ALLOWED_HOSTS` |
 | `UpdateEnvironment: Must be Ready` on release runs | Push-triggered run and release-event run both reaching the deploy step at the same time | Deploy job now only fires on `release` / `workflow_dispatch` events — `release/**` pushes never deploy |
+| CloudFront CNAME swap mismatch | CloudFront origin was hardcoded to `mimir-blue`; swapping EB CNAMEs had no effect on the live domain | Removed CloudFront; Route53 now aliases `mimir-prod` ALB directly |
 
 ## Email Architecture
 
