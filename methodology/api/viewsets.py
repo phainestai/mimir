@@ -302,15 +302,15 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         response_serializer = self.get_serializer(workflow)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def export(self, request, pk=None):
         """
-        Export workflow to markdown files.
-        
+        Export workflow to markdown files. Read-only — allowed on released playbooks too.
+
         Maps to: export_workflow_to_local MCP tool
         """
         logger.info(f'API: export_workflow_to_local called - workflow_id={pk}')
-        
+
         workflow = self.get_object()
         target_directory = request.data.get('target_directory', '.windsurf/workflows')
         folder_name = request.data.get('folder_name')
@@ -331,11 +331,11 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             )
         return Response(result)
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def import_workflow(self, request, pk=None):
         """
-        Import workflow from markdown files.
-        
+        Import workflow from markdown files (diff-only; no writes on released playbooks).
+
         Maps to: import_workflow_from_local MCP tool
         """
         logger.info(f'API: import_workflow_from_local called - workflow_id={pk}')
