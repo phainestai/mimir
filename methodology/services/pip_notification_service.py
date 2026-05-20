@@ -72,5 +72,12 @@ def send_decision_email(pip: ProcessImprovementProposal) -> None:
         submitter.email,
         verdict_kw,
     )
-    send_mail(subject, body, sender, [submitter.email], fail_silently=False)
+    try:
+        send_mail(subject, body, sender, [submitter.email], fail_silently=False)
+    except Exception:
+        logger.exception(
+            "Failed to send PIP decision email pip_id=%s to=%s — email skipped",
+            pip.pk,
+            submitter.email,
+        )
 
