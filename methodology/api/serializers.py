@@ -166,9 +166,10 @@ class PhaseSerializer(serializers.ModelSerializer):
 
 class RuleSerializer(serializers.ModelSerializer):
     """Serializer for Rule model."""
-    
+
     playbook_id = serializers.IntegerField()
-    
+    slug = serializers.SlugField(required=False, default='', allow_blank=True)
+
     class Meta:
         model = Rule
         fields = ['id', 'playbook_id', 'title', 'slug', 'content', 'always_apply']

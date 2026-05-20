@@ -254,34 +254,66 @@ class PhaseViewSet(viewsets.ModelViewSet):
 class RuleViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Rule resource.
-    
+
     Maps to MCP tools: create_rule, list_rules, get_rule,
     update_rule, delete_rule.
     """
-    
+
     serializer_class = RuleSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly, IsDraftPlaybook]
-    
+    resource_name = "Rule"
+
     def get_queryset(self):
         """Get rules for playbooks owned by current user."""
         queryset = Rule.objects.filter(playbook__author=self.request.user)
-        
-        # Filter by playbook_id if provided
+
         playbook_id = self.request.query_params.get('playbook_id')
         if playbook_id:
             queryset = queryset.filter(playbook_id=playbook_id)
-        
-        # Search if provided
+
         search = self.request.query_params.get('search')
         if search:
             queryset = queryset.filter(title__icontains=search)
-        
-        # Filter unlinked only if provided
+
         unlinked_only = self.request.query_params.get('unlinked_only')
         if unlinked_only == 'true':
             queryset = queryset.filter(activities__isnull=True)
-        
+
         return queryset.order_by('title')
+
+    def create(self, request, *args, **kwargs):
+        """Create rule, delegating slug generation to RuleService."""
+        from methodology.services.rule_service import RuleService
+        from methodology.services.playbook_service import PlaybookService
+
+        playbook_id = request.data.get('playbook_id')
+        title = request.data.get('title', '')
+        content = request.data.get('content', '')
+        slug = request.data.get('slug', '')
+        always_apply = request.data.get('always_apply', True)
+
+        logger.info(
+            "RuleViewSet.create: playbook_id=%s title=%r slug=%r user=%s",
+            playbook_id, title, slug, request.user,
+        )
+        try:
+            playbook = PlaybookService.get_playbook(int(playbook_id), user=request.user)
+        except Exception as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            rule = RuleService.create_rule(
+                playbook=playbook,
+                title=title,
+                content=content,
+                slug=slug,
+                always_apply=always_apply,
+            )
+        except ValidationError as exc:
+            return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(rule)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class PIPViewSet(viewsets.GenericViewSet):

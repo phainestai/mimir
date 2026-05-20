@@ -131,12 +131,13 @@ class WorkflowImportService:
                     activity_data['dependencies'].append(deps_text)
             elif line.startswith('## Guidance'):
                 current_section = 'guidance'
-            elif line.startswith('## Artifacts Produced') or line.startswith('## Artifacts Consumed') or line.startswith('## Notes'):
+            elif line.startswith('##') or line.startswith('---'):
                 current_section = None
             elif current_section == 'guidance':
                 guidance_lines.append(line)
-        
-        activity_data['guidance'] = '\n'.join(guidance_lines).strip()
+
+        raw_guidance = '\n'.join(guidance_lines).strip()
+        activity_data['guidance'] = '' if raw_guidance == 'No guidance provided.' else raw_guidance
         
         return activity_data
     
@@ -171,9 +172,11 @@ class WorkflowImportService:
                     changes['summary']['reordered'] += 1
                 
                 current_phase_name = current.phase.name if current.phase else None
-                if (imported['name'] != current.name or 
-                    imported['guidance'] != current.guidance or
-                    imported['phase'] != current_phase_name):
+                imported_guidance = (imported['guidance'] or '').strip()
+                current_guidance = (current.guidance or '').strip()
+                if (imported['name'] != current.name or
+                        imported_guidance != current_guidance or
+                        imported['phase'] != current_phase_name):
                     changes['modified'].append({
                         'activity_id': imported['activity_id'],
                         'name': imported['name'],

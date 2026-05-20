@@ -293,10 +293,10 @@ Feature: Mimir MCP UAT — all 62 tools exercised end-to-end in agent mode
     # SEE: RECORD `.id` as `<MCP_ARTIFACT_INPUT_PK>`
     # IF DIFFER: MCP-02 AR-03
     #
-    # STEP RU-01 create_rule
+    # STEP RU-01 create_rule  (no slug supplied — server auto-generates from title)
     # DO: CallMcpTool server "user-mimir" toolName "create_rule" arguments {"playbook_id": <MCP_PB_ID>, "title": "MCP UAT Rule", "content": "Always verify MCP writes.", "always_apply": true}
-    # SEE: RECORD `.id` as `<MCP_RULE_PK>`
-    # IF DIFFER: MCP-02 RU-01
+    # SEE: JSON `.slug` is non-empty (e.g. `mcp-uat-rule`); RECORD `.id` as `<MCP_RULE_PK>`
+    # IF DIFFER: MCP-02 RU-01 — slug missing means RuleViewSet.create() is not delegating to RuleService
     #
     # STEP RU-02 update_rule
     # DO: CallMcpTool server "user-mimir" toolName "update_rule" arguments {"rule_id": <MCP_RULE_PK>, "content": "Updated: always verify MCP writes."}
@@ -410,8 +410,9 @@ Feature: Mimir MCP UAT — all 62 tools exercised end-to-end in agent mode
     #
     # STEP EX-02 import_workflow_from_local (no changes — verifies round-trip parity)
     # DO: CallMcpTool server "user-mimir" toolName "import_workflow_from_local" arguments {"workflow_id": <MCP_WF_ID>, "source_directory": "<EXPORT_SUBDIR>", "auto_apply": false}
-    # SEE: JSON `.changes_count` = 0 (exported and DB are in sync); `_Upload_Protocol.md` path present in response
-    # IF DIFFER: MCP-04 EX-02 — if changes_count > 0, document which fields diverged
+    # SEE: JSON `.changes_count` = 0 (clean round-trip; section terminators + null-guidance normalization fixed)
+    #      `_Upload_Protocol.md` path present in response
+    # IF DIFFER: MCP-04 EX-02 — changes_count > 0 is a regression in _detect_changes or _parse_activity_md
     #
     # STEP EX-03 apply_upload_protocol (0-change apply is a valid no-op)
     # DO: CallMcpTool server "user-mimir" toolName "apply_upload_protocol" arguments {"protocol_file": "<EXPORT_SUBDIR>/_Upload_Protocol.md"}
@@ -462,9 +463,9 @@ Feature: Mimir MCP UAT — all 62 tools exercised end-to-end in agent mode
     # SEE: RECORD `.id` as `<DRILL_AR_PK>`
     # IF DIFFER: MCP-05 DL-07
     #
-    # STEP DL-08 create drill rule
+    # STEP DL-08 create drill rule  (no slug supplied — auto-generated)
     # DO: CallMcpTool server "user-mimir" toolName "create_rule" arguments {"playbook_id": <DRILL_PB_ID>, "title": "Drill Rule", "content": "d", "always_apply": false}
-    # SEE: RECORD `.id` as `<DRILL_R_PK>`
+    # SEE: JSON `.slug` is non-empty; RECORD `.id` as `<DRILL_R_PK>`
     # IF DIFFER: MCP-05 DL-08
     #
     # STEP DL-09 link skill + agent + artifact + rule to drill activity

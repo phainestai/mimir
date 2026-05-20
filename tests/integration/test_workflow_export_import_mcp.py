@@ -357,5 +357,55 @@ Run integration tests
         # Apply
         protocol_file = str(Path(temp_dir) / 'FFE' / '_Upload_Protocol.md')
         apply_result = WorkflowProtocolService.apply_upload_protocol(protocol_file)
-        
+
         assert apply_result['status'] == 'applied'
+
+    def test_clean_round_trip_zero_changes(self, workflow_draft, activities, temp_dir):
+        """
+        FOB-WORKFLOWS-EXPORT_IMPORT-RT: Clean round-trip detects zero changes.
+
+        Given: Workflow exported without modifications
+        When:  Immediately re-imported from the same files
+        Then:  changes_count == 0 (no false positives)
+        """
+        WorkflowExportService.export_workflow_to_markdown(
+            workflow_id=workflow_draft.id,
+            target_directory=temp_dir,
+            folder_name='FFE',
+        )
+
+        result = WorkflowImportService.import_workflow_from_markdown(
+            workflow_id=workflow_draft.id,
+            source_directory=str(Path(temp_dir) / 'FFE'),
+        )
+
+        assert result['changes_count'] == 0, (
+            f"Clean round-trip must report 0 changes; got {result['changes_count']}. "
+            f"Details: {result}"
+        )
+
+    def test_clean_round_trip_no_guidance_activity(self, workflow_draft, temp_dir):
+        """
+        Regression: activity with NULL guidance must not appear as modified after export/import.
+        """
+        Activity.objects.create(
+            workflow=workflow_draft,
+            name='Guidance-Free Activity',
+            guidance='',
+            order=1,
+        )
+
+        WorkflowExportService.export_workflow_to_markdown(
+            workflow_id=workflow_draft.id,
+            target_directory=temp_dir,
+            folder_name='FFE',
+        )
+
+        result = WorkflowImportService.import_workflow_from_markdown(
+            workflow_id=workflow_draft.id,
+            source_directory=str(Path(temp_dir) / 'FFE'),
+        )
+
+        assert result['changes_count'] == 0, (
+            f"Activity with null guidance must not be a false positive; got {result['changes_count']}"
+        )
