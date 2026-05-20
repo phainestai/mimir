@@ -363,26 +363,27 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='apply-protocol')
     def apply_protocol(self, request, pk=None):
         """
-        Apply upload protocol to draft workflow.
-        
-        Maps to: apply_upload_protocol MCP tool
+        Apply upload protocol to draft workflow (workflow_id parsed from the protocol file).
+
+        Maps to: apply_upload_protocol MCP tool.
+        The facade calls POST /api/workflows/0/apply-protocol/ where pk=0 is a placeholder;
+        the actual workflow is resolved from the protocol file by the service.
         """
-        logger.info(f'API: apply_upload_protocol called - workflow_id={pk}')
-        
-        workflow = self.get_object()
+        logger.info('API: apply_upload_protocol called (pk=%s — resolved from protocol file)', pk)
+
         protocol_file = request.data.get('protocol_file')
-        
         if not protocol_file:
             return Response(
                 {'error': 'protocol_file is required', 'code': 'VALIDATION_ERROR'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Import service here to avoid circular imports
+
         from methodology.services.workflow_protocol_service import WorkflowProtocolService
 
-        result = WorkflowProtocolService.apply_upload_protocol(protocol_file)
-        
+        try:
+            result = WorkflowProtocolService.apply_upload_protocol(protocol_file)
+        except (ValidationError, PermissionError) as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(result)
     
     @action(detail=True, methods=['post'], url_path='create-pip')
@@ -392,24 +393,24 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         
         Maps to: create_pip_from_protocol MCP tool
         """
-        logger.info(f'API: create_pip_from_protocol called - workflow_id={pk}')
-        
-        workflow = self.get_object()
+        logger.info('API: create_pip_from_protocol called (pk=%s — resolved from protocol file)', pk)
+
         protocol_file = request.data.get('protocol_file')
         pip_title = request.data.get('pip_title')
-        
+
         if not protocol_file or not pip_title:
             return Response(
                 {'error': 'protocol_file and pip_title are required', 'code': 'VALIDATION_ERROR'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Import service here to avoid circular imports
+
         from methodology.services.pip_service import PIPService
-        
-        result = PIPService.create_pip_from_protocol(protocol_file, pip_title)
-        
-        return Response(result)
+
+        try:
+            result = PIPService.create_pip_from_protocol(protocol_file, pip_title)
+        except (ValidationError, ValueError) as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(result, status=status.HTTP_201_CREATED)
 
 
 class ActivityViewSet(viewsets.ModelViewSet):
