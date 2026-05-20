@@ -15,6 +15,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
+    graphviz \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /var/log/supervisor
 
