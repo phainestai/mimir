@@ -46,20 +46,28 @@ class PlaybookListSerializer(serializers.ModelSerializer):
 
 class WorkflowSerializer(serializers.ModelSerializer):
     """Serializer for Workflow model."""
-    
+
     activity_count = serializers.SerializerMethodField()
-    
+    activities = serializers.SerializerMethodField()
+
     class Meta:
         model = Workflow
         fields = [
             'id', 'playbook_id', 'name', 'description', 'abbreviation',
-            'order', 'activity_count'
+            'order', 'activity_count', 'activities'
         ]
         read_only_fields = ['id', 'order']
-    
+
     def get_activity_count(self, obj):
         """Get count of activities in workflow."""
         return obj.activities.count()
+
+    def get_activities(self, obj):
+        """Return minimal activity stubs (id, name, order) — no body fields."""
+        return [
+            {'id': a.id, 'name': a.name, 'order': a.order}
+            for a in obj.activities.order_by('order')
+        ]
 
 
 class ActivitySerializer(serializers.ModelSerializer):

@@ -253,7 +253,9 @@ class TestMCPAllTools:
     def test_07_get_workflow(self, mcp):
         result = mcp.call("get_workflow", {"workflow_id": TestMCPAllTools.wf_id})
         assert result["id"] == TestMCPAllTools.wf_id
-        logger.info(f"✓ get_workflow → '{result['name']}'")
+        assert "activities" in result, "get_workflow must return an activities list (regression #118)"
+        assert isinstance(result["activities"], list)
+        logger.info(f"✓ get_workflow → '{result['name']}' with {len(result['activities'])} activities")
 
     def test_08_update_workflow(self, mcp, uid):
         result = mcp.call("update_workflow", {
@@ -346,6 +348,18 @@ class TestMCPAllTools:
         assert isinstance(result, list)
         assert len(result) >= 2
         logger.info(f"✓ list_activities → {len(result)} activities")
+
+    def test_17b_get_workflow_includes_activity_ids(self, mcp):
+        """Regression #118: get_workflow must return activity stubs with IDs after activities exist."""
+        result = mcp.call("get_workflow", {"workflow_id": TestMCPAllTools.wf_id})
+        stubs = result.get("activities", [])
+        assert len(stubs) >= 2, f"Expected ≥2 activity stubs, got {len(stubs)}"
+        stub_ids = [s["id"] for s in stubs]
+        assert TestMCPAllTools.act_id in stub_ids, f"act_id {TestMCPAllTools.act_id} not in stubs {stub_ids}"
+        assert TestMCPAllTools.act2_id in stub_ids, f"act2_id {TestMCPAllTools.act2_id} not in stubs {stub_ids}"
+        for stub in stubs:
+            assert set(stub.keys()) == {"id", "name", "order"}, f"Stub has unexpected keys: {stub.keys()}"
+        logger.info(f"✓ get_workflow (post-activity) → {len(stubs)} stubs with IDs {stub_ids}")
 
     def test_18_get_activity(self, mcp):
         result = mcp.call("get_activity", {"activity_id": TestMCPAllTools.act_id})
