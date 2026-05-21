@@ -57,16 +57,6 @@ class ActivityService:
             logger.warning(f"Activity creation failed: duplicate name '{name}' in workflow {workflow.id}")
             raise ValidationError(f"Activity with name '{name}' already exists in this workflow")
         
-        # Auto-assign order if not provided — use SELECT FOR UPDATE to prevent
-        # concurrent MCP calls from racing and all landing on order=1.
-        if order is None:
-            with transaction.atomic():
-                Activity.objects.select_for_update().filter(workflow=workflow).exists()
-                max_order = Activity.objects.filter(workflow=workflow).aggregate(
-                    models.Max('order')
-                )['order__max']
-                order = (max_order or 0) + 1
-        
         # Validate dependencies are in same workflow
         if predecessor and predecessor.workflow_id != workflow.id:
             logger.warning(f"Predecessor {predecessor.id} not in workflow {workflow.id}")
@@ -89,17 +79,28 @@ class ActivityService:
                 logger.warning(f"Phase {phase_id} not found")
                 raise ValidationError(f"Phase with id {phase_id} not found")
         
-        # Create activity
+        # Create activity — lock the workflow row so concurrent calls serialise here
+        # and each reads the correct max_order after the previous insert commits.
         try:
-            activity = Activity.objects.create(
-                workflow=workflow,
-                name=name.strip(),
-                guidance=guidance.strip() if guidance else '',
-                phase=phase_instance,
-                order=order,
-                predecessor=predecessor,
-                successor=successor
-            )
+            with transaction.atomic():
+                from methodology.models import Workflow as WorkflowModel
+                WorkflowModel.objects.select_for_update().get(pk=workflow.pk)
+
+                if order is None:
+                    max_order = Activity.objects.filter(workflow=workflow).aggregate(
+                        models.Max('order')
+                    )['order__max']
+                    order = (max_order or 0) + 1
+
+                activity = Activity.objects.create(
+                    workflow=workflow,
+                    name=name.strip(),
+                    guidance=guidance.strip() if guidance else '',
+                    phase=phase_instance,
+                    order=order,
+                    predecessor=predecessor,
+                    successor=successor
+                )
             
             dep_info = []
             if predecessor:
@@ -114,7 +115,7 @@ class ActivityService:
         except IntegrityError as e:
             logger.error(f"Activity creation failed: {str(e)}")
             raise ValidationError(f"Failed to create activity: {str(e)}")
-    
+
     @staticmethod
     def get_activity(activity_id):
         """

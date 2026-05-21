@@ -276,6 +276,53 @@ class TestActivityService:
         assert recent[1] == activity1
 
 
+
+@pytest.mark.django_db(transaction=True)
+class TestCreateActivityAutoOrder:
+    """Auto-order assignment must be sequential even under concurrent calls."""
+
+    def setup_method(self):
+        self.user = User.objects.create_user(username="order_user", password="pass")
+        pb = Playbook.objects.create(
+            name="Order PB", description="", category="development", author=self.user
+        )
+        self.workflow = Workflow.objects.create(
+            playbook=pb, name="Order WF", description=""
+        )
+
+    def test_sequential_creates_get_sequential_orders(self):
+        """Four sequential create_activity calls must yield orders 1,2,3,4."""
+        names = ["Alpha", "Beta", "Gamma", "Delta"]
+        activities = [
+            ActivityService.create_activity(workflow=self.workflow, name=n)
+            for n in names
+        ]
+        orders = [a.order for a in activities]
+        assert orders == [1, 2, 3, 4], f"Expected [1,2,3,4], got {orders}"
+
+    def test_concurrent_creates_get_unique_orders(self):
+        """Concurrent thread-pool calls must not produce duplicate order values.
+
+        Simulates the MCP pattern where sync_to_async runs each call in a
+        separate thread from the default executor.
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        names = ["One", "Two", "Three", "Four"]
+
+        def create(name):
+            return ActivityService.create_activity(workflow=self.workflow, name=name)
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futures = [pool.submit(create, n) for n in names]
+            activities = [f.result() for f in as_completed(futures)]
+
+        orders = sorted(a.order for a in activities)
+        assert orders == [1, 2, 3, 4], (
+            f"Concurrent creates produced duplicate/missing orders: {orders}"
+        )
+
+
 @pytest.mark.django_db
 @pytest.mark.django_db
 class TestSetPredecessorBidirectional:

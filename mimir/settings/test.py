@@ -43,13 +43,16 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 DEFAULT_FROM_EMAIL = "noreply@test.mimir"
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
+# Database — PostgreSQL for proper concurrent transaction support
+# Uses the huginn-db container (postgres:16, localhost:5432, user=huginn)
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "mimir_test",
+        "USER": "huginn",
+        "PASSWORD": "huginn",
+        "HOST": "localhost",
+        "PORT": "5432",
     }
 }
 
