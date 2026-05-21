@@ -50,8 +50,6 @@ else
     echo "✅ Database found at $MIMIR_DB_PATH"
     echo "   Running migrations to ensure schema is up to date..."
     python manage.py migrate --noinput
-    echo "   Repairing any duplicate activity orders..."
-    python manage.py fix_activity_orders --apply
     echo ""
 fi
 
