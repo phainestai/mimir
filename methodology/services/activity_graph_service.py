@@ -66,7 +66,7 @@ class ActivityGraphService:
         try:
             # Create directed graph
             dot = graphviz.Digraph(comment=f'{workflow.name} Activities')
-            dot.attr(rankdir='TB')  # Top to bottom layout
+            dot.attr(rankdir='LR')  # Left to right layout
             dot.attr('node', shape='box', style='filled,rounded', fontname='Arial')
             dot.attr('edge', fontname='Arial')
             
@@ -91,18 +91,18 @@ class ActivityGraphService:
                 for activity in activities:
                     self._add_activity_node(dot, activity, playbook, workflow)
             
-            # Add edges based on actual predecessor/successor relationships
+            # Add edges based on predecessor relationships (source of truth for flow order).
+            # The successor FK is rarely populated; predecessor_id is always set by set_predecessor.
             for activity in activities:
-                if activity.successor:
-                    # Draw edge from this activity to its successor
+                if activity.predecessor_id:
                     dot.edge(
+                        f'activity_{activity.predecessor_id}',
                         f'activity_{activity.pk}',
-                        f'activity_{activity.successor.pk}',
                         label='',
                         color='blue',
                         penwidth='2.0'
                     )
-                    logger.debug(f"Added edge: {activity.reference_name} -> {activity.successor.reference_name}")
+                    logger.debug(f"Added edge: {activity.predecessor.reference_name} -> {activity.reference_name}")
             
             # Generate SVG
             svg_bytes = dot.pipe(format='svg')
