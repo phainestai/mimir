@@ -140,7 +140,8 @@ Maintainers publishing from CI configure GitHub Actions secrets **`DOCKERHUB_USE
 
 ### Prerequisites
 
-- Python 3.11 or higher
+- Python 3.12 or higher
+- Graphviz system binary (`brew install graphviz` / `apt install graphviz`) — required for workflow diagrams
 - IDE with MCP support (Claude Desktop, Cursor, Windsurf, etc.)
 - Access credentials for HOMEBASE (optional, for syncing)
 
@@ -162,6 +163,10 @@ Maintainers publishing from CI configure GitHub Actions secrets **`DOCKERHUB_USE
    ```bash
    pip install -r requirements.txt
    ```
+
+   > **Local dev note:** By default, the dev environment uses AWS SES for email.
+   > If you don't have AWS credentials, set `USE_SES_IN_DEV=0` in your `.env` file
+   > (or shell) to use the console email backend instead.
 
 4. **Initialize database**
    ```bash
@@ -276,7 +281,7 @@ For a local FOB, set `MIMIR_SERVER_URL=http://localhost:8000`. Restart your IDE 
 
 ### 3. Use MCP Tools in Your IDE
 
-Once configured, your AI assistant has access to **16 Mimir MCP tools** for managing playbooks, workflows, and activities:
+Once configured, your AI assistant has access to **62 Mimir MCP tools** for managing playbooks, workflows, activities, agents, skills, rules, artifacts, phases, and more:
 
 #### Playbook Management (5 tools)
 - **`create_playbook`** - Create new draft playbooks
@@ -366,7 +371,7 @@ All tools support async operations and validate user permissions automatically.
      -e MCP_TRANSPORT=stdio \
      featurefactory/mimir-mcp:latest
    ```
-   Send `{"jsonrpc":"2.0","method":"tools/list","id":1}` — you should get a list of 53 tools.
+   Send `{"jsonrpc":"2.0","method":"tools/list","id":1}` — you should get a list of 62 tools.
 
 3. **Check IDE logs:**
    - **Windsurf**: View logs in MCP settings panel
