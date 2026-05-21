@@ -34,7 +34,6 @@ app_stack = MimirApp(
 dns = MimirDns(
     app, "MimirDns",
     domain=domain,
-    acm_cert_arn=acm_cert_arn,
     env=env,
 )
 

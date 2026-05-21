@@ -2156,16 +2156,22 @@ gh release vX.Y.Z
   → old prod becomes mimir-idle (ready for next release)
 ```
 
-**DNS**: `mimir.featurefactory.io` is a Route53 Alias record pointing directly at the
-`mimir-prod` ALB (`awseb--AWSEB-LliRnLW5hoTy-*.us-east-1.elb.amazonaws.com`, hosted zone `Z35SXDOTRQ7X7K`).
-CloudFront was removed — HTTPS is terminated at the ALB, which holds the
+**DNS**: `mimir.featurefactory.io` is a Route53 **CNAME** record pointing at
+`mimir-prod.eba-8hqkems3.us-east-1.elasticbeanstalk.com` (the `mimir-prod` EB environment CNAME).
+HTTPS is terminated at the ALB inside the EB environment, which holds the
 `*.featurefactory.io` wildcard cert (`arn:aws:acm:us-east-1:411113550285:certificate/9d3ca541-…`).
+The record is managed by the `MimirDns` CDK stack (idempotent Lambda UPSERT).
+
+**Why CNAME → EB environment CNAME (not ALB):**
+When `make swap` calls `swap-environment-cnames`, EB atomically exchanges the CNAME labels between
+`mimir-prod` and `mimir-idle`. Because Route53 points at the CNAME label (`mimir-prod.eba-…`), live
+traffic automatically follows the swap — no Route53 update needed.
 
 **Makefile targets:**
 
 | Target | What it does |
 |--------|-------------|
-| `make swap` | Reads version label from `mimir-idle`, deploys it to `mimir-prod` via `update-environment` (Route53 aliases the `mimir-prod` ALB directly, so CNAME swap has no effect on live traffic) |
+| `make swap` | Calls `swap-environment-cnames`: EB atomically swaps the CNAME labels between `mimir-prod` and `mimir-idle`; Route53 CNAME follows automatically |
 | `make eb-status` | Shows health, version, and CNAME for both environments |
 
 ### Known Operational Notes
@@ -2174,7 +2180,7 @@ CloudFront was removed — HTTPS is terminated at the ALB, which holds the
 |-------|-----------|-------------|
 | ELB health checks returning 400 (Red for 8+ days) | Django `ALLOWED_HOSTS` did not include the EC2 instance's private IP; ELB target-group health checker uses `Host: <instance-ip>` | `prod.py` now fetches the private IP from IMDSv2 at startup and appends it to `ALLOWED_HOSTS` |
 | `UpdateEnvironment: Must be Ready` on release runs | Push-triggered run and release-event run both reaching the deploy step at the same time | Deploy job now only fires on `release` / `workflow_dispatch` events — `release/**` pushes never deploy |
-| CloudFront CNAME swap mismatch | CloudFront origin was hardcoded to `mimir-blue`; swapping EB CNAMEs had no effect on the live domain | Removed CloudFront; Route53 now aliases `mimir-prod` ALB directly |
+| ALB-alias Route53 broke CNAME swap | Route53 pointed at ALB ARN directly; EB CNAME swap had no effect on live traffic | Replaced A-alias with CNAME to `mimir-prod.eba-…`; CDK-managed via `MimirDns` stack |
 
 ## Email Architecture
 

@@ -123,19 +123,13 @@ EB_PROD   ?= mimir-prod
 AWS_REGION ?= us-east-1
 
 .PHONY: swap
-swap: ## [prod] Promote idle → prod (deploys idle version to prod; Route53 stays on mimir-prod ALB)
-	$(eval VERSION := $(shell aws elasticbeanstalk describe-environments \
-	  --application-name $(EB_APP) \
-	  --environment-names $(EB_IDLE) \
-	  --query "Environments[0].VersionLabel" \
-	  --output text --region $(AWS_REGION)))
-	@echo "Promoting version '$(VERSION)' from $(EB_IDLE) → $(EB_PROD)"
-	aws elasticbeanstalk update-environment \
-	  --application-name $(EB_APP) \
-	  --environment-name $(EB_PROD) \
-	  --version-label $(VERSION) \
+swap: ## [prod] Blue/green swap: exchange CNAMEs between mimir-idle and mimir-prod
+	@echo "Swapping CNAMEs: mimir-idle ↔ mimir-prod"
+	aws elasticbeanstalk swap-environment-cnames \
+	  --source-environment-name $(EB_IDLE) \
+	  --destination-environment-name $(EB_PROD) \
 	  --region $(AWS_REGION)
-	@echo "Waiting for $(EB_PROD) to be Ready..."
+	@echo "Waiting for mimir-prod to be Ready..."
 	@until [ "$$(aws elasticbeanstalk describe-environments \
 	  --application-name $(EB_APP) \
 	  --environment-names $(EB_PROD) \
