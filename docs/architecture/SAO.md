@@ -2075,112 +2075,130 @@ Improved PIP proposals next time
 
 ### Overview
 
-Mimir uses a single GitHub Actions workflow (`.github/workflows/build-and-deploy.yml`) that
-runs on every push and on published GitHub Releases. It has three sequential jobs:
+Mimir CI/CD mirrors the Huginn release model: the pipeline runs **only on published GitHub Releases**
+(or `workflow_dispatch`). No push triggers — pushes to `main` produce no CI run.
 
 ```
-push / release event
+gh release create vX.Y.Z          (sole trigger)
        │
        ▼
-  ┌─────────┐     ┌──────────────────┐     ┌──────────────┐
-  │  Tests  │────▶│ Build & Push     │────▶│ Deploy to EB │
-  │ pytest  │     │ Docker images    │     │ (release only)│
-  └─────────┘     └──────────────────┘     └──────────────┘
+  ┌─────────┐     ┌──────────────────┐     ┌───────────────────────┐
+  │  Tests  │────▶│ Build & Push     │────▶│ deploy-idle           │
+  │ pytest  │     │ Docker images    │     │ (resolve idle by CNAME│
+  └─────────┘     └──────────────────┘     │  deploy + smoke test) │
+                                           └───────────────────────┘
+                                                      │ human review
+                                                      ▼
+                                           make swap  (or promote.yml)
+                                           → promote-prod.sh
+                                           → CNAME swap + prod smoke
 ```
 
 ### Trigger Matrix
 
 | Event | Tests | Docker build+push | EB deploy |
 |-------|-------|-------------------|-----------|
-| Push to `feat/**` | ✅ | ✅ | ❌ |
-| Push to `main` | ✅ | ✅ | ❌ |
-| Push to `release/**` | ✅ | ✅ | ❌ |
-| **GitHub Release published** | ✅ | ✅ | **✅** |
-| `workflow_dispatch` | ✅ | ✅ | ✅ |
-
-**Key rule:** only a published GitHub Release (or manual dispatch) deploys to Elastic Beanstalk.
-`release/**` pushes build and test but never deploy — this eliminates the race condition where
-a push-triggered run and a release-event run would both attempt `UpdateEnvironment` simultaneously
-and one would fail with `InvalidParameterValue: Must be Ready`.
+| Push to `main` (or any branch) | ❌ | ❌ | ❌ |
+| **GitHub Release published** | ✅ | ✅ | **✅ → idle** |
+| `workflow_dispatch` | ✅ | ✅ | ✅ → idle |
 
 ### Docker Images
 
-Two images are built on every qualifying push:
+Two images are built on every release:
 
 | Image | Registry | Purpose |
 |-------|----------|---------|
 | `featurefactory/mimir-mcp:<tag>` | Docker Hub (public) | MCP facade for end-users |
 | `<ecr>/mimir:<tag>` | AWS ECR (private) | Web app deployed to EB |
 
-Tag format: `{branch-slug}-{short-sha}` (e.g. `release-0.0.6-fb4ea55`).
-On `main`, images are also tagged `:latest`.
+Tag format: `{branch-slug}-{short-sha}` (e.g. `v0.0.41-abc1234`).
+On release from `main`, images are also tagged `:latest`.
 
 ### Release Process
 
-```
-# 1. Create release branch from current work
-git checkout -b release/X.Y.Z
+```bash
+# Commit everything to main, then:
+gh release create vX.Y.Z --title "..." --notes "..."
 
-# 2. Push (CI runs tests + builds Docker images — no deploy yet)
-git push -u origin release/X.Y.Z
+# CI runs: test → build → deploy to idle env → staging smoke
+# Review: http://<idle-cname>.elasticbeanstalk.com/health/
 
-# 3. Publish the GitHub Release (this is the sole deploy trigger)
-gh release create vX.Y.Z --title "..." --target release/X.Y.Z --notes "..."
-
-# 4. Merge release branch into main
-git checkout main && git merge release/X.Y.Z && git push origin main
+# Promote to prod:
+make swap
+# → scripts/promote-prod.sh: resolves live/idle, SHA check, CNAME swap, prod smoke
 ```
 
 ### Elastic Beanstalk Deployment
 
 - **Application**: `mimir`
-- **Environments**: `mimir-idle` (staging, CI target) and `mimir-prod` (live)
+- **Two physical environments**: `mimir-prod` and `mimir-idle` — names are fixed; **CNAME labels rotate on every swap**
 - **Region**: `us-east-1`
+- **Deploy target**: whichever env is currently **idle**, resolved dynamically by `scripts/deploy-idle.sh` (checks which env holds `mimir-prod.eba-…` CNAME — that's live; the other is idle)
 - **Deploy mechanism**: docker-compose bundle uploaded to S3, applied via `update-environment`
-- **Version label format**: `v-{branch}-{sha}-r{run_number}` (run_number ensures uniqueness on retries)
-- **Health polling**: 15 s interval, 10-minute timeout, fails if environment stays non-Ready
+- **Version label format**: `v-{branch}-{sha}-r{run_number}`
+- **Staging smoke**: `deploy-idle.sh` hits the idle env's own CNAME at `/health/` and verifies `revision` matches `GIT_REVISION` before declaring success
 
 The deploy job generates `docker-compose.yml` from `deploy/docker-compose.tmpl.yml` by
 substituting `$IMAGE_WEB` (ECR) with the exact SHA-tagged image built in the preceding job.
 The MCP facade (`featurefactory/mimir-mcp`) is a client-side component distributed via Docker Hub;
 it is **not** deployed to EB.
 
-### Blue/Green Deployment Workflow
+### Blue/Green Promotion Workflow
 
 ```
-gh release vX.Y.Z
-  → CI deploys to mimir-idle
-  → verify: http://mimir-idle.us-east-1.elasticbeanstalk.com/health/
-  → make swap          # swaps CNAMEs: idle → prod, prod → idle
-  → mimir.featurefactory.io now serves the new version
-  → old prod becomes mimir-idle (ready for next release)
+gh release create vX.Y.Z
+  → CI: test → build → deploy-idle.sh
+      • resolves idle env (whichever doesn't hold mimir-prod CNAME)
+      • deploys version, waits for Ready
+      • smoke tests idle CNAME /health/ — verifies revision
+  → human reviews idle URL
+  → make swap
+      • promote-prod.sh resolves live/idle by CNAME inspection
+      • reads GIT_REVISION from idle /health/ (for prod smoke comparison)
+      • aws elasticbeanstalk swap-environment-cnames
+      • waits 90s for DNS TTL (Route53 TTL = 60s)
+      • polls https://mimir.featurefactory.io/health/ until revision matches
+  → new version is live; formerly-live env becomes idle for next release
 ```
 
-**DNS**: `mimir.featurefactory.io` is a Route53 **CNAME** record pointing at
-`mimir-prod.eba-8hqkems3.us-east-1.elasticbeanstalk.com` (the `mimir-prod` EB environment CNAME).
+**DNS**: `mimir.featurefactory.io` is a Route53 **CNAME** record (TTL 60s) pointing at
+`mimir-prod.eba-8hqkems3.us-east-1.elasticbeanstalk.com` (the `mimir-prod` EB CNAME label).
 HTTPS is terminated at the ALB inside the EB environment, which holds the
 `*.featurefactory.io` wildcard cert (`arn:aws:acm:us-east-1:411113550285:certificate/9d3ca541-…`).
 The record is managed by the `MimirDns` CDK stack (idempotent Lambda UPSERT).
 
-**Why CNAME → EB environment CNAME (not ALB):**
-When `make swap` calls `swap-environment-cnames`, EB atomically exchanges the CNAME labels between
-`mimir-prod` and `mimir-idle`. Because Route53 points at the CNAME label (`mimir-prod.eba-…`), live
-traffic automatically follows the swap — no Route53 update needed.
+**Why CNAME → EB environment CNAME label (not ALB ARN):**
+`swap-environment-cnames` atomically rotates which physical env holds the `mimir-prod.eba-…` label.
+Route53 resolves `mimir-prod.eba-…` → whichever env currently owns that label → live traffic
+follows the swap automatically. No Route53 or CDK update needed on every promotion.
+
+**After a swap** the env names appear "inverted" in `eb-status` — e.g. physical env `mimir-idle`
+now holds `mimir-prod.eba-…` (serving traffic). This is correct and expected; `deploy-idle.sh`
+always resolves the truly idle env by CNAME inspection, not by name.
 
 **Makefile targets:**
 
 | Target | What it does |
 |--------|-------------|
-| `make swap` | Calls `swap-environment-cnames`: EB atomically swaps the CNAME labels between `mimir-prod` and `mimir-idle`; Route53 CNAME follows automatically |
-| `make eb-status` | Shows health, version, and CNAME for both environments |
+| `make swap` | Runs `scripts/promote-prod.sh`: resolves live/idle, reads revision from idle `/health/`, swaps CNAMEs, waits 90s for DNS TTL, polls prod for revision match |
+| `make eb-status` | Shows health, CNAME, and version label for both environments |
+
+**GitHub workflow for promote (alternative to `make swap`):**
+```bash
+gh workflow run promote.yml -f expected_revision=vX.Y.Z
+```
+`.github/workflows/promote.yml` is a `workflow_dispatch`-only workflow that runs `promote-prod.sh`
+in CI — GitHub equivalent of GitLab's `when: manual` promote stage.
 
 ### Known Operational Notes
 
 | Issue | Root Cause | Fix applied |
 |-------|-----------|-------------|
 | ELB health checks returning 400 (Red for 8+ days) | Django `ALLOWED_HOSTS` did not include the EC2 instance's private IP; ELB target-group health checker uses `Host: <instance-ip>` | `prod.py` now fetches the private IP from IMDSv2 at startup and appends it to `ALLOWED_HOSTS` |
-| `UpdateEnvironment: Must be Ready` on release runs | Push-triggered run and release-event run both reaching the deploy step at the same time | Deploy job now only fires on `release` / `workflow_dispatch` events — `release/**` pushes never deploy |
+| `UpdateEnvironment: Must be Ready` on release runs | Push-triggered run and release-event run both reaching the deploy step at the same time | Removed all push triggers — pipeline runs only on `release: [published]` and `workflow_dispatch` |
 | ALB-alias Route53 broke CNAME swap | Route53 pointed at ALB ARN directly; EB CNAME swap had no effect on live traffic | Replaced A-alias with CNAME to `mimir-prod.eba-…`; CDK-managed via `MimirDns` stack |
+| CI hardcoded `mimir-idle` as deploy target | After a swap, `mimir-idle` holds the live CNAME — deploying to it by name would overwrite prod | `deploy-idle.sh` dynamically resolves the idle env by CNAME inspection before every deploy |
+| `make swap` smoke test false-negative | 20s wait < 60s Route53 TTL — smoke hit a cached DNS resolver returning old env | `promote-prod.sh` now waits 90s before polling, then retries for up to 3 minutes |
 
 ## Email Architecture
 
