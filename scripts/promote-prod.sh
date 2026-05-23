@@ -58,10 +58,17 @@ if [ -n "${EXPECTED_REVISION:-}" ]; then
     exit 1
   fi
   echo "Revision guard passed: $EXPECTED_REVISION matches idle."
-else
-  EXPECTED_REVISION="$IDLE_LABEL"
-  echo "EXPECTED_REVISION unset — promoting staged revision: $EXPECTED_REVISION"
 fi
+
+# Read the GIT_REVISION from idle's health endpoint — this is what prod smoke will verify.
+IDLE_CNAME=$(aws elasticbeanstalk describe-environments \
+  --application-name "$EB_APP" \
+  --environment-names "$IDLE_ENV" \
+  --query 'Environments[0].CNAME' --output text)
+echo "Reading idle health: http://${IDLE_CNAME}/health/ ..."
+IDLE_HEALTH=$(curl -s --max-time 15 "http://${IDLE_CNAME}/health/")
+EXPECTED_REVISION=$(python3 -c "import json,sys; print(json.loads('${IDLE_HEALTH}').get('revision','unknown'))")
+echo "Idle revision (for prod smoke): $EXPECTED_REVISION"
 
 # ── 4. Swap CNAMEs ────────────────────────────────────────────────────────────
 echo "Swapping $IDLE_ENV (idle) ↔ $LIVE_ENV (live) ..."
