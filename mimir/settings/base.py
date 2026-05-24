@@ -9,6 +9,8 @@ import logging
 import os
 from pathlib import Path
 
+from django.contrib.messages import constants as message_constants
+
 logger = logging.getLogger(__name__)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -190,3 +192,6 @@ REST_FRAMEWORK = {
     ],
     'EXCEPTION_HANDLER': 'methodology.api.exceptions.custom_exception_handler',
 }
+
+# Django messages → Bootstrap alert classes (alert-danger, not alert-error).
+MESSAGE_TAGS = {message_constants.ERROR: 'danger'}

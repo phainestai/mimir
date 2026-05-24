@@ -25,6 +25,21 @@
         [data-testid="main-navbar"] .navbar-nav.me-auto .nav-link {
             font-size: 0.875rem;
         }
+        /* Dark-navbar search input */
+        #global-search-input {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+        #global-search-input::placeholder {
+            color: rgba(255, 255, 255, 0.55);
+        }
+        #global-search-input:focus {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.45);
+            color: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.1);
+        }
         /* Feedback tab: vertical strip on the right (writing-mode; no rotate — keeps pin math stable). */
         .feedback-edge-tab {
             position: fixed;
