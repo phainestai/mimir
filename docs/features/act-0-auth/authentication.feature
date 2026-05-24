@@ -38,6 +38,26 @@ Feature: FOB-AUTH-LOGIN-1 Authentication and Login
     When she ticks [Remember me for 30 days] and signs in
     Then her session cookie persists for 30 days
 
+  # ── Guest-only guards (logged-in users) ───────────────────────────────────
+
+  Scenario: FOB-AUTH-GUARD-01 Logged-in user cannot access login page
+    Given Maria is logged in
+    When she navigates to /auth/user/login/
+    Then she is redirected to FOB-PROFILE-VIEW-1 at /auth/user/profile/
+    And she does NOT see the login form
+
+  Scenario: FOB-AUTH-GUARD-02 Logged-in user cannot access registration page
+    Given Maria is logged in
+    When she navigates to /auth/user/register/
+    Then she is redirected to FOB-PROFILE-VIEW-1 at /auth/user/profile/
+    And she does NOT see the registration form
+
+  Scenario: FOB-AUTH-GUARD-03 Logged-in POST to login is redirected without re-auth
+    Given Maria is logged in
+    When she POSTs credentials to /auth/user/login/
+    Then she is redirected to FOB-PROFILE-VIEW-1 at /auth/user/profile/
+    And she remains authenticated as Maria
+
   # ── Registration ──────────────────────────────────────────────────────────
 
   Scenario: FOB-LOCAL-USER-CREATE-01 First-time user registration

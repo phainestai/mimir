@@ -134,6 +134,22 @@ Feature: Mimir E2E UAT — browser-only flow (registration → GUI CRUDL → rel
     # STEP D — regenerate wrong-password branch
     # DO: fill `[data-testid=\"profile-token-regenerate-password\"]` literal `incorrect-password-uat`; submit `[data-testid=\"profile-token-regenerate-submit\"]`
     # SEE: flash `[data-testid=\"alert-message\"]` EXACT `Incorrect password. Your API token was not changed.`
+
+  @manual @uat @act-0 @profile
+  Scenario: UAT-01-05 Logged-in user cannot access login or register (guest-only guard)
+    # Pre: `<UAT_USERNAME>` session still active from UAT-01-04 (do NOT logout)
+    # STEP A — Login page guard
+    # DO: GET `/auth/user/login/` while authenticated
+    # SEE: redirect URL `/auth/user/profile/`; `[data-testid=\"profile-page\"]` visible; NO `[data-testid=\"login-form\"]`
+    # IF DIFFER: UAT-01-05 STEP A
+    # STEP B — Register page guard
+    # DO: GET `/auth/user/register/` while authenticated
+    # SEE: redirect URL `/auth/user/profile/`; `[data-testid=\"profile-page\"]` visible; NO `[data-testid=\"register-form\"]`
+    # IF DIFFER: UAT-01-05 STEP B
+    # STEP C — POST login guard (no re-auth)
+    # DO: POST `/auth/user/login/` with any credentials while still authenticated
+    # SEE: redirect `/auth/user/profile/`; navbar `[data-testid=\"user-display\"]` still shows `<UAT_USERNAME>`
+    # IF DIFFER: UAT-01-05 STEP C
 #############################################################################
 # Journey 2 — MCP token wiring + smoke negatives → see mcp-uat-flow.feature
 #############################################################################

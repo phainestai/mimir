@@ -32,6 +32,21 @@ _PROFILE_PLAYBOOKS_LIMIT = 50
 _PROFILE_PIPS_LIMIT = 50
 
 
+def _redirect_if_authenticated(request):
+    """Send logged-in users away from guest-only auth pages (login/register).
+
+    :param request: Django request object
+    :return: Redirect to profile when authenticated, else ``None``.
+    """
+    if request.user.is_authenticated:
+        logger.info(
+            "Authenticated user %s redirected from guest auth page to profile",
+            request.user.username,
+        )
+        return redirect(reverse("profile"))
+    return None
+
+
 def _profile_playbooks_for(user):
     """Return playbooks authored by user (newest first), capped for the profile page."""
     return list(
@@ -172,6 +187,10 @@ def login_view(request):
     :return: Rendered login template or redirect to dashboard
     """
     logger.info(f"Login page accessed via {request.method}")
+
+    redirect_response = _redirect_if_authenticated(request)
+    if redirect_response is not None:
+        return redirect_response
     
     # GET request - display form
     if request.method == 'GET':
@@ -657,6 +676,10 @@ def register(request):
     no auto-login — redirect to login with an info message.
     """
     logger.info("Registration page accessed via %s", request.method)
+
+    redirect_response = _redirect_if_authenticated(request)
+    if redirect_response is not None:
+        return redirect_response
 
     empty_ctx = {
         "errors": {},
