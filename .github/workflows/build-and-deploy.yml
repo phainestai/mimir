@@ -142,7 +142,7 @@ jobs:
           else
             echo "revision=${SUFFIX}" >> $GITHUB_OUTPUT
           fi
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+          if [[ "$GITHUB_REF" == "refs/heads/main" || "${{ github.event_name }}" == "release" ]]; then
             echo "latest=true" >> $GITHUB_OUTPUT
           else
             echo "latest=false" >> $GITHUB_OUTPUT
@@ -246,6 +246,9 @@ jobs:
           VERSION_LABEL: ${{ steps.version.outputs.label }}
           GIT_REVISION: ${{ steps.version.outputs.revision }}
           DEPLOY_BUNDLE_PATH: deploy-bundle.zip
+          # GitHub PAT for the in-app Feedback widget (Issues: write on phainestai/mimir).
+          # Store as repo secret GH_BUG_REPORT_TOKEN. If absent, the existing EB value is kept.
+          GH_BUG_REPORT_TOKEN: ${{ secrets.GH_BUG_REPORT_TOKEN }}
         run: bash scripts/deploy-idle.sh
 
       - name: Deployment summary
