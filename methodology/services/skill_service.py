@@ -279,7 +279,7 @@ class SkillService:
     @staticmethod
     def delete_skill(skill_id: int) -> None:
         """
-        Delete a skill by ID. Referencing activities will have skill FK set to NULL.
+        Delete a skill by ID. M2M links to activities are cleared automatically.
 
         :param skill_id: Skill primary key
         :raises Skill.DoesNotExist: If skill not found
@@ -317,39 +317,34 @@ class SkillService:
         """
         from methodology.models import Activity
         qs = Activity.objects.filter(
-            skill_id=skill_id
-        ).select_related('workflow').order_by('workflow__name', 'name')
+            skills__id=skill_id
+        ).select_related('workflow').order_by('workflow__name', 'name').distinct()
         logger.info("Fetched %d activities for skill %s", qs.count(), skill_id)
         return qs
 
     @staticmethod
     def link_skill_to_activity(activity_id: int, skill_id: int):
         """
-        Facade: link a skill to an activity. Delegates to ActivityService.
+        Facade: add a skill to an activity. Delegates to ActivityService.
 
         :param activity_id: Activity primary key
         :param skill_id: Skill primary key
         :returns: Updated Activity instance
-
-        Example:
-            >>> SkillService.link_skill_to_activity(1, 5)
         """
         from methodology.services.activity_service import ActivityService
-        return ActivityService.set_activity_skill(activity_id, skill_id)
+        return ActivityService.add_activity_skill(activity_id, skill_id)
 
     @staticmethod
-    def unlink_skill_from_activity(activity_id: int):
+    def unlink_skill_from_activity(activity_id: int, skill_id: int):
         """
-        Facade: unlink skill from an activity. Delegates to ActivityService.
+        Facade: remove a skill from an activity. Delegates to ActivityService.
 
         :param activity_id: Activity primary key
+        :param skill_id: Skill primary key
         :returns: Updated Activity instance
-
-        Example:
-            >>> SkillService.unlink_skill_from_activity(1)
         """
         from methodology.services.activity_service import ActivityService
-        return ActivityService.clear_activity_skill(activity_id)
+        return ActivityService.remove_activity_skill(activity_id, skill_id)
 
     # ── Private validation helpers ─────────────────────────────────────
 

@@ -1,7 +1,7 @@
 """
 Integration tests for Activity-Skill linking functionality.
 
-Tests skill dropdown on edit form and skill card on detail view.
+Tests multi-skill checkboxes on edit form and skills list on detail view.
 """
 
 import pytest
@@ -37,13 +37,13 @@ class TestActivityLinkSkill:
             source='owned',
             author=self.user
         )
-        
+
         self.workflow = Workflow.objects.create(
             playbook=self.playbook,
             name='Build Feature',
             order=1
         )
-        
+
         self.activity = Activity.objects.create(
             workflow=self.workflow,
             name='Implement Backend',
@@ -59,8 +59,16 @@ class TestActivityLinkSkill:
             technology_stack='React+Redux'
         )
 
-    def test_edit_form_shows_skill_dropdown(self):
-        """Skill dropdown is present with playbook skills."""
+        self.skill2 = Skill.objects.create(
+            playbook=self.playbook,
+            title='Deploy to AWS Beanstalk',
+            content='Beanstalk deployment',
+            capability_domain='DEPLOY',
+            technology_stack='AWS+Beanstalk'
+        )
+
+    def test_edit_form_shows_skill_checkboxes(self):
+        """Skill checkboxes are present with playbook skills."""
         url = reverse('activity_edit', kwargs={
             'playbook_pk': self.playbook.pk,
             'workflow_pk': self.workflow.pk,
@@ -69,8 +77,9 @@ class TestActivityLinkSkill:
         response = self.client.get(url)
 
         assert response.status_code == 200
-        assert b'data-testid="skill-select"' in response.content
+        assert b'data-testid="activity-skills-select"' in response.content
         assert b'React Development' in response.content
+        assert b'Deploy to AWS Beanstalk' in response.content
 
     def test_link_skill_to_activity(self):
         """Select skill and save, verify link created."""
@@ -79,43 +88,59 @@ class TestActivityLinkSkill:
             'workflow_pk': self.workflow.pk,
             'activity_pk': self.activity.pk
         })
-        
+
         response = self.client.post(url, {
             'name': self.activity.name,
             'guidance': self.activity.guidance,
             'order': self.activity.order,
-            'skill': self.skill.id,
+            'skills': [self.skill.id],
         })
 
         assert response.status_code == 302
         self.activity.refresh_from_db()
-        assert self.activity.skill_id == self.skill.id
+        assert list(self.activity.skills.values_list('id', flat=True)) == [self.skill.id]
+
+    def test_link_multiple_skills_to_activity(self):
+        """Select two skills and save, verify both linked."""
+        url = reverse('activity_edit', kwargs={
+            'playbook_pk': self.playbook.pk,
+            'workflow_pk': self.workflow.pk,
+            'activity_pk': self.activity.pk
+        })
+
+        response = self.client.post(url, {
+            'name': self.activity.name,
+            'guidance': self.activity.guidance,
+            'order': self.activity.order,
+            'skills': [self.skill.id, self.skill2.id],
+        })
+
+        assert response.status_code == 302
+        self.activity.refresh_from_db()
+        assert set(self.activity.skills.values_list('id', flat=True)) == {self.skill.id, self.skill2.id}
 
     def test_unlink_skill_from_activity(self):
-        """Select 'None' and save, verify link removed."""
-        # First link a skill
-        self.activity.skill = self.skill
-        self.activity.save()
+        """Uncheck all skills and save, verify links removed."""
+        self.activity.skills.set([self.skill, self.skill2])
 
         url = reverse('activity_edit', kwargs={
             'playbook_pk': self.playbook.pk,
             'workflow_pk': self.workflow.pk,
             'activity_pk': self.activity.pk
         })
-        
+
         response = self.client.post(url, {
             'name': self.activity.name,
             'guidance': self.activity.guidance,
             'order': self.activity.order,
-            'skill': '',  # Empty = None
         })
 
         assert response.status_code == 302
         self.activity.refresh_from_db()
-        assert self.activity.skill_id is None
+        assert self.activity.skills.count() == 0
 
-    def test_skill_dropdown_only_shows_playbook_skills(self):
-        """No cross-playbook skills in dropdown."""
+    def test_skill_checkboxes_only_show_playbook_skills(self):
+        """No cross-playbook skills in checkbox list."""
         other_playbook = Playbook.objects.create(
             name='Other Playbook',
             description='Other',
@@ -124,7 +149,7 @@ class TestActivityLinkSkill:
             source='owned',
             author=self.user
         )
-        other_skill = Skill.objects.create(
+        Skill.objects.create(
             playbook=other_playbook,
             title='Other Skill',
             content='From other playbook'
@@ -141,10 +166,9 @@ class TestActivityLinkSkill:
         assert b'React Development' in response.content
         assert b'Other Skill' not in response.content
 
-    def test_detail_shows_linked_skill(self):
-        """Skill card displays linked skill."""
-        self.activity.skill = self.skill
-        self.activity.save()
+    def test_detail_shows_linked_skills(self):
+        """Skills card displays all linked skills."""
+        self.activity.skills.set([self.skill, self.skill2])
 
         url = reverse('activity_detail', kwargs={
             'playbook_pk': self.playbook.pk,
@@ -155,13 +179,15 @@ class TestActivityLinkSkill:
 
         assert response.status_code == 200
         assert b'data-testid="skill-card"' in response.content
+        assert b'data-testid="activity-skills-list"' in response.content
         assert b'React Development' in response.content
-        assert b'data-testid="skill-link"' in response.content
+        assert b'Deploy to AWS Beanstalk' in response.content
+        assert b'data-testid="skill-link-' in response.content
         assert b'GUI_FORM' in response.content
         assert b'React+Redux' in response.content
 
     def test_detail_shows_no_skill_state(self):
-        """Empty state when no skill linked."""
+        """Empty state when no skills linked."""
         url = reverse('activity_detail', kwargs={
             'playbook_pk': self.playbook.pk,
             'workflow_pk': self.workflow.pk,
@@ -172,4 +198,4 @@ class TestActivityLinkSkill:
         assert response.status_code == 200
         assert b'data-testid="skill-card"' in response.content
         assert b'data-testid="no-skill"' in response.content
-        assert b'No skill required' in response.content
+        assert b'No skills linked' in response.content

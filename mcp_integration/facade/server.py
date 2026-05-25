@@ -93,7 +93,7 @@ def _build_mcp() -> FastMCP:
     mcp.tool()(tools.apply_upload_protocol)
     mcp.tool()(tools.create_pip_from_protocol)
 
-    # Skills (7)
+    # Skills (8)
     mcp.tool()(tools.create_skill)
     mcp.tool()(tools.list_skills)
     mcp.tool()(tools.get_skill)
@@ -101,6 +101,7 @@ def _build_mcp() -> FastMCP:
     mcp.tool()(tools.delete_skill)
     mcp.tool()(tools.link_skill_to_activity)
     mcp.tool()(tools.unlink_skill_from_activity)
+    mcp.tool()(tools.set_activity_skills)
 
     # Rules (6)
     mcp.tool()(tools.create_rule)

@@ -70,21 +70,29 @@ class WorkflowSerializer(serializers.ModelSerializer):
         ]
 
 
+class ActivitySkillSerializer(serializers.ModelSerializer):
+    """Compact skill payload embedded on activity responses."""
+
+    class Meta:
+        model = Skill
+        fields = ['id', 'title', 'capability_domain', 'technology_stack']
+
+
 class ActivityListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for activity lists — guidance excluded to keep payloads small."""
 
     predecessor_name = serializers.CharField(source='predecessor.name', read_only=True)
     agent_name = serializers.CharField(source='agent.name', read_only=True)
-    skill_title = serializers.CharField(source='skill.title', read_only=True)
+    skills = ActivitySkillSerializer(many=True, read_only=True)
 
     class Meta:
         model = Activity
         fields = [
             'id', 'workflow_id', 'name', 'phase_id', 'order',
             'predecessor_id', 'predecessor_name', 'agent_id', 'agent_name',
-            'skill_id', 'skill_title'
+            'skills',
         ]
-        read_only_fields = ['id', 'predecessor_name', 'agent_name', 'skill_title']
+        read_only_fields = ['id', 'predecessor_name', 'agent_name', 'skills']
 
 
 class ActivitySerializer(serializers.ModelSerializer):
@@ -94,19 +102,18 @@ class ActivitySerializer(serializers.ModelSerializer):
     phase_id = serializers.IntegerField(allow_null=True, required=False)
     predecessor_id = serializers.IntegerField(allow_null=True, required=False)
     agent_id = serializers.IntegerField(allow_null=True, required=False)
-    skill_id = serializers.IntegerField(allow_null=True, required=False)
     predecessor_name = serializers.CharField(source='predecessor.name', read_only=True)
     agent_name = serializers.CharField(source='agent.name', read_only=True)
-    skill_title = serializers.CharField(source='skill.title', read_only=True)
+    skills = ActivitySkillSerializer(many=True, read_only=True)
 
     class Meta:
         model = Activity
         fields = [
             'id', 'workflow_id', 'name', 'guidance', 'phase_id', 'order',
             'predecessor_id', 'predecessor_name', 'agent_id', 'agent_name',
-            'skill_id', 'skill_title'
+            'skills',
         ]
-        read_only_fields = ['id', 'predecessor_name', 'agent_name', 'skill_title']
+        read_only_fields = ['id', 'predecessor_name', 'agent_name', 'skills']
 
 
 class SkillSerializer(serializers.ModelSerializer):

@@ -1,5 +1,5 @@
 @manual @uat @mcp-uat-flow
-Feature: Mimir MCP UAT — all 62 tools exercised end-to-end in agent mode
+Feature: Mimir MCP UAT — all 63 tools exercised end-to-end in agent mode
 
   Execute in AGENT MODE only. CallMcpTool is only available to the parent agent
   (Cursor IDE context). Do NOT delegate these scenarios to a browser-use subagent.
@@ -27,7 +27,7 @@ Feature: Mimir MCP UAT — all 62 tools exercised end-to-end in agent mode
     CURSOR_PROMPT — manual one-time IDE action; agent STOPS and waits for confirmation
 
   ==============================================================================
-  TOOL COVERAGE MAP  (all 62 tools — tick [x] during replay)
+  TOOL COVERAGE MAP  (all 63 tools — tick [x] during replay)
   ==============================================================================
     Playbooks   : [ ] create  [ ] list  [ ] get  [ ] update  [ ] delete
     Workflows   : [ ] create  [ ] list×2  [ ] get×2  [ ] update  [ ] delete
@@ -35,7 +35,7 @@ Feature: Mimir MCP UAT — all 62 tools exercised end-to-end in agent mode
     Phases      : [ ] create×2  [ ] list×2  [ ] get  [ ] update  [ ] reorder  [ ] delete×2
                   (list×2: own MCP-03 + cross-user public MCP-01c)
     Activities  : [ ] create×2  [ ] list  [ ] get  [ ] update  [ ] set_predecessor  [ ] delete×2
-    Skills      : [ ] create  [ ] list×2  [ ] get  [ ] update  [ ] link  [ ] unlink  [ ] delete
+    Skills      : [ ] create  [ ] list×2  [ ] get  [ ] update  [ ] link  [ ] unlink  [ ] set_activity_skills  [ ] delete
                   (list×2: own MCP-03 + cross-user public MCP-01c)
     Agents      : [ ] create  [ ] list×2  [ ] get  [ ] update  [ ] link  [ ] unlink  [ ] delete
                   (list×2: own MCP-03 + cross-user public MCP-01c)
@@ -62,6 +62,7 @@ Feature: Mimir MCP UAT — all 62 tools exercised end-to-end in agent mode
     <MCP_ACT1_PK>             — activity 1 RECORD (MCP-02 step ACT-01)
     <MCP_ACT2_PK>             — activity 2 RECORD (MCP-02 step ACT-02)
     <MCP_SKILL_PK>            — skill     RECORD (MCP-02 step SK-01)
+    <MCP_SKILL_PK_2>          — second skill RECORD (MCP-02 step SK-01b)
     <MCP_AGENT_PK>            — agent     RECORD (MCP-02 step AG-01)
     <MCP_ARTIFACT_PK>         — artifact  RECORD (MCP-02 step AR-01)
     <MCP_ARTIFACT_INPUT_PK>   — artifact-activity link RECORD (MCP-02 step AR-02)
@@ -321,10 +322,22 @@ Feature: Mimir MCP UAT — all 62 tools exercised end-to-end in agent mode
     # SEE: `.id` = `<MCP_SKILL_PK>`
     # IF DIFFER: MCP-02 SK-02
     #
-    # STEP SK-03 link_skill_to_activity
+    # STEP SK-03 link_skill_to_activity (first skill)
     # DO: CallMcpTool server "user-mimir" toolName "link_skill_to_activity" arguments {"skill_id": <MCP_SKILL_PK>, "activity_id": <MCP_ACT1_PK>}
-    # SEE: success response includes activity reference
+    # SEE: JSON `.skill_ids` contains `<MCP_SKILL_PK>`
     # IF DIFFER: MCP-02 SK-03
+    #
+    # STEP SK-03b link second skill (M2M add)
+    # DO: CallMcpTool server "user-mimir" toolName "create_skill" arguments {"playbook_id": <MCP_PB_ID>, "title": "MCP UAT Skill Two", "content": "## Alt\n", "capability_domain": "DEPLOY", "technology_stack": "AWS+EKS"}
+    # SEE: RECORD `.id` as `<MCP_SKILL_PK_2>`
+    # DO: CallMcpTool server "user-mimir" toolName "link_skill_to_activity" arguments {"skill_id": <MCP_SKILL_PK_2>, "activity_id": <MCP_ACT1_PK>}
+    # SEE: JSON `.skill_ids` length = 2
+    # IF DIFFER: MCP-02 SK-03b
+    #
+    # STEP SK-03c set_activity_skills replace set
+    # DO: CallMcpTool server "user-mimir" toolName "set_activity_skills" arguments {"activity_id": <MCP_ACT1_PK>, "skill_ids": [<MCP_SKILL_PK_2>]}
+    # SEE: JSON `.skill_ids` = [<MCP_SKILL_PK_2>]
+    # IF DIFFER: MCP-02 SK-03c
     #
     # STEP AG-01 create_agent
     # DO: CallMcpTool server "user-mimir" toolName "create_agent" arguments {"playbook_id": <MCP_PB_ID>, "name": "MCP UAT Agent", "description": "Test agent persona for MCP UAT."}
@@ -415,7 +428,7 @@ Feature: Mimir MCP UAT — all 62 tools exercised end-to-end in agent mode
     #
     # STEP get_activity
     # DO: CallMcpTool server "user-mimir" toolName "get_activity" arguments {"activity_id": <MCP_ACT1_PK>}
-    # SEE: `.name` = `MCP Activity One`; guidance contains `Updated guidance — MCP write verified`; linked skill/agent/rule present
+    # SEE: `.name` = `MCP Activity One`; guidance contains `Updated guidance — MCP write verified`; `.skills` array contains linked skill; agent/rule present
     # IF DIFFER: MCP-03 get_activity
     #
     # STEP list_skills
@@ -543,7 +556,7 @@ Feature: Mimir MCP UAT — all 62 tools exercised end-to-end in agent mode
     # IF DIFFER: MCP-05 DL-09
     #
     # STEP DL-10 unlink all from drill activity
-    # DO: CallMcpTool server "user-mimir" toolName "unlink_skill_from_activity" arguments {"activity_id": <DRILL_ACT_PK>}
+    # DO: CallMcpTool server "user-mimir" toolName "unlink_skill_from_activity" arguments {"activity_id": <DRILL_ACT_PK>, "skill_id": <DRILL_SK_PK>}
     # SEE: success
     # DO: CallMcpTool server "user-mimir" toolName "unlink_agent_from_activity" arguments {"activity_id": <DRILL_ACT_PK>}
     # SEE: success

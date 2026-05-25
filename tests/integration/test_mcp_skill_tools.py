@@ -18,6 +18,7 @@ from mcp_integration.tools import (
     delete_skill,
     link_skill_to_activity,
     unlink_skill_from_activity,
+    set_activity_skills,
 )
 
 User = get_user_model()
@@ -227,7 +228,7 @@ class TestMCPSkillDelete:
 
     @pytest.mark.asyncio
     async def test_mcp_sk_11_delete_skill_clears_fks(self, setup_user_context, draft_playbook, workflow_with_activities):
-        """Scenario: MCP-SK-11 Delete skill clears activity FKs."""
+        """Scenario: MCP-SK-11 Delete skill clears activity M2M links."""
         wf, act1, act2 = workflow_with_activities
         created = await create_skill(playbook_id=draft_playbook.id, title='SK1')
         await link_skill_to_activity(act1.id, created['id'])
@@ -239,11 +240,11 @@ class TestMCPSkillDelete:
         result = await delete_skill(skill_id=created['id'])
         assert result['deleted'] is True
 
-        # Verify activities have NULL skill FK
+        # Verify activities no longer reference the skill
         await sync_to_async(act1.refresh_from_db)()
         await sync_to_async(act2.refresh_from_db)()
-        assert act1.skill_id is None
-        assert act2.skill_id is None
+        assert act1.skills.count() == 0
+        assert act2.skills.count() == 0
 
         # Verify version incremented
         await sync_to_async(draft_playbook.refresh_from_db)()
@@ -271,6 +272,7 @@ class TestMCPSkillLinkUnlink:
 
         result = await link_skill_to_activity(act1.id, created['id'])
         assert result['skill_id'] == created['id']
+        assert created['id'] in result['skill_ids']
 
     @pytest.mark.asyncio
     async def test_mcp_sk_14_link_cross_playbook_raises(self, setup_user_context, draft_playbook):
@@ -297,5 +299,20 @@ class TestMCPSkillLinkUnlink:
         created = await create_skill(playbook_id=draft_playbook.id, title='SK1')
         await link_skill_to_activity(act1.id, created['id'])
 
-        result = await unlink_skill_from_activity(act1.id)
-        assert result['skill_id'] is None
+        result = await unlink_skill_from_activity(act1.id, created['id'])
+        assert result['skill_id'] == created['id']
+        assert result['skill_ids'] == []
+
+    @pytest.mark.asyncio
+    async def test_mcp_sk_16_set_activity_skills(self, setup_user_context, draft_playbook, workflow_with_activities):
+        """Scenario: MCP-SK-16 set_activity_skills replaces full skill set."""
+        wf, act1, act2 = workflow_with_activities
+        sk1 = await create_skill(playbook_id=draft_playbook.id, title='SK1')
+        sk2 = await create_skill(playbook_id=draft_playbook.id, title='SK2')
+        await link_skill_to_activity(act1.id, sk1['id'])
+
+        result = await set_activity_skills(act1.id, [sk2['id']])
+        assert result['skill_ids'] == [sk2['id']]
+
+        clear_result = await set_activity_skills(act1.id, [])
+        assert clear_result['skill_ids'] == []

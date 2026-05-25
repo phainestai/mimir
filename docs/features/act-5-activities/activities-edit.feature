@@ -50,14 +50,14 @@ Feature: FOB-ACTIVITIES-EDIT_ACTIVITY-1 Edit Activity
     And she saves
     Then the dependency is removed
 
-  Scenario: FOB-ACTIVITIES-EDIT_ACTIVITY-08 Manage agent, skill, and artifacts
+  Scenario: FOB-ACTIVITIES-EDIT_ACTIVITY-08 Manage agent, skills, and artifacts
     Given Maria is on the edit form
     When she selects "Code Reviewer" as assigned agent
-    And she selects "React Development" as required skill
+    And she checks "React Development" and "Deploy to AWS Beanstalk" as required skills
     And she checks "API Specification" and "Database Schema" as input artifacts
     And she saves
     Then the agent is linked to the activity
-    And the skill is linked to the activity
+    And both skills are linked to the activity
     And the 2 artifacts are linked as inputs
 
   Scenario: FOB-ACTIVITIES-EDIT_ACTIVITY-09 Cancel editing

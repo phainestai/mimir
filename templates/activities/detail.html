@@ -191,37 +191,39 @@
                 </div>
             </div>
 
-            <!-- Required Skill Card -->
+            <!-- Required Skills Card -->
             <div class="card mb-4" data-testid="skill-card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fa-solid fa-hand-holding-magic"></i> Required Skill</h5>
+                    <h5 class="mb-0"><i class="fa-solid fa-hand-holding-magic"></i> Required Skills</h5>
                 </div>
                 <div class="card-body">
-                    {% if activity.skill %}
-                        <h6 class="card-title">
-                            <a href="{% url 'skill_detail' playbook_pk=playbook.pk skill_pk=activity.skill.id %}" data-testid="skill-link">
-                                {{ activity.skill.title }}
-                            </a>
-                        </h6>
-                        <div class="mb-2">
-                            {% if activity.skill.capability_domain %}
-                            <span class="badge bg-info">{{ activity.skill.capability_domain }}</span>
-                            {% endif %}
-                            {% if activity.skill.technology_stack %}
-                            <span class="badge bg-secondary">{{ activity.skill.technology_stack }}</span>
-                            {% endif %}
-                        </div>
+                    {% if activity.skills.all %}
+                        <ul class="list-unstyled mb-0" data-testid="activity-skills-list">
+                        {% for skill in activity.skills.all %}
+                            <li class="mb-2">
+                                <a href="{% url 'skill_detail' playbook_pk=playbook.pk skill_pk=skill.id %}" data-testid="skill-link-{{ skill.id }}">
+                                    {{ skill.title }}
+                                </a>
+                                {% if skill.capability_domain %}
+                                <span class="badge bg-info ms-1">{{ skill.capability_domain }}</span>
+                                {% endif %}
+                                {% if skill.technology_stack %}
+                                <span class="badge bg-secondary ms-1">{{ skill.technology_stack }}</span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                        </ul>
                     {% else %}
                         <p class="text-muted mb-0" data-testid="no-skill">
-                            <i class="fa-solid fa-info-circle"></i> No skill required
+                            <i class="fa-solid fa-info-circle"></i> No skills linked
                         </p>
                     {% endif %}
                     {% if can_edit %}
                     <a href="{% url 'activity_edit' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}" 
                        class="btn btn-sm btn-outline-primary mt-2"
                        data-bs-toggle="tooltip"
-                       title="Assign or change required skill">
-                        <i class="fa-solid fa-pen-to-square"></i> {% if activity.skill %}Change{% else %}Assign{% endif %} Skill
+                       title="Assign or change linked skills">
+                        <i class="fa-solid fa-pen-to-square"></i> {% if activity.skills.all %}Change{% else %}Link{% endif %} Skills
                     </a>
                     {% endif %}
                 </div>

@@ -205,28 +205,33 @@
                             </small>
                         </div>
 
-                        <!-- Skill Selection -->
+                        <!-- Skills (multi-select) -->
                         <div class="mb-4">
-                            <label for="skill" class="form-label">
-                                Required Skill
+                            <label class="form-label">
+                                Required Skills
                                 <i class="fa-solid fa-info-circle text-muted" 
                                    data-bs-toggle="tooltip"
-                                   title="Skill needed to perform this activity"></i>
+                                   title="Skills needed to perform this activity (select one or more)"></i>
                             </label>
-                            <select name="skill" 
-                                    id="skill" 
-                                    class="form-select"
-                                    data-testid="skill-select">
-                                <option value="">-- None --</option>
+                            {% if available_skills %}
+                            <div class="border rounded p-3" style="max-height:220px;overflow-y:auto;" data-testid="activity-skills-select">
                                 {% for skill in available_skills %}
-                                <option value="{{ skill.id }}" 
-                                        {% if form_data.skill|stringformat:"s" == skill.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ skill.title }}{% if skill.capability_domain %} ({{ skill.capability_domain }}){% endif %}
-                                </option>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="skills" value="{{ skill.id }}"
+                                           id="skill_{{ skill.id }}"
+                                           {% if skill.id in form_data.skills %}checked{% endif %}
+                                           data-testid="skill-checkbox-{{ skill.id }}">
+                                    <label class="form-check-label" for="skill_{{ skill.id }}">
+                                        {{ skill.title }}{% if skill.capability_domain %} ({{ skill.capability_domain }}){% endif %}
+                                    </label>
+                                </div>
                                 {% endfor %}
-                            </select>
+                            </div>
+                            {% else %}
+                            <p class="text-muted small mb-0">No skills. <a href="{% url 'skill_create' playbook_pk=playbook.pk %}">Create one</a>.</p>
+                            {% endif %}
                             <small class="form-text text-muted">
-                                <i class="fa-solid fa-hand-holding-magic"></i> Optional: Skill required for this activity
+                                <i class="fa-solid fa-hand-holding-magic"></i> Optional: link one or more skills to this activity
                             </small>
                         </div>
 

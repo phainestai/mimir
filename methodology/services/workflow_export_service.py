@@ -50,7 +50,7 @@ class WorkflowExportService:
         
         # Fetch activities with agent, skill, artifacts, and rules
         activities = list(
-            workflow.activities.select_related('agent', 'skill')
+            workflow.activities.select_related('agent').prefetch_related('skills', 'rules')
             .prefetch_related(
                 'output_artifacts',
                 'input_artifacts__artifact',
@@ -173,13 +173,17 @@ After editing, use import_workflow_from_local MCP tool to import changes.
             agent_text = "None"
         
         # Build skill section (Issue #72)
-        if activity.skill:
-            skill_lines = [f"**Title**: {activity.skill.title}"]
-            if activity.skill.capability_domain:
-                skill_lines.append(f"**Capability Domain**: {activity.skill.capability_domain}")
-            if activity.skill.technology_stack:
-                skill_lines.append(f"**Technology Stack**: {activity.skill.technology_stack}")
-            skill_text = "\n".join(skill_lines)
+        linked_skills = list(activity.skills.all())
+        if linked_skills:
+            skill_lines = []
+            for skill in linked_skills:
+                skill_lines.append(f"**Title**: {skill.title}")
+                if skill.capability_domain:
+                    skill_lines.append(f"**Capability Domain**: {skill.capability_domain}")
+                if skill.technology_stack:
+                    skill_lines.append(f"**Technology Stack**: {skill.technology_stack}")
+                skill_lines.append("")
+            skill_text = "\n".join(skill_lines).strip()
         else:
             skill_text = "None"
 

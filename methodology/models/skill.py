@@ -2,8 +2,7 @@
 Skill model for reusable, tech-specific guidance within a playbook.
 
 Skills are playbook-scoped and carry capability_domain + technology_stack
-metadata. Activities reference skills via a nullable FK (1:N — one skill
-can serve many activities).
+metadata. Activities reference skills via M2M (many skills per activity).
 
 See: https://en.wikipedia.org/wiki/Separation_of_concerns
      Workflow describes WHAT to do; Skill describes HOW with specific tech.
@@ -22,7 +21,7 @@ class Skill(models.Model):
 
     A Skill describes *how* to perform a capability (e.g., "Build a Form")
     using a specific technology (e.g., "React+Redux"). Multiple activities
-    can reference the same skill (1:N via Activity.skill FK).
+    can reference the same skill (M2M via Activity.skills).
 
     Key fields:
         - **capability_domain**: What it does (e.g., "GUI_FORM", "API_CRUD")

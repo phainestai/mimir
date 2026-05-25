@@ -754,15 +754,16 @@ async def get_activity(activity_id: int) -> dict:
                 'description': activity.agent.description,
             }
         
-        # Build skill dict
-        skill_dict = None
-        if activity.skill:
-            skill_dict = {
-                'id': activity.skill.id,
-                'title': activity.skill.title,
-                'capability_domain': activity.skill.capability_domain,
-                'technology_stack': activity.skill.technology_stack,
+        # Build skills list
+        skills_list = [
+            {
+                'id': s.id,
+                'title': s.title,
+                'capability_domain': s.capability_domain,
+                'technology_stack': s.technology_stack,
             }
+            for s in sorted(activity.skills.all(), key=lambda x: x.title.lower())
+        ]
 
         rules_list = [
             {
@@ -831,7 +832,7 @@ async def get_activity(activity_id: int) -> dict:
             'predecessor': predecessor_dict,
             'successor': successor_dict,
             'agent': agent_dict,
-            'skill': skill_dict,
+            'skills': skills_list,
             'rules': rules_list,
             'output_artifacts': output_artifacts_list,
             'input_artifacts': input_artifacts_list,
@@ -840,7 +841,7 @@ async def get_activity(activity_id: int) -> dict:
         logger.info(
             f'MCP Tool: Activity with predecessor={activity.predecessor_id}, '
             f'successor={activity.successor_id}, agent={activity.agent_id}, '
-            f'skill={activity.skill_id}, rules={len(rules_list)}, outputs={len(output_artifacts_list)}, '
+            f'skills={len(skills_list)}, rules={len(rules_list)}, outputs={len(output_artifacts_list)}, '
             f'inputs={len(input_artifacts_list)}'
         )
         
@@ -1440,22 +1441,26 @@ async def link_skill_to_activity(activity_id: int, skill_id: int) -> dict:
         raise PermissionError(f'Cannot modify released playbook.')
 
     try:
-        updated = await sync_to_async(ActivityService.set_activity_skill)(activity_id, skill_id)
+        updated = await sync_to_async(ActivityService.add_activity_skill)(activity_id, skill_id)
     except ValidationError as e:
         _handle_validation_error(e, 'link_skill_to_activity')
 
-    return {'activity_id': updated.id, 'skill_id': updated.skill_id}
+    skill_ids = list(updated.skills.values_list('id', flat=True))
+    return {'activity_id': updated.id, 'skill_id': skill_id, 'skill_ids': skill_ids}
 
 
-async def unlink_skill_from_activity(activity_id: int) -> dict:
+async def unlink_skill_from_activity(activity_id: int, skill_id: int) -> dict:
     """
-    Unlink skill from an activity (set FK to NULL).
+    Unlink a specific skill from an activity.
 
     :param activity_id: Activity ID. Example: 1
-    :return: Dict with updated activity_id and skill_id=None
+    :param skill_id: Skill ID to remove. Example: 5
+    :return: Dict with updated activity_id and remaining skill_ids
     :raises ValueError: If activity not found or not owned
     """
-    logger.info(f'MCP Tool: unlink_skill_from_activity called - activity_id={activity_id}')
+    logger.info(
+        f'MCP Tool: unlink_skill_from_activity called - activity_id={activity_id}, skill_id={skill_id}'
+    )
 
     user = await sync_to_async(get_current_user)()
 
@@ -1467,9 +1472,40 @@ async def unlink_skill_from_activity(activity_id: int) -> dict:
     if activity.workflow.playbook.status == 'released':
         raise PermissionError(f'Cannot modify released playbook.')
 
-    updated = await sync_to_async(ActivityService.clear_activity_skill)(activity_id)
+    updated = await sync_to_async(ActivityService.remove_activity_skill)(activity_id, skill_id)
+    skill_ids = list(updated.skills.values_list('id', flat=True))
+    return {'activity_id': updated.id, 'skill_id': skill_id, 'skill_ids': skill_ids}
 
-    return {'activity_id': updated.id, 'skill_id': None}
+
+async def set_activity_skills(activity_id: int, skill_ids: list) -> dict:
+    """
+    Replace all skills linked to an activity.
+
+    :param activity_id: Activity ID. Example: 1
+    :param skill_ids: List of skill IDs (empty list clears all). Example: [5, 7]
+    :return: Dict with activity_id and skill_ids
+    """
+    logger.info(
+        f'MCP Tool: set_activity_skills called - activity_id={activity_id}, skill_ids={skill_ids}'
+    )
+
+    user = await sync_to_async(get_current_user)()
+
+    from methodology.services.activity_service import ActivityService
+
+    activity = await sync_to_async(ActivityService.get_activity_for_user)(
+        activity_id, user, write=True, with_full_detail=False
+    )
+    if activity.workflow.playbook.status == 'released':
+        raise PermissionError(f'Cannot modify released playbook.')
+
+    try:
+        updated = await sync_to_async(ActivityService.set_activity_skills)(activity_id, skill_ids)
+    except ValidationError as e:
+        _handle_validation_error(e, 'set_activity_skills')
+
+    result_ids = list(updated.skills.values_list('id', flat=True))
+    return {'activity_id': updated.id, 'skill_ids': result_ids}
 
 
 # ============================================================================
@@ -3011,6 +3047,7 @@ def initialize_mcp():
     mcp.tool()(delete_skill)
     mcp.tool()(link_skill_to_activity)
     mcp.tool()(unlink_skill_from_activity)
+    mcp.tool()(set_activity_skills)
 
     # Register rule tools
     mcp.tool()(create_rule)

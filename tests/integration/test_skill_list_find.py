@@ -197,8 +197,8 @@ class TestSkillListFind:
             guidance='Uses the form skill',
             workflow=self.workflow,
             order=1,
-            skill=skill,
         )
+        activity.skills.add(skill)
         response = self.client.get(self._playbook_list_url())
 
         assert response.status_code == 200

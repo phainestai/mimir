@@ -467,25 +467,8 @@ class ActivityService:
     # ── Skill/Agent Link Management ────────────────────────────────────
 
     @staticmethod
-    def set_activity_skill(activity_id: int, skill_id: int):
-        """
-        Link a skill to an activity. Both must belong to the same playbook.
-
-        :param activity_id: Activity primary key
-        :param skill_id: Skill primary key
-        :returns: Updated Activity instance
-        :raises Activity.DoesNotExist: If activity not found
-        :raises Skill.DoesNotExist: If skill not found
-        :raises ValidationError: If skill and activity are in different playbooks
-
-        Example:
-            >>> updated = ActivityService.set_activity_skill(1, 5)
-            >>> updated.skill_id
-            5
-        """
-        activity = Activity.objects.select_related('workflow__playbook').get(pk=activity_id)
-        skill = Skill.objects.select_related('playbook').get(pk=skill_id)
-
+    def _validate_skill_playbook_match(activity, skill):
+        """Ensure skill and activity belong to the same playbook."""
         if activity.workflow.playbook_id != skill.playbook_id:
             raise ValidationError(
                 f"Skill '{skill.title}' (playbook {skill.playbook_id}) and "
@@ -493,37 +476,106 @@ class ActivityService:
                 f"must be in the same playbook"
             )
 
-        activity.skill = skill
-        activity.save(update_fields=['skill'])
+    @staticmethod
+    def add_activity_skill(activity_id: int, skill_id: int):
+        """
+        Add a skill to an activity's M2M set. Idempotent if already linked.
+
+        :param activity_id: Activity primary key
+        :param skill_id: Skill primary key
+        :returns: Updated Activity instance
+        """
+        activity = Activity.objects.select_related('workflow__playbook').get(pk=activity_id)
+        skill = Skill.objects.select_related('playbook').get(pk=skill_id)
+        ActivityService._validate_skill_playbook_match(activity, skill)
+        activity.skills.add(skill)
         logger.info(
-            "Linked skill %s '%s' to activity %s '%s'",
+            "Added skill %s '%s' to activity %s '%s'",
             skill_id, skill.title, activity_id, activity.name,
         )
         return activity
 
     @staticmethod
-    def clear_activity_skill(activity_id: int):
+    def remove_activity_skill(activity_id: int, skill_id: int):
         """
-        Unlink skill from an activity (set FK to NULL).
+        Remove a specific skill from an activity's M2M set.
+
+        :param activity_id: Activity primary key
+        :param skill_id: Skill primary key
+        :returns: Updated Activity instance
+        """
+        activity = Activity.objects.get(pk=activity_id)
+        skill = Skill.objects.get(pk=skill_id)
+        if activity.skills.filter(pk=skill_id).exists():
+            activity.skills.remove(skill)
+            logger.info(
+                "Removed skill %s from activity %s '%s'",
+                skill_id, activity_id, activity.name,
+            )
+        else:
+            logger.info(
+                "Skill %s was not linked to activity %s '%s' — no-op",
+                skill_id, activity_id, activity.name,
+            )
+        return activity
+
+    @staticmethod
+    def set_activity_skills(activity_id: int, skill_ids: list):
+        """
+        Replace M2M skills on an activity. Each skill must belong to the activity's playbook.
+
+        :param activity_id: Activity primary key
+        :param skill_ids: List of Skill primary keys (may be empty to clear all)
+        :returns: Updated Activity instance
+        """
+        activity = Activity.objects.select_related('workflow__playbook').get(pk=activity_id)
+        playbook_id = activity.workflow.playbook_id
+        ids = ActivityService._normalize_id_list(skill_ids)
+        if not ids:
+            activity.skills.clear()
+            logger.info('Cleared all skills from activity %s', activity_id)
+            return activity
+        skills = Skill.objects.filter(pk__in=ids, playbook_id=playbook_id)
+        if skills.count() != len(ids):
+            raise ValidationError(
+                'One or more skills were not found or belong to a different playbook.'
+            )
+        activity.skills.set(skills)
+        logger.info(
+            'Set %d skill(s) on activity %s: %s',
+            len(ids), activity_id, ids,
+        )
+        return activity
+
+    @staticmethod
+    def clear_all_activity_skills(activity_id: int):
+        """
+        Remove all skills from an activity.
 
         :param activity_id: Activity primary key
         :returns: Updated Activity instance
-        :raises Activity.DoesNotExist: If activity not found
-
-        Example:
-            >>> updated = ActivityService.clear_activity_skill(1)
-            >>> updated.skill_id is None
-            True
         """
         activity = Activity.objects.get(pk=activity_id)
-        old_skill_id = activity.skill_id
-        activity.skill = None
-        activity.save(update_fields=['skill'])
+        count = activity.skills.count()
+        activity.skills.clear()
         logger.info(
-            "Cleared skill (was %s) from activity %s '%s'",
-            old_skill_id, activity_id, activity.name,
+            "Cleared %d skill(s) from activity %s '%s'",
+            count, activity_id, activity.name,
         )
         return activity
+
+    @staticmethod
+    def _normalize_id_list(raw_ids: list) -> list:
+        """Parse and deduplicate a list of integer IDs from form/API input."""
+        ids = []
+        for item in raw_ids:
+            if item is None or item == '':
+                continue
+            try:
+                ids.append(int(item))
+            except (TypeError, ValueError):
+                raise ValidationError('Invalid skill id in list.') from None
+        return list(dict.fromkeys(ids))
 
     @staticmethod
     def set_activity_rules(activity_id: int, rule_ids: list):
@@ -674,11 +726,11 @@ class ActivityService:
             "workflow",
             "workflow__playbook",
             "agent",
-            "skill",
             "phase",
         )
         if with_full_detail:
             qs = qs.prefetch_related(
+                "skills",
                 "output_artifacts",
                 "input_artifacts__artifact",
                 "rules",

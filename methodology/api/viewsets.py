@@ -456,7 +456,11 @@ class ActivityViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Activities for workflows in playbooks accessible to the current user."""
         accessible = _accessible_playbook_ids(self.request.user)
-        queryset = Activity.objects.filter(workflow__playbook_id__in=accessible)
+        queryset = Activity.objects.filter(
+            workflow__playbook_id__in=accessible
+        ).select_related(
+            'predecessor', 'agent', 'workflow', 'workflow__playbook'
+        ).prefetch_related('skills')
 
         workflow_id = self.request.query_params.get('workflow_id')
         if workflow_id:
@@ -554,8 +558,8 @@ class ActivityViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['put', 'delete'])
     def skill(self, request, pk=None):
         """
-        Link (PUT) or unlink (DELETE) skill from activity.
-        
+        Add (PUT) or remove (DELETE) one skill on an activity.
+
         Maps to: link_skill_to_activity / unlink_skill_from_activity MCP tools
         """
         activity = self.get_object()
@@ -567,20 +571,60 @@ class ActivityViewSet(viewsets.ModelViewSet):
                     {'error': 'skill_id is required', 'code': 'VALIDATION_ERROR'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            skill = get_object_or_404(Skill, id=skill_id)
-            if skill.playbook_id != activity.workflow.playbook_id:
+            try:
+                ActivityService.add_activity_skill(activity.id, int(skill_id))
+            except ValidationError as e:
                 return Response(
-                    {'error': 'Cannot link skill from different playbook', 'code': 'CROSS_PLAYBOOK'},
+                    {'error': str(e), 'code': 'VALIDATION_ERROR'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            activity.skill = skill
-            activity.save()
-            return Response({'activity_id': activity.id, 'skill_id': skill.id, 'skill_title': skill.title})
-        else:  # DELETE
-            logger.info(f'API: unlink_skill_from_activity called - activity_id={pk}')
-            activity.skill = None
-            activity.save()
-            return Response({'activity_id': activity.id, 'skill_id': None})
+            activity.refresh_from_db()
+            skill_ids = list(activity.skills.values_list('id', flat=True))
+            skill = get_object_or_404(Skill, id=skill_id)
+            return Response({
+                'activity_id': activity.id,
+                'skill_id': skill.id,
+                'skill_title': skill.title,
+                'skill_ids': skill_ids,
+            })
+        logger.info(f'API: unlink_skill_from_activity called - activity_id={pk}')
+        skill_id = request.data.get('skill_id')
+        if not skill_id:
+            return Response(
+                {'error': 'skill_id is required', 'code': 'VALIDATION_ERROR'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        ActivityService.remove_activity_skill(activity.id, int(skill_id))
+        activity.refresh_from_db()
+        skill_ids = list(activity.skills.values_list('id', flat=True))
+        return Response({
+            'activity_id': activity.id,
+            'skill_id': int(skill_id),
+            'skill_ids': skill_ids,
+        })
+
+    @action(detail=True, methods=['put'], url_path='skills')
+    def skills_bulk(self, request, pk=None):
+        """
+        Replace all skills on an activity.
+
+        Maps to: set_activity_skills MCP tool
+        """
+        logger.info(f'API: set_activity_skills called - activity_id={pk}')
+        activity = self.get_object()
+        skill_ids = request.data.get('skill_ids', [])
+        if skill_ids is None:
+            skill_ids = []
+        try:
+            ActivityService.set_activity_skills(activity.id, skill_ids)
+        except ValidationError as e:
+            return Response(
+                {'error': str(e), 'code': 'VALIDATION_ERROR'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        activity.refresh_from_db()
+        result_ids = list(activity.skills.values_list('id', flat=True))
+        return Response({'activity_id': activity.id, 'skill_ids': result_ids})
     
     @action(detail=True, methods=['put', 'delete'])
     def agent(self, request, pk=None):

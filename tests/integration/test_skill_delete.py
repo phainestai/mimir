@@ -95,13 +95,13 @@ class TestSkillDelete:
 
     def test_skill_delete_03_modal_warns_about_linked_activities(self):
         """FOB-SKILLS-DELETE_SKILL-03: Modal warns when activities reference this skill."""
-        Activity.objects.create(
+        activity = Activity.objects.create(
             name='Build Form',
             guidance='Uses form skill',
             workflow=self.workflow,
             order=1,
-            skill=self.skill,
         )
+        activity.skills.add(self.skill)
         response = self.client.get(self._confirm_url())
 
         assert response.status_code == 200
@@ -122,19 +122,19 @@ class TestSkillDelete:
         expected = reverse('skill_list_playbook', kwargs={'playbook_pk': self.playbook.pk})
         assert response.url == expected
 
-    def test_skill_delete_04_clears_activity_fk(self):
-        """FOB-SKILLS-DELETE_SKILL-04: Deleting skill sets activity.skill to NULL."""
+    def test_skill_delete_04_clears_activity_m2m(self):
+        """FOB-SKILLS-DELETE_SKILL-04: Deleting skill removes M2M links from activities."""
         activity = Activity.objects.create(
             name='Build Form',
             guidance='Uses form skill',
             workflow=self.workflow,
             order=1,
-            skill=self.skill,
         )
+        activity.skills.add(self.skill)
         self.client.post(self._delete_url())
 
         activity.refresh_from_db()
-        assert activity.skill is None
+        assert activity.skills.count() == 0
 
     def test_skill_delete_05_cancel_does_not_delete(self):
         """FOB-SKILLS-DELETE_SKILL-05: Cancel link present; skill not deleted on GET."""

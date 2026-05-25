@@ -365,7 +365,7 @@ class TestMCPAllTools:
         result = mcp.call("get_activity", {"activity_id": TestMCPAllTools.act_id})
         assert result["id"] == TestMCPAllTools.act_id
         assert "agent" in result
-        assert "skill" in result
+        assert "skills" in result
         assert "output_artifacts" in result
         logger.info(f"✓ get_activity → '{result['name']}'")
 
@@ -432,7 +432,8 @@ class TestMCPAllTools:
 
     def test_26_unlink_skill_from_activity(self, mcp):
         result = mcp.call("unlink_skill_from_activity", {
-            "activity_id": TestMCPAllTools.act_id
+            "activity_id": TestMCPAllTools.act_id,
+            "skill_id": TestMCPAllTools.skill_id
         })
         assert result.get("activity_id") == TestMCPAllTools.act_id
         logger.info(f"✓ unlink_skill_from_activity → ok")

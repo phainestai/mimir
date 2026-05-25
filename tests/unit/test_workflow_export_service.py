@@ -291,15 +291,15 @@ class TestWorkflowExportService:
             order=1
         )
         
-        # Create activity with agent and skill
+        # Create activity with agent and skills
         activity = Activity.objects.create(
             workflow=workflow,
             name='Implement Component',
             guidance='Implement the React component',
             order=2,
             agent=agent,
-            skill=skill
         )
+        activity.skills.add(skill)
         
         # Create output artifact (produced by activity)
         output_artifact = Artifact.objects.create(

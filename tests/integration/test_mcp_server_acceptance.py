@@ -335,14 +335,14 @@ async def test_get_activity_async_context(test_user):
     assert 'name' in result
     assert 'phase' in result
     assert 'agent' in result
-    assert 'skill' in result
+    assert 'skills' in result
     assert 'output_artifacts' in result
     assert 'input_artifacts' in result
     
     logger.info(f"✓ get_activity returned: {result['name']}")
     logger.info(f"  Phase: {result.get('phase')}")
     logger.info(f"  Agent: {result.get('agent')}")
-    logger.info(f"  Skill: {result.get('skill')}")
+    logger.info(f"  Skills: {result.get('skills')}")
     logger.info(f"  Artifacts: {len(result.get('output_artifacts', []))} out, {len(result.get('input_artifacts', []))} in")
 
 

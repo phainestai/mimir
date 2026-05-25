@@ -119,8 +119,8 @@ class TestSkillView:
             guidance='Use the form skill',
             workflow=self.workflow,
             order=1,
-            skill=self.skill,
         )
+        activity.skills.add(self.skill)
         response = self.client.get(self._url())
 
         assert response.status_code == 200

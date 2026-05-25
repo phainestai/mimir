@@ -298,15 +298,15 @@ class TestMCPActivityGet:
             order=1
         )
         
-        # Create test activity with agent and skill
+        # Create test activity with agent and skills
         activity = await sync_to_async(Activity.objects.create)(
             name='Implement Component',
             guidance='Implementation guidance',
             workflow=workflow,
             order=2,
             agent=agent,
-            skill=skill
         )
+        await sync_to_async(activity.skills.add)(skill)
         
         # Create output artifact (produced by this activity)
         output_artifact = await sync_to_async(Artifact.objects.create)(
@@ -347,12 +347,12 @@ class TestMCPActivityGet:
         assert result['agent']['name'] == 'Code Reviewer'
         assert result['agent']['description'] == 'Reviews code for quality'
         
-        # Assert skill information (Issue #71)
-        assert result['skill'] is not None
-        assert result['skill']['id'] == skill.id
-        assert result['skill']['title'] == 'React Development'
-        assert result['skill']['capability_domain'] == 'GUI_FORM'
-        assert result['skill']['technology_stack'] == 'React+Redux'
+        # Assert skills information (Issue #71)
+        assert len(result['skills']) == 1
+        assert result['skills'][0]['id'] == skill.id
+        assert result['skills'][0]['title'] == 'React Development'
+        assert result['skills'][0]['capability_domain'] == 'GUI_FORM'
+        assert result['skills'][0]['technology_stack'] == 'React+Redux'
         
         # Assert output artifacts (Issue #71)
         assert 'output_artifacts' in result
@@ -387,8 +387,8 @@ class TestMCPActivityGet:
         # Assert agent is None
         assert result['agent'] is None
         
-        # Assert skill is None
-        assert result['skill'] is None
+        # Assert skills list is empty
+        assert result['skills'] == []
         
         # Assert output artifacts is empty list
         assert result['output_artifacts'] == []

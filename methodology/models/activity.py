@@ -31,13 +31,11 @@ class Activity(models.Model):
         related_name='activities',
         help_text="Optional AI agent assigned to perform this activity"
     )
-    skill = models.ForeignKey(
+    skills = models.ManyToManyField(
         'Skill',
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
         related_name='activities',
-        help_text="Optional skill providing tech-specific guidance for this activity"
+        help_text='Tech-specific skills linked to this activity (many-to-many)',
     )
     rules = models.ManyToManyField(
         'Rule',

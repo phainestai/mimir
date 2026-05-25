@@ -495,16 +495,40 @@ def link_skill_to_activity(activity_id: int, skill_id: int) -> dict:
     return check_response(r, "link_skill_to_activity")
 
 
-def unlink_skill_from_activity(activity_id: int) -> dict:
+def unlink_skill_from_activity(activity_id: int, skill_id: int) -> dict:
     """
-    Unlink skill from an activity (set FK to NULL).
+    Unlink a specific skill from an activity.
 
     :param activity_id: Activity ID. Example: 1
-    :return: Dict with updated activity_id and skill_id=None
+    :param skill_id: Skill ID. Example: 5
+    :return: Dict with updated activity_id and remaining skill_ids
     """
-    logger.info(f'HTTP Tool: unlink_skill_from_activity activity={activity_id}')
-    r = get_client().delete(f"/api/activities/{activity_id}/skill/")
+    logger.info(
+        f'HTTP Tool: unlink_skill_from_activity activity={activity_id} skill={skill_id}'
+    )
+    r = get_client().delete(
+        f"/api/activities/{activity_id}/skill/",
+        json={"skill_id": skill_id},
+    )
     return check_response(r, "unlink_skill_from_activity")
+
+
+def set_activity_skills(activity_id: int, skill_ids: list) -> dict:
+    """
+    Replace all skills linked to an activity.
+
+    :param activity_id: Activity ID. Example: 1
+    :param skill_ids: List of skill IDs (empty clears all). Example: [5, 7]
+    :return: Dict with activity_id and skill_ids
+    """
+    logger.info(
+        f'HTTP Tool: set_activity_skills activity={activity_id} skill_ids={skill_ids}'
+    )
+    r = get_client().put(
+        f"/api/activities/{activity_id}/skills/",
+        json={"skill_ids": skill_ids},
+    )
+    return check_response(r, "set_activity_skills")
 
 
 # ============================================================================

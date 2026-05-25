@@ -121,7 +121,7 @@ Feature: FOB-MCP-SKILLS-1 AI Assistant Interacts with Skills via MCP
       | skill_id | 1 |
     Then MCP returns success with deleted=True
     And parent playbook version is incremented
-    And the 2 activities have skill FK set to NULL
+    And the 2 activities have no skills linked
 
   Scenario: MCP-SK-12 Delete skill in released playbook raises error
     Given released playbook with skill "Build Login Form" for user "maria"
@@ -138,7 +138,7 @@ Feature: FOB-MCP-SKILLS-1 AI Assistant Interacts with Skills via MCP
     When Cascade calls MCP tool "link_skill_to_activity" with:
       | activity_id | 1 |
       | skill_id    | 1 |
-    Then MCP returns success and activity.skill_id is set
+    Then MCP returns success with activity_id and skill_id in skill_ids
 
   Scenario: MCP-SK-14 Link skill to activity in different playbook raises error
     Given draft playbook A with skill "Build Login Form"
@@ -148,8 +148,22 @@ Feature: FOB-MCP-SKILLS-1 AI Assistant Interacts with Skills via MCP
       | skill_id    | 1 |
     Then MCP returns error "ValueError: must be in the same playbook"
 
-  Scenario: MCP-SK-15 Unlink skill from activity
-    Given draft playbook with activity linked to skill "Build Login Form"
+  Scenario: MCP-SK-15 Unlink specific skill from activity
+    Given draft playbook with activity linked to skills "Build Login Form" and "Deploy to AWS"
     When Cascade calls MCP tool "unlink_skill_from_activity" with:
       | activity_id | 1 |
-    Then MCP returns success and activity.skill_id is NULL
+      | skill_id    | 1 |
+    Then MCP returns success and skill_id 1 is removed from skill_ids
+    And activity still has skill "Deploy to AWS" in skill_ids
+
+  Scenario: MCP-SK-16 set_activity_skills replaces full skill set
+    Given draft playbook with activity linked to skill "Build Login Form"
+    And playbook has skill "Deploy to AWS"
+    When Cascade calls MCP tool "set_activity_skills" with:
+      | activity_id | 1 |
+      | skill_ids   | [2] |
+    Then MCP returns skill_ids [2]
+    When Cascade calls MCP tool "set_activity_skills" with:
+      | activity_id | 1 |
+      | skill_ids   | [] |
+    Then MCP returns skill_ids []

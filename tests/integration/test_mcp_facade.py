@@ -3,7 +3,7 @@ Tests for the MCP HTTP Facade server.
 
 Tests cover:
     - Facade starts and initializes via JSON-RPC
-    - ``tools/list`` returns exactly 62 tools
+    - ``tools/list`` returns exactly 63 tools
     - Bad token → tool calls return error
     - Full round-trip: create → list → delete via REST API
     - Facade server processes all tool categories (smoke test)
@@ -262,14 +262,14 @@ class TestFacadeStartup:
     def test_facade_process_alive(self, facade):
         assert facade.process.poll() is None, "Facade process should be running"
 
-    def test_facade_lists_62_tools(self, facade):
-        """tools/list must return exactly 62 tools."""
+    def test_facade_lists_63_tools(self, facade):
+        """tools/list must return exactly 63 tools."""
         response = facade.send("tools/list", {})
         assert "result" in response, f"Unexpected: {response}"
         tools = response["result"].get("tools", [])
         tool_names = sorted(t["name"] for t in tools)
-        assert len(tools) == 62, (
-            f"Expected 62 tools, got {len(tools)}. Tools: {tool_names}"
+        assert len(tools) == 63, (
+            f"Expected 63 tools, got {len(tools)}. Tools: {tool_names}"
         )
         logger.info(f"✓ facade lists {len(tools)} tools")
 
@@ -283,7 +283,7 @@ class TestFacadeStartup:
             "export_workflow_to_local", "import_workflow_from_local",
             "apply_upload_protocol", "create_pip_from_protocol",
             "create_skill", "list_skills", "get_skill", "update_skill", "delete_skill",
-            "link_skill_to_activity", "unlink_skill_from_activity",
+            "link_skill_to_activity", "unlink_skill_from_activity", "set_activity_skills",
             "create_rule", "list_rules", "get_rule", "update_rule", "delete_rule",
             "set_activity_rules",
             "create_agent", "list_agents", "get_agent", "update_agent", "delete_agent",
@@ -300,7 +300,7 @@ class TestFacadeStartup:
         response = facade.send("tools/list", {})
         actual = {t["name"] for t in response["result"]["tools"]}
         assert actual == expected, f"Missing: {expected - actual}; Extra: {actual - expected}"
-        logger.info("✓ all 62 tool names match")
+        logger.info("✓ all 63 tool names match")
 
 
 class TestFacadeAuth:
@@ -398,7 +398,8 @@ class TestFacadeRoundTrip:
         assert link.get("activity_id") == TestFacadeRoundTrip._act_id or "id" in link
         # Unlink
         facade.call_tool("unlink_skill_from_activity", {
-            "activity_id": TestFacadeRoundTrip._act_id
+            "activity_id": TestFacadeRoundTrip._act_id,
+            "skill_id": skill_id,
         })
         # Delete
         del_result = facade.call_tool("delete_skill", {"skill_id": skill_id})

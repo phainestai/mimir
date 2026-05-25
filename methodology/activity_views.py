@@ -329,7 +329,7 @@ def activity_detail(request, playbook_pk, workflow_pk, activity_pk):
     playbook = get_object_or_404(Playbook, pk=playbook_pk)
     workflow = get_object_or_404(Workflow, pk=workflow_pk, playbook=playbook)
     activity = get_object_or_404(
-        Activity.objects.select_related('predecessor', 'successor').prefetch_related('rules'),
+        Activity.objects.select_related('predecessor', 'successor').prefetch_related('rules', 'skills'),
         pk=activity_pk,
         workflow=workflow
     )
@@ -404,7 +404,7 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
     playbook = get_object_or_404(Playbook, pk=playbook_pk)
     workflow = get_object_or_404(Workflow, pk=workflow_pk, playbook=playbook)
     activity = get_object_or_404(
-        Activity.objects.select_related('predecessor', 'successor').prefetch_related('rules'),
+        Activity.objects.select_related('predecessor', 'successor').prefetch_related('rules', 'skills'),
         pk=activity_pk,
         workflow=workflow
     )
@@ -431,7 +431,7 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
         predecessor_id = request.POST.get('predecessor', '').strip() or None
         successor_id = request.POST.get('successor', '').strip() or None
         agent_id = request.POST.get('agent', '').strip() or None
-        skill_id = request.POST.get('skill', '').strip() or None
+        skill_ids = request.POST.getlist('skills')
         artifact_input_ids = request.POST.getlist('artifact_inputs')
         rule_ids = request.POST.getlist('rules')
 
@@ -490,13 +490,13 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
                 ActivityService.clear_activity_agent(activity_pk)
                 logger.info(f"Agent unlinked from activity {activity_pk}")
             
-            # Handle skill linking
-            if skill_id:
-                ActivityService.set_activity_skill(activity_pk, int(skill_id))
-                logger.info(f"Skill {skill_id} linked to activity {activity_pk}")
-            else:
-                ActivityService.clear_activity_skill(activity_pk)
-                logger.info(f"Skill unlinked from activity {activity_pk}")
+            # Handle skill linking (M2M — replace full set)
+            skill_ids_int = [int(sid) for sid in skill_ids if sid]
+            ActivityService.set_activity_skills(activity_pk, skill_ids_int)
+            logger.info(
+                "Set %d skill(s) on activity %s: %s",
+                len(skill_ids_int), activity_pk, skill_ids_int,
+            )
             
             # Handle artifact inputs
             artifact_ids_int = [int(aid) for aid in artifact_input_ids if aid]
@@ -522,7 +522,7 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
         'predecessor': activity.predecessor.id if activity.predecessor else '',
         'successor': activity.successor.id if activity.successor else '',
         'agent': activity.agent.id if activity.agent else '',
-        'skill': activity.skill.id if activity.skill else '',
+        'skills': list(activity.skills.values_list('id', flat=True)),
         'artifact_inputs': list(ArtifactInput.objects.filter(activity=activity).values_list('artifact_id', flat=True)),
         'rules': list(activity.rules.values_list('id', flat=True)),
 

@@ -62,7 +62,7 @@ Feature: Mimir E2E UAT — browser-only flow (registration → GUI CRUDL → rel
     <ADMIN_PRIVATE_PB_ID> — private playbook created by admin in UAT-03-05
     <GUI_PLAYBOOK_ID> <GUI_WORKFLOW_ID> — wizard UAT-03-01
     <GUI_PHASE_PK> <ACT_ALPHA_PK> <ACT_BETA_PK> <GUI_AGENT_PK>
-    <GUI_SKILL_PK> <GUI_ARTIFACT_PK> <GUI_RULE_PK> — GUI CRUDL splits
+    <GUI_SKILL_PK> <GUI_SKILL_PK_2> <GUI_ARTIFACT_PK> <GUI_RULE_PK> — GUI CRUDL splits
     <PIP_NEG_PK>          — throwaway PIP for UAT-06-01-neg editor validations
     <PIP_GUI_PK>          — browser PIP RECORD (UAT-06-02)
     <PIP_MCP_PK>          — MCP PIP RECORD from mcp-uat-flow MCP-08 (used in UAT-06-06/07-01/07-02)
@@ -229,6 +229,17 @@ Feature: Mimir E2E UAT — browser-only flow (registration → GUI CRUDL → rel
     # DO: `[data-testid=\"title-input\"]` `UAT Skill`; `[data-testid=\"domain-input\"]` `GUI_FORM`; `[data-testid=\"stack-input\"]` `Django+HTMX`; `[data-testid=\"content-input\"]` Markdown `## Skill steps`
     # SEE: `[data-testid=\"save-btn\"]` success path
     # RECORD `<GUI_SKILL_PK>`; navbar `[data-testid=\"nav-skills\"]`
+    # DO: create second skill `UAT Skill Two` with domain `DEPLOY` stack `AWS+Beanstalk`
+    # RECORD `<GUI_SKILL_PK_2>`
+
+  @manual @uat @act-8
+  Scenario: UAT-03-02e2 Activity edit links multiple skills (M2M)
+    # DO: `/activities/<ACT_ALPHA_PK>/edit/` on `[data-testid=\"activity-edit\"]`
+    # DO: check `[data-testid=\"skill-checkbox-<GUI_SKILL_PK>\"]` and `[data-testid=\"skill-checkbox-<GUI_SKILL_PK_2>\"]`
+    # DO: `[data-testid=\"save-btn\"]`
+    # SEE: activity detail `[data-testid=\"activity-skills-list\"]` shows both skill titles
+    # DO: return to edit; uncheck only `<GUI_SKILL_PK>`; save
+    # SEE: detail lists only `UAT Skill Two`
 
   @manual @uat @artifacts
   Scenario: UAT-03-02f Artifact create + global registry

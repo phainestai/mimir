@@ -1484,9 +1484,9 @@ Maria clicks [Create New Activity]:
   - Can specify multiple artifacts
 - **Estimated Effort**: Optional
   - Hours or story points
-- **Link Skill**: Dropdown (optional)
+- **Link Skills**: Checkbox list (optional, zero or more)
   - Shows skills from the same playbook
-  - "None" option if no skill applies
+  - Select one or more skills (e.g. "Deploy to AWS Beanstalk" and "Deploy to AWS with EKS" for a deployment-style activity)
   - [Create New Skill] link → ACT 8 if needed skill doesn't exist
 
 **Actions**: [Cancel] [Create Activity]
@@ -1536,11 +1536,11 @@ Maria views activity details:
    - [View Artifact] links → ACT 6
    - [Add New Artifact] [Link Existing] buttons
 
-4. **Skill Tab**:
-   - Shows linked skill (if any) with Capability Domain and Technology Stack badges
-   - If no skill linked: "No skill linked" with [Link Skill] dropdown
-   - If linked: Skill title, content preview, [View Skill] link → ACT 8
-   - [Change Skill] / [Unlink Skill] buttons
+4. **Skills Tab**:
+   - Shows all linked skills with Capability Domain and Technology Stack badges
+   - If no skills linked: "No skills linked" with [Link Skills] button
+   - If linked: list of skill titles with [View Skill] links → ACT 8
+   - [Change Skills] opens Activity edit form checkbox list
 
 5. **Work Items Tab**:
    - GitHub issues, Jira tickets linked via external MCP
@@ -1581,7 +1581,7 @@ Confirmation modal:
 **Impact Statement**:
 - "This will permanently delete the activity"
 - Shows affected items:
-  - ⚠️ Linked skill reference will be cleared (skill itself remains in playbook)
+  - ⚠️ Linked skill M2M rows will be removed (skills themselves remain in playbook)
   - ⚠️ 2 Downstream activities will lose upstream dependency
   - ⚠️ 3 Artifacts may become orphaned
   - ⚠️ 5 GitHub issues will lose activity context
@@ -1839,11 +1839,11 @@ Confirmation modal:
 
 ### Act 8: SKILLS - Complete CRUDLF + Link
 
-**Context**: Skills are reusable, tech-specific guides that live at the **playbook level**. Each skill describes *how* to perform a capability (e.g., "Build a Form") using a specific technology (e.g., "React+Redux"). Activities reference skills via a nullable FK — one skill can serve many activities (1:N). Skills carry two metadata fields: `capability_domain` (what it does) and `technology_stack` (how it does it). This enables the "Define Architecture" workflow to scan available skills and recommend tech stacks based on coverage.
+**Context**: Skills are reusable, tech-specific guides that live at the **playbook level**. Each skill describes *how* to perform a capability (e.g., "Build a Form") using a specific technology (e.g., "React+Redux"). Activities reference skills via **M2M** — an activity may link zero or more skills (e.g. a "Pick Deployment Style" activity may attach both "Deploy to AWS with Beanstalk" and "Deploy to AWS with EKS"). Skills carry two metadata fields: `capability_domain` (what it does) and `technology_stack` (how it does it). This enables the "Define Architecture" workflow to scan available skills and recommend tech stacks based on coverage.
 
 **Pattern**: Standard CRUDLF + Link. Skills are playbook-scoped and reusable across activities.
 
-**Relationship**: `Skill --FK--> Playbook`, `Activity --FK(nullable)--> Skill` (1:N)
+**Relationship**: `Skill --FK--> Playbook`, `Activity --M2M--> Skill` (many-to-many)
 
 #### Screen: FOB-SKILLS-LIST+FIND-1
 
@@ -1927,7 +1927,7 @@ Confirmation modal:
 
 **Display**: Skill title, Capability Domain badge, Technology Stack badge
 
-**Impact**: "Referenced by N activities — these activities will have their skill reference cleared"
+**Impact**: "Referenced by N activities — M2M links to those activities will be removed"
 
 **Note**: "Activities will remain, only the skill and its references are removed"
 
@@ -1936,9 +1936,10 @@ Confirmation modal:
 #### Linking: Activity ↔ Skill (via Activity Edit)
 
 Skills are linked to activities through the Activity edit form:
-- **Skill dropdown**: Shows only skills from the same playbook
-- **Nullable**: Activities can have no skill linked ("None" option)
+- **Skills checkbox list**: Shows only skills from the same playbook; select zero or more
+- **Multi-skill**: One activity may link multiple skills (e.g. deployment style alternatives)
 - **Reusable**: Multiple activities can reference the same skill
+- **MCP**: `link_skill_to_activity` adds to set; `unlink_skill_from_activity` requires `skill_id`; `set_activity_skills` replaces full set
 
 **See**: `skills-link.feature` for full scenarios.
 
@@ -1949,10 +1950,10 @@ Skills are linked to activities through the Activity edit form:
 - ✅ **CREATE**: Create reusable, tech-specific skill guides at playbook level
 - ✅ **VIEW**: Read skill content with metadata badges and activity references
 - ✅ **EDIT**: Update skill details including capability and tech stack metadata
-- ✅ **DELETE**: Remove skills (activities keep running, skill FK set to NULL)
-- ✅ **LINK**: Link/unlink skills to activities via Activity edit form
+- ✅ **DELETE**: Remove skills (M2M links cleared automatically; activities remain)
+- ✅ **LINK**: Link/unlink multiple skills per activity via Activity edit form and MCP
 
-**Key Point**: 1:N relationship — one skill can serve many activities. Skills are playbook-scoped and carry `capability_domain` + `technology_stack` metadata for architecture advisory.
+**Key Point**: M2M relationship — activities may have zero or more skills; one skill can serve many activities. Skills are playbook-scoped and carry `capability_domain` + `technology_stack` metadata for architecture advisory.
 
 ---
 
