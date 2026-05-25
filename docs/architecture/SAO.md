@@ -8,7 +8,8 @@ Mimir is a self-contained platform for managing and evolving software developmen
 - **FastMCP as API Wrapper**: FastMCP exposes MCP tools that call Mimir's own REST API endpoints — decoupled from the service layer, authenticated via token
 - **Repository Pattern**: Storage-agnostic architecture (SQLite for current FOB)
 - **Galdr AI Review**: All PIPs are pre-assessed by Galdr before human (Admin) review — reduces review burden and provides structured reasoning
-- **Structured PIPs**: Changes are typed (ADD / ALTER / DROP) per entity, enabling automated application upon approval
+- **Structured PIPs**: Changes are typed (ADD / ALTER / DROP / LINK / UNLINK) per entity or relationship, enabling automated application upon approval
+- **PIP LINK dispatch**: On finalization, `LINK` / `UNLINK` changes route to existing services — `ActivityService.add_activity_skill`, `add_activity_rule`, `set_activity_agent` / `clear_activity_agent`, and `WorkflowService.add_activity_to_workflow` / `remove_activity_from_workflow`. Cross-workflow listing uses `ActivityWorkflowMembership` (secondary appearances; `Activity.workflow` FK remains primary).
 - **Shared Services Layer**: Business logic lives in `services/` and is consumed two ways: (1) by Django views + templates for the Web UI, and (2) exposed as REST API endpoints consumed by FastMCP tools wrapped with `@tool`
 - **HTMX + Graphviz for FOB**: Server-rendered UI with minimal JS — testable with standard Django tests, no browser automation needed
 
@@ -2070,6 +2071,109 @@ Improved PIP proposals next time
 - **Default Model**: GPT-4o (configurable)
 - **Tyr AI**: Task planning and work order generation
 - **Saga AI**: Retrospection and improvement suggestions
+
+## Environment Variables Reference
+
+Complete reference for all environment variables consumed by Mimir, grouped by environment. **Set all "Required" variables before starting any environment.** Variables marked "Optional" fall back to safe defaults.
+
+> **Canonical source of truth:** `mimir/settings/base.py`, `mimir/settings/dev.py`, `mimir/settings/prod.py`.  
+> **Local template:** `.env.example` (copy to `.env`, never commit `.env`).
+
+---
+
+### Local Development (`.env` loaded by `dev.py` via `python-dotenv`)
+
+| Variable | Required | Example / Default | Notes |
+|----------|----------|-------------------|-------|
+| `DJANGO_SECRET_KEY` | No | insecure dev default | Override with any 50-char random string for local security |
+| `DJANGO_DEBUG` | No | `True` | Set `False` to test production-like behaviour locally |
+| `DJANGO_SETTINGS_MODULE` | No | `mimir.settings.dev` | Change to `mimir.settings.prod` to test prod settings |
+| `MIMIR_USER` | No | `admin` | Django superuser username created on first migrate |
+| `MIMIR_EMAIL` | No | `admin@localhost` | Superuser email |
+| `MIMIR_PASSWORD` | No | `changeme` | Superuser password |
+| `WEB_PORT` | No | `8000` | Port for `runserver` / Docker host mapping |
+| `MCP_PORT` | No | `8001` | Port for MCP SSE facade |
+| `ANTHROPIC_API_KEY` | **Yes** (Galdr) | `sk-ant-api03-…` | Required for Galdr AI PIP review. Without it Galdr is disabled (`GALDR_USE_ANTHROPIC=False`). |
+| `GALDR_MODEL` | No | `claude-sonnet-4-5` | Any Anthropic model slug |
+| `GITHUB_TOKEN` | No | `ghp_…` | GitHub PAT with **Issues: write** on `GITHUB_BUG_REPO`. **If absent**, `BUG_REPORT_DRY_RUN` is auto-set to `True` so the Feedback widget works without filing real issues. |
+| `GITHUB_BUG_REPO` | No | `phainestai/mimir` | Target repo for bug reports |
+| `BUG_REPORT_DRY_RUN` | No | auto | `1`/`true` to force dry-run even when token is present |
+| `USE_SES_IN_DEV` | No | `1` (default on) | Set `0` to print emails to the terminal instead of SES delivery |
+| `AWS_SES_REGION_NAME` | If SES | `us-east-1` | Required when `USE_SES_IN_DEV=1` |
+| `DEFAULT_FROM_EMAIL` | If SES | `noreply@featurefactory.io` | Must be SES-verified |
+| `AWS_SES_CONFIGURATION_SET` | No | `mimir-transactional` | SES configuration set for bounce/open tracking |
+| `DATABASE_URL` | No | — | If set, uses Postgres via `dj-database-url`; otherwise SQLite at `mimir.db` |
+| `MIMIR_DB_PATH` | No | — | Override SQLite path (used in Docker) |
+| `FRONTEND_URL` | No | `http://localhost:8000` | Used in email links |
+| `MIMIR_MCP_MODE` | No | `1` | Set by MCP server startup; suppresses console logging on stdio |
+
+---
+
+### Production / Elastic Beanstalk (`mimir.settings.prod`)
+
+EB environment properties are set via the AWS Console, `aws elasticbeanstalk update-environment --option-settings`, or CI/CD (`deploy-idle.sh`). They **persist across deployments** — set once, update only when values change.
+
+#### Core Application
+
+| Variable | Required | Example | Notes |
+|----------|----------|---------|-------|
+| `DJANGO_SETTINGS_MODULE` | **Yes** | `mimir.settings.prod` | Selects prod settings |
+| `DJANGO_SECRET_KEY` | **Yes** | 50-char random | Never reuse across envs; rotate on compromise |
+| `DATABASE_URL` | **Yes** | `postgresql://mimir:…@huginn-db…:5432/mimir` | Postgres RDS with SSL |
+| `MIMIR_ENV` | No | `prod` | Informational; used in bug report bodies |
+| `DJANGO_ALLOWED_HOSTS` | No | `mimir.featurefactory.io,.elasticbeanstalk.com,…` | Comma-separated |
+| `CSRF_TRUSTED_ORIGINS` | No | `https://mimir.featurefactory.io,…` | Comma-separated https:// origins |
+| `FRONTEND_URL` | No | `https://mimir.featurefactory.io` | Used in email links and redirects |
+| `COOKIE_SECURE` | No | `true` | Set `false` only for EB direct HTTP access during blue/green testing |
+
+#### Galdr AI Engine
+
+| Variable | Required | Example | Notes |
+|----------|----------|---------|-------|
+| `ANTHROPIC_API_KEY` | **Yes** (Galdr) | `sk-ant-api03-…` | Required for Galdr PIP review. Without it, Galdr is disabled. |
+| `GALDR_MODEL` | No | `claude-sonnet-4-5` | Any Anthropic model slug |
+
+#### Bug Reports (Feedback Widget → GitHub Issues)
+
+| Variable | Required | Example | Notes |
+|----------|----------|---------|-------|
+| `GITHUB_TOKEN` | **Yes** | `ghp_…` or `gho_…` | Classic PAT or OAuth token with **Issues: write** on `GITHUB_BUG_REPO`. **Missing = Feedback widget returns "not configured" error.** |
+| `GITHUB_BUG_REPO` | No | `phainestai/mimir` | Target repo; this is the default |
+| `BUG_REPORT_DRY_RUN` | No | — | `1`/`true` to skip GitHub API (staging diagnostics only) |
+| `MIMIR_GIT_REVISION` | No | `v0.0.41` | Set by CI (`deploy-idle.sh`); surfaced in `/health/` and bug report bodies |
+
+> **CI/CD note:** `deploy-idle.sh` sets `MIMIR_GIT_REVISION` on every deploy. It also sets `GITHUB_TOKEN` if the `GH_BUG_REPORT_TOKEN` GitHub Actions secret is present — store it as a repo secret to ensure the token survives future deployments without manual console edits.
+
+#### Email (AWS SES)
+
+| Variable | Required | Example | Notes |
+|----------|----------|---------|-------|
+| `AWS_SES_REGION_NAME` | **Yes** | `us-east-1` | Must match verified SES identity region |
+| `DEFAULT_FROM_EMAIL` | **Yes** | `noreply@featurefactory.io` | Must be SES-verified |
+| `AWS_SES_CONFIGURATION_SET` | No | `mimir-transactional` | SES config set for CloudWatch bounce/complaint metrics |
+| `AWS_ACCESS_KEY_ID` | If no IAM role | `AKIAxxxxxxxx` | Omit when using EB instance profile (preferred) |
+| `AWS_SECRET_ACCESS_KEY` | If no IAM role | `…` | Pair for the above |
+
+> **Best practice:** Attach an IAM instance profile with `ses:SendEmail` to the EB environment — then `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` are not needed.
+
+---
+
+### Quick "is the env healthy?" checklist
+
+Run this to verify all critical variables are set before swap:
+
+```bash
+aws elasticbeanstalk describe-configuration-settings \
+  --application-name mimir \
+  --environment-name <ENV_NAME> \
+  --region us-east-1 \
+  --query 'ConfigurationSettings[0].OptionSettings[?Namespace==`aws:elasticbeanstalk:application:environment`].{Key:OptionName,Value:Value}' \
+  --output table
+```
+
+Must-have keys: `DJANGO_SECRET_KEY`, `DATABASE_URL`, `ANTHROPIC_API_KEY`, `GITHUB_TOKEN`, `AWS_SES_REGION_NAME`, `DEFAULT_FROM_EMAIL`, `DJANGO_SETTINGS_MODULE`.
+
+---
 
 ## CI/CD Pipeline
 

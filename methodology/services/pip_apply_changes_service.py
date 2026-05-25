@@ -14,9 +14,18 @@ from methodology.models import (
     Agent,
     Artifact,
     PipChange,
+    Rule,
     Skill,
     Workflow,
 )
+from methodology.services.activity_service import ActivityService
+from methodology.services.pip_link_service import (
+    link_change_summary_label,
+    normalize_internal_ref,
+    relationship_exists,
+    resolve_entity_ref,
+)
+from methodology.services.workflow_service import WorkflowService
 
 if TYPE_CHECKING:
     from methodology.models import Playbook, ProcessImprovementProposal
@@ -42,11 +51,13 @@ class PipApplyChangesService:
         :param playbook: Target released playbook row.
         :raises ValidationError: if a change cannot be applied safely.
         """
+        ref_map: dict[str, tuple[str, int]] = {}
         for change in sorted(accepted, key=lambda c: (c.order, c.pk)):
             PipApplyChangesService._apply_single_change(
                 pip=pip,
                 playbook=playbook,
                 change=change,
+                ref_map=ref_map,
             )
 
     @staticmethod
@@ -55,11 +66,25 @@ class PipApplyChangesService:
         pip: ProcessImprovementProposal,
         playbook: Playbook,
         change: PipChange,
+        ref_map: dict[str, tuple[str, int]],
     ) -> None:
         ct = change.change_type
         et = change.entity_type
         if ct == PipChange.CHANGE_ADD:
-            PipApplyChangesService._apply_add(playbook=playbook, change=change, pip_pk=pip.pk)
+            created_pk = PipApplyChangesService._apply_add(
+                playbook=playbook,
+                change=change,
+                pip_pk=pip.pk,
+            )
+            if change.internal_ref and created_pk is not None:
+                key = normalize_internal_ref(change.internal_ref)
+                ref_map[key] = (change.entity_type, created_pk)
+                logger.info(
+                    "PIP apply registered internal_ref %s → %s pk=%s",
+                    key,
+                    change.entity_type,
+                    created_pk,
+                )
             return
         if ct == PipChange.CHANGE_ALTER:
             PipApplyChangesService._apply_alter(
@@ -77,6 +102,14 @@ class PipApplyChangesService:
                 pip_pk=pip.pk,
             )
             return
+        if ct in {PipChange.CHANGE_LINK, PipChange.CHANGE_UNLINK}:
+            PipApplyChangesService._apply_link_or_unlink(
+                playbook=playbook,
+                change=change,
+                ref_map=ref_map,
+                pip_pk=pip.pk,
+            )
+            return
         raise ValidationError(f"Unknown change_type {ct}.")
 
     @staticmethod
@@ -85,7 +118,7 @@ class PipApplyChangesService:
         playbook: Playbook,
         change: PipChange,
         pip_pk: int,
-    ) -> None:
+    ) -> int | None:
         et = change.entity_type
         if et == PipChange.ENTITY_ACTIVITY:
             parent = change.parent_workflow
@@ -124,7 +157,7 @@ class PipApplyChangesService:
                 parent.pk,
                 next_order,
             )
-            return
+            return act.pk
 
         if et == PipChange.ENTITY_WORKFLOW:
             name = change.name.strip()
@@ -145,7 +178,7 @@ class PipApplyChangesService:
                 pip_pk,
                 next_order,
             )
-            return
+            return wf.pk
 
         if et == PipChange.ENTITY_SKILL:
             title = change.name.strip()
@@ -157,7 +190,7 @@ class PipApplyChangesService:
                 content=change.content.strip(),
             )
             logger.info("PIP apply ADD Skill pk=%s pip=%s", sk.pk, pip_pk)
-            return
+            return sk.pk
 
         if et == PipChange.ENTITY_AGENT:
             name = change.name.strip()
@@ -169,13 +202,105 @@ class PipApplyChangesService:
                 description=change.content.strip(),
             )
             logger.info("PIP apply ADD Agent pk=%s pip=%s", ag.pk, pip_pk)
-            return
+            return ag.pk
+
+        if et == PipChange.ENTITY_RULE:
+            title = change.name.strip()
+            if not title:
+                raise ValidationError("ADD Rule requires a name/title.")
+            from django.utils.text import slugify
+
+            base_slug = slugify(title)[:200] or "rule"
+            slug = base_slug
+            n = 1
+            while Rule.objects.filter(playbook=playbook, slug=slug).exists():
+                slug = f"{base_slug}-{n}"[:220]
+                n += 1
+            ru = Rule.objects.create(
+                playbook=playbook,
+                title=title[:200],
+                slug=slug,
+                content=change.content.strip(),
+            )
+            logger.info("PIP apply ADD Rule pk=%s pip=%s", ru.pk, pip_pk)
+            return ru.pk
 
         if et == PipChange.ENTITY_ARTIFACT:
             raise ValidationError(
                 "ADD Artifact via PIP is not supported yet (producer activity unknown)."
             )
         raise ValidationError(f"Unsupported ADD entity '{et}'.")
+
+    @staticmethod
+    def _apply_link_or_unlink(
+        *,
+        playbook: Playbook,
+        change: PipChange,
+        ref_map: dict[str, tuple[str, int]],
+        pip_pk: int,
+    ) -> None:
+        rel = change.relationship_type
+        src_id = resolve_entity_ref(
+            ref=change.source_entity_ref,
+            expected_type=change.source_entity_type,
+            playbook_id=playbook.pk,
+            ref_map=ref_map,
+        )
+        tgt_id = resolve_entity_ref(
+            ref=change.target_entity_ref,
+            expected_type=change.target_entity_type,
+            playbook_id=playbook.pk,
+            ref_map=ref_map,
+        )
+        is_link = change.change_type == PipChange.CHANGE_LINK
+        exists = relationship_exists(
+            relationship_type=rel,
+            source_id=src_id,
+            target_id=tgt_id,
+        )
+        if is_link and exists:
+            logger.info(
+                "PIP apply LINK skipped duplicate %s pip=%s",
+                link_change_summary_label(change),
+                pip_pk,
+            )
+            return
+        if not is_link and not exists:
+            raise ValidationError(
+                f"UNLINK target relationship missing: {link_change_summary_label(change)}"
+            )
+
+        if rel == PipChange.REL_SKILL_ACTIVITY:
+            if is_link:
+                ActivityService.add_activity_skill(tgt_id, src_id)
+            else:
+                ActivityService.remove_activity_skill(tgt_id, src_id)
+        elif rel == PipChange.REL_RULE_ACTIVITY:
+            if is_link:
+                ActivityService.add_activity_rule(tgt_id, src_id)
+            else:
+                ActivityService.remove_activity_rule(tgt_id, src_id)
+        elif rel == PipChange.REL_AGENT_ACTIVITY:
+            if is_link:
+                ActivityService.set_activity_agent(tgt_id, src_id)
+            else:
+                ActivityService.clear_activity_agent(tgt_id)
+        elif rel == PipChange.REL_ACTIVITY_WORKFLOW:
+            if is_link:
+                WorkflowService.add_activity_to_workflow(src_id, tgt_id, order=change.order)
+            else:
+                WorkflowService.remove_activity_from_workflow(src_id, tgt_id)
+        else:
+            raise ValidationError(f"Unsupported relationship_type '{rel}'.")
+
+        logger.info(
+            "PIP apply %s %s pip=%s src=%s tgt=%s",
+            change.change_type,
+            rel,
+            pip_pk,
+            src_id,
+            tgt_id,
+        )
 
     @staticmethod
     def _apply_alter(

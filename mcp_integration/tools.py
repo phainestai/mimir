@@ -2807,13 +2807,17 @@ async def create_pip(playbook_id: int, title: str, summary: str = "") -> dict:
 async def add_pip_change(
     pip_id: int,
     change_type: str,
-    entity_type: str,
+    entity_type: str = "",
     name: str = "",
     content: str = "",
     target_id: Optional[int] = None,
     parent_workflow_id: Optional[int] = None,
     insert_after_activity_id: Optional[int] = None,
     append_to_playbook_end: bool = False,
+    internal_ref: str = "",
+    relationship_type: str = "",
+    source_entity_ref: str = "",
+    target_entity_ref: str = "",
 ) -> dict:
     """Attach a typed change row to an editable draft."""
 
@@ -2835,6 +2839,10 @@ async def add_pip_change(
                 parent_workflow_id=parent_workflow_id,
                 insert_after_activity_id=insert_after_activity_id,
                 append_to_playbook_end=append_to_playbook_end,
+                internal_ref=internal_ref or "",
+                relationship_type=relationship_type or "",
+                source_entity_ref=source_entity_ref or "",
+                target_entity_ref=target_entity_ref or "",
             )
         except ValidationError as e:
             _handle_validation_error(e, "add_pip_change")

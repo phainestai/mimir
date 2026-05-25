@@ -30,15 +30,21 @@
 
     <h2 class="h5">Changes</h2>
     <table class="table table-sm">
-        <thead><tr><th>#</th><th>Type</th><th>Entity</th><th>Summary</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Type</th><th>Entity / Link</th><th>Summary</th><th></th></tr></thead>
         <tbody>
         {% for ch in pip.changes.all %}
         <tr data-testid="pip-change-row-{{ ch.pk }}">
             <td>{{ ch.order }}</td>
             <td>{{ ch.change_type }}</td>
-            <td>{{ ch.entity_type }}</td>
+            <td>
+                {% if ch.change_type == 'LINK' or ch.change_type == 'UNLINK' %}
+                    {{ ch.relationship_type }}
+                {% else %}
+                    {{ ch.entity_type }}
+                {% endif %}
+            </td>
             <td class="small">
-                {% if ch.change_type == 'ADD' %}{{ ch.name }}{% else %}{{ ch.target_name_snapshot }} (id={{ ch.target_id }}){% endif %}
+                {% if ch.change_type == 'ADD' %}{{ ch.name }}{% elif ch.change_type == 'LINK' or ch.change_type == 'UNLINK' %}{{ ch.target_name_snapshot }}{% else %}{{ ch.target_name_snapshot }} (id={{ ch.target_id }}){% endif %}
                 {% if ch.content %}<span class="text-muted d-block">{{ ch.content|truncatewords:24 }}</span>{% endif %}
             </td>
             <td>
@@ -62,47 +68,71 @@
                 <div class="row g-2">
                     <div class="col-md-3">
                         <label class="form-label small">Type</label>
-                        <select class="form-select form-select-sm" name="change_type" required>
+                        <select class="form-select form-select-sm" name="change_type" id="pip_change_type" required data-testid="pip-change-type">
                             <option value="ADD">ADD</option>
                             <option value="ALTER">ALTER</option>
                             <option value="DROP">DROP</option>
+                            <option value="LINK">LINK</option>
+                            <option value="UNLINK">UNLINK</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3" id="pip_entity_block">
                         <label class="form-label small">Entity</label>
-                        <select class="form-select form-select-sm" name="entity_type" required>
+                        <select class="form-select form-select-sm" name="entity_type" id="pip_entity_type" data-testid="pip-entity-type">
                             <option value="Activity">Activity</option>
                             <option value="Workflow">Workflow</option>
                             <option value="Skill">Skill</option>
                             <option value="Agent">Agent</option>
+                            <option value="Rule">Rule</option>
                             <option value="Artifact">Artifact</option>
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-6 d-none" id="pip_link_block">
+                        <label class="form-label small">Relationship</label>
+                        <select class="form-select form-select-sm" name="relationship_type" id="pip_relationship_type" data-testid="pip-relationship-type">
+                            <option value="skill_activity">Skill → Activity</option>
+                            <option value="rule_activity">Rule → Activity</option>
+                            <option value="agent_activity">Agent → Activity</option>
+                            <option value="activity_workflow">Activity → Workflow</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6" id="pip_name_block">
                         <label class="form-label small">Name (ADD) or unused for ALTER/DROP</label>
-                        <input class="form-control form-control-sm" type="text" name="name" maxlength="255"/>
+                        <input class="form-control form-control-sm" type="text" name="name" maxlength="255" data-testid="pip-change-name"/>
+                    </div>
+                    <div class="col-md-3 d-none" id="pip_internal_ref_block">
+                        <label class="form-label small">Internal ref (ADD, optional)</label>
+                        <input class="form-control form-control-sm" type="text" name="internal_ref" placeholder="#cdk-skill" data-testid="pip-internal-ref"/>
+                    </div>
+                    <div class="col-md-6 d-none" id="pip_source_block">
+                        <label class="form-label small">Source (pk or #internal_ref)</label>
+                        <input class="form-control form-control-sm" type="text" name="source_entity_ref" data-testid="pip-source-ref"/>
+                    </div>
+                    <div class="col-md-6 d-none" id="pip_target_block">
+                        <label class="form-label small">Target (pk or #internal_ref)</label>
+                        <input class="form-control form-control-sm" type="text" name="target_entity_ref" data-testid="pip-target-ref"/>
                     </div>
                     <div class="col-12">
-                        <label class="form-label small">Guidance / new content / DROP rationale</label>
-                        <textarea class="form-control form-control-sm" name="content" rows="3"></textarea>
+                        <label class="form-label small">Guidance / new content / DROP rationale / link note</label>
+                        <textarea class="form-control form-control-sm" name="content" rows="3" data-testid="pip-change-content"></textarea>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4" id="pip_target_id_block">
                         <label class="form-label small">Target id (ALTER/DROP — entity pk)</label>
                         <input class="form-control form-control-sm" type="number" name="target_id" min="1"
-                               placeholder="e.g. Activity id"/>
+                               placeholder="e.g. Activity id" data-testid="pip-target-id"/>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4" id="pip_parent_wf_block">
                         <label class="form-label small">Parent workflow (ADD Activity)</label>
-                        <select class="form-select form-select-sm" name="parent_workflow">
+                        <select class="form-select form-select-sm" name="parent_workflow" data-testid="pip-parent-workflow">
                             <option value="">—</option>
                             {% for bundle in workflow_bundle %}
                             <option value="{{ bundle.workflow.pk }}" {% if prefill_parent_workflow_id == bundle.workflow.pk %}selected{% endif %}>{{ bundle.workflow.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4" id="pip_insert_after_block">
                         <label class="form-label small">Insert after activity</label>
-                        <select class="form-select form-select-sm" name="insert_after_activity">
+                        <select class="form-select form-select-sm" name="insert_after_activity" data-testid="pip-insert-after">
                             <option value="">—</option>
                             {% for bundle in workflow_bundle %}
                             {% for a in bundle.activities %}
@@ -111,7 +141,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-12">
+                    <div class="col-12" id="pip_append_block">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="append_end" id="append_end"/>
                             <label class="form-check-label" for="append_end">Append to end of parent / workflow</label>
@@ -135,5 +165,41 @@
         </form>
     </div>
 </div>
-<script>console.log('PIP draft editor', {id: {{ pip.pk }}});</script>
+<script>
+(function () {
+    const ct = document.getElementById('pip_change_type');
+    const entityBlock = document.getElementById('pip_entity_block');
+    const linkBlock = document.getElementById('pip_link_block');
+    const nameBlock = document.getElementById('pip_name_block');
+    const internalRefBlock = document.getElementById('pip_internal_ref_block');
+    const sourceBlock = document.getElementById('pip_source_block');
+    const targetBlock = document.getElementById('pip_target_block');
+    const targetIdBlock = document.getElementById('pip_target_id_block');
+    const parentWfBlock = document.getElementById('pip_parent_wf_block');
+    const insertAfterBlock = document.getElementById('pip_insert_after_block');
+    const appendBlock = document.getElementById('pip_append_block');
+    const entityType = document.getElementById('pip_entity_type');
+
+    function togglePanels() {
+        const type = ct.value;
+        const isLink = type === 'LINK' || type === 'UNLINK';
+        const isAdd = type === 'ADD';
+        console.log('PIP add-change panel toggle', { type, isLink, isAdd });
+        entityBlock.classList.toggle('d-none', isLink);
+        linkBlock.classList.toggle('d-none', !isLink);
+        sourceBlock.classList.toggle('d-none', !isLink);
+        targetBlock.classList.toggle('d-none', !isLink);
+        nameBlock.classList.toggle('d-none', isLink);
+        internalRefBlock.classList.toggle('d-none', !isAdd);
+        targetIdBlock.classList.toggle('d-none', isLink || isAdd);
+        parentWfBlock.classList.toggle('d-none', isLink || !isAdd);
+        insertAfterBlock.classList.toggle('d-none', isLink || !isAdd);
+        appendBlock.classList.toggle('d-none', isLink || !isAdd);
+        entityType.required = !isLink;
+    }
+    ct.addEventListener('change', togglePanels);
+    togglePanels();
+    console.log('PIP draft editor', {id: {{ pip.pk }}});
+})();
+</script>
 {% endblock %}

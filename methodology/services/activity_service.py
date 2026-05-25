@@ -578,6 +578,51 @@ class ActivityService:
         return list(dict.fromkeys(ids))
 
     @staticmethod
+    def add_activity_rule(activity_id: int, rule_id: int):
+        """
+        Add a rule to an activity's M2M set. Idempotent if already linked.
+
+        :param activity_id: Activity primary key
+        :param rule_id: Rule primary key
+        :returns: Updated Activity instance
+        """
+        activity = Activity.objects.select_related('workflow__playbook').get(pk=activity_id)
+        rule = Rule.objects.select_related('playbook').get(pk=rule_id)
+        if activity.workflow.playbook_id != rule.playbook_id:
+            raise ValidationError(
+                f"Rule '{rule.title}' and activity '{activity.name}' must be in the same playbook."
+            )
+        activity.rules.add(rule)
+        logger.info(
+            "Added rule %s '%s' to activity %s '%s'",
+            rule_id, rule.title, activity_id, activity.name,
+        )
+        return activity
+
+    @staticmethod
+    def remove_activity_rule(activity_id: int, rule_id: int):
+        """
+        Remove a specific rule from an activity's M2M set.
+
+        :param activity_id: Activity primary key
+        :param rule_id: Rule primary key
+        :returns: Updated Activity instance
+        """
+        activity = Activity.objects.get(pk=activity_id)
+        if activity.rules.filter(pk=rule_id).exists():
+            activity.rules.remove(rule_id)
+            logger.info(
+                "Removed rule %s from activity %s '%s'",
+                rule_id, activity_id, activity.name,
+            )
+        else:
+            logger.info(
+                "Rule %s was not linked to activity %s '%s' — no-op",
+                rule_id, activity_id, activity.name,
+            )
+        return activity
+
+    @staticmethod
     def set_activity_rules(activity_id: int, rule_ids: list):
         """
         Replace M2M rules on an activity. Each rule must belong to the activity's playbook.

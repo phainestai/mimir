@@ -21,9 +21,15 @@ from methodology.models import (
     PipChange,
     Playbook,
     ProcessImprovementProposal,
+    Rule,
     Skill,
     UserPIPListVisit,
     Workflow,
+)
+from methodology.services.pip_link_service import (
+    link_change_summary_label,
+    validate_internal_ref_label,
+    validate_link_change_for_persist,
 )
 
 from methodology.services.playbook_service import PlaybookService
@@ -120,6 +126,11 @@ def _entity_target_label(playbook: Playbook, entity_type: str, target_id: int) -
         if art.playbook_id != playbook.pk:
             raise ValidationError("Artifact playbook mismatch.")
         return art.name
+    if entity_type == PipChange.ENTITY_RULE:
+        ru = Rule.objects.get(pk=target_id)
+        if ru.playbook_id != playbook.pk:
+            raise ValidationError("Rule playbook mismatch.")
+        return ru.title
     raise ValidationError(f"Unsupported entity '{entity_type}' for targets.")
 
 
@@ -134,6 +145,7 @@ def _persist_pip_change(
     parent_workflow_id: Optional[int],
     insert_after_activity_id: Optional[int],
     append_to_playbook_end: bool,
+    internal_ref: str = "",
 ) -> PipChange:
     pb = pip.playbook
     ct = change_type.upper().strip()
@@ -181,6 +193,16 @@ def _persist_pip_change(
         display_name = nm or _entity_target_label(pb, et, tgt)
 
     order_val = _next_change_sequence(pip)
+    ref_label = ""
+    if ct == PipChange.CHANGE_ADD and internal_ref.strip():
+        ref_label = validate_internal_ref_label(internal_ref)
+        dup = PipChange.objects.filter(
+            pip=pip,
+            change_type=PipChange.CHANGE_ADD,
+            internal_ref=ref_label,
+        ).exists()
+        if dup:
+            raise ValidationError(f"Duplicate internal_ref '{ref_label}' in this PIP.")
     pc = PipChange.objects.create(
         pip=pip,
         change_type=ct,
@@ -193,8 +215,55 @@ def _persist_pip_change(
         parent_workflow=parent_wf,
         insert_after_activity=after_act,
         append_to_playbook_end=bool(append_to_playbook_end),
+        internal_ref=ref_label,
     )
     logger.info("Persisted PipChange pk=%s pip=%s", pc.pk, pip.pk)
+    return pc
+
+
+def _persist_link_change(
+    pip: ProcessImprovementProposal,
+    *,
+    change_type: str,
+    relationship_type: str,
+    source_entity_ref: str,
+    target_entity_ref: str,
+    content: str = "",
+) -> PipChange:
+    order_val = _next_change_sequence(pip)
+    rel, src_type, src_ref, tgt_type, tgt_ref = validate_link_change_for_persist(
+        pip=pip,
+        change_type=change_type,
+        relationship_type=relationship_type,
+        source_entity_ref=source_entity_ref,
+        target_entity_ref=target_entity_ref,
+        order_hint=order_val,
+    )
+    ct = change_type.upper().strip()
+    snapshot = link_change_summary_label(
+        PipChange(
+            change_type=ct,
+            relationship_type=rel,
+            source_entity_type=src_type,
+            source_entity_ref=src_ref,
+            target_entity_type=tgt_type,
+            target_entity_ref=tgt_ref,
+        )
+    )
+    pc = PipChange.objects.create(
+        pip=pip,
+        change_type=ct,
+        entity_type="",
+        order=order_val,
+        relationship_type=rel,
+        source_entity_type=src_type,
+        source_entity_ref=src_ref,
+        target_entity_type=tgt_type,
+        target_entity_ref=tgt_ref,
+        content=(content or "").strip(),
+        target_name_snapshot=snapshot[:255],
+    )
+    logger.info("Persisted LINK PipChange pk=%s pip=%s %s", pc.pk, pip.pk, rel)
     return pc
 
 
@@ -394,15 +463,29 @@ class PIPService:
         actor,
         pip: ProcessImprovementProposal,
         change_type: str,
-        entity_type: str,
+        entity_type: str = "",
         name: str = "",
         content: str = "",
         target_id: Optional[int] = None,
         parent_workflow_id: Optional[int] = None,
         insert_after_activity_id: Optional[int] = None,
         append_to_playbook_end: bool = False,
+        internal_ref: str = "",
+        relationship_type: str = "",
+        source_entity_ref: str = "",
+        target_entity_ref: str = "",
     ) -> PipChange:
         _pip_require_draft(pip, actor)
+        ct = (change_type or "").upper().strip()
+        if ct in {PipChange.CHANGE_LINK, PipChange.CHANGE_UNLINK}:
+            return _persist_link_change(
+                pip=pip,
+                change_type=ct,
+                relationship_type=relationship_type,
+                source_entity_ref=source_entity_ref,
+                target_entity_ref=target_entity_ref,
+                content=content,
+            )
         return _persist_pip_change(
             pip=pip,
             change_type=change_type,
@@ -413,6 +496,7 @@ class PIPService:
             parent_workflow_id=parent_workflow_id,
             insert_after_activity_id=insert_after_activity_id,
             append_to_playbook_end=append_to_playbook_end,
+            internal_ref=internal_ref,
         )
 
     @staticmethod
@@ -429,20 +513,35 @@ class PIPService:
 
     @staticmethod
     def summarize_preview_rows(pip: ProcessImprovementProposal) -> list[dict]:
-        bucket = {
+        entity_bucket = {
             PipChange.CHANGE_ADD: "Added",
             PipChange.CHANGE_ALTER: "Modified",
             PipChange.CHANGE_DROP: "Removed",
         }
+        link_bucket = {
+            PipChange.CHANGE_LINK: "Links Added",
+            PipChange.CHANGE_UNLINK: "Links Removed",
+        }
         rows = []
         for ch in PipChange.objects.filter(pip=pip).order_by("order", "pk"):
+            if ch.change_type in link_bucket:
+                label = ch.target_name_snapshot or link_change_summary_label(ch)
+                rows.append(
+                    {
+                        "section": link_bucket[ch.change_type],
+                        "change_type": ch.change_type,
+                        "snippet": label,
+                        "relationship_type": ch.relationship_type,
+                    }
+                )
+                continue
             label = (
                 ch.name or ch.target_name_snapshot or str(ch.target_id or "")
             ).strip()
             rows.append(
                 {
                     "section": f"{ch.entity_type}:{label or 'target'}",
-                    "change_type": bucket.get(ch.change_type, ch.change_type),
+                    "change_type": entity_bucket.get(ch.change_type, ch.change_type),
                     "snippet": (ch.content or "")[:400],
                 }
             )

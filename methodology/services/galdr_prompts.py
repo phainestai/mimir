@@ -38,6 +38,8 @@ def build_change_prompt(change, context_summary: str) -> str:
     :param context_summary: Output of :func:`build_playbook_context_summary`.
     :return: Full user prompt content.
     """
+    from methodology.models import PipChange
+
     lines = [
         "Assess this single proposed playbook change.",
         "",
@@ -54,6 +56,14 @@ def build_change_prompt(change, context_summary: str) -> str:
     ]
     if change.parent_workflow_id:
         lines.append(f"parent_workflow_id: {change.parent_workflow_id}")
+    if change.change_type in {PipChange.CHANGE_LINK, PipChange.CHANGE_UNLINK}:
+        lines.extend([
+            f"relationship_type: {change.relationship_type}",
+            f"source: {change.source_entity_type} {change.source_entity_ref}",
+            f"target: {change.target_entity_type} {change.target_entity_ref}",
+        ])
+    if change.internal_ref:
+        lines.append(f"internal_ref: {change.internal_ref}")
     if change.insert_after_activity_id:
         lines.append(f"insert_after_activity_id: {change.insert_after_activity_id}")
     return "\n".join(lines)

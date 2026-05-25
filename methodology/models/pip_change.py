@@ -13,10 +13,25 @@ class PipChange(models.Model):
     CHANGE_ADD = "ADD"
     CHANGE_ALTER = "ALTER"
     CHANGE_DROP = "DROP"
+    CHANGE_LINK = "LINK"
+    CHANGE_UNLINK = "UNLINK"
     CHANGE_TYPE_CHOICES = [
         (CHANGE_ADD, "ADD"),
         (CHANGE_ALTER, "ALTER"),
         (CHANGE_DROP, "DROP"),
+        (CHANGE_LINK, "LINK"),
+        (CHANGE_UNLINK, "UNLINK"),
+    ]
+
+    REL_SKILL_ACTIVITY = "skill_activity"
+    REL_RULE_ACTIVITY = "rule_activity"
+    REL_AGENT_ACTIVITY = "agent_activity"
+    REL_ACTIVITY_WORKFLOW = "activity_workflow"
+    RELATIONSHIP_TYPE_CHOICES = [
+        (REL_SKILL_ACTIVITY, "Skill → Activity"),
+        (REL_RULE_ACTIVITY, "Rule → Activity"),
+        (REL_AGENT_ACTIVITY, "Agent → Activity"),
+        (REL_ACTIVITY_WORKFLOW, "Activity → Workflow"),
     ]
 
     ENTITY_WORKFLOW = "Workflow"
@@ -24,12 +39,14 @@ class PipChange(models.Model):
     ENTITY_SKILL = "Skill"
     ENTITY_AGENT = "Agent"
     ENTITY_ARTIFACT = "Artifact"
+    ENTITY_RULE = "Rule"
     ENTITY_TYPE_CHOICES = [
         (ENTITY_WORKFLOW, "Workflow"),
         (ENTITY_ACTIVITY, "Activity"),
         (ENTITY_SKILL, "Skill"),
         (ENTITY_AGENT, "Agent"),
         (ENTITY_ARTIFACT, "Artifact"),
+        (ENTITY_RULE, "Rule"),
     ]
 
     GALDR_ACCEPT = "ACCEPT"
@@ -56,7 +73,33 @@ class PipChange(models.Model):
         related_name="changes",
     )
     change_type = models.CharField(max_length=16, choices=CHANGE_TYPE_CHOICES)
-    entity_type = models.CharField(max_length=32, choices=ENTITY_TYPE_CHOICES)
+    entity_type = models.CharField(max_length=32, choices=ENTITY_TYPE_CHOICES, blank=True, default="")
+    internal_ref = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Optional label on ADD rows (e.g. #cdk-skill) for within-PIP LINK resolution.",
+    )
+    relationship_type = models.CharField(
+        max_length=32,
+        choices=RELATIONSHIP_TYPE_CHOICES,
+        blank=True,
+        default="",
+    )
+    source_entity_type = models.CharField(max_length=32, blank=True, default="")
+    source_entity_ref = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Source entity pk or #internal_ref for LINK/UNLINK.",
+    )
+    target_entity_type = models.CharField(max_length=32, blank=True, default="")
+    target_entity_ref = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Target entity pk or #internal_ref for LINK/UNLINK.",
+    )
     order = models.PositiveSmallIntegerField(
         default=1,
         help_text="Stable sequence within the pip (1-based).",

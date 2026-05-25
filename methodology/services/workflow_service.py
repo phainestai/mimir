@@ -4,7 +4,7 @@ import logging
 from typing import Optional, List
 from django.db import transaction, models
 from django.core.exceptions import ValidationError
-from methodology.models import Workflow
+from methodology.models import Activity, ActivityWorkflowMembership, Workflow
 from methodology.services.playbook_service import PlaybookService
 
 logger = logging.getLogger(__name__)
@@ -109,6 +109,79 @@ class WorkflowService:
         
         logger.info(f"Workflow duplicated as {duplicate.pk}")
         return duplicate
+
+    @staticmethod
+    @transaction.atomic
+    def add_activity_to_workflow(activity_id: int, workflow_id: int, order: Optional[int] = None):
+        """
+        Cross-list an activity in a secondary workflow via ActivityWorkflowMembership.
+
+        Primary home remains ``Activity.workflow`` FK.
+        """
+        activity = Activity.objects.select_related("workflow__playbook").get(pk=activity_id)
+        workflow = Workflow.objects.select_related("playbook").get(pk=workflow_id)
+        if activity.workflow.playbook_id != workflow.playbook_id:
+            raise ValidationError("Activity and workflow must belong to the same playbook.")
+        if activity.workflow_id == workflow_id:
+            raise ValidationError("Activity already has this workflow as its primary home.")
+        if ActivityWorkflowMembership.objects.filter(
+            activity_id=activity_id,
+            workflow_id=workflow_id,
+        ).exists():
+            logger.info(
+                "Activity %s already cross-listed in workflow %s — no-op",
+                activity_id,
+                workflow_id,
+            )
+            return ActivityWorkflowMembership.objects.get(
+                activity_id=activity_id,
+                workflow_id=workflow_id,
+            )
+        if order is None:
+            agg = ActivityWorkflowMembership.objects.filter(workflow_id=workflow_id).aggregate(
+                max_order=models.Max("order"),
+            )
+            order = int(agg["max_order"] or 0) + 1
+        membership = ActivityWorkflowMembership.objects.create(
+            activity=activity,
+            workflow=workflow,
+            order=order,
+            is_primary=False,
+        )
+        logger.info(
+            "Cross-listed activity %s '%s' into workflow %s order=%s",
+            activity_id,
+            activity.name,
+            workflow_id,
+            order,
+        )
+        return membership
+
+    @staticmethod
+    @transaction.atomic
+    def remove_activity_from_workflow(activity_id: int, workflow_id: int):
+        """Remove secondary workflow membership (not the primary Activity.workflow FK)."""
+        activity = Activity.objects.get(pk=activity_id)
+        if activity.workflow_id == workflow_id:
+            raise ValidationError(
+                "Cannot remove primary workflow membership — use activity move out of scope."
+            )
+        deleted, _ = ActivityWorkflowMembership.objects.filter(
+            activity_id=activity_id,
+            workflow_id=workflow_id,
+        ).delete()
+        if deleted:
+            logger.info(
+                "Removed cross-list activity %s from workflow %s",
+                activity_id,
+                workflow_id,
+            )
+        else:
+            logger.info(
+                "No membership for activity %s in workflow %s — no-op",
+                activity_id,
+                workflow_id,
+            )
 
     @staticmethod
     def get_workflow_for_user(workflow_id, user, *, write: bool = False, prefetch_activities: bool = False):

@@ -1,6 +1,6 @@
 Feature: FOB-PIP-CREATE-1 Create Playbook Improvement Proposal with Structured Changes
   As a methodology author (Maria)
-  I want to create a PIP with typed Changes (ADD / ALTER / DROP)
+  I want to create a PIP with typed Changes (ADD / ALTER / DROP / LINK / UNLINK)
   So that I can propose specific, reviewable alterations to a Released playbook
 
   Status: 🔲 TODO

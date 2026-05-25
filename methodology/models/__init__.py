@@ -10,6 +10,7 @@ from .artifact import Artifact
 from .artifact_input import ArtifactInput
 from .skill import Skill
 from .agent import Agent
+from .activity_workflow_membership import ActivityWorkflowMembership
 from .rule import Rule
 
 __all__ = [
@@ -22,6 +23,7 @@ __all__ = [
     'Workflow',
     'Phase',
     'Activity',
+    'ActivityWorkflowMembership',
     'Artifact',
     'ArtifactInput',
     'Skill',

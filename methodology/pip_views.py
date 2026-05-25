@@ -486,6 +486,10 @@ def pip_add_change(request, pk: int):
             parent_workflow_id=int(wf_raw) if wf_raw.isdigit() else None,
             insert_after_activity_id=int(ins_raw) if ins_raw.isdigit() else None,
             append_to_playbook_end=post.get("append_end") == "on",
+            internal_ref=post.get("internal_ref", ""),
+            relationship_type=(post.get("relationship_type") or "").strip(),
+            source_entity_ref=(post.get("source_entity_ref") or "").strip(),
+            target_entity_ref=(post.get("target_entity_ref") or "").strip(),
         )
         messages.success(request, "Change added.")
     except ValidationError as exc:

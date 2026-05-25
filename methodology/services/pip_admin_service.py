@@ -117,12 +117,15 @@ class PIPAdminService:
     def _describe_apply_summary(accepted: list[PipChange]) -> str:
         parts = []
         for ch in accepted:
-            lbl = (
-                ch.name.strip()
-                or ch.target_name_snapshot.strip()
-                or f"{ch.change_type}-{ch.entity_type}"
-            )
-            parts.append(f"{ch.change_type} {ch.entity_type}: {lbl}")
+            if ch.change_type in {PipChange.CHANGE_LINK, PipChange.CHANGE_UNLINK}:
+                lbl = ch.target_name_snapshot or f"{ch.relationship_type} link"
+            else:
+                lbl = (
+                    ch.name.strip()
+                    or ch.target_name_snapshot.strip()
+                    or f"{ch.change_type}-{ch.entity_type}"
+                )
+            parts.append(f"{ch.change_type} {lbl}")
         return "; ".join(parts)[:495]
 
     @staticmethod

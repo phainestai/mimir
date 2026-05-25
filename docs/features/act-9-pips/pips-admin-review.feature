@@ -217,3 +217,14 @@ Feature: FOB-PIP-ACCEPT-1 Accept PIP — owner or Administrator
     Then all admin_decision fields are read-only
     And the [Finalize Decision] button is not shown
     And a banner shows "This PIP has already been decided and cannot be modified."
+
+  Scenario: FOB-PIP-ADMIN-18 Finalize accepted LINK skill_activity updates Activity.skills
+    Given PIP-60 has status "Reviewed" with LINK skill_activity Change #1 (Galdr ACCEPT)
+    When Mike accepts Change #1 and finalizes PIP-60
+    Then the target Activity's skills M2M includes the linked Skill
+    And playbook version bumps one major line
+
+  Scenario: FOB-PIP-ADMIN-19 Finalize accepted LINK activity_workflow creates membership
+    Given PIP-61 has status "Reviewed" with LINK activity_workflow Change #1 (Galdr ACCEPT)
+    When Mike accepts Change #1 and finalizes PIP-61
+    Then ActivityWorkflowMembership exists for the activity and secondary workflow

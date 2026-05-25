@@ -398,13 +398,17 @@ class PIPViewSet(viewsets.GenericViewSet):
                 actor=request.user,
                 pip=pip,
                 change_type=request.data['change_type'],
-                entity_type=request.data['entity_type'],
+                entity_type=request.data.get('entity_type', ''),
                 name=request.data.get('name', ''),
                 content=request.data.get('content', ''),
                 target_id=request.data.get('target_id'),
                 parent_workflow_id=request.data.get('parent_workflow_id'),
                 insert_after_activity_id=request.data.get('insert_after_activity_id'),
                 append_to_playbook_end=bool(request.data.get('append_to_playbook_end', False)),
+                internal_ref=request.data.get('internal_ref', ''),
+                relationship_type=request.data.get('relationship_type', ''),
+                source_entity_ref=request.data.get('source_entity_ref', ''),
+                target_entity_ref=request.data.get('target_entity_ref', ''),
             )
         except ProcessImprovementProposal.DoesNotExist:
             return Response({"error": f"PIP {pk} not found"}, status=status.HTTP_404_NOT_FOUND)
