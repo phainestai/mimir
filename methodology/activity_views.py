@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 
 from methodology.models import Playbook, Workflow, Activity, ArtifactInput, Rule
 from methodology.services.activity_service import ActivityService
+from methodology.services.playbook_service import PlaybookService
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ def activity_global_list(request):
     """
     Global activities overview - all activities across all workflows and playbooks.
     
-    Shows activities from all workflows in playbooks owned by the user.
+    Shows activities from all workflows in playbooks accessible to the user (owned + public + team).
     Useful for seeing all tasks and managing across entire methodology.
     
     Template: activities/global_list.html
@@ -38,10 +39,10 @@ def activity_global_list(request):
     :param request: Django request object
     :return: Rendered global list template
     """
-    # Get all activities from user's owned playbooks
+    # Get all activities from user's accessible playbooks
+    accessible_playbook_ids = PlaybookService.get_accessible_playbook_ids(request.user)
     activities = Activity.objects.filter(
-        workflow__playbook__author=request.user,
-        workflow__playbook__source='owned'
+        workflow__playbook_id__in=accessible_playbook_ids
     ).select_related('workflow', 'workflow__playbook').order_by(
         'workflow__playbook__name', 'workflow__order', 'order'
     )

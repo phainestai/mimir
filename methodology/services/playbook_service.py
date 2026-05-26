@@ -247,6 +247,48 @@ class PlaybookService:
         return rows
 
     @staticmethod
+    def get_accessible_playbook_ids(user):
+        """
+        Get IDs of all playbooks accessible to user (owned + public + team).
+        
+        Useful for filtering related objects (workflows, activities, etc.) to only
+        show items from playbooks the user can access.
+        
+        :param user: User whose accessible playbooks to retrieve.
+        :returns: Set of playbook IDs.
+        """
+        from methodology.models import TeamMembership, TeamPlaybook
+        
+        logger.info(f"Getting accessible playbook IDs for user {user.id}")
+        
+        # Get owned playbook IDs
+        owned_ids = set(
+            Playbook.objects.filter(author=user).values_list('id', flat=True)
+        )
+        
+        # Get public playbook IDs (non-draft, excluding own)
+        public_ids = set(
+            Playbook.objects.filter(visibility="public", status="released")
+            .exclude(author=user)
+            .values_list('id', flat=True)
+        )
+        
+        # Get team playbook IDs
+        team_ids = list(TeamMembership.objects.filter(user=user).values_list("team_id", flat=True))
+        team_playbook_ids = set(
+            TeamPlaybook.objects.filter(team_id__in=team_ids).values_list("playbook_id", flat=True)
+        )
+        
+        # Combine all IDs
+        all_ids = owned_ids | public_ids | team_playbook_ids
+        
+        logger.info(
+            f"User {user.id} has access to {len(all_ids)} playbooks "
+            f"({len(owned_ids)} owned, {len(public_ids)} public, {len(team_playbook_ids)} team)"
+        )
+        return all_ids
+
+    @staticmethod
     @transaction.atomic
     def update_playbook(playbook_id, **data):
         """

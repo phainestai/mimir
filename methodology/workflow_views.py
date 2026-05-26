@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 
 from methodology.models import Playbook, Workflow
 from methodology.services.workflow_service import WorkflowService
+from methodology.services.playbook_service import PlaybookService
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +19,13 @@ def workflow_global_list(request):
     """
     Global workflows overview - all workflows across all playbooks.
     
-    Shows workflows from all playbooks owned by the user.
+    Shows workflows from all playbooks accessible to the user (owned + public + team).
     Useful for seeing workflow patterns and managing across playbooks.
     """
-    # Get all workflows from user's owned playbooks
+    # Get all workflows from user's accessible playbooks
+    accessible_playbook_ids = PlaybookService.get_accessible_playbook_ids(request.user)
     workflows = Workflow.objects.filter(
-        playbook__author=request.user,
-        playbook__source='owned'
+        playbook_id__in=accessible_playbook_ids
     ).select_related('playbook').order_by('playbook__name', 'order')
     
     # Count unique playbooks

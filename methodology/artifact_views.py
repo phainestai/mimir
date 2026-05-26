@@ -13,6 +13,7 @@ from django.db.models import Q
 
 from methodology.models import Playbook, Activity, Artifact
 from methodology.services.artifact_service import ArtifactService
+from methodology.services.playbook_service import PlaybookService
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +39,10 @@ def artifact_list_global(request):
     """
     query = request.GET.get('q', '').strip()
     
-    # Get all artifacts from user's owned playbooks
+    # Get all artifacts from user's accessible playbooks
+    accessible_playbook_ids = PlaybookService.get_accessible_playbook_ids(request.user)
     artifacts = Artifact.objects.filter(
-        playbook__author=request.user,
-        playbook__source='owned'
+        playbook_id__in=accessible_playbook_ids
     ).select_related(
         'playbook', 'produced_by', 'produced_by__workflow'
     ).order_by('playbook__name', 'name')

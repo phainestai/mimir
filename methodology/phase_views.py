@@ -12,6 +12,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from methodology.models import Playbook, Phase
 from methodology.services.phase_service import PhaseService
+from methodology.services.playbook_service import PlaybookService
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,9 @@ def phase_list_global(request):
     query = request.GET.get('q', '').strip()
     filter_playbook = _resolve_phase_list_playbook_filter(request)
 
-    phases = Phase.objects.filter(playbook__author=request.user).select_related('playbook')
+    # Get phases from accessible playbooks (owned + public + team)
+    accessible_playbook_ids = PlaybookService.get_accessible_playbook_ids(request.user)
+    phases = Phase.objects.filter(playbook_id__in=accessible_playbook_ids).select_related('playbook')
     if filter_playbook is not None:
         phases = phases.filter(playbook_id=filter_playbook.pk)
 
