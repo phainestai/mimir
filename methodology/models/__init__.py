@@ -16,6 +16,7 @@ from .team import Team
 from .team_membership import TeamMembership
 from .join_request import JoinRequest
 from .team_playbook import TeamPlaybook
+from .notification import Notification
 
 __all__ = [
     'Playbook',
@@ -37,4 +38,5 @@ __all__ = [
     'TeamMembership',
     'JoinRequest',
     'TeamPlaybook',
+    'Notification',
 ]
