@@ -84,6 +84,14 @@
                 <i class="fa-solid fa-sliders me-1"></i> Settings
             </a>
         </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if active_tab == 'invite' %}active{% endif %}"
+               href="?tab=invite"
+               data-testid="team-tab-invite"
+               role="tab">
+                <i class="fa-solid fa-envelope me-1"></i> Invite
+            </a>
+        </li>
     </ul>
 
     <div class="tab-content" id="manage-tab-content">
@@ -178,6 +186,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Username</th>
+                                <th style="width: 12%">Source</th>
                                 <th style="width: 18%">Requested At</th>
                                 <th style="width: 18%" class="text-end">Actions</th>
                             </tr>
@@ -189,6 +198,15 @@
                                     <i class="fa-solid fa-user-clock text-muted me-1"></i>
                                     {{ jr.user.get_full_name|default:jr.user.username }}
                                     <span class="text-muted small font-monospace ms-1">@{{ jr.user.username }}</span>
+                                </td>
+                                <td data-testid="join-request-source-{{ jr.user.username }}">
+                                    {% if jr.source == "self" %}
+                                    <span class="badge bg-secondary">Self-request</span>
+                                    {% elif jr.source == "invited" %}
+                                    <span class="badge bg-primary">Invited</span>
+                                    {% else %}
+                                    <span class="badge bg-info text-dark">Invited (new)</span>
+                                    {% endif %}
                                 </td>
                                 <td class="text-muted small">{{ jr.requested_at|date:"M j, Y" }}</td>
                                 <td class="text-end">
@@ -440,6 +458,67 @@
                                     data-bs-toggle="tooltip"
                                     title="Save team settings">
                                 <i class="fa-solid fa-floppy-disk me-1"></i> Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Invite tab ──────────────────────────────────────────────────── -->
+        <div class="tab-pane {% if active_tab == 'invite' %}show active{% endif %}"
+             id="tab-invite" role="tabpanel" data-testid="team-tab-invite-panel">
+            <div class="card border-top-0 rounded-top-0">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fa-solid fa-envelope me-2 text-primary"></i>Invite Members by Email
+                    </h5>
+                    <p class="text-muted small mb-4">
+                        Enter one or more email addresses (comma-separated). Existing Mimir users will receive a
+                        join-request notification. New addresses will get an account automatically created.
+                    </p>
+                    {% if invite_errors %}
+                    <div class="alert alert-danger" data-testid="invite-errors-alert">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                        {{ invite_errors }}
+                    </div>
+                    {% endif %}
+                    <form method="post" action="?tab=invite" data-testid="invite-form" novalidate>
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="send_invites">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="invite-emails">
+                                Email Addresses <span class="text-danger">*</span>
+                            </label>
+                            <textarea id="invite-emails"
+                                      class="form-control"
+                                      name="invite_emails"
+                                      rows="3"
+                                      data-testid="invite-emails-input"
+                                      data-bs-toggle="tooltip"
+                                      title="One or more email addresses, separated by commas."
+                                      placeholder="alice@example.com, bob@company.com"></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="invite-welcome">
+                                Welcome Message <span class="text-muted fw-normal">(optional)</span>
+                            </label>
+                            <textarea id="invite-welcome"
+                                      class="form-control"
+                                      name="invite_welcome"
+                                      rows="2"
+                                      data-testid="invite-welcome-input"
+                                      data-bs-toggle="tooltip"
+                                      title="A personal note included in the invite email."
+                                      placeholder="Looking forward to working with you!"></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit"
+                                    class="btn btn-primary"
+                                    data-testid="team-invite-submit"
+                                    data-bs-toggle="tooltip"
+                                    title="Send invite emails to all listed addresses">
+                                <i class="fa-solid fa-paper-plane me-1"></i> Send Invites
                             </button>
                         </div>
                     </form>

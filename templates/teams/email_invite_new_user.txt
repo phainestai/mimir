@@ -1,0 +1,13 @@
+Hi {{ user.get_full_name|default:user.username }},
+
+You've been invited to Mimir and the {{ team.name }} team!
+
+{% if welcome_text %}{{ welcome_text }}
+
+{% endif %}An account has been created for you. Please contact the team admin to get started,
+or ask them to send you an activation link.
+
+Team: /teams/{{ team.pk }}/
+
+Best,
+The Mimir Team

@@ -133,6 +133,52 @@ def send_admin_transferred(team: Team, new_admin, old_admin) -> None:
     )
 
 
+def send_invite_existing_user(join_request: JoinRequest, welcome_text: str) -> None:
+    """MANAGE-23: Invite an existing platform user to join the team.
+
+    :param join_request: The JoinRequest created for this invitation.
+    :param welcome_text: Optional custom message from the inviting admin.
+    """
+    _send_team_email(
+        subject=f"You've been invited to join the {join_request.team.name} team on Mimir",
+        template="teams/email_invite_existing",
+        context={
+            "join_request": join_request,
+            "team": join_request.team,
+            "user": join_request.user,
+            "welcome_text": welcome_text,
+        },
+        recipient_email=join_request.user.email,
+        action="invite_existing_user",
+        team_name=join_request.team.name,
+        username=join_request.user.username,
+    )
+
+
+def send_invite_new_user(join_request: JoinRequest, activation_token: str, welcome_text: str) -> None:
+    """MANAGE-24: Send activation + invite email to a newly auto-registered user.
+
+    :param join_request: The JoinRequest created for this invitation.
+    :param activation_token: Token for account activation (currently unused; reserved for future activation flow).
+    :param welcome_text: Optional custom message from the inviting admin.
+    """
+    _send_team_email(
+        subject=f"You've been invited to Mimir and the {join_request.team.name} team",
+        template="teams/email_invite_new_user",
+        context={
+            "join_request": join_request,
+            "team": join_request.team,
+            "user": join_request.user,
+            "activation_token": activation_token,
+            "welcome_text": welcome_text,
+        },
+        recipient_email=join_request.user.email,
+        action="invite_new_user",
+        team_name=join_request.team.name,
+        username=join_request.user.username,
+    )
+
+
 def _send_team_email(
     subject: str,
     template: str,

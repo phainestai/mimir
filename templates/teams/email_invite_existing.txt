@@ -1,0 +1,11 @@
+Hi {{ user.get_full_name|default:user.username }},
+
+You've been invited to join the {{ team.name }} team on Mimir!
+
+{% if welcome_text %}{{ welcome_text }}
+
+{% endif %}Log in to view the team and accept the invitation:
+/teams/{{ team.pk }}/
+
+Best,
+The Mimir Team

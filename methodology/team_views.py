@@ -248,6 +248,7 @@ def _build_manage_context(user, team, service: TeamService, tab: str) -> dict:
         "active_tab": tab,
         "active_page": "teams",
         "errors": {},
+        "invite_errors": None,
     }
 
 
@@ -270,6 +271,7 @@ def _handle_manage_post(request, team, service: TeamService, tab: str):
         "add_playbook": _handle_add_playbook,
         "remove_playbook": _handle_remove_playbook,
         "save_settings": lambda req, t, svc: _handle_save_settings(req, t, svc, tab),
+        "send_invites": _handle_send_invites,
     }
     handler = handlers.get(action)
     if handler:
@@ -414,6 +416,51 @@ def _handle_save_settings(request, team, service: TeamService, tab: str):
     logger.info("[teams] settings saved for team=%s by user=%s", team.name, request.user.username)
     messages.success(request, "Team settings saved.")
     return redirect("teams:teams_manage", pk=team.pk)
+
+
+def _handle_send_invites(request, team, service: TeamService):
+    """Handle invite form POST — validate, process invites, redirect or re-render with errors.
+
+    :param request: Django HTTP request.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :returns: Redirect on success; rendered page with errors if invalid emails found.
+    """
+    from methodology.services.team_invite_service import TeamInviteService
+
+    raw_emails = request.POST.get("invite_emails", "")
+    welcome_text = request.POST.get("invite_welcome", "")
+    invite_service = TeamInviteService()
+    valid_emails, invalid_emails = invite_service._parse_emails(raw_emails)
+
+    if invalid_emails:
+        logger.warning(
+            "[teams] invite form invalid emails: %s team=%s user=%s",
+            invalid_emails, team.name, request.user.username,
+        )
+        context = _build_manage_context(request.user, team, service, "invite")
+        context["invite_errors"] = f"The following addresses are invalid: {', '.join(invalid_emails)}"
+        return render(request, "teams/manage.html", context)
+
+    result = invite_service.send_invites(team, request.user, valid_emails, welcome_text)
+    msg = _build_invite_success_message(result)
+    logger.info("[teams] invites sent: count=%d team=%s user=%s", result["sent"], team.name, request.user.username)
+    messages.success(request, msg)
+    return redirect("teams:teams_manage", pk=team.pk)
+
+
+def _build_invite_success_message(result: dict) -> str:
+    """Build a human-readable success message from invite results.
+
+    :param result: Dict with keys sent, created, skipped, invalid.
+    :returns: Formatted success message string.
+    """
+    msg = f"{result['sent']} invite(s) sent."
+    if result["created"]:
+        msg += f" {result['created']} new account(s) created."
+    if result["skipped"]:
+        msg += f" Skipped (already members): {', '.join(result['skipped'])}."
+    return msg
 
 
 # ---------------------------------------------------------------------------
