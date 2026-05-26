@@ -159,9 +159,10 @@ def send_invite_new_user(join_request: JoinRequest, activation_token: str, welco
     """MANAGE-24: Send activation + invite email to a newly auto-registered user.
 
     :param join_request: The JoinRequest created for this invitation.
-    :param activation_token: Token for account activation (currently unused; reserved for future activation flow).
+    :param activation_token: Token for account activation.
     :param welcome_text: Optional custom message from the inviting admin.
     """
+    base_url = getattr(settings, "FRONTEND_URL", "https://mimir.featurefactory.io")
     _send_team_email(
         subject=f"You've been invited to Mimir and the {join_request.team.name} team",
         template="teams/email_invite_new_user",
@@ -171,6 +172,7 @@ def send_invite_new_user(join_request: JoinRequest, activation_token: str, welco
             "user": join_request.user,
             "activation_token": activation_token,
             "welcome_text": welcome_text,
+            "base_url": base_url,
         },
         recipient_email=join_request.user.email,
         action="invite_new_user",

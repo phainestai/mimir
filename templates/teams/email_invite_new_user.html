@@ -8,10 +8,17 @@
     {{ welcome_text }}
   </blockquote>
   {% endif %}
-  <p>An account has been created for you using this email address. Please contact your team admin to activate your account.</p>
+  <p>An account has been created for you using this email address. Click the button below to activate your account:</p>
   <p>
-    <a href="/teams/{{ team.pk }}/"
-       style="background: #0d6efd; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none;">
+    <a href="{{ base_url }}/auth/user/verify-email/{{ activation_token }}/"
+       style="background: #28a745; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; display: inline-block;">
+      Activate Account
+    </a>
+  </p>
+  <p style="margin-top: 20px;">Once activated, you can log in and view the team:</p>
+  <p>
+    <a href="{{ base_url }}/teams/{{ team.pk }}/"
+       style="background: #0d6efd; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; display: inline-block;">
       View Team
     </a>
   </p>

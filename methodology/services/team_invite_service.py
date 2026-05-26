@@ -75,10 +75,10 @@ class TeamInviteService:
             self._send_existing_user_invite(jr, welcome_text)
         except User.DoesNotExist:
             with transaction.atomic():
-                new_user = self._auto_register(email)
+                new_user, activation_token = self._auto_register(email)
                 jr = self._create_invite_join_request(team, new_user, JoinRequest.SOURCE_INVITED_NEW)
             result["created"] += 1
-            self._send_new_user_invite(jr, welcome_text)
+            self._send_new_user_invite(jr, activation_token, welcome_text)
 
         result["sent"] += 1
 
@@ -109,8 +109,8 @@ class TeamInviteService:
         )
         return jr
 
-    def _auto_register(self, email: str) -> User:
-        """Create an inactive account from an email address.
+    def _auto_register(self, email: str) -> tuple[User, str]:
+        """Create an inactive account from an email address and generate activation token.
 
         username  = local part before @
         first_name = local part before first '.' (or full local if no '.')
@@ -119,8 +119,10 @@ class TeamInviteService:
         is_active  = False
 
         :param email: Email address to create account for.
-        :returns: Newly created inactive User instance.
+        :returns: Tuple of (newly created inactive User instance, activation token).
         """
+        from accounts.models import generate_verification_token
+        
         local, domain = email.split("@", 1)
         username = self._safe_username(local)
         first_name = local.split(".")[0]
@@ -136,14 +138,18 @@ class TeamInviteService:
         )
         user.set_unusable_password()
         user.save()
+        
+        # Generate email verification token for activation
+        token = generate_verification_token(user)
+        
         logger.info(
-            "[teams] auto-registered inactive user: username=%s email=%s first_name=%s last_name=%s",
+            "[teams] auto-registered inactive user: username=%s email=%s first_name=%s last_name=%s token_generated=True",
             username,
             email,
             first_name,
             last_name,
         )
-        return user
+        return user, token
 
     def _safe_username(self, local: str) -> str:
         """Derive a unique username from the local part of an email.
@@ -199,15 +205,16 @@ class TeamInviteService:
         except Exception as exc:
             logger.warning("[teams] invite email failed (non-fatal): %s", str(exc))
 
-    def _send_new_user_invite(self, jr: JoinRequest, welcome_text: str) -> None:
+    def _send_new_user_invite(self, jr: JoinRequest, activation_token: str, welcome_text: str) -> None:
         """Send activation + invite email to a newly auto-registered user.
 
         :param jr: JoinRequest created for this invite.
+        :param activation_token: Email verification token for account activation.
         :param welcome_text: Optional welcome message from the admin.
         """
         from methodology.services import team_notification_service
 
         try:
-            team_notification_service.send_invite_new_user(jr, "", welcome_text)
+            team_notification_service.send_invite_new_user(jr, activation_token, welcome_text)
         except Exception as exc:
             logger.warning("[teams] new user invite email failed (non-fatal): %s", str(exc))

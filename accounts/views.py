@@ -599,6 +599,13 @@ def verify_email(request, token: str):
             },
         )
     mark_email_verified(user)
+    
+    # Activate user if currently inactive (e.g., from team invite auto-registration)
+    if not user.is_active:
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+        logger.info("[VERIFY_EMAIL] Activated user_id=%s (was inactive)", user.pk)
+    
     messages.success(
         request,
         "Your email has been verified. You can sign in now.",

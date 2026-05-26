@@ -85,6 +85,41 @@ class TestTeamInviteService:
         assert sorted(valid) == ["alice@example.com", "bob@example.com"]
         assert invalid == ["not-valid"]
 
+    def test_new_user_activation_flow(self, client):
+        """Test that new-user invite generates token and activates user on verification."""
+        mail.outbox.clear()
+        
+        # Send invite to new email address
+        result = self.invite_service.send_invites(
+            self.team, self.admin, ["activate_test@example.com"], "Welcome!"
+        )
+        assert result["created"] == 1
+        assert result["sent"] == 1
+        
+        # Check user was created as inactive
+        new_user = User.objects.get(email="activate_test@example.com")
+        assert not new_user.is_active
+        
+        # Check email was sent with activation token
+        assert len(mail.outbox) == 1
+        email_body = mail.outbox[0].body
+        assert "/auth/user/verify-email/" in email_body
+        
+        # Extract token from email body
+        import re
+        token_match = re.search(r'/auth/user/verify-email/([a-zA-Z0-9_-]+)/', email_body)
+        assert token_match is not None
+        token = token_match.group(1)
+        
+        # GET the verification URL
+        response = client.get(f"/auth/user/verify-email/{token}/")
+        assert response.status_code == 302  # Redirect to login
+        
+        # Check user is now active and verified
+        new_user.refresh_from_db()
+        assert new_user.is_active
+        assert new_user.email_verification.is_verified
+
 
 @pytest.mark.django_db
 class TestTeamInviteView:
