@@ -35,7 +35,7 @@ from methodology.api.viewsets import (
 )
 from methodology.api.viewsets_resources import (
     SkillViewSet, AgentViewSet, ArtifactViewSet,
-    ArtifactInputViewSet, PhaseViewSet, RuleViewSet, PIPViewSet
+    ArtifactInputViewSet, PhaseViewSet, RuleViewSet, PIPViewSet, TeamViewSet
 )
 from methodology.api.bug_report_views import BugReportSubmitView
 from methodology import feedback_views
@@ -53,6 +53,7 @@ router.register(r'artifact-inputs', ArtifactInputViewSet, basename='api-artifact
 router.register(r'phases', PhaseViewSet, basename='api-phase')
 router.register(r'rules', RuleViewSet, basename='api-rule')
 router.register(r'pips', PIPViewSet, basename='api-pip')
+router.register(r'teams', TeamViewSet, basename='api-team')
 
 urlpatterns = [
     path("health/", health_views.health_check, name="health_check"),

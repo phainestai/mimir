@@ -16,12 +16,13 @@ from django.core.exceptions import ValidationError
 
 from methodology.models import (
     Playbook, Skill, Agent, Artifact, ArtifactInput, Phase, Rule,
-    ProcessImprovementProposal, PipChange
+    ProcessImprovementProposal, PipChange, Team, JoinRequest
 )
 from methodology.api.serializers import (
     SkillSerializer, AgentSerializer, ArtifactSerializer,
     ArtifactInputSerializer, PhaseSerializer, RuleSerializer,
-    PIPSerializer, PIPListSerializer
+    PIPSerializer, PIPListSerializer, TeamSerializer, TeamListSerializer,
+    JoinRequestSerializer
 )
 from methodology.api.permissions import IsOwnerOrReadOnly, IsDraftPlaybook
 from methodology.api.viewsets import _accessible_playbook_ids
@@ -480,3 +481,214 @@ class PIPViewSet(viewsets.GenericViewSet):
         except PermissionError as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
         return Response({"pip_id": int(pk), "rows": rows})
+
+
+class TeamViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for Team resource.
+    
+    Maps to MCP tools: list_teams, get_team, create_team,
+    move_playbook_to_team, move_playbook_from_team, invite_to_team, manage_team_invite.
+    """
+    
+    serializer_class = TeamSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Teams visible to the current user (public + member teams)."""
+        from methodology.services.team_service import TeamService
+        service = TeamService()
+        return service.get_teams_visible_to(self.request.user)
+    
+    def get_serializer_class(self):
+        """Use lightweight serializer for list view."""
+        if self.action == 'list':
+            return TeamListSerializer
+        return TeamSerializer
+    
+    def create(self, request):
+        """Create a new team. Caller becomes admin."""
+        logger.info(f'API: create_team user={request.user.pk}')
+        from methodology.services.team_service import TeamService
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            service = TeamService()
+            team = service.create_team(
+                user=request.user,
+                name=serializer.validated_data['name'],
+                description=serializer.validated_data.get('description', ''),
+                visibility=serializer.validated_data.get('visibility', Team.VISIBILITY_PUBLIC),
+                join_policy=serializer.validated_data.get('join_policy', Team.JOIN_POLICY_AUTO),
+                category=serializer.validated_data.get('category', 'Engineering'),
+            )
+        except ValidationError as exc:
+            return Response(
+                {'error': exc.message_dict if hasattr(exc, 'message_dict') else str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        return Response(TeamSerializer(team).data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['post'], url_path='move_playbook_to_team')
+    def move_playbook_to_team(self, request, pk=None):
+        """Add a playbook to team (admin only)."""
+        logger.info(f'API: move_playbook_to_team team_id={pk} user={request.user.pk}')
+        from methodology.services.team_service import TeamService
+        from methodology.services.playbook_service import PlaybookService
+        
+        team = self.get_object()
+        
+        if team.admin_id != request.user.id:
+            return Response(
+                {"error": f"Only team admin can add playbooks to team {team.name}"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        playbook_id = request.data.get('playbook_id')
+        if not playbook_id:
+            return Response({"error": "playbook_id required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            playbook = PlaybookService.get_playbook(int(playbook_id), request.user)
+            service = TeamService()
+            service.add_playbook_to_team(team, playbook, request.user)
+        except Playbook.DoesNotExist:
+            return Response(
+                {"error": f"Playbook {playbook_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ValidationError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            "success": True,
+            "team_id": team.id,
+            "playbook_id": playbook.id,
+            "playbook_name": playbook.name,
+        })
+    
+    @action(detail=True, methods=['post'], url_path='move_playbook_from_team')
+    def move_playbook_from_team(self, request, pk=None):
+        """Remove a playbook from team (admin only)."""
+        logger.info(f'API: move_playbook_from_team team_id={pk} user={request.user.pk}')
+        from methodology.services.team_service import TeamService
+        from methodology.services.playbook_service import PlaybookService
+        
+        team = self.get_object()
+        
+        if team.admin_id != request.user.id:
+            return Response(
+                {"error": f"Only team admin can remove playbooks from team {team.name}"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        playbook_id = request.data.get('playbook_id')
+        if not playbook_id:
+            return Response({"error": "playbook_id required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            playbook = PlaybookService.get_playbook(int(playbook_id), request.user)
+            service = TeamService()
+            service.remove_playbook_from_team(team, playbook, request.user)
+        except Playbook.DoesNotExist:
+            return Response(
+                {"error": f"Playbook {playbook_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ValidationError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            "success": True,
+            "team_id": team.id,
+            "playbook_id": playbook.id,
+        })
+    
+    @action(detail=True, methods=['post'], url_path='invite')
+    def invite(self, request, pk=None):
+        """Invite users to join team (admin only)."""
+        logger.info(f'API: invite_to_team team_id={pk} user={request.user.pk}')
+        from methodology.services.team_invite_service import TeamInviteService
+        
+        team = self.get_object()
+        
+        if team.admin_id != request.user.id:
+            return Response(
+                {"error": f"Only team admin can invite users to team {team.name}"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        emails = request.data.get('emails', [])
+        if not emails or not isinstance(emails, list):
+            return Response({"error": "emails list required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        welcome_text = request.data.get('welcome_text', '')
+        
+        try:
+            results = TeamInviteService.send_invites(team, request.user, emails, welcome_text)
+        except ValidationError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            "success": True,
+            "team_id": team.id,
+            "invited_count": len(results["success"]),
+            "results": results,
+        })
+    
+    @action(detail=True, methods=['post'], url_path='manage_invite')
+    def manage_invite(self, request, pk=None):
+        """Approve or reject a join request (admin only)."""
+        logger.info(f'API: manage_team_invite team_id={pk} user={request.user.pk}')
+        from methodology.services.team_service import TeamService
+        
+        team = self.get_object()
+        
+        if team.admin_id != request.user.id:
+            return Response(
+                {"error": f"Only team admin can manage join requests for team {team.name}"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        request_id = request.data.get('request_id')
+        action_type = request.data.get('action')
+        
+        if not request_id or not action_type:
+            return Response(
+                {"error": "request_id and action required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        if action_type not in ['approve', 'reject']:
+            return Response(
+                {"error": f"Invalid action: {action_type}. Must be 'approve' or 'reject'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        try:
+            join_request = JoinRequest.objects.select_related('user').get(pk=request_id, team=team)
+        except JoinRequest.DoesNotExist:
+            return Response(
+                {"error": f"Join request {request_id} not found for team {pk}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        try:
+            service = TeamService()
+            if action_type == 'approve':
+                service.approve_join_request(join_request, request.user)
+            else:
+                service.reject_join_request(join_request, request.user)
+        except ValidationError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            "success": True,
+            "team_id": team.id,
+            "request_id": request_id,
+            "action": action_type,
+            "user_email": join_request.user.email,
+        })

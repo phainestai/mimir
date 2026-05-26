@@ -7,7 +7,8 @@ Maps Django models to JSON representations for API requests/responses.
 from rest_framework import serializers
 from methodology.models import (
     Playbook, Workflow, Activity, Skill, Agent, Artifact,
-    ArtifactInput, Phase, Rule, ProcessImprovementProposal, PipChange
+    ArtifactInput, Phase, Rule, ProcessImprovementProposal, PipChange,
+    Team, JoinRequest, TeamMembership
 )
 
 
@@ -275,3 +276,53 @@ class PIPListSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'change_count'):
             return obj.change_count
         return obj.changes.count()
+
+
+class TeamSerializer(serializers.ModelSerializer):
+    """Full serializer for Team model."""
+    
+    admin_id = serializers.IntegerField(source='admin.id', read_only=True)
+    admin_username = serializers.CharField(source='admin.username', read_only=True)
+    member_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Team
+        fields = [
+            'id', 'name', 'description', 'visibility', 'join_policy', 'category',
+            'admin_id', 'admin_username', 'member_count', 'created_at'
+        ]
+        read_only_fields = ['id', 'admin_id', 'admin_username', 'member_count', 'created_at']
+    
+    def get_member_count(self, obj):
+        """Get count of team members."""
+        return obj.memberships.count()
+
+
+class TeamListSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for team lists."""
+    
+    member_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Team
+        fields = ['id', 'name', 'visibility', 'category', 'member_count']
+    
+    def get_member_count(self, obj):
+        """Get count of team members."""
+        return obj.memberships.count()
+
+
+class JoinRequestSerializer(serializers.ModelSerializer):
+    """Serializer for JoinRequest model."""
+    
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    team_name = serializers.CharField(source='team.name', read_only=True)
+    
+    class Meta:
+        model = JoinRequest
+        fields = [
+            'id', 'team', 'team_name', 'user', 'user_email', 'user_username',
+            'status', 'created_at'
+        ]
+        read_only_fields = ['id', 'team_name', 'user_email', 'user_username', 'created_at']
