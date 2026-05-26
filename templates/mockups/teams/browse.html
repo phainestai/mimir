@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Teams — Mockup{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="teams-browse-page">
+
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Teams</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2>
+                <i class="fa-solid fa-users"></i> Teams
+                <span class="badge bg-secondary ms-1">{{ team_count }}</span>
+            </h2>
+            <p class="text-muted">Discover and join collaborative communities to share playbooks with the right people.</p>
+        </div>
+        <a href="{% url 'mockup_teams_create' %}"
+           class="btn btn-primary"
+           data-testid="create-team-btn"
+           data-bs-toggle="tooltip"
+           title="Create a new team">
+            <i class="fa-solid fa-plus me-1"></i> Create Team
+        </a>
+    </div>
+
+    <!-- Search + Filter bar -->
+    <div class="card mb-4" data-testid="teams-filter-bar">
+        <div class="card-body">
+            <form method="get" action="." role="search">
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md">
+                        <label class="form-label small fw-semibold" for="teams-search-input">Search</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="search"
+                                   id="teams-search-input"
+                                   class="form-control"
+                                   name="q"
+                                   placeholder="Search by name or description…"
+                                   value="{{ request.GET.q }}"
+                                   data-testid="teams-search-input"
+                                   aria-label="Search teams">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small fw-semibold" for="teams-category-filter">Category</label>
+                        <select id="teams-category-filter"
+                                class="form-select"
+                                name="category"
+                                data-testid="teams-category-filter"
+                                aria-label="Filter by category">
+                            <option value="">All categories</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}" {% if request.GET.category == cat %}selected{% endif %}>{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-auto ms-md-auto">
+                        <label class="form-label small fw-semibold d-md-block d-none">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'mockup_teams_browse' %}"
+                               class="btn btn-outline-secondary"
+                               data-testid="filter-clear"
+                               data-bs-toggle="tooltip" title="Clear filters">
+                                <i class="fa-solid fa-xmark me-1"></i> Clear
+                            </a>
+                            <button class="btn btn-outline-primary" type="submit"
+                                    data-bs-toggle="tooltip" title="Apply filters">
+                                <i class="fa-solid fa-filter me-1"></i> Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Active filter chips (example — "Engineering" category active) -->
+    <div class="mb-3 d-flex gap-2 flex-wrap" data-testid="active-filters">
+        <span class="badge rounded-pill border text-body d-flex align-items-center gap-1 px-3 py-2"
+              data-testid="filter-chip-category">
+            Category: Engineering
+            <button type="button" class="btn-close btn-close-sm ms-1" aria-label="Remove category filter"
+                    style="font-size:0.6rem;"></button>
+        </span>
+    </div>
+
+    <!-- Teams grid -->
+    {% if teams %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" data-testid="teams-grid">
+
+        {% for team in teams %}
+        <div class="col">
+            <div class="card h-100" data-testid="team-card-{{ team.name|lower|slugify }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">
+                            <i class="fa-solid fa-users-rectangle text-primary me-1"></i>
+                            {{ team.name }}
+                        </h5>
+                        <span class="badge {{ team.visibility_css }} ms-2 flex-shrink-0"
+                              data-bs-toggle="tooltip"
+                              title="Visibility: {{ team.visibility }}">
+                            {{ team.visibility }}
+                        </span>
+                    </div>
+                    <p class="card-text text-muted small mb-3">{{ team.description }}</p>
+                    <div class="d-flex gap-3 text-muted small mb-3">
+                        <span data-bs-toggle="tooltip" title="Members">
+                            <i class="fa-solid fa-user-group me-1"></i>
+                            {{ team.member_count }} member{% if team.member_count != 1 %}s{% endif %}
+                        </span>
+                        <span data-bs-toggle="tooltip" title="Shared playbooks">
+                            <i class="fa-solid fa-book me-1"></i>
+                            {{ team.playbook_count }} playbook{% if team.playbook_count != 1 %}s{% endif %}
+                        </span>
+                        <span data-bs-toggle="tooltip" title="Category">
+                            <i class="fa-solid fa-tag me-1"></i>
+                            {{ team.category }}
+                        </span>
+                    </div>
+                    {% if team.maria_role == "admin" %}
+                    <span class="badge bg-warning text-dark"
+                          data-bs-toggle="tooltip" title="You are the admin of this team">
+                        <i class="fa-solid fa-crown me-1"></i> Your Team
+                    </span>
+                    {% elif team.maria_role == "member" %}
+                    <span class="badge bg-light text-dark border"
+                          data-bs-toggle="tooltip" title="You are a member">
+                        <i class="fa-solid fa-check me-1"></i> Member
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent d-flex justify-content-end">
+                    <a href="{% url 'mockup_teams_detail' team_id=team.id %}"
+                       class="btn btn-outline-primary btn-sm"
+                       data-testid="view-team-{{ team.id }}"
+                       data-bs-toggle="tooltip" title="View team details">
+                        <i class="fa-solid fa-eye me-1"></i> View
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+    <!-- Empty state — no teams match -->
+    <div class="text-center py-5" data-testid="teams-empty-state">
+        <i class="fa-solid fa-users-slash fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">No teams found matching 'blockchain'.</h4>
+        <p class="text-muted">Try a different search term or browse all teams.</p>
+        <div class="d-flex justify-content-center gap-2 mt-3">
+            <a href="{% url 'mockup_teams_browse' %}" class="btn btn-outline-secondary"
+               data-testid="clear-search-btn">
+                <i class="fa-solid fa-xmark me-1"></i> Clear Search
+            </a>
+            <a href="{% url 'mockup_teams_create' %}" class="btn btn-primary"
+               data-testid="create-new-team-btn">
+                <i class="fa-solid fa-plus me-1"></i> Create New Team
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Mockup nav -->
+    <div class="alert alert-light border mt-4 small">
+        <strong>Mockup screens:</strong>
+        <a href="{% url 'mockup_teams_browse' %}">Browse</a> ·
+        <a href="{% url 'mockup_teams_create' %}">Create</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=1 %}">Detail — Non-member (Usability)</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=2 %}">Detail — Admin (UX)</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=3 %}">Detail — Member (Front-End Guild)</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=4 %}">Detail — Invite Only (Acme, INC)</a> ·
+        <a href="{% url 'mockup_teams_manage' team_id=2 %}">Manage (UX)</a>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('[mockup:teams-browse] page loaded | team_count={{ team_count }}');
+
+    const searchInput = document.getElementById('teams-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            console.log('[mockup:teams-browse] search query:', this.value);
+        });
+    }
+
+    const categoryFilter = document.getElementById('teams-category-filter');
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', function () {
+            console.log('[mockup:teams-browse] category filter changed:', this.value);
+        });
+    }
+
+    // Bootstrap tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el);
+    });
+});
+</script>
+{% endblock %}

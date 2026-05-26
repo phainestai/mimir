@@ -189,3 +189,78 @@ Feature: FOB-TEAMS-MANAGE-1 Manage Team (Admin Operations)
     When she navigates to /teams/<pk>/manage/
     Then she is redirected to the login page
     And after login she is returned to /teams/<pk>/manage/
+
+  # ── Invite Members ────────────────────────────────────────────────────
+
+  Scenario: FOB-TEAMS-MANAGE-21 Invite tab is visible on the manage page
+    Given Maria is on /teams/<pk>/manage/
+    Then the page shows tabs: Members, Join Requests, Playbooks, Settings, Invite
+    And an [Invite Members] button is visible on the Invite tab (data-testid="team-invite-btn")
+
+  Scenario: FOB-TEAMS-MANAGE-22 Invite form accepts comma-separated emails and optional welcome text
+    Given Maria is on the "Invite" tab of /teams/<pk>/manage/
+    Then the form contains:
+      | field        | type     | description                              |
+      | Emails       | textarea | Comma-separated list of email addresses  |
+      | Welcome text | textarea | Optional personalised message to invitees |
+    And an [Send Invites] submit button (data-testid="team-invite-submit") is present
+
+  Scenario: FOB-TEAMS-MANAGE-23 Invite existing platform user — invite appears in Join Requests
+    Given Alice Roy (aroy@example.com) already has a FOB account
+    And Maria is on the Invite tab of the "UX" team manage page
+    When she enters "aroy@example.com" into Emails
+    And optionally enters welcome text "Looking forward to working together!"
+    And clicks [Send Invites]
+    Then Alice Roy receives an invite email with subject "You've been invited to join the UX team on Mimir"
+    And the email contains the optional welcome text
+    And the email contains a [View Team] link to /teams/<pk>/
+    And Alice Roy's entry appears in the "Join Requests" tab with source "Invited"
+    And a success banner reads "1 invite sent."
+    And the browser console logs "[teams] invites sent: count=1, team=UX"
+
+  Scenario: FOB-TEAMS-MANAGE-24 Invite unknown email — user auto-registered and invite sent
+    Given no FOB account exists for "new.person@acme.com"
+    And Maria is on the Invite tab of the "UX" team manage page
+    When she enters "new.person@acme.com" into Emails and clicks [Send Invites]
+    Then a new FOB account is created with:
+      | field     | derived from                              | value           |
+      | email     | as-is                                     | new.person@acme.com |
+      | username  | local part before @                       | new.person      |
+      | first_name| local part before first "." (or full local if no ".") | new |
+      | last_name | domain name without TLD extension         | acme            |
+      | password  | random (account activation required)      | (random)        |
+    And the new user receives an account activation + invite email with subject "You've been invited to Mimir and the UX team"
+    And the email contains an [Activate Account & View Team] link
+    And the new user appears in the "Join Requests" tab with source "Invited (new user)"
+    And a success banner reads "1 invite sent. 1 new account created."
+
+  Scenario: FOB-TEAMS-MANAGE-25 Invite multiple emails in one submission
+    Given Maria is on the Invite tab
+    When she enters "alice@example.com, bob@example.com, newuser@acme.com" into Emails
+    And clicks [Send Invites]
+    Then 3 invite emails are sent (one per address)
+    And all 3 entries appear in the Join Requests tab
+    And a success banner reads "3 invites sent."
+
+  Scenario: FOB-TEAMS-MANAGE-26 Invite validation — invalid email format rejected
+    Given Maria is on the Invite tab
+    When she enters "not-an-email, alice@example.com" and clicks [Send Invites]
+    Then an inline error appears: "The following addresses are invalid: not-an-email"
+    And no invites are sent until all addresses are corrected
+
+  Scenario: FOB-TEAMS-MANAGE-27 Invite validation — already a member is skipped with warning
+    Given Mike Chen (mchen@example.com) is already a member of "UX"
+    When Maria enters "mchen@example.com" and clicks [Send Invites]
+    Then a warning banner reads "mchen@example.com is already a member of this team."
+    And no duplicate invite is sent
+
+  Scenario: FOB-TEAMS-MANAGE-28 Invited user entry in Join Requests shows "Invited" source badge
+    Given Maria invited Alice Roy via the Invite tab
+    When she views the Join Requests tab
+    Then Alice Roy's row shows:
+      | field      | value              |
+      | Name       | Alice Roy          |
+      | Username   | aroy               |
+      | Source     | Invited            |
+      | Requested At | (invite timestamp) |
+    And [Approve] and [Reject] buttons are present (same as regular requests)

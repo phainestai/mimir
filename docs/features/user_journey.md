@@ -214,7 +214,7 @@ Maria's FOB web GUI (http://localhost:8000) has a consistent layout:
   - PIPs (with **status-change count pill** — see below)
 - **Notifications**: Bell icon with badge count (unread notifications) — *when implemented*
 - **User Menu**: Click **your username** in the top-right to open a dropdown:
-  - **[View Profile]** → **FOB-PROFILE-1** (`/auth/user/profile/`) — name, email, API token (show / copy / **regenerate** with password), PIPs you created, playbooks you own
+  - **[View Profile]** → **FOB-PROFILE-1** (`/auth/user/profile/`) — name, email, API token (show / copy / **regenerate** with password), PIPs you created, playbooks you own, teams you belong to
   - **[Log Out]**
 
 Staff users may also use dashboard shortcuts (e.g. Django admin) where applicable; primary account + token management for everyone is **FOB-PROFILE-1**.
@@ -232,6 +232,7 @@ Maria opens **View Profile** from the username menu.
 - **API token (MCP / REST)**: DRF `Token` used as `Authorization: Token <key>`; [Show] / [Copy]; **Regenerate token** requires **current password** and invalidates the previous key immediately.
 - **My PIPs**: PIPs where Maria is the submitter (`created_by`), with links to each PIP.
 - **My playbooks**: Playbooks Maria authors (`author`), with links to each playbook.
+- **My Teams**: Teams Maria belongs to (as admin or member), showing role badge, member count, and a [View] link to each team detail page. Teams where she is admin show a crown icon. Hidden teams are included.
 
 #### Email Verification Flow
 
@@ -2446,15 +2447,46 @@ Maria clicks on "Usability" to see details:
 #### Action: Join Team
 Maria clicks "Join Team". Because it's set to auto-approve:
 - She's immediately added to the Usability team
-- Notification: "You've joined the Usability team"
+- In-app notification: "You've joined the Usability team"
+- **Confirmation email** sent to Maria with subject "You've joined the Usability team" and a [View Team] link
 - She can now see available playbooks from this team
 
 **Result**: Maria is now a member of three teams - two she created, one she joined.
 
+#### Action: Join Team — Requires Approval
+When a team has Join Policy "Requires Approval":
+- Maria's request is queued; she sees a disabled "Request Pending" button
+- The **team admin receives an email**: "New join request for your team" with a [Review Requests] link → `/teams/<pk>/manage/?tab=join-requests`
+- All approve/reject actions require the admin to be logged in (no one-click links in email)
+
+#### Action: Invite Members (Admin)
+Maria manages her hidden "Acme, INC" team and wants to add client contacts:
+- She opens Manage Team → **Invite** tab
+- Enters comma-separated email addresses and an optional welcome message
+- Clicks [Send Invites]
+
+**For existing FOB users** (email matches a registered account):
+- An invite email is sent: "You've been invited to join the Acme, INC team on Mimir"
+- The email includes the optional welcome text and a [View Team] link
+- The invitee appears in the **Join Requests** tab with an "Invited" badge
+- Maria can Approve or Reject from the Join Requests tab as usual
+
+**For new emails** (no FOB account found):
+- A FOB account is auto-created with credentials derived from the email:
+  - `username` = local part before `@` (e.g. `alice.roy` from `alice.roy@acme.com`)
+  - `first_name` = local part up to the first `.`, or full local part if no dot (e.g. `alice`)
+  - `last_name` = domain name without TLD (e.g. `acme` from `acme.com`)
+  - `password` = random (account activation required)
+- An **activation + invite** email is sent: "You've been invited to Mimir and the Acme, INC team"
+- The email includes an [Activate Account & View Team] link
+- The new user appears in the Join Requests tab with badge "Invited (new user)"
+
 **Act 11 Summary**: Maria manages her professional network:
 - ✅ Create teams (public and hidden)
 - ✅ Browse and join existing teams
-- ✅ Review and approve/reject join requests
+- ✅ Email confirmation on auto-join; email notification to admin on join request
+- ✅ Invite members by email (existing users and auto-register new ones)
+- ✅ Review and approve/reject join requests (including invited users)
 - ✅ Manage team playbook submissions
 - ✅ Transfer team admin rights
 - ✅ Remove members (with knowledge loss consequences)

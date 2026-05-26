@@ -176,3 +176,25 @@ Feature: FOB-TEAMS-VIEW-1 View Team Details, Join, and Leave
     When she navigates to /teams/<pk>/
     Then she is redirected to the login page
     And after login she is returned to /teams/<pk>/
+
+  # ── Email notifications ────────────────────────────────────────────────
+
+  Scenario: FOB-TEAMS-VIEW-18 Auto-join sends confirmation email to the user
+    Given Maria is NOT a member of "Usability" (Join Policy: Auto-approve)
+    When she clicks [Join Team] and is immediately added
+    Then Maria receives an email at her registered address with:
+      | field   | value                                              |
+      | Subject | You've joined the Usability team                   |
+      | Body    | contains team name, description, link to /teams/<pk>/ |
+    And the email contains a [View Team] button linking to /teams/<pk>/
+
+  Scenario: FOB-TEAMS-VIEW-19 Join request sends approval-request email to the team admin
+    Given the "UX" team exists with Join Policy "Requires Approval"
+    And Maria is NOT a member of "UX"
+    When she clicks [Join Team]
+    Then the admin of "UX" receives an email with:
+      | field   | value                                                           |
+      | Subject | New join request for your team "UX"                            |
+      | Body    | contains requester name, username, and request timestamp       |
+    And the email contains a [Review Requests] button linking to /teams/<pk>/manage/?tab=join-requests
+    And the email does NOT grant approve/reject without login (all actions require authentication)

@@ -440,7 +440,7 @@ def auth_login(request):
 
 
 def profile_view(request):
-    """FOB-PROFILE-VIEW-1: My profile — account fields, API token, PIPs, playbooks.
+    """FOB-PROFILE-VIEW-1: My profile — account fields, API token, PIPs, playbooks, teams.
 
     Toggle MOCK_PROFILE["email_verified"] to preview the unverified state.
     Add ?unverified=1 to the URL to force the unverified state in the browser.
@@ -450,6 +450,7 @@ def profile_view(request):
     if request.GET.get("unverified"):
         ctx["email_verified"] = False
         logger.info("Mockup: profile_view forcing unverified state via ?unverified=1")
+    ctx["teams"] = [t for t in MOCK_TEAMS if t["maria_role"]]
     return render(request, "mockups/profile/view.html", ctx)
 
 
@@ -473,3 +474,195 @@ def pip_admin_review(request, pip_id):
         "active_page": "pips",
     }
     return render(request, "mockups/pips/admin_review.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Teams — mock data
+# ---------------------------------------------------------------------------
+
+MOCK_TEAMS = [
+    {
+        "id": 1,
+        "name": "Usability",
+        "description": "Best practices for usable software development",
+        "visibility": "Public",
+        "visibility_css": "bg-success",
+        "join_policy": "Auto-approve",
+        "category": "Engineering",
+        "member_count": 127,
+        "playbook_count": 8,
+        "admin": "Mike Chen",
+        "admin_username": "mchen",
+        "maria_role": None,  # non-member
+    },
+    {
+        "id": 2,
+        "name": "UX",
+        "description": "User Experience methodologies and best practices",
+        "visibility": "Public",
+        "visibility_css": "bg-success",
+        "join_policy": "Requires Approval",
+        "category": "Design",
+        "member_count": 3,
+        "playbook_count": 2,
+        "admin": "Maria Rodriguez",
+        "admin_username": "maria",
+        "maria_role": "admin",
+    },
+    {
+        "id": 3,
+        "name": "Front-End Guild",
+        "description": "JavaScript, CSS, and frontend architecture methodologies",
+        "visibility": "Public",
+        "visibility_css": "bg-success",
+        "join_policy": "Auto-approve",
+        "category": "Engineering",
+        "member_count": 45,
+        "playbook_count": 3,
+        "admin": "Tom Lee",
+        "admin_username": "tlee",
+        "maria_role": "member",
+    },
+    {
+        "id": 4,
+        "name": "Acme, INC",
+        "description": "UX Consulting services for Acme Corporation",
+        "visibility": "Hidden",
+        "visibility_css": "bg-secondary",
+        "join_policy": "Invite Only",
+        "category": "Private",
+        "member_count": 5,
+        "playbook_count": 1,
+        "admin": "Maria Rodriguez",
+        "admin_username": "maria",
+        "maria_role": "admin",
+    },
+]
+
+_MOCK_TEAMS_BY_ID = {t["id"]: t for t in MOCK_TEAMS}
+
+MOCK_TEAM_PLAYBOOKS = {
+    1: [
+        {"id": 10, "name": "React Frontend Development", "version": "1.2", "status": "released"},
+        {"id": 11, "name": "Accessible Design Patterns", "version": "0.9", "status": "draft"},
+        {"id": 12, "name": "Component Testing Patterns", "version": "2.0", "status": "released"},
+    ],
+    2: [
+        {"id": 13, "name": "UX Research Methods", "version": "1.0", "status": "released"},
+        {"id": 14, "name": "Product Discovery Framework", "version": "1.1", "status": "released"},
+    ],
+    3: [
+        {"id": 15, "name": "JavaScript Architecture", "version": "3.0", "status": "released"},
+        {"id": 16, "name": "CSS Methodology Guide", "version": "2.1", "status": "released"},
+        {"id": 17, "name": "Frontend Performance", "version": "1.0", "status": "released"},
+    ],
+    4: [
+        {"id": 18, "name": "Acme Design System", "version": "1.0", "status": "released"},
+    ],
+}
+
+MOCK_TEAM_MEMBERS = {
+    1: [
+        {"name": "Mike Chen", "username": "mchen", "role": "Admin", "joined": "2025-01-10"},
+        {"name": "Alice Roy", "username": "aroy", "role": "member", "joined": "2025-02-14"},
+        {"name": "Bob Tan", "username": "btan", "role": "member", "joined": "2025-03-01"},
+        {"name": "Sara Kim", "username": "skim", "role": "member", "joined": "2025-04-08"},
+        {"name": "James Wu", "username": "jwu", "role": "member", "joined": "2025-05-22"},
+    ],
+    2: [
+        {"name": "Maria Rodriguez", "username": "maria", "role": "Admin", "joined": "2025-06-01"},
+        {"name": "Mike Chen", "username": "mchen", "role": "member", "joined": "2025-07-15"},
+        {"name": "Tom Lee", "username": "tlee", "role": "member", "joined": "2025-08-20"},
+    ],
+    3: [
+        {"name": "Tom Lee", "username": "tlee", "role": "Admin", "joined": "2025-01-05"},
+        {"name": "Maria Rodriguez", "username": "maria", "role": "member", "joined": "2025-09-03"},
+        {"name": "Alice Roy", "username": "aroy", "role": "member", "joined": "2025-10-11"},
+    ],
+    4: [
+        {"name": "Maria Rodriguez", "username": "maria", "role": "Admin", "joined": "2026-01-01"},
+        {"name": "Client A", "username": "client_a", "role": "member", "joined": "2026-01-15"},
+    ],
+}
+
+MOCK_JOIN_REQUESTS = [
+    {"name": "Alice Roy", "username": "aroy", "requested_at": "2026-05-19 10:00", "source": "self"},
+    {"name": "Bob Tan", "username": "btan", "requested_at": "2026-05-20 08:30", "source": "invited"},
+    {"name": "Sara Kim", "username": "skim", "requested_at": "2026-05-24 14:22", "source": "invited_new"},
+]
+
+MOCK_CATEGORIES = ["Engineering", "Design", "Research", "Product", "Private", "Other"]
+
+
+# ---------------------------------------------------------------------------
+# Teams — views
+# ---------------------------------------------------------------------------
+
+def teams_browse(request):
+    """FOB-TEAMS-BROWSE-1: Browse, search, and filter available teams."""
+    logger.info("Mockup: teams_browse | user=%s", getattr(request.user, "username", "anonymous"))
+    public_and_member_teams = [t for t in MOCK_TEAMS if t["visibility"] == "Public" or t["maria_role"]]
+    context = {
+        "teams": public_and_member_teams,
+        "team_count": len(public_and_member_teams),
+        "categories": MOCK_CATEGORIES,
+        "active_page": "teams",
+    }
+    return render(request, "mockups/teams/browse.html", context)
+
+
+def teams_create(request):
+    """FOB-TEAMS-CREATE-1: Create a new team."""
+    logger.info("Mockup: teams_create | user=%s", getattr(request.user, "username", "anonymous"))
+    context = {
+        "categories": MOCK_CATEGORIES,
+        "errors": {},
+        "active_page": "teams",
+    }
+    return render(request, "mockups/teams/create.html", context)
+
+
+def teams_detail(request, team_id):
+    """FOB-TEAMS-VIEW-1: View team detail, join, and leave.
+
+    team_id=1: Usability — non-member, Auto-approve (Join button)
+    team_id=2: UX — Maria is admin (Manage button)
+    team_id=3: Front-End Guild — Maria is member (Leave button)
+    team_id=4: Acme INC — Invite Only (no join, invite notice)
+    """
+    logger.info("Mockup: teams_detail | team_id=%s | user=%s", team_id, getattr(request.user, "username", "anonymous"))
+    team = _MOCK_TEAMS_BY_ID.get(team_id, _MOCK_TEAMS_BY_ID[1])
+    join_states = {
+        None: "join",          # non-member
+        "member": "leave",
+        "admin": "manage",
+        "pending": "pending",
+    }
+    join_state = join_states.get(team["maria_role"], "join")
+    if team["join_policy"] == "Invite Only" and not team["maria_role"]:
+        join_state = "invite_only"
+    context = {
+        "team": team,
+        "join_state": join_state,
+        "playbooks": MOCK_TEAM_PLAYBOOKS.get(team_id, []),
+        "members": MOCK_TEAM_MEMBERS.get(team_id, [])[:5],
+        "member_count": team["member_count"],
+        "active_page": "teams",
+    }
+    return render(request, "mockups/teams/detail.html", context)
+
+
+def teams_manage(request, team_id):
+    """FOB-TEAMS-MANAGE-1: Admin management panel — members, join requests, playbooks, settings."""
+    logger.info("Mockup: teams_manage | team_id=%s | user=%s", team_id, getattr(request.user, "username", "anonymous"))
+    team = _MOCK_TEAMS_BY_ID.get(team_id, _MOCK_TEAMS_BY_ID[2])
+    context = {
+        "team": team,
+        "members": MOCK_TEAM_MEMBERS.get(team_id, []),
+        "join_requests": MOCK_JOIN_REQUESTS,
+        "join_request_count": len(MOCK_JOIN_REQUESTS),
+        "playbooks": MOCK_TEAM_PLAYBOOKS.get(team_id, []),
+        "categories": MOCK_CATEGORIES,
+        "active_page": "teams",
+    }
+    return render(request, "mockups/teams/manage.html", context)

@@ -15,4 +15,9 @@ urlpatterns = [
     path("pips/create/", views.pip_create, name="mockup_pip_create"),
     path("pips/<int:pip_id>/", views.pip_detail, name="mockup_pip_detail"),
     path("pips/<int:pip_id>/admin-review/", views.pip_admin_review, name="mockup_pip_admin_review"),
+    # ── Teams ─────────────────────────────────────────────────────────────
+    path("teams/", views.teams_browse, name="mockup_teams_browse"),
+    path("teams/create/", views.teams_create, name="mockup_teams_create"),
+    path("teams/<int:team_id>/", views.teams_detail, name="mockup_teams_detail"),
+    path("teams/<int:team_id>/manage/", views.teams_manage, name="mockup_teams_manage"),
 ]

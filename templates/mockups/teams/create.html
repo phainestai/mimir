@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Team — Mockup{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="team-create-page">
+
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mockup_teams_browse' %}">Teams</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Create Team</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-7">
+            <h2 class="mb-1"><i class="fa-solid fa-users-plus me-2"></i>Create Team</h2>
+            <p class="text-muted mb-4">Organise your professional network and share playbooks with the right collaborators.</p>
+
+            <form method="post" action="." data-testid="team-create-form" novalidate>
+                {% csrf_token %}
+
+                <!-- Team Name -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="team-name">
+                        Team Name <span class="text-danger" aria-hidden="true">*</span>
+                    </label>
+                    <input type="text"
+                           id="team-name"
+                           class="form-control {% if errors.name %}is-invalid{% endif %}"
+                           name="name"
+                           maxlength="100"
+                           placeholder="e.g. UX, Front-End Guild, Acme INC"
+                           data-testid="team-name-input"
+                           data-bs-toggle="tooltip"
+                           title="Unique name for this team. Max 100 characters."
+                           aria-required="true"
+                           aria-describedby="team-name-error">
+                    {% if errors.name %}
+                    <div id="team-name-error" class="invalid-feedback" data-testid="team-name-error">
+                        {{ errors.name }}
+                    </div>
+                    {% endif %}
+                    <!-- Validation error state (mockup) -->
+                    <div class="mt-1">
+                        <small class="text-muted">Must be unique across all teams.</small>
+                    </div>
+                </div>
+
+                <!-- ── Validation error mockup state ── -->
+                <div class="alert alert-danger border d-flex align-items-start gap-2 mb-4 py-2 px-3 small"
+                     data-testid="team-name-error-banner" role="alert"
+                     style="display: none !important;">
+                    <i class="fa-solid fa-circle-exclamation mt-1 flex-shrink-0"></i>
+                    <div>
+                        <strong>Team name is required.</strong>
+                        <span class="d-block text-muted">Please enter a unique name for your team.</span>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="team-description">Description</label>
+                    <textarea id="team-description"
+                              class="form-control"
+                              name="description"
+                              rows="3"
+                              placeholder="What is this team about? What methodologies do you focus on?"
+                              data-testid="team-description-input"
+                              data-bs-toggle="tooltip"
+                              title="Optional description shown on the team card and detail page."
+                              aria-describedby="description-hint"></textarea>
+                    <div id="description-hint" class="form-text">
+                        Shown on the team card and detail page.
+                    </div>
+                </div>
+
+                <!-- Visibility + Join Policy (side by side on larger screens) -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label fw-semibold" for="team-visibility">Visibility</label>
+                        <select id="team-visibility"
+                                class="form-select"
+                                name="visibility"
+                                data-testid="team-visibility-input"
+                                data-bs-toggle="tooltip"
+                                title="Public: discoverable by all users. Hidden: only visible to members."
+                                aria-describedby="visibility-hint">
+                            <option value="Public" selected>Public</option>
+                            <option value="Hidden">Hidden</option>
+                        </select>
+                        <div id="visibility-hint" class="form-text">
+                            Hidden teams only appear to members.
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label fw-semibold" for="team-join-policy">Join Policy</label>
+                        <select id="team-join-policy"
+                                class="form-select"
+                                name="join_policy"
+                                data-testid="team-join-policy-input"
+                                data-bs-toggle="tooltip"
+                                title="Controls how users can join this team."
+                                aria-describedby="join-policy-hint">
+                            <option value="Auto-approve" selected>Auto-approve</option>
+                            <option value="Requires Approval">Requires Approval</option>
+                            <option value="Invite Only">Invite Only</option>
+                        </select>
+                        <div id="join-policy-hint" class="form-text">
+                            Invite Only: new members must be added by an admin.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold" for="team-category">Category</label>
+                    <select id="team-category"
+                            class="form-select"
+                            name="category"
+                            data-testid="team-category-input"
+                            data-bs-toggle="tooltip"
+                            title="Used for filtering teams in the team browser.">
+                        <option value="" disabled selected>Select a category…</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{% url 'mockup_teams_browse' %}"
+                       class="btn btn-outline-secondary"
+                       data-testid="team-create-cancel"
+                       data-bs-toggle="tooltip" title="Cancel and return to Teams">
+                        <i class="fa-solid fa-xmark me-1"></i> Cancel
+                    </a>
+                    <button type="submit"
+                            class="btn btn-primary"
+                            data-testid="team-create-submit"
+                            data-bs-toggle="tooltip" title="Create this team">
+                        <i class="fa-solid fa-users-plus me-1"></i> Create Team
+                    </button>
+                </div>
+            </form>
+
+            <!-- Success state (mockup) -->
+            <div class="alert alert-success d-flex align-items-center gap-2 mt-4"
+                 data-testid="team-create-success" role="alert"
+                 style="display: none !important;">
+                <i class="fa-solid fa-circle-check flex-shrink-0"></i>
+                <span>Team <strong>'UX'</strong> created successfully.</span>
+            </div>
+        </div>
+
+        <!-- Right panel: info box -->
+        <div class="col-12 col-lg-4 offset-lg-1 mt-4 mt-lg-0">
+            <div class="card border bg-light">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3">
+                        <i class="fa-solid fa-circle-info me-2 text-primary"></i>Team Visibility
+                    </h6>
+                    <dl class="small mb-0">
+                        <dt>Public</dt>
+                        <dd class="text-muted mb-2">Appears in the team browser. Any authenticated user can discover and (depending on Join Policy) join.</dd>
+                        <dt>Hidden</dt>
+                        <dd class="text-muted mb-0">Does not appear in the browser for non-members. Accessible only by direct link or invitation.</dd>
+                    </dl>
+                </div>
+            </div>
+            <div class="card border bg-light mt-3">
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3">
+                        <i class="fa-solid fa-door-open me-2 text-primary"></i>Join Policies
+                    </h6>
+                    <dl class="small mb-0">
+                        <dt>Auto-approve</dt>
+                        <dd class="text-muted mb-2">Members join immediately with no admin action required.</dd>
+                        <dt>Requires Approval</dt>
+                        <dd class="text-muted mb-2">Users send a request; admin approves or rejects.</dd>
+                        <dt>Invite Only</dt>
+                        <dd class="text-muted mb-0">Admin adds members directly; no self-service join button shown.</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mockup nav -->
+    <div class="alert alert-light border mt-4 small">
+        <strong>Mockup screens:</strong>
+        <a href="{% url 'mockup_teams_browse' %}">Browse</a> ·
+        <a href="{% url 'mockup_teams_create' %}">Create</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=1 %}">Detail — Non-member (Usability)</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=2 %}">Detail — Admin (UX)</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=3 %}">Detail — Member (Front-End Guild)</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=4 %}">Detail — Invite Only (Acme, INC)</a> ·
+        <a href="{% url 'mockup_teams_manage' team_id=2 %}">Manage (UX)</a>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('[mockup:teams-create] page loaded');
+
+    const form = document.querySelector('[data-testid="team-create-form"]');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const nameVal = document.getElementById('team-name').value.trim();
+            console.log('[mockup:teams-create] submit clicked | name=' + nameVal);
+            if (!nameVal) {
+                console.log('[mockup:teams-create] validation failed: name is required');
+            } else {
+                console.log('[mockup:teams-create] validation passed, would POST');
+            }
+        });
+    }
+
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ team.name }} — Mockup{% endblock %}
+
+{% block content %}
+<div class="container mt-4" data-testid="team-detail-page">
+
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'mockup_teams_browse' %}">Teams</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ team.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Success / info banners (shown contextually) -->
+    {% if join_state == "leave" %}
+    <div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert"
+         data-testid="team-join-success-banner">
+        <i class="fa-solid fa-circle-check flex-shrink-0"></i>
+        <span>You've joined the <strong>{{ team.name }}</strong> team.</span>
+    </div>
+    {% endif %}
+
+    <!-- Header row -->
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="mb-1">
+                <i class="fa-solid fa-users-rectangle text-primary me-2"></i>{{ team.name }}
+            </h2>
+            <span class="badge {{ team.visibility_css }} me-1"
+                  data-bs-toggle="tooltip" title="Visibility">{{ team.visibility }}</span>
+            <span class="badge bg-light text-dark border"
+                  data-bs-toggle="tooltip" title="Category">{{ team.category }}</span>
+        </div>
+
+        <!-- Action buttons — one of: Join / Leave / Manage / Pending / (none for invite-only) -->
+        <div class="d-flex gap-2 flex-wrap" role="group" aria-label="Team membership actions">
+
+            {% if join_state == "join" %}
+            <button type="button"
+                    class="btn btn-success"
+                    data-testid="team-join-btn"
+                    data-bs-toggle="modal" data-bs-target="#join-confirm-modal"
+                    aria-label="Join {{ team.name }} team">
+                <i class="fa-solid fa-user-plus me-1"></i> Join Team
+            </button>
+
+            {% elif join_state == "pending" %}
+            <button type="button"
+                    class="btn btn-secondary"
+                    data-testid="team-join-pending-btn"
+                    disabled
+                    aria-disabled="true"
+                    data-bs-toggle="tooltip" title="Your join request is awaiting approval.">
+                <i class="fa-solid fa-clock me-1"></i> Request Pending
+            </button>
+
+            {% elif join_state == "leave" %}
+            <button type="button"
+                    class="btn btn-outline-danger"
+                    data-testid="team-leave-btn"
+                    data-bs-toggle="modal" data-bs-target="#leave-confirm-modal"
+                    aria-label="Leave {{ team.name }} team">
+                <i class="fa-solid fa-right-from-bracket me-1"></i> Leave Team
+            </button>
+
+            {% elif join_state == "manage" %}
+            <a href="{% url 'mockup_teams_manage' team_id=team.id %}"
+               class="btn btn-primary"
+               data-testid="team-manage-btn"
+               data-bs-toggle="tooltip" title="Open team management panel">
+                <i class="fa-solid fa-gear me-1"></i> Manage Team
+            </a>
+
+            {% elif join_state == "invite_only" %}
+            <div class="alert alert-secondary py-2 px-3 mb-0 small d-flex align-items-center gap-2"
+                 role="note" data-testid="team-invite-only-notice">
+                <i class="fa-solid fa-lock"></i>
+                This team accepts new members by invitation only.
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- Info card + stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-lg-8">
+            <div class="card h-100" data-testid="team-info-card">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small fw-semibold mb-3">About</h6>
+                    <p class="mb-3">{{ team.description }}</p>
+                    <dl class="row small mb-0">
+                        <dt class="col-sm-4 text-muted">Admin</dt>
+                        <dd class="col-sm-8">
+                            <i class="fa-solid fa-crown text-warning me-1"></i>
+                            {{ team.admin }}
+                            <span class="text-muted">(@{{ team.admin_username }})</span>
+                        </dd>
+                        <dt class="col-sm-4 text-muted">Join Policy</dt>
+                        <dd class="col-sm-8">
+                            {% if team.join_policy == "Auto-approve" %}
+                            <span class="badge bg-success">{{ team.join_policy }}</span>
+                            {% elif team.join_policy == "Requires Approval" %}
+                            <span class="badge bg-warning text-dark">{{ team.join_policy }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ team.join_policy }}</span>
+                            {% endif %}
+                        </dd>
+                        <dt class="col-sm-4 text-muted">Category</dt>
+                        <dd class="col-sm-8">{{ team.category }}</dd>
+                        <dt class="col-sm-4 text-muted">Visibility</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {{ team.visibility_css }}">{{ team.visibility }}</span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="row g-3 h-100">
+                <div class="col-6 col-lg-12">
+                    <div class="card text-center h-100">
+                        <div class="card-body py-3">
+                            <div class="fs-3 fw-bold text-primary" data-testid="team-member-count">
+                                {{ member_count }}
+                            </div>
+                            <div class="text-muted small">Members</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-12">
+                    <div class="card text-center h-100">
+                        <div class="card-body py-3">
+                            <div class="fs-3 fw-bold text-primary" data-testid="team-playbook-count">
+                                {{ playbooks|length }}
+                            </div>
+                            <div class="text-muted small">Playbooks</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs: Playbooks / Members -->
+    <ul class="nav nav-tabs mb-0" role="tablist" id="team-tabs" data-testid="team-tabs">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-playbooks-btn"
+                    data-bs-toggle="tab" data-bs-target="#tab-playbooks"
+                    type="button" role="tab" aria-controls="tab-playbooks" aria-selected="true"
+                    data-testid="team-tab-playbooks">
+                <i class="fa-solid fa-book me-1"></i> Playbooks
+                <span class="badge bg-secondary ms-1">{{ playbooks|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-members-btn"
+                    data-bs-toggle="tab" data-bs-target="#tab-members"
+                    type="button" role="tab" aria-controls="tab-members" aria-selected="false"
+                    data-testid="team-tab-members">
+                <i class="fa-solid fa-users me-1"></i> Members
+                <span class="badge bg-secondary ms-1">{{ member_count }}</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="team-tab-content">
+
+        <!-- Playbooks tab -->
+        <div class="tab-pane fade show active" id="tab-playbooks" role="tabpanel" aria-labelledby="tab-playbooks-btn">
+            {% if playbooks %}
+            <div class="card border-top-0 rounded-top-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0" data-testid="team-playbooks-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Playbook</th>
+                                <th style="width: 8%">Version</th>
+                                <th style="width: 10%">Status</th>
+                                <th style="width: 10%" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pb in playbooks %}
+                            <tr data-testid="team-playbook-row-{{ pb.id }}">
+                                <td>
+                                    <i class="fa-solid fa-book text-primary me-1"></i>
+                                    <strong>{{ pb.name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace">v{{ pb.version }}</span>
+                                </td>
+                                <td>
+                                    {% if pb.status == "released" %}
+                                    <span class="badge bg-success">Released</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Draft</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="#" class="btn btn-outline-primary btn-sm"
+                                       data-testid="view-playbook-{{ pb.id }}"
+                                       data-bs-toggle="tooltip" title="View this playbook">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <div class="card border-top-0 rounded-top-0" data-testid="team-playbooks-empty">
+                <div class="card-body text-center py-4">
+                    <i class="fa-solid fa-book-open fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">This team has no playbooks yet.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Members tab -->
+        <div class="tab-pane fade" id="tab-members" role="tabpanel" aria-labelledby="tab-members-btn">
+            {% if members %}
+            <div class="card border-top-0 rounded-top-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0" data-testid="team-members-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th style="width: 10%">Role</th>
+                                <th style="width: 12%">Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in members %}
+                            <tr data-testid="team-member-row-{{ m.username }}">
+                                <td>
+                                    <i class="fa-solid fa-user text-muted me-1"></i>
+                                    {{ m.name }}
+                                </td>
+                                <td class="text-muted small font-monospace">@{{ m.username }}</td>
+                                <td>
+                                    {% if m.role == "Admin" %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fa-solid fa-crown me-1"></i>Admin
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark border">Member</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small">{{ m.joined }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if member_count > 5 %}
+                    <div class="card-footer text-center text-muted small py-2">
+                        Showing 5 of {{ member_count }} members.
+                        {% if join_state == "manage" %}
+                        <a href="{% url 'mockup_teams_manage' team_id=team.id %}" class="ms-1">See all in Manage Team</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="card border-top-0 rounded-top-0" data-testid="team-members-empty">
+                <div class="card-body text-center py-4">
+                    <i class="fa-solid fa-users fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No members yet.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- ── Modals ─────────────────────────────────────────────────────────── -->
+
+    <!-- Join confirm modal (Auto-approve) -->
+    <div class="modal fade" id="join-confirm-modal" tabindex="-1"
+         aria-labelledby="join-modal-label" aria-hidden="true"
+         data-testid="team-join-modal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="join-modal-label">
+                        <i class="fa-solid fa-user-plus me-2"></i>Join {{ team.name }}?
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {% if team.join_policy == "Auto-approve" %}
+                    <p>You will be added to <strong>{{ team.name }}</strong> immediately and gain access to all team playbooks.</p>
+                    {% elif team.join_policy == "Requires Approval" %}
+                    <p>Your request to join <strong>{{ team.name }}</strong> will be sent to the team admin for approval.</p>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
+                            data-testid="join-modal-cancel">Cancel</button>
+                    <button type="button" class="btn btn-success"
+                            data-testid="join-modal-confirm">
+                        <i class="fa-solid fa-check me-1"></i>
+                        {% if team.join_policy == "Auto-approve" %}Join Team{% else %}Send Request{% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave confirm modal -->
+    <div class="modal fade" id="leave-confirm-modal" tabindex="-1"
+         aria-labelledby="leave-modal-label" aria-hidden="true"
+         data-testid="team-leave-modal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" id="leave-modal-label">
+                        <i class="fa-solid fa-right-from-bracket me-2 text-danger"></i>Leave {{ team.name }}?
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Leave team <strong>'{{ team.name }}'</strong>? You will lose access to playbooks shared by this team.</p>
+                    <p class="text-muted small mb-0">Your personally owned playbooks are not affected.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"
+                            data-testid="leave-modal-cancel">Cancel</button>
+                    <button type="button" class="btn btn-danger"
+                            data-testid="leave-modal-confirm">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Leave Team
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin-cannot-leave warning modal -->
+    <div class="modal fade" id="admin-leave-warning-modal" tabindex="-1"
+         aria-labelledby="admin-leave-modal-label" aria-hidden="true"
+         data-testid="team-admin-leave-modal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" id="admin-leave-modal-label">
+                        <i class="fa-solid fa-triangle-exclamation text-warning me-2"></i>Transfer Admin First
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>You are the admin of <strong>'{{ team.name }}'</strong>. Transfer admin rights to another member before leaving.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="{% url 'mockup_teams_manage' team_id=team.id %}"
+                       class="btn btn-primary"
+                       data-testid="admin-leave-go-manage">
+                        <i class="fa-solid fa-gear me-1"></i> Manage Team
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mockup nav -->
+    <div class="alert alert-light border mt-4 small">
+        <strong>Mockup screens:</strong>
+        <a href="{% url 'mockup_teams_browse' %}">Browse</a> ·
+        <a href="{% url 'mockup_teams_create' %}">Create</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=1 %}">Detail — Non-member (Usability)</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=2 %}">Detail — Admin (UX)</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=3 %}">Detail — Member (Front-End Guild)</a> ·
+        <a href="{% url 'mockup_teams_detail' team_id=4 %}">Detail — Invite Only (Acme, INC)</a> ·
+        <a href="{% url 'mockup_teams_manage' team_id=2 %}">Manage (UX)</a>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const teamName = '{{ team.name }}';
+    const joinState = '{{ join_state }}';
+    console.log('[mockup:teams-detail] page loaded | team=' + teamName + ' | join_state=' + joinState);
+
+    // Tab switch logging
+    document.querySelectorAll('#team-tabs [data-bs-toggle="tab"]').forEach(function (btn) {
+        btn.addEventListener('shown.bs.tab', function (e) {
+            console.log('[mockup:teams-detail] tab switched to:', e.target.dataset.bsTarget);
+        });
+    });
+
+    // Join confirmation
+    const joinConfirm = document.querySelector('[data-testid="join-modal-confirm"]');
+    if (joinConfirm) {
+        joinConfirm.addEventListener('click', function () {
+            console.log('[mockup:teams-detail] join confirmed | policy={{ team.join_policy }}');
+            if ('{{ team.join_policy }}' === 'Auto-approve') {
+                console.log('[teams] joined team: {{ team.name }}');
+            } else {
+                console.log('[teams] join request sent for: {{ team.name }}');
+            }
+        });
+    }
+
+    // Leave confirmation
+    const leaveConfirm = document.querySelector('[data-testid="leave-modal-confirm"]');
+    if (leaveConfirm) {
+        leaveConfirm.addEventListener('click', function () {
+            console.log('[mockup:teams-detail] leave confirmed | team={{ team.name }}');
+        });
+    }
+
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el);
+    });
+});
+</script>
+{% endblock %}
