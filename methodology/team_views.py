@@ -10,6 +10,7 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.shortcuts import redirect, render
 
@@ -56,21 +57,133 @@ def teams_create(request):
 
 @login_required
 def teams_detail(request, pk: int):
-    """FOB-TEAMS-VIEW-*: team detail stub — implemented fully in WP-4.
+    """FOB-TEAMS-VIEW-*: team detail, join, and leave.
 
     :param request: Django HTTP request.
     :param pk: Team primary key.
-    :returns: Rendered detail page.
+    :returns: Rendered detail page or redirect after POST action.
     """
-    logger.info("[teams] detail | pk=%s user=%s", pk, request.user.username)
+    logger.info(
+        "[teams] detail | pk=%s user=%s method=%s",
+        pk, request.user.username, request.method,
+    )
     service = TeamService()
     team = service.get_team_or_404(pk, request.user)
-    user_role = service.get_member_role(team, request.user)
-    return render(request, "teams/detail.html", {
+
+    if request.method == "POST":
+        return _handle_detail_post(request, team, service)
+
+    context = _build_detail_context(request.user, team, service)
+    return render(request, "teams/detail.html", context)
+
+
+def _compute_join_state(team, role: str | None, pending_request) -> str:
+    """Determine join_state string from user's relationship to the team.
+
+    :param team: Target Team instance.
+    :param role: 'admin', 'member', or None.
+    :param pending_request: JoinRequest or None.
+    :returns: One of 'manage', 'leave', 'pending', 'invite_only', 'join'.
+    """
+    if role == "admin":
+        return "manage"
+    if role == "member":
+        return "leave"
+    if pending_request:
+        return "pending"
+    if team.join_policy == Team.JOIN_POLICY_INVITE:
+        return "invite_only"
+    return "join"
+
+
+def _build_detail_context(user, team, service: TeamService) -> dict:
+    """Build context dict for team detail page.
+
+    :param user: Requesting user.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :returns: Context dictionary for the template.
+    """
+    role = service.get_member_role(team, user)
+    pending_request = service.get_pending_join_request(team, user)
+    join_state = _compute_join_state(team, role, pending_request)
+    playbooks = service.get_team_playbooks(team)
+    members = team.memberships.select_related("user").order_by("joined_at")[:25]
+    logger.info(
+        "[teams] detail context | team=%s join_state=%s members=%d",
+        team.name, join_state, team.memberships.count(),
+    )
+    return {
         "team": team,
-        "user_role": user_role,
+        "join_state": join_state,
+        "playbooks": playbooks,
+        "members": members,
+        "member_count": team.memberships.count(),
         "active_page": "teams",
-    })
+    }
+
+
+def _handle_detail_post(request, team, service: TeamService):
+    """Handle POST actions on team detail page: join or leave.
+
+    :param request: Django HTTP request.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :returns: Redirect response.
+    """
+    action = request.POST.get("action")
+    logger.info(
+        "[teams] detail POST | action=%s team=%s user=%s",
+        action, team.name, request.user.username,
+    )
+    if action == "join":
+        return _handle_join(request, team, service)
+    if action == "leave":
+        return _handle_leave(request, team, service)
+    return redirect("teams:teams_detail", pk=team.pk)
+
+
+def _handle_join(request, team, service: TeamService):
+    """Handle join action: auto-approve or create join request.
+
+    :param request: Django HTTP request.
+    :param team: Team to join.
+    :param service: TeamService instance.
+    :returns: Redirect to team detail page.
+    """
+    if team.join_policy == Team.JOIN_POLICY_AUTO:
+        service.add_member(team, request.user)
+        logger.info("[teams] joined team: %s user=%s", team.name, request.user.username)
+        messages.success(request, f"You've joined the {team.name} team.")
+    else:
+        service.create_join_request(team, request.user)
+        logger.info("[teams] join request created: team=%s user=%s", team.name, request.user.username)
+        messages.info(
+            request,
+            f"Your request to join '{team.name}' has been sent. Awaiting approval.",
+        )
+    return redirect("teams:teams_detail", pk=team.pk)
+
+
+def _handle_leave(request, team, service: TeamService):
+    """Handle leave action with admin guard.
+
+    :param request: Django HTTP request.
+    :param team: Team to leave.
+    :param service: TeamService instance.
+    :returns: Redirect to team detail page.
+    """
+    try:
+        service.leave_team(team, request.user)
+        logger.info("[teams] left team: %s user=%s", team.name, request.user.username)
+        messages.success(request, f"You have left the {team.name} team.")
+    except ValidationError as exc:
+        logger.warning(
+            "[teams] leave blocked: %s user=%s reason=%s",
+            team.name, request.user.username, str(exc),
+        )
+        messages.warning(request, exc.message)
+    return redirect("teams:teams_detail", pk=team.pk)
 
 
 @login_required
