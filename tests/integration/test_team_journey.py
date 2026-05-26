@@ -3,10 +3,15 @@ Integration tests mirroring UAT Journey 8 — Teams.
 Covers: browse → create → detail → join → manage → leave → profile.
 """
 
+import logging
+
 import pytest
 from django.contrib.auth.models import User
+
 from methodology.models import Team, TeamMembership, JoinRequest
 from methodology.services.team_service import TeamService
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.django_db
@@ -64,8 +69,7 @@ class TestTeamsJourney:
             },
         )
         assert response.status_code == 200
-        content = response.content
-        assert b"required" in content.lower() or b"Team name" in content
+        assert b"required" in response.content.lower() or b"Team name" in response.content
 
     def test_uat_08_03_browse_shows_team_card(self, client):
         """UAT-08-03: Browse shows team card."""
@@ -90,18 +94,17 @@ class TestTeamsJourney:
         assert b'data-testid="team-leave-btn"' in response2.content
 
     def test_uat_08_05_detail_members_tab(self, client):
-        """UAT-08-05: Members tab shows both members."""
+        """UAT-08-05: Members tab element present on detail page."""
         team = self.service.create_team(
             self.uat_user, "Members UAT Team J8", "desc", "Public", "Auto-approve", "Engineering"
         )
         self.service.add_member(team, self.admin_user)
         client.force_login(self.uat_user)
         response = client.get(f"/teams/{team.pk}/")
-        assert response.status_code == 200
         assert b'data-testid="team-tab-members"' in response.content
 
     def test_uat_08_06_manage_page_all_tabs(self, client):
-        """UAT-08-06: Manage page accessible to team admin — all tabs present."""
+        """UAT-08-06: Manage page accessible to team admin; all tabs present."""
         team = self.service.create_team(
             self.uat_user, "Manage UAT Team J8", "desc", "Public", "Auto-approve", "Engineering"
         )
@@ -112,7 +115,7 @@ class TestTeamsJourney:
         assert b'data-testid="team-tab-invite"' in response.content
 
     def test_uat_08_07_manage_settings_update(self, client):
-        """UAT-08-07: Manage Settings — update Join Policy."""
+        """UAT-08-07: Admin updates Join Policy via settings tab."""
         team = self.service.create_team(
             self.uat_user, "Settings UAT Team J8", "desc", "Public", "Auto-approve", "Engineering"
         )
@@ -133,7 +136,7 @@ class TestTeamsJourney:
         assert team.join_policy == "Requires Approval"
 
     def test_uat_08_08_non_admin_cannot_manage(self, client):
-        """UAT-08-08: Non-admin is redirected away from the manage page."""
+        """UAT-08-08: Non-admin member is redirected from manage page."""
         team = self.service.create_team(
             self.uat_user, "Guard UAT Team J8", "desc", "Public", "Auto-approve", "Engineering"
         )

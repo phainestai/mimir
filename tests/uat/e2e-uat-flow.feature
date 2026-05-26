@@ -26,7 +26,7 @@ Feature: Mimir E2E UAT — browser-only flow (registration → GUI CRUDL → rel
     | J5      | UAT-05-00, UAT-05-01                                 | MCP-06 (release), MCP-07 (guard)       |
     | J6 GUI  | UAT-06-00, UAT-06-01-neg, UAT-06-02, UAT-06-06      | MCP-08/08b/08c/09                      |
     | J7      | UAT-07-01, UAT-07-02                                 | MCP-11 (post-finalize inventory)       |
-    | J8      | UAT-08-00 … UAT-08-10 (Teams: browse/create/detail/join/manage/leave/profile) | —  |
+    | J8      | UAT-08-00 … UAT-08-10 (Teams: browse/create/detail/join/manage/leave/profile) | — |
 
   ==============================================================================
   OPERATOR SCRIPT CONTRACT
