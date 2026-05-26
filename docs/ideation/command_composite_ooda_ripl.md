@@ -1,4 +1,4 @@
-# The Composite: Human-AI OODA for RIPL PM
+# The Composite: Human-AI OODA for FF PM
 
 > *Saved from conversation — April 13, 2026*
 
@@ -39,7 +39,7 @@
 
 ---
 
-## OODA Decomposition for RIPL PM
+## OODA Decomposition for FF PM
 
 ### The decomposition
 

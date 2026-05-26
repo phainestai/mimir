@@ -70,12 +70,22 @@ else
 fi
 
 # ── 3. Deploy to idle env ─────────────────────────────────────────────────────
+# Build option-settings array: always set MIMIR_GIT_REVISION; optionally propagate
+# GH_BUG_REPORT_TOKEN (GitHub PAT for the in-app Feedback widget → Issues: write).
+# Setting it here ensures the env var survives across deploys without manual console edits.
+OPTION_SETTINGS="Namespace=aws:elasticbeanstalk:application:environment,OptionName=MIMIR_GIT_REVISION,Value=${GIT_REVISION}"
+if [ -n "${GH_BUG_REPORT_TOKEN:-}" ]; then
+  OPTION_SETTINGS="${OPTION_SETTINGS} Namespace=aws:elasticbeanstalk:application:environment,OptionName=GITHUB_TOKEN,Value=${GH_BUG_REPORT_TOKEN}"
+  echo "GH_BUG_REPORT_TOKEN present — will set GITHUB_TOKEN on idle env"
+else
+  echo "GH_BUG_REPORT_TOKEN not set — GITHUB_TOKEN will keep its existing EB value"
+fi
+
 aws elasticbeanstalk update-environment \
   --application-name "$EB_APP" \
   --environment-name "$IDLE_ENV" \
   --version-label "$VERSION_LABEL" \
-  --option-settings \
-    "Namespace=aws:elasticbeanstalk:application:environment,OptionName=MIMIR_GIT_REVISION,Value=${GIT_REVISION}" \
+  --option-settings ${OPTION_SETTINGS} \
   --output text > /dev/null
 echo "Deployment triggered on $IDLE_ENV — waiting..."
 
