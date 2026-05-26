@@ -39,6 +39,7 @@ from methodology.api.viewsets_resources import (
 )
 from methodology.api.bug_report_views import BugReportSubmitView
 from methodology import feedback_views
+from accounts import legal_views
 
 # DRF Router for API endpoints
 router = DefaultRouter()
@@ -71,6 +72,11 @@ urlpatterns = [
     ),
     path("api/auth/", include("accounts.api_urls")),  # Registration, token refresh, etc.
     path("auth/", include("accounts.urls")),  # Changed from accounts/ per SAO.md URL convention
+    # Legal documents (public, no login required)
+    path("legal/privacy/", legal_views.privacy_policy, name="privacy_policy"),
+    path("legal/privacy/pdf/", legal_views.privacy_policy_pdf, name="privacy_policy_pdf"),
+    path("legal/terms/", legal_views.user_agreement, name="user_agreement"),
+    path("legal/terms/pdf/", legal_views.user_agreement_pdf, name="user_agreement_pdf"),
     path("dashboard/", methodology_views.dashboard, name="dashboard"),
     path("dashboard/activities/", methodology_views.dashboard_activities, name="dashboard_activities"),
     path("", methodology_views.index, name="index"),

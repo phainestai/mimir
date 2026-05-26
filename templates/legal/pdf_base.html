@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{% block title %}Mimir Legal Document{% endblock %}</title>
+<style>
+  @page {
+    size: A4;
+    margin: 25mm 20mm 25mm 20mm;
+    @bottom-center {
+      content: "Mimir · " string(document-title) " · Page " counter(page) " of " counter(pages);
+      font-size: 8pt;
+      color: #888;
+    }
+  }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.65;
+    color: #1a1a2e;
+  }
+  h1 {
+    font-size: 20pt;
+    color: #0d6efd;
+    margin-bottom: 2pt;
+    string-set: document-title content();
+  }
+  .subtitle {
+    font-size: 8.5pt;
+    color: #888;
+    margin-bottom: 16pt;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid #dee2e6;
+    margin: 14pt 0;
+  }
+  h2 {
+    font-size: 11.5pt;
+    color: #0d6efd;
+    margin-top: 18pt;
+    margin-bottom: 4pt;
+  }
+  h3 {
+    font-size: 10pt;
+    color: #555;
+    margin-top: 10pt;
+    margin-bottom: 3pt;
+  }
+  p { margin: 0 0 8pt 0; }
+  ul { margin: 0 0 8pt 16pt; padding: 0; }
+  li { margin-bottom: 4pt; }
+  strong { color: #000; }
+  .lead {
+    font-size: 11pt;
+    color: #333;
+  }
+  .watermark {
+    position: fixed;
+    bottom: 8mm;
+    right: 8mm;
+    font-size: 7pt;
+    color: #bbb;
+  }
+</style>
+</head>
+<body>
+<div class="watermark">mimir.dev</div>
+{% block content %}{% endblock %}
+</body>
+</html>

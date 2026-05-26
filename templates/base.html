@@ -127,7 +127,7 @@
     
     {% block extra_css %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body class="d-flex flex-column min-vh-100 {% block body_class %}{% endblock %}">
     {% if user.is_authenticated %}
     <!-- Feedback: first direct child of body, fixed to viewport (no wrapper / absolute) -->
     <button type="button"
@@ -354,12 +354,12 @@
     {% endif %}
 
     <!-- Main Content -->
-    <main class="container-fluid mt-4 pb-5">
+    <main class="container-fluid mt-4 pb-5 flex-grow-1">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="footer mt-auto py-3 bg-light">
+    <footer class="footer py-3 bg-light" data-testid="page-footer">
         <div class="container text-center">
             <span class="text-muted">
                 <i class="fas fa-book-sparkles"></i> Mimir - Your Ever-Evolving Engineering Playbook

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy – Mimir{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-lg-8 col-md-10">
+
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h1 class="h2 fw-bold"><i class="fa-solid fa-shield-halved me-2 text-primary"></i>Privacy Policy</h1>
+                <p class="text-muted small mb-0">Effective date: May 25, 2026 &nbsp;·&nbsp; Last updated: May 25, 2026</p>
+            </div>
+            <a href="{% url 'privacy_policy_pdf' %}"
+               class="btn btn-outline-secondary btn-sm"
+               data-testid="privacy-policy-download-pdf">
+                <i class="fa-solid fa-file-pdf me-1"></i> Download PDF
+            </a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4 legal-body">
+
+                <p class="lead">
+                    This Privacy Policy describes how Mimir ("<strong>we</strong>", "<strong>us</strong>",
+                    "<strong>our</strong>") collects, uses, and protects information about you when you use
+                    the Mimir Platform ("<strong>Service</strong>").
+                </p>
+
+                <hr>
+
+                <!-- 1 -->
+                <h2 class="h5 mt-4">1. Information We Collect</h2>
+                <h6 class="mt-3 text-muted">1.1 Account &amp; Profile Data</h6>
+                <p>
+                    When you register, we collect your username, email address, first and last name, and
+                    password (stored as a cryptographic hash). You may optionally add a profile bio.
+                </p>
+
+                <h6 class="mt-3 text-muted">1.2 Content You Create</h6>
+                <p>
+                    We store playbooks, workflows, activities, skills, rules, agents, and Playbook Improvement
+                    Proposals (PIPs) that you create on the Platform.
+                </p>
+
+                <h6 class="mt-3 text-muted">1.3 Usage &amp; Log Data</h6>
+                <p>
+                    We automatically collect server-side log data including IP addresses, request paths,
+                    timestamps, HTTP status codes, and browser/client information. This data is used solely
+                    for operating, securing, and improving the Service.
+                </p>
+
+                <h6 class="mt-3 text-muted">1.4 Cookies &amp; Session Data</h6>
+                <p>
+                    We use session cookies required for authentication and CSRF protection. We do not use
+                    third-party tracking cookies or advertising cookies.
+                </p>
+
+                <!-- 2 -->
+                <h2 class="h5 mt-4">2. How We Use Your Information</h2>
+                <ul>
+                    <li><strong>Provide the Service</strong> — authenticate you, store and serve your content, and enable collaboration.</li>
+                    <li><strong>Communicate with you</strong> — send email verification, password reset, and important service notifications.</li>
+                    <li><strong>Improve the Service</strong> — analyse usage patterns (in aggregate) to fix bugs and improve features.</li>
+                    <li><strong>Security &amp; abuse prevention</strong> — detect and prevent fraud, abuse, and unauthorised access.</li>
+                    <li><strong>AI-assisted processing (Galdr)</strong> — when you submit a PIP, its content is processed by Galdr,
+                        Mimir's AI assistant engine, to evaluate and summarise proposed playbook changes. By submitting a PIP
+                        you explicitly consent to this processing.</li>
+                </ul>
+
+                <!-- 3 -->
+                <h2 class="h5 mt-4">3. Public Playbooks</h2>
+                <p>
+                    Content you mark as <em>Public</em> is visible to all authenticated users of the Platform.
+                    Mimir operators can read and use public playbook content to operate and improve the Service.
+                    <strong>We do not sell or commercialise your content to third parties.</strong>
+                </p>
+
+                <!-- 4 -->
+                <h2 class="h5 mt-4">4. We Do Not Sell Your Data</h2>
+                <p>
+                    <strong>Mimir does not sell, rent, trade, or otherwise transfer your personal data to
+                    third parties for commercial purposes.</strong> We do not share your data with
+                    advertisers or data brokers.
+                </p>
+
+                <!-- 5 -->
+                <h2 class="h5 mt-4">5. Data Sharing &amp; Third Parties</h2>
+                <p>We may share data only in the following limited circumstances:</p>
+                <ul>
+                    <li>
+                        <strong>Service providers</strong> — hosting, email delivery, and infrastructure partners
+                        who process data strictly on our behalf and under confidentiality obligations.
+                    </li>
+                    <li>
+                        <strong>Legal requirements</strong> — when required by law, court order, or governmental
+                        authority.
+                    </li>
+                    <li>
+                        <strong>Business transfer</strong> — if Mimir is acquired or merges with another entity,
+                        data may be transferred as part of that transaction, subject to the same privacy
+                        commitments.
+                    </li>
+                </ul>
+
+                <!-- 6 -->
+                <h2 class="h5 mt-4">6. Data Retention</h2>
+                <p>
+                    We retain your account data and content for as long as your account is active or as needed
+                    to provide the Service. Log data is retained for up to 90 days for security and debugging
+                    purposes. You may request deletion of your account by contacting us through the Platform's
+                    feedback form.
+                </p>
+
+                <!-- 7 -->
+                <h2 class="h5 mt-4">7. Security</h2>
+                <p>
+                    We take reasonable technical and organisational measures to protect your data against
+                    unauthorised access, loss, or alteration — including encrypted connections (HTTPS),
+                    hashed passwords, and access controls. No method of transmission over the Internet is
+                    100% secure; use the Service at your own risk.
+                </p>
+
+                <!-- 8 -->
+                <h2 class="h5 mt-4">8. Your Rights</h2>
+                <p>
+                    Depending on your jurisdiction you may have rights to access, correct, export, or delete
+                    your personal data. To exercise any of these rights, contact us via the Platform's
+                    feedback form. We will respond within a reasonable timeframe.
+                </p>
+
+                <!-- 9 -->
+                <h2 class="h5 mt-4">9. Children's Privacy</h2>
+                <p>
+                    The Service is not directed at children under 16. We do not knowingly collect personal
+                    information from children under 16. If we learn that we have done so, we will delete
+                    that information promptly.
+                </p>
+
+                <!-- 10 -->
+                <h2 class="h5 mt-4">10. Changes to This Policy</h2>
+                <p>
+                    We may update this Privacy Policy from time to time. When we do we will update the
+                    "Last updated" date at the top. Your continued use of the Service after a change
+                    becomes effective constitutes acceptance of the new policy.
+                </p>
+
+                <!-- 11 -->
+                <h2 class="h5 mt-4">11. Contact</h2>
+                <p>
+                    For questions, concerns, or data requests related to this Privacy Policy, please use
+                    the feedback form inside the Platform.
+                </p>
+
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'user_agreement' %}" class="btn btn-outline-primary me-2">
+                <i class="fa-solid fa-file-contract me-1"></i> User Agreement
+            </a>
+            <a href="{% url 'register' %}" class="btn btn-success">
+                <i class="fa-solid fa-user-plus me-1"></i> Create Account
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.legal-body h2 { color: var(--bs-primary); }
+.legal-body p, .legal-body li { line-height: 1.75; }
+</style>
+{% endblock %}

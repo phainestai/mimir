@@ -119,9 +119,9 @@
                                    id="id_tos" data-testid="register-tos-checkbox">
                             <label class="form-check-label" for="id_tos">
                                 I agree to the
-                                <a href="#" target="_blank" rel="noopener noreferrer" data-testid="register-tos-link">Terms of Service</a>
+                                <a href="{% url 'user_agreement' %}" target="_blank" rel="noopener noreferrer" data-testid="register-tos-link">Terms of Service</a>
                                 and
-                                <a href="#" target="_blank" rel="noopener noreferrer" data-testid="register-privacy-link">Privacy Policy</a>
+                                <a href="{% url 'privacy_policy' %}" target="_blank" rel="noopener noreferrer" data-testid="register-privacy-link">Privacy Policy</a>
                                 <span class="text-danger">*</span>
                             </label>
                         </div>
