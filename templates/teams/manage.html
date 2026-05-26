@@ -16,14 +16,531 @@
         </ol>
     </nav>
 
-    <h2 class="mb-1">
-        <i class="fa-solid fa-gear me-2"></i>Manage {{ team.name }}
-    </h2>
-
-    <div class="alert alert-info mt-3">
-        <i class="fa-solid fa-circle-info me-2"></i>
-        Full team management view is coming in WP-5. This stub confirms the URL routing works.
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="mb-1">
+                <i class="fa-solid fa-gear text-primary me-2"></i>Manage Team: {{ team.name }}
+            </h2>
+            <p class="text-muted mb-0">
+                Admin panel — manage members, review join requests, curate playbooks, update settings.
+            </p>
+        </div>
+        <a href="/teams/{{ team.pk }}/"
+           class="btn btn-outline-secondary"
+           data-bs-toggle="tooltip" title="Back to team detail page">
+            <i class="fa-solid fa-arrow-left me-1"></i> Back to Team
+        </a>
     </div>
 
-</div>
+    <!-- Django messages -->
+    {% if messages %}
+    <div class="mb-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Tabs (server-side routing via ?tab= param) -->
+    <ul class="nav nav-tabs mb-0" role="tablist" id="manage-tabs">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if active_tab == 'members' %}active{% endif %}"
+               href="?tab=members"
+               data-testid="team-tab-members"
+               role="tab">
+                <i class="fa-solid fa-users me-1"></i> Members
+                <span class="badge bg-secondary ms-1">{{ members|length }}</span>
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if active_tab == 'join-requests' %}active{% endif %}"
+               href="?tab=join-requests"
+               data-testid="team-tab-join-requests"
+               role="tab">
+                <i class="fa-solid fa-user-clock me-1"></i> Join Requests
+                {% if join_request_count %}
+                <span class="badge bg-danger ms-1" data-testid="join-requests-badge">{{ join_request_count }}</span>
+                {% endif %}
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if active_tab == 'playbooks' %}active{% endif %}"
+               href="?tab=playbooks"
+               data-testid="team-tab-playbooks"
+               role="tab">
+                <i class="fa-solid fa-book me-1"></i> Playbooks
+                <span class="badge bg-secondary ms-1">{{ playbooks|length }}</span>
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if active_tab == 'settings' %}active{% endif %}"
+               href="?tab=settings"
+               data-testid="team-settings-tab"
+               role="tab">
+                <i class="fa-solid fa-sliders me-1"></i> Settings
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="manage-tab-content">
+
+        <!-- ── Members tab ──────────────────────────────────────────────── -->
+        <div class="tab-pane {% if active_tab == 'members' %}show active{% endif %}"
+             id="tab-mgmt-members" role="tabpanel">
+            <div class="card border-top-0 rounded-top-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0" data-testid="manage-members-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Username</th>
+                                <th style="width: 10%">Role</th>
+                                <th style="width: 14%">Joined</th>
+                                <th style="width: 20%" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for membership in members %}
+                            <tr data-testid="member-row-{{ membership.user.username }}">
+                                <td>
+                                    <i class="fa-solid fa-user text-muted me-1"></i>
+                                    {{ membership.user.get_full_name|default:membership.user.username }}
+                                    <span class="text-muted small font-monospace ms-1">@{{ membership.user.username }}</span>
+                                </td>
+                                <td>
+                                    {% if membership.role == "admin" %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fa-solid fa-crown me-1"></i>Admin
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark border">Member</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small">{{ membership.joined_at|date:"M j, Y" }}</td>
+                                <td class="text-end">
+                                    {% if membership.role != "admin" %}
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <!-- Transfer admin form -->
+                                        <form method="post" action="?tab=members" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="transfer_admin">
+                                            <input type="hidden" name="user_id" value="{{ membership.user.pk }}">
+                                            <button type="submit"
+                                                    class="btn btn-outline-primary btn-sm"
+                                                    data-testid="transfer-admin-{{ membership.user.username }}"
+                                                    data-bs-toggle="tooltip"
+                                                    title="Transfer admin rights to {{ membership.user.username }}"
+                                                    aria-label="Transfer admin to {{ membership.user.username }}">
+                                                <i class="fa-solid fa-crown"></i>
+                                            </button>
+                                        </form>
+                                        <!-- Remove member form -->
+                                        <form method="post" action="?tab=members" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="remove_member">
+                                            <input type="hidden" name="user_id" value="{{ membership.user.pk }}">
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm"
+                                                    data-testid="remove-member-{{ membership.user.username }}"
+                                                    data-bs-toggle="tooltip"
+                                                    title="Remove {{ membership.user.username }} from team"
+                                                    aria-label="Remove {{ membership.user.username }} from team">
+                                                <i class="fa-solid fa-user-minus"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted small">You</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">No members yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Join Requests tab ───────────────────────────────────────── -->
+        <div class="tab-pane {% if active_tab == 'join-requests' %}show active{% endif %}"
+             id="tab-join-requests" role="tabpanel">
+            {% if join_requests %}
+            <div class="card border-top-0 rounded-top-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0" data-testid="join-requests-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Username</th>
+                                <th style="width: 18%">Requested At</th>
+                                <th style="width: 18%" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for jr in join_requests %}
+                            <tr data-testid="join-request-row-{{ jr.user.username }}">
+                                <td>
+                                    <i class="fa-solid fa-user-clock text-muted me-1"></i>
+                                    {{ jr.user.get_full_name|default:jr.user.username }}
+                                    <span class="text-muted small font-monospace ms-1">@{{ jr.user.username }}</span>
+                                </td>
+                                <td class="text-muted small">{{ jr.requested_at|date:"M j, Y" }}</td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <!-- Approve form -->
+                                        <form method="post" action="?tab=join-requests" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="approve_request">
+                                            <input type="hidden" name="request_id" value="{{ jr.pk }}">
+                                            <button type="submit"
+                                                    class="btn btn-success btn-sm"
+                                                    data-testid="approve-request-{{ jr.user.username }}"
+                                                    data-bs-toggle="tooltip" title="Approve join request"
+                                                    aria-label="Approve {{ jr.user.username }}'s join request">
+                                                <i class="fa-solid fa-check me-1"></i> Approve
+                                            </button>
+                                        </form>
+                                        <!-- Reject form -->
+                                        <form method="post" action="?tab=join-requests" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="reject_request">
+                                            <input type="hidden" name="request_id" value="{{ jr.pk }}">
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm"
+                                                    data-testid="reject-request-{{ jr.user.username }}"
+                                                    data-bs-toggle="tooltip" title="Reject join request"
+                                                    aria-label="Reject {{ jr.user.username }}'s join request">
+                                                <i class="fa-solid fa-xmark me-1"></i> Reject
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <div class="card border-top-0 rounded-top-0" data-testid="join-requests-empty">
+                <div class="card-body text-center py-4">
+                    <i class="fa-solid fa-inbox fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No pending join requests.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ── Playbooks tab ───────────────────────────────────────────── -->
+        <div class="tab-pane {% if active_tab == 'playbooks' %}show active{% endif %}"
+             id="tab-mgmt-playbooks" role="tabpanel">
+            <div class="card border-top-0 rounded-top-0">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="small text-muted">
+                        Playbooks shared with all <strong>{{ team.name }}</strong> team members.
+                    </span>
+                    {% if available_playbooks %}
+                    <button type="button"
+                            class="btn btn-primary btn-sm"
+                            data-testid="team-add-playbook-btn"
+                            data-bs-toggle="modal" data-bs-target="#add-playbook-modal"
+                            title="Add a released playbook to this team">
+                        <i class="fa-solid fa-plus me-1"></i> Add Playbook
+                    </button>
+                    {% else %}
+                    <button type="button"
+                            class="btn btn-primary btn-sm disabled"
+                            data-testid="team-add-playbook-btn"
+                            title="No available released playbooks to add">
+                        <i class="fa-solid fa-plus me-1"></i> Add Playbook
+                    </button>
+                    {% endif %}
+                </div>
+                {% if playbooks %}
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0" data-testid="manage-playbooks-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Playbook</th>
+                                <th style="width: 8%">Version</th>
+                                <th style="width: 10%">Status</th>
+                                <th style="width: 10%" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pb in playbooks %}
+                            <tr data-testid="manage-playbook-row-{{ pb.pk }}">
+                                <td>
+                                    <i class="fa-solid fa-book text-primary me-1"></i>
+                                    <strong>{{ pb.name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace">v{{ pb.version }}</span>
+                                </td>
+                                <td>
+                                    {% if pb.status == "released" %}
+                                    <span class="badge bg-success">Released</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Draft</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <form method="post" action="?tab=playbooks" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="remove_playbook">
+                                        <input type="hidden" name="playbook_id" value="{{ pb.pk }}">
+                                        <button type="submit"
+                                                class="btn btn-outline-danger btn-sm"
+                                                data-testid="remove-playbook-{{ pb.pk }}"
+                                                data-bs-toggle="tooltip"
+                                                title="Remove {{ pb.name }} from team"
+                                                aria-label="Remove {{ pb.name }} from team">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="card-body text-center py-4" data-testid="manage-playbooks-empty">
+                    <i class="fa-solid fa-book-open fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">No playbooks in this team yet. Add a released playbook to share it with members.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ── Settings tab ────────────────────────────────────────────── -->
+        <div class="tab-pane {% if active_tab == 'settings' %}show active{% endif %}"
+             id="tab-settings" role="tabpanel">
+            <div class="card border-top-0 rounded-top-0">
+                <div class="card-body">
+                    <form method="post" action="?tab=settings" data-testid="team-settings-form" novalidate>
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="save_settings">
+
+                        <div class="row g-3">
+                            <!-- Team Name -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="settings-team-name">
+                                    Team Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       id="settings-team-name"
+                                       class="form-control {% if errors.name %}is-invalid{% endif %}"
+                                       name="name"
+                                       value="{{ team.name }}"
+                                       maxlength="100"
+                                       data-testid="settings-team-name"
+                                       data-bs-toggle="tooltip"
+                                       title="Unique team name. Max 100 characters."
+                                       aria-required="true">
+                                {% if errors.name %}
+                                <div class="invalid-feedback">{{ errors.name }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Description -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" for="settings-description">Description</label>
+                                <textarea id="settings-description"
+                                          class="form-control"
+                                          name="description"
+                                          rows="3"
+                                          data-testid="settings-description"
+                                          data-bs-toggle="tooltip"
+                                          title="Short description shown on the team card.">{{ team.description }}</textarea>
+                            </div>
+
+                            <!-- Visibility + Join Policy -->
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label fw-semibold" for="settings-visibility">Visibility</label>
+                                <select id="settings-visibility"
+                                        class="form-select"
+                                        name="visibility"
+                                        data-testid="settings-visibility"
+                                        data-bs-toggle="tooltip"
+                                        title="Public: visible to all. Hidden: members only.">
+                                    {% for v in visibility_choices %}
+                                    <option value="{{ v }}" {% if team.visibility == v %}selected{% endif %}>{{ v }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label fw-semibold" for="settings-join-policy">Join Policy</label>
+                                <select id="settings-join-policy"
+                                        class="form-select"
+                                        name="join_policy"
+                                        data-testid="settings-join-policy"
+                                        data-bs-toggle="tooltip"
+                                        title="Controls how users can join this team.">
+                                    {% for jp in join_policy_choices %}
+                                    <option value="{{ jp }}" {% if team.join_policy == jp %}selected{% endif %}>{{ jp }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Category -->
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label fw-semibold" for="settings-category">Category</label>
+                                <select id="settings-category"
+                                        class="form-select"
+                                        name="category"
+                                        data-testid="settings-category"
+                                        data-bs-toggle="tooltip"
+                                        title="Used for filtering in the team browser.">
+                                    {% for cat in categories %}
+                                    <option value="{{ cat }}" {% if team.category == cat %}selected{% endif %}>{{ cat }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Danger zone -->
+                        <div class="border border-danger rounded p-3 mb-4" data-testid="danger-zone">
+                            <h6 class="text-danger fw-semibold mb-2">
+                                <i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone
+                            </h6>
+                            <p class="small text-muted mb-3">
+                                Deleting a team is irreversible. All member associations will be removed. Playbooks are not deleted.
+                            </p>
+                            <form method="post" action="?tab=settings" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_team">
+                                <button type="button"
+                                        class="btn btn-outline-danger btn-sm"
+                                        data-testid="delete-team-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#delete-team-modal">
+                                    <i class="fa-solid fa-trash-can me-1"></i> Delete Team
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="/teams/{{ team.pk }}/"
+                               class="btn btn-outline-secondary"
+                               data-testid="settings-cancel">
+                                <i class="fa-solid fa-xmark me-1"></i> Cancel
+                            </a>
+                            <button type="submit"
+                                    class="btn btn-primary"
+                                    data-testid="settings-save-btn"
+                                    data-bs-toggle="tooltip"
+                                    title="Save team settings">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /tab-content -->
+
+    <!-- ── Add Playbook Modal ─────────────────────────────────────────────── -->
+    {% if available_playbooks %}
+    <div class="modal fade" id="add-playbook-modal" tabindex="-1"
+         aria-labelledby="add-playbook-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="add-playbook-modal-label">
+                        <i class="fa-solid fa-book me-2 text-primary"></i>Add Playbook to Team
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="?tab=playbooks">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_playbook">
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3">
+                            Only <strong>released</strong> playbooks can be shared in a team.
+                        </p>
+                        <label class="form-label fw-semibold" for="add-playbook-select">Select Playbook</label>
+                        <select id="add-playbook-select"
+                                class="form-select"
+                                name="playbook_id"
+                                data-testid="add-playbook-select"
+                                required>
+                            <option value="" disabled selected>Choose a released playbook…</option>
+                            {% for pb in available_playbooks %}
+                            <option value="{{ pb.pk }}">{{ pb.name }} v{{ pb.version }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" data-testid="add-playbook-confirm">
+                            <i class="fa-solid fa-plus me-1"></i> Add Playbook
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Delete Team Modal ──────────────────────────────────────────────── -->
+    <div class="modal fade" id="delete-team-modal" tabindex="-1"
+         aria-labelledby="delete-team-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+                <div class="modal-header border-danger bg-danger text-white">
+                    <h5 class="modal-title" id="delete-team-modal-label">
+                        <i class="fa-solid fa-trash-can me-2"></i>Delete Team '{{ team.name }}'?
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="?tab=settings">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_team">
+                    <div class="modal-body">
+                        <p>This action is <strong>irreversible</strong>. All member associations will be removed.</p>
+                        <p class="text-muted small mb-0">Playbooks are not deleted.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger" data-testid="delete-team-confirm">
+                            <i class="fa-solid fa-trash-can me-1"></i> Delete Team
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /container -->
+
+<script>
+console.log("[teams] manage page loaded: team={{ team.name|escapejs }}, tab={{ active_tab }}");
+
+document.addEventListener('DOMContentLoaded', function () {
+    console.log("[teams] manage DOMContentLoaded: team={{ team.name|escapejs }}, tab={{ active_tab }}");
+
+    // Initialize tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el);
+    });
+
+    // Log tab clicks
+    document.querySelectorAll('#manage-tabs a.nav-link').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            var tab = this.getAttribute('href');
+            console.log("[teams] manage tab clicked:", tab, "team={{ team.name|escapejs }}");
+        });
+    });
+});
+</script>
 {% endblock %}

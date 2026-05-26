@@ -12,9 +12,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.shortcuts import redirect, render
+from django.contrib.auth.models import User as UserModel
+from django.shortcuts import get_object_or_404, redirect, render
 
-from methodology.models import Team
+from methodology.models import JoinRequest, Playbook, Team
 from methodology.services.team_service import TeamService
 
 logger = logging.getLogger(__name__)
@@ -188,19 +189,203 @@ def _handle_leave(request, team, service: TeamService):
 
 @login_required
 def teams_manage(request, pk: int):
-    """FOB-TEAMS-MANAGE-*: team management stub — implemented fully in WP-5.
+    """FOB-TEAMS-MANAGE-*: admin-only management panel with tab routing.
 
     :param request: Django HTTP request.
     :param pk: Team primary key.
-    :returns: Rendered manage page.
+    :returns: Rendered manage page or redirect.
     """
-    logger.info("[teams] manage | pk=%s user=%s", pk, request.user.username)
+    logger.info("[teams] manage | pk=%s user=%s method=%s", pk, request.user.username, request.method)
     service = TeamService()
     team = service.get_team_or_404(pk, request.user)
-    return render(request, "teams/manage.html", {
+
+    if service.get_member_role(team, request.user) != "admin":
+        logger.warning("[teams] manage access denied: user=%s team=%s", request.user.username, team.name)
+        messages.warning(request, "You don't have permission to manage this team.")
+        return redirect("teams:teams_detail", pk=pk)
+
+    tab = request.GET.get("tab", "members")
+
+    if request.method == "POST":
+        return _handle_manage_post(request, team, service, tab)
+
+    context = _build_manage_context(request.user, team, service, tab)
+    return render(request, "teams/manage.html", context)
+
+
+def _build_manage_context(user, team, service: TeamService, tab: str) -> dict:
+    """Build context dict for team manage page.
+
+    :param user: Requesting user.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :param tab: Active tab name.
+    :returns: Context dictionary for the template.
+    """
+    all_released = Playbook.objects.filter(status="released")
+    team_playbook_ids = service.get_team_playbooks(team).values_list("id", flat=True)
+    available_playbooks = all_released.exclude(id__in=team_playbook_ids)
+    logger.info("[teams] manage context | team=%s tab=%s", team.name, tab)
+    return {
         "team": team,
+        "members": team.memberships.select_related("user").order_by("joined_at"),
+        "join_requests": team.join_requests.filter(status="pending").select_related("user").order_by("requested_at"),
+        "join_request_count": team.join_requests.filter(status="pending").count(),
+        "playbooks": service.get_team_playbooks(team),
+        "available_playbooks": available_playbooks,
+        "categories": CATEGORIES,
+        "visibility_choices": VISIBILITY_CHOICES,
+        "join_policy_choices": JOIN_POLICY_CHOICES,
+        "active_tab": tab,
         "active_page": "teams",
-    })
+        "errors": {},
+    }
+
+
+def _handle_manage_post(request, team, service: TeamService, tab: str):
+    """Dispatch POST action to the right handler.
+
+    :param request: Django HTTP request.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :param tab: Current active tab (for error re-render).
+    :returns: HTTP response (redirect or render).
+    """
+    action = request.POST.get("action")
+    logger.info("[teams] manage POST | action=%s team=%s user=%s", action, team.name, request.user.username)
+    handlers = {
+        "approve_request": _handle_approve_request,
+        "reject_request": _handle_reject_request,
+        "remove_member": _handle_remove_member,
+        "transfer_admin": _handle_transfer_admin,
+        "add_playbook": _handle_add_playbook,
+        "remove_playbook": _handle_remove_playbook,
+        "save_settings": lambda req, t, svc: _handle_save_settings(req, t, svc, tab),
+    }
+    handler = handlers.get(action)
+    if handler:
+        return handler(request, team, service)
+    logger.warning("[teams] manage unknown action=%s team=%s", action, team.name)
+    return redirect("teams:teams_manage", pk=team.pk)
+
+
+def _handle_approve_request(request, team, service: TeamService):
+    """Approve a pending join request and add user as member.
+
+    :param request: Django HTTP request.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :returns: Redirect to manage page.
+    """
+    jr = get_object_or_404(JoinRequest, pk=request.POST.get("request_id"), team=team)
+    service.approve_join_request(jr, request.user)
+    logger.info("[teams] approved join request pk=%s user=%s team=%s", jr.pk, jr.user.username, team.name)
+    messages.success(request, f"{jr.user.username} has been approved.")
+    return redirect("teams:teams_manage", pk=team.pk)
+
+
+def _handle_reject_request(request, team, service: TeamService):
+    """Reject a pending join request.
+
+    :param request: Django HTTP request.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :returns: Redirect to manage page.
+    """
+    jr = get_object_or_404(JoinRequest, pk=request.POST.get("request_id"), team=team)
+    service.reject_join_request(jr, request.user)
+    logger.info("[teams] rejected join request pk=%s user=%s team=%s", jr.pk, jr.user.username, team.name)
+    messages.info(request, f"{jr.user.username}'s request has been rejected.")
+    return redirect("teams:teams_manage", pk=team.pk)
+
+
+def _handle_remove_member(request, team, service: TeamService):
+    """Remove a member from the team.
+
+    :param request: Django HTTP request.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :returns: Redirect to manage page.
+    """
+    target = get_object_or_404(UserModel, pk=request.POST.get("user_id"))
+    service.remove_member(team, request.user, target)
+    logger.info("[teams] removed member user=%s from team=%s", target.username, team.name)
+    messages.success(request, f"{target.username} has been removed from the team.")
+    return redirect("teams:teams_manage", pk=team.pk)
+
+
+def _handle_transfer_admin(request, team, service: TeamService):
+    """Transfer admin rights to another team member.
+
+    :param request: Django HTTP request.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :returns: Redirect to team detail page.
+    """
+    new_admin = get_object_or_404(UserModel, pk=request.POST.get("user_id"))
+    service.transfer_admin(team, request.user, new_admin)
+    logger.info("[teams] admin transferred to user=%s team=%s", new_admin.username, team.name)
+    messages.success(request, f"Admin rights transferred to {new_admin.username}.")
+    return redirect("teams:teams_detail", pk=team.pk)
+
+
+def _handle_add_playbook(request, team, service: TeamService):
+    """Add a released playbook to the team.
+
+    :param request: Django HTTP request.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :returns: Redirect to manage page (playbooks tab).
+    """
+    playbook = get_object_or_404(Playbook, pk=request.POST.get("playbook_id"))
+    service.add_playbook_to_team(team, playbook, request.user)
+    logger.info("[teams] playbook=%s added to team=%s by user=%s", playbook.name, team.name, request.user.username)
+    messages.success(request, f"Playbook '{playbook.name}' added to team.")
+    return redirect(f"/teams/{team.pk}/manage/?tab=playbooks")
+
+
+def _handle_remove_playbook(request, team, service: TeamService):
+    """Remove a playbook from the team.
+
+    :param request: Django HTTP request.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :returns: Redirect to manage page (playbooks tab).
+    """
+    playbook = get_object_or_404(Playbook, pk=request.POST.get("playbook_id"))
+    service.remove_playbook_from_team(team, playbook, request.user)
+    logger.info("[teams] playbook=%s removed from team=%s by user=%s", playbook.name, team.name, request.user.username)
+    messages.success(request, f"Playbook '{playbook.name}' removed from team.")
+    return redirect(f"/teams/{team.pk}/manage/?tab=playbooks")
+
+
+def _handle_save_settings(request, team, service: TeamService, tab: str):
+    """Validate and persist team settings changes.
+
+    :param request: Django HTTP request.
+    :param team: Team instance.
+    :param service: TeamService instance.
+    :param tab: Current tab (for re-render on error).
+    :returns: Redirect on success; re-rendered page with errors on failure.
+    """
+    name = request.POST.get("name", "").strip()
+    description = request.POST.get("description", "").strip()
+    visibility = request.POST.get("visibility", team.visibility)
+    join_policy = request.POST.get("join_policy", team.join_policy)
+    category = request.POST.get("category", team.category)
+
+    errors = _validate_team_form(name)
+    if errors:
+        logger.warning("[teams] settings validation failed: errors=%s team=%s", errors, team.name)
+        context = _build_manage_context(request.user, team, service, "settings")
+        context["errors"] = errors
+        return render(request, "teams/manage.html", context)
+
+    service.update_team(team, request.user, name=name, description=description,
+                        visibility=visibility, join_policy=join_policy, category=category)
+    logger.info("[teams] settings saved for team=%s by user=%s", team.name, request.user.username)
+    messages.success(request, "Team settings saved.")
+    return redirect("teams:teams_manage", pk=team.pk)
 
 
 # ---------------------------------------------------------------------------
