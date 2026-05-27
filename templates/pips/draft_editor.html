@@ -81,6 +81,7 @@
                         <select class="form-select form-select-sm" name="entity_type" id="pip_entity_type" data-testid="pip-entity-type">
                             <option value="Activity">Activity</option>
                             <option value="Workflow">Workflow</option>
+                            <option value="Phase">Phase</option>
                             <option value="Skill">Skill</option>
                             <option value="Agent">Agent</option>
                             <option value="Rule">Rule</option>
@@ -94,6 +95,7 @@
                             <option value="rule_activity">Rule → Activity</option>
                             <option value="agent_activity">Agent → Activity</option>
                             <option value="activity_workflow">Activity → Workflow</option>
+                            <option value="artifact_activity">Artifact → Activity</option>
                         </select>
                     </div>
                     <div class="col-md-6" id="pip_name_block">
@@ -130,6 +132,11 @@
                             {% endfor %}
                         </select>
                     </div>
+                    <div class="col-md-4" id="pip_parent_wf_ref_block">
+                        <label class="form-label small">Parent workflow ref (pk or #ref)</label>
+                        <input class="form-control form-control-sm" type="text" name="parent_workflow_ref"
+                               placeholder="#new-wf" data-testid="pip-parent-workflow-ref"/>
+                    </div>
                     <div class="col-md-4" id="pip_insert_after_block">
                         <label class="form-label small">Insert after activity</label>
                         <select class="form-select form-select-sm" name="insert_after_activity" data-testid="pip-insert-after">
@@ -140,6 +147,38 @@
                             {% endfor %}
                             {% endfor %}
                         </select>
+                    </div>
+                    <div class="col-md-4" id="pip_insert_after_ref_block">
+                        <label class="form-label small">Insert after ref (pk or #ref)</label>
+                        <input class="form-control form-control-sm" type="text" name="insert_after_activity_ref"
+                               placeholder="#act1" data-testid="pip-insert-after-ref"/>
+                    </div>
+                    <div class="col-md-4" id="pip_phase_ref_block">
+                        <label class="form-label small">Phase ref (ADD/ALTER Activity)</label>
+                        <input class="form-control form-control-sm" type="text" name="phase_ref"
+                               placeholder="#phase1" data-testid="pip-phase-ref"/>
+                    </div>
+                    <div class="col-md-4" id="pip_producer_ref_block">
+                        <label class="form-label small">Producer activity ref (ADD Artifact)</label>
+                        <input class="form-control form-control-sm" type="text" name="produced_by_activity_ref"
+                               placeholder="#act1" data-testid="pip-producer-ref"/>
+                    </div>
+                    <div class="col-md-4" id="pip_artifact_type_block">
+                        <label class="form-label small">Artifact type</label>
+                        <select class="form-select form-select-sm" name="artifact_type" data-testid="pip-artifact-type">
+                            <option value="Document">Document</option>
+                            <option value="Template">Template</option>
+                            <option value="Code">Code</option>
+                            <option value="Diagram">Diagram</option>
+                            <option value="Data">Data</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4" id="pip_artifact_required_block">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" name="artifact_is_required" id="artifact_is_required"/>
+                            <label class="form-check-label" for="artifact_is_required">Artifact required</label>
+                        </div>
                     </div>
                     <div class="col-12" id="pip_append_block">
                         <div class="form-check">
@@ -176,15 +215,24 @@
     const targetBlock = document.getElementById('pip_target_block');
     const targetIdBlock = document.getElementById('pip_target_id_block');
     const parentWfBlock = document.getElementById('pip_parent_wf_block');
+    const parentWfRefBlock = document.getElementById('pip_parent_wf_ref_block');
     const insertAfterBlock = document.getElementById('pip_insert_after_block');
+    const insertAfterRefBlock = document.getElementById('pip_insert_after_ref_block');
+    const phaseRefBlock = document.getElementById('pip_phase_ref_block');
+    const producerRefBlock = document.getElementById('pip_producer_ref_block');
+    const artifactTypeBlock = document.getElementById('pip_artifact_type_block');
+    const artifactRequiredBlock = document.getElementById('pip_artifact_required_block');
     const appendBlock = document.getElementById('pip_append_block');
     const entityType = document.getElementById('pip_entity_type');
 
     function togglePanels() {
         const type = ct.value;
+        const entity = entityType.value;
         const isLink = type === 'LINK' || type === 'UNLINK';
         const isAdd = type === 'ADD';
-        console.log('PIP add-change panel toggle', { type, isLink, isAdd });
+        const isActivity = entity === 'Activity';
+        const isArtifact = entity === 'Artifact';
+        console.log('PIP add-change panel toggle', { type, entity, isLink, isAdd });
         entityBlock.classList.toggle('d-none', isLink);
         linkBlock.classList.toggle('d-none', !isLink);
         sourceBlock.classList.toggle('d-none', !isLink);
@@ -192,12 +240,19 @@
         nameBlock.classList.toggle('d-none', isLink);
         internalRefBlock.classList.toggle('d-none', !isAdd);
         targetIdBlock.classList.toggle('d-none', isLink || isAdd);
-        parentWfBlock.classList.toggle('d-none', isLink || !isAdd);
-        insertAfterBlock.classList.toggle('d-none', isLink || !isAdd);
-        appendBlock.classList.toggle('d-none', isLink || !isAdd);
+        parentWfBlock.classList.toggle('d-none', isLink || !isAdd || !isActivity);
+        parentWfRefBlock.classList.toggle('d-none', isLink || !isAdd || !isActivity);
+        insertAfterBlock.classList.toggle('d-none', isLink || !isAdd || !isActivity);
+        insertAfterRefBlock.classList.toggle('d-none', isLink || !isAdd || !isActivity);
+        phaseRefBlock.classList.toggle('d-none', isLink || (!isAdd && type !== 'ALTER') || !isActivity);
+        producerRefBlock.classList.toggle('d-none', isLink || !isAdd || !isArtifact);
+        artifactTypeBlock.classList.toggle('d-none', isLink || (!isAdd && type !== 'ALTER') || !isArtifact);
+        artifactRequiredBlock.classList.toggle('d-none', isLink || (!isAdd && type !== 'ALTER') || !isArtifact);
+        appendBlock.classList.toggle('d-none', isLink || !isAdd || !isActivity);
         entityType.required = !isLink;
     }
     ct.addEventListener('change', togglePanels);
+    entityType.addEventListener('change', togglePanels);
     togglePanels();
     console.log('PIP draft editor', {id: {{ pip.pk }}});
 })();

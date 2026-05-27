@@ -12,6 +12,9 @@ from methodology.models import (
     Activity,
     ActivityWorkflowMembership,
     Agent,
+    Artifact,
+    ArtifactInput,
+    Phase,
     PipChange,
     ProcessImprovementProposal,
     Rule,
@@ -28,6 +31,7 @@ _RELATIONSHIP_ENDPOINTS: dict[str, tuple[str, str]] = {
     PipChange.REL_RULE_ACTIVITY: (PipChange.ENTITY_RULE, PipChange.ENTITY_ACTIVITY),
     PipChange.REL_AGENT_ACTIVITY: (PipChange.ENTITY_AGENT, PipChange.ENTITY_ACTIVITY),
     PipChange.REL_ACTIVITY_WORKFLOW: (PipChange.ENTITY_ACTIVITY, PipChange.ENTITY_WORKFLOW),
+    PipChange.REL_ARTIFACT_ACTIVITY: (PipChange.ENTITY_ARTIFACT, PipChange.ENTITY_ACTIVITY),
 }
 
 
@@ -95,6 +99,24 @@ def resolve_entity_ref(
     return pk
 
 
+def validate_pending_or_live_ref(
+    *,
+    pip: ProcessImprovementProposal,
+    ref: str,
+    expected_type: str,
+    order_hint: int,
+    playbook_id: int,
+) -> bool:
+    """Return True when ``ref`` is a pending ``#internal_ref`` to a prior ADD row."""
+    return _validate_endpoint_ref(
+        pip=pip,
+        ref=ref,
+        expected_type=expected_type,
+        before_order=order_hint,
+        playbook_id=playbook_id,
+    )
+
+
 def _assert_entity_in_playbook(entity_type: str, pk: int, playbook_id: int) -> None:
     if entity_type == PipChange.ENTITY_ACTIVITY:
         act = Activity.objects.select_related("workflow").get(pk=pk)
@@ -120,6 +142,16 @@ def _assert_entity_in_playbook(entity_type: str, pk: int, playbook_id: int) -> N
         ru = Rule.objects.get(pk=pk)
         if ru.playbook_id != playbook_id:
             raise ValidationError("Rule playbook mismatch.")
+        return
+    if entity_type == PipChange.ENTITY_ARTIFACT:
+        art = Artifact.objects.get(pk=pk)
+        if art.playbook_id != playbook_id:
+            raise ValidationError("Artifact playbook mismatch.")
+        return
+    if entity_type == PipChange.ENTITY_PHASE:
+        ph = Phase.objects.get(pk=pk)
+        if ph.playbook_id != playbook_id:
+            raise ValidationError("Phase playbook mismatch.")
         return
     raise ValidationError(f"Unsupported entity type '{entity_type}'.")
 
@@ -147,6 +179,11 @@ def relationship_exists(
         return ActivityWorkflowMembership.objects.filter(
             activity_id=source_id,
             workflow_id=target_id,
+        ).exists()
+    if relationship_type == PipChange.REL_ARTIFACT_ACTIVITY:
+        return ArtifactInput.objects.filter(
+            artifact_id=source_id,
+            activity_id=target_id,
         ).exists()
     return False
 

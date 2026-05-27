@@ -223,6 +223,10 @@ class PipChangeSerializer(serializers.ModelSerializer):
             'id', 'order', 'change_type', 'entity_type', 'name',
             'target_id', 'target_name_snapshot', 'content',
             'parent_workflow_id', 'insert_after_activity_id', 'append_to_playbook_end',
+            'internal_ref', 'parent_workflow_ref', 'insert_after_activity_ref',
+            'phase_ref', 'produced_by_activity_ref', 'artifact_type', 'artifact_is_required',
+            'relationship_type', 'source_entity_type', 'source_entity_ref',
+            'target_entity_type', 'target_entity_ref',
             'galdr_recommendation', 'galdr_reasoning',
             'admin_decision', 'admin_note',
         ]

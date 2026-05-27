@@ -2685,8 +2685,18 @@ def _serialize_pip_change(ch) -> dict:
         "target_name_snapshot": ch.target_name_snapshot or "",
         "content": ch.content or "",
         "parent_workflow_id": ch.parent_workflow_id,
+        "parent_workflow_ref": ch.parent_workflow_ref or "",
         "insert_after_activity_id": ch.insert_after_activity_id,
+        "insert_after_activity_ref": ch.insert_after_activity_ref or "",
+        "phase_ref": ch.phase_ref or "",
+        "produced_by_activity_ref": ch.produced_by_activity_ref or "",
+        "artifact_type": ch.artifact_type or "",
+        "artifact_is_required": bool(ch.artifact_is_required),
         "append_to_playbook_end": bool(ch.append_to_playbook_end),
+        "internal_ref": ch.internal_ref or "",
+        "relationship_type": ch.relationship_type or "",
+        "source_entity_ref": ch.source_entity_ref or "",
+        "target_entity_ref": ch.target_entity_ref or "",
         "galdr_recommendation": ch.galdr_recommendation or "",
         "galdr_reasoning": ch.galdr_reasoning or "",
         "admin_decision": ch.admin_decision or "",
@@ -2817,7 +2827,13 @@ async def add_pip_change(
     content: str = "",
     target_id: Optional[int] = None,
     parent_workflow_id: Optional[int] = None,
+    parent_workflow_ref: str = "",
     insert_after_activity_id: Optional[int] = None,
+    insert_after_activity_ref: str = "",
+    phase_ref: str = "",
+    produced_by_activity_ref: str = "",
+    artifact_type: str = "",
+    artifact_is_required: bool = False,
     append_to_playbook_end: bool = False,
     internal_ref: str = "",
     relationship_type: str = "",
@@ -2827,28 +2843,28 @@ async def add_pip_change(
     """Attach a typed change row to a Draft PIP.
 
     change_type values and required fields:
-    - ADD   : entity_type + name + content required; parent_workflow_id required for Activity.
-              Optionally set internal_ref="#slug" so later LINK changes in the same PIP can
-              reference this not-yet-saved entity before it gets a real database ID.
+    - ADD   : entity_type + name + content required.
+              ADD Activity: parent_workflow_id OR parent_workflow_ref (pk or #slug).
+              ADD Artifact: produced_by_activity_ref required.
+              Optionally set internal_ref="#slug" for later LINK/ref rows in this PIP.
     - ALTER : entity_type + target_id + at least one of name/content required.
-    - DROP  : entity_type + target_id required.
-    - LINK  : relationship_type + source_entity_ref + target_entity_ref required.
-              entity_type must be left empty ("").
-              Refs are either a numeric PK (e.g. "42") or a "#slug" internal_ref pointing to
-              an ADD change in the same PIP (e.g. "#new-skill").
-    - UNLINK: same fields as LINK; removes the relationship instead of creating it.
+              Activity: optional phase_ref (pk or #slug).
+    - DROP  : entity_type + target_id + rationale in content.
+    - LINK  : relationship_type + source_entity_ref + target_entity_ref (entity_type="").
+    - UNLINK: same as LINK.
 
-    entity_type choices (ADD / ALTER / DROP only): Workflow, Activity, Skill, Agent, Rule.
+    entity_type (ADD/ALTER/DROP): Workflow, Activity, Phase, Skill, Agent, Rule, Artifact.
 
-    relationship_type choices (LINK / UNLINK only):
-    - skill_activity    : attach a Skill to an Activity
-    - rule_activity     : attach a Rule to an Activity
-    - agent_activity    : attach an Agent to an Activity
-    - activity_workflow : cross-list an Activity in a secondary Workflow
+    relationship_type (LINK/UNLINK): skill_activity, rule_activity, agent_activity,
+    activity_workflow, artifact_activity.
 
-    internal_ref format: "#<slug>" (e.g. "#standup-skill"). Use it when you ADD a new entity
-    in the same PIP and need to LINK it before the real ID is known. The ref is resolved when
-    the PIP is applied. The slug may only contain letters, digits, hyphens, and underscores.
+    Full subtree recipe (call add_pip_change in order):
+      1. ADD Phase       internal_ref="#phase1"  name="Construction"
+      2. ADD Workflow    internal_ref="#wf1"     name="Performance"
+      3. ADD Activity    internal_ref="#act1"    parent_workflow_ref="#wf1"  phase_ref="#phase1"
+      4. ADD Activity    name="Step 2"           parent_workflow_ref="#wf1"  insert_after_activity_ref="#act1"
+      5. ADD Skill       internal_ref="#sk1"     ...
+      6. LINK            relationship_type="skill_activity"  source_entity_ref="#sk1"  target_entity_ref="#act1"
     """
 
     user = await sync_to_async(get_current_user)()
@@ -2867,7 +2883,13 @@ async def add_pip_change(
                 content=content or "",
                 target_id=target_id,
                 parent_workflow_id=parent_workflow_id,
+                parent_workflow_ref=parent_workflow_ref or "",
                 insert_after_activity_id=insert_after_activity_id,
+                insert_after_activity_ref=insert_after_activity_ref or "",
+                phase_ref=phase_ref or "",
+                produced_by_activity_ref=produced_by_activity_ref or "",
+                artifact_type=artifact_type or "",
+                artifact_is_required=artifact_is_required,
                 append_to_playbook_end=append_to_playbook_end,
                 internal_ref=internal_ref or "",
                 relationship_type=relationship_type or "",

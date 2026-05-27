@@ -461,6 +461,31 @@ def pip_draft_editor(request, pk: int):
     )
 
 
+def _parse_optional_int(raw: str) -> int | None:
+    val = (raw or "").strip()
+    return int(val) if val.isdigit() else None
+
+
+def _parse_workflow_parent(post) -> tuple[int | None, str]:
+    ref_raw = (post.get("parent_workflow_ref") or "").strip()
+    wf_raw = (post.get("parent_workflow") or "").strip()
+    if ref_raw:
+        return None, ref_raw
+    if wf_raw.startswith("#"):
+        return None, wf_raw
+    return _parse_optional_int(wf_raw), ""
+
+
+def _parse_insert_after(post) -> tuple[int | None, str]:
+    ref_raw = (post.get("insert_after_activity_ref") or "").strip()
+    ins_raw = (post.get("insert_after_activity") or "").strip()
+    if ref_raw:
+        return None, ref_raw
+    if ins_raw.startswith("#"):
+        return None, ins_raw
+    return _parse_optional_int(ins_raw), ""
+
+
 @login_required
 @require_POST
 def pip_add_change(request, pk: int):
@@ -469,8 +494,8 @@ def pip_add_change(request, pk: int):
     pip = PIPService.get_pip(pk, request.user)
     post = request.POST
     try:
-        wf_raw = post.get("parent_workflow") or ""
-        ins_raw = post.get("insert_after_activity") or ""
+        parent_wf_id, parent_wf_ref = _parse_workflow_parent(post)
+        insert_id, insert_ref = _parse_insert_after(post)
         tgt_raw = post.get("target_id") or ""
         PIPService.add_change(
             actor=request.user,
@@ -480,8 +505,14 @@ def pip_add_change(request, pk: int):
             name=post.get("name", ""),
             content=post.get("content", ""),
             target_id=int(tgt_raw) if tgt_raw.isdigit() else None,
-            parent_workflow_id=int(wf_raw) if wf_raw.isdigit() else None,
-            insert_after_activity_id=int(ins_raw) if ins_raw.isdigit() else None,
+            parent_workflow_id=parent_wf_id,
+            parent_workflow_ref=parent_wf_ref,
+            insert_after_activity_id=insert_id,
+            insert_after_activity_ref=insert_ref,
+            phase_ref=(post.get("phase_ref") or "").strip(),
+            produced_by_activity_ref=(post.get("produced_by_activity_ref") or "").strip(),
+            artifact_type=(post.get("artifact_type") or "").strip(),
+            artifact_is_required=post.get("artifact_is_required") == "on",
             append_to_playbook_end=post.get("append_end") == "on",
             internal_ref=post.get("internal_ref", ""),
             relationship_type=(post.get("relationship_type") or "").strip(),

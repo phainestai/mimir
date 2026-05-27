@@ -18,6 +18,7 @@ from methodology.models import (
     Activity,
     Agent,
     Artifact,
+    Phase,
     PipChange,
     Playbook,
     ProcessImprovementProposal,
@@ -30,6 +31,7 @@ from methodology.services.pip_link_service import (
     link_change_summary_label,
     validate_internal_ref_label,
     validate_link_change_for_persist,
+    validate_pending_or_live_ref,
 )
 
 from methodology.services.playbook_service import PlaybookService
@@ -131,7 +133,28 @@ def _entity_target_label(playbook: Playbook, entity_type: str, target_id: int) -
         if ru.playbook_id != playbook.pk:
             raise ValidationError("Rule playbook mismatch.")
         return ru.title
+    if entity_type == PipChange.ENTITY_PHASE:
+        ph = Phase.objects.get(pk=target_id)
+        if ph.playbook_id != playbook.pk:
+            raise ValidationError("Phase playbook mismatch.")
+        return ph.name
     raise ValidationError(f"Unsupported entity '{entity_type}' for targets.")
+
+
+def _normalize_entity_ref(raw: str) -> str:
+    return (raw or "").strip()
+
+
+def _validate_ref_pair(
+    *,
+    pip: ProcessImprovementProposal,
+    fk_set: bool,
+    ref_raw: str,
+    field_label: str,
+) -> None:
+    ref = _normalize_entity_ref(ref_raw)
+    if fk_set and ref:
+        raise ValidationError(f"{field_label}: use either FK or ref, not both.")
 
 
 def _persist_pip_change(
@@ -143,7 +166,13 @@ def _persist_pip_change(
     content: str,
     target_id: Optional[int],
     parent_workflow_id: Optional[int],
+    parent_workflow_ref: str,
     insert_after_activity_id: Optional[int],
+    insert_after_activity_ref: str,
+    phase_ref: str,
+    produced_by_activity_ref: str,
+    artifact_type: str,
+    artifact_is_required: bool,
     append_to_playbook_end: bool,
     internal_ref: str = "",
 ) -> PipChange:
@@ -177,9 +206,59 @@ def _persist_pip_change(
         if after_act.workflow.playbook_id != pb.pk:
             raise ValidationError("Sibling activity playbook mismatch.")
 
+    order_val = _next_change_sequence(pip)
+    parent_ref = _normalize_entity_ref(parent_workflow_ref)
+    insert_ref = _normalize_entity_ref(insert_after_activity_ref)
+    phase_ref_norm = _normalize_entity_ref(phase_ref)
+    producer_ref = _normalize_entity_ref(produced_by_activity_ref)
+
+    _validate_ref_pair(
+        pip=pip, fk_set=bool(parent_workflow_id), ref_raw=parent_ref,
+        field_label="parent_workflow",
+    )
+    _validate_ref_pair(
+        pip=pip, fk_set=bool(insert_after_activity_id), ref_raw=insert_ref,
+        field_label="insert_after_activity",
+    )
+
+    if ct == PipChange.CHANGE_ADD and et == PipChange.ENTITY_ACTIVITY:
+        if not parent_workflow_id and not parent_ref:
+            raise ValidationError("ADD Activity requires parent_workflow_id or parent_workflow_ref.")
+        if parent_ref:
+            validate_pending_or_live_ref(
+                pip=pip, ref=parent_ref, expected_type=PipChange.ENTITY_WORKFLOW,
+                order_hint=order_val, playbook_id=pb.pk,
+            )
+        if insert_ref:
+            validate_pending_or_live_ref(
+                pip=pip, ref=insert_ref, expected_type=PipChange.ENTITY_ACTIVITY,
+                order_hint=order_val, playbook_id=pb.pk,
+            )
+        if phase_ref_norm:
+            validate_pending_or_live_ref(
+                pip=pip, ref=phase_ref_norm, expected_type=PipChange.ENTITY_PHASE,
+                order_hint=order_val, playbook_id=pb.pk,
+            )
+
+    if ct == PipChange.CHANGE_ADD and et == PipChange.ENTITY_ARTIFACT:
+        if not producer_ref:
+            raise ValidationError("ADD Artifact requires produced_by_activity_ref.")
+        validate_pending_or_live_ref(
+            pip=pip, ref=producer_ref, expected_type=PipChange.ENTITY_ACTIVITY,
+            order_hint=order_val, playbook_id=pb.pk,
+        )
+
+    if ct == PipChange.CHANGE_ALTER and et == PipChange.ENTITY_ACTIVITY and phase_ref_norm:
+        validate_pending_or_live_ref(
+            pip=pip, ref=phase_ref_norm, expected_type=PipChange.ENTITY_PHASE,
+            order_hint=order_val, playbook_id=pb.pk,
+        )
+
     display_name = nm
     if ct == PipChange.CHANGE_ADD and not nm:
         raise ValidationError("Name is required for ADD changes.")
+    if ct == PipChange.CHANGE_ALTER and not nm and not body:
+        raise ValidationError("ALTER requires at least one of name or content.")
     if ct == PipChange.CHANGE_DROP and not body:
         raise ValidationError("Rationale is required for DROP changes.")
     tgt = target_id
@@ -192,7 +271,6 @@ def _persist_pip_change(
             raise ValidationError("DROP requires target_id.")
         display_name = nm or _entity_target_label(pb, et, tgt)
 
-    order_val = _next_change_sequence(pip)
     ref_label = ""
     if ct == PipChange.CHANGE_ADD and internal_ref.strip():
         ref_label = validate_internal_ref_label(internal_ref)
@@ -203,17 +281,25 @@ def _persist_pip_change(
         ).exists()
         if dup:
             raise ValidationError(f"Duplicate internal_ref '{ref_label}' in this PIP.")
+
+    art_type = (artifact_type or "Document").strip() or "Document"
     pc = PipChange.objects.create(
         pip=pip,
         change_type=ct,
         entity_type=et,
         order=order_val,
-        name=nm if ct == PipChange.CHANGE_ADD else "",
+        name=nm if ct in {PipChange.CHANGE_ADD, PipChange.CHANGE_ALTER} else "",
         content=body,
         target_id=tgt,
         target_name_snapshot=(display_name or "") if ct != PipChange.CHANGE_ADD else "",
         parent_workflow=parent_wf,
         insert_after_activity=after_act,
+        parent_workflow_ref=parent_ref,
+        insert_after_activity_ref=insert_ref,
+        phase_ref=phase_ref_norm,
+        produced_by_activity_ref=producer_ref,
+        artifact_type=art_type,
+        artifact_is_required=bool(artifact_is_required),
         append_to_playbook_end=bool(append_to_playbook_end),
         internal_ref=ref_label,
     )
@@ -468,7 +554,13 @@ class PIPService:
         content: str = "",
         target_id: Optional[int] = None,
         parent_workflow_id: Optional[int] = None,
+        parent_workflow_ref: str = "",
         insert_after_activity_id: Optional[int] = None,
+        insert_after_activity_ref: str = "",
+        phase_ref: str = "",
+        produced_by_activity_ref: str = "",
+        artifact_type: str = "",
+        artifact_is_required: bool = False,
         append_to_playbook_end: bool = False,
         internal_ref: str = "",
         relationship_type: str = "",
@@ -494,7 +586,13 @@ class PIPService:
             content=content,
             target_id=target_id,
             parent_workflow_id=parent_workflow_id,
+            parent_workflow_ref=parent_workflow_ref,
             insert_after_activity_id=insert_after_activity_id,
+            insert_after_activity_ref=insert_after_activity_ref,
+            phase_ref=phase_ref,
+            produced_by_activity_ref=produced_by_activity_ref,
+            artifact_type=artifact_type,
+            artifact_is_required=artifact_is_required,
             append_to_playbook_end=append_to_playbook_end,
             internal_ref=internal_ref,
         )

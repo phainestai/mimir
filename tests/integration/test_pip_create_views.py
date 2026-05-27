@@ -7,7 +7,8 @@ from django.contrib.auth import get_user_model
 from django.test import Client
 from django.urls import reverse
 
-from methodology.models import Activity, Playbook, ProcessImprovementProposal, Workflow
+from methodology.models import Activity, PipChange, Playbook, ProcessImprovementProposal, Workflow
+from methodology.services.pip_service import PIPService
 
 User = get_user_model()
 
@@ -90,4 +91,46 @@ def test_pip_create_activity_prefill_adds_hidden_fields(maria, released_pb):
     body = rsp.content.decode()
     assert 'data-testid="pip-create-focus-activity"' in body
     assert "Activity context:" in body
+
+
+@pytest.mark.django_db
+def test_pip_add_change_accepts_parent_workflow_ref_via_gui(maria, released_pb):
+    """Draft editor POST can chain ADD Workflow → ADD Activity via #refs."""
+    pip = PIPService.create_draft_for_playbook(
+        actor=maria, playbook_id=released_pb.pk, title="GUI ref subtree",
+    )
+    client = Client(enforce_csrf_checks=False)
+    client.force_login(maria)
+    add_url = reverse("pip_add_change", kwargs={"pk": pip.pk})
+
+    rsp_wf = client.post(
+        add_url,
+        {
+            "change_type": "ADD",
+            "entity_type": "Workflow",
+            "name": "New WF",
+            "content": "Workflow body",
+            "internal_ref": "#wf1",
+        },
+    )
+    assert rsp_wf.status_code == 302
+
+    rsp_act = client.post(
+        add_url,
+        {
+            "change_type": "ADD",
+            "entity_type": "Activity",
+            "name": "First step",
+            "content": "Activity guidance text",
+            "parent_workflow_ref": "#wf1",
+            "internal_ref": "#act1",
+        },
+    )
+    assert rsp_act.status_code == 302
+
+    wf_change = PipChange.objects.get(pip=pip, internal_ref="#wf1")
+    act_change = PipChange.objects.get(pip=pip, internal_ref="#act1")
+    assert wf_change.entity_type == PipChange.ENTITY_WORKFLOW
+    assert act_change.parent_workflow_ref == "#wf1"
+    assert act_change.parent_workflow_id is None
 

@@ -13,12 +13,15 @@ from methodology.models import (
     Activity,
     Agent,
     Artifact,
+    ArtifactInput,
+    Phase,
     PipChange,
     Rule,
     Skill,
     Workflow,
 )
 from methodology.services.activity_service import ActivityService
+from methodology.services.artifact_service import ArtifactService
 from methodology.services.pip_link_service import (
     link_change_summary_label,
     normalize_internal_ref,
@@ -75,6 +78,7 @@ class PipApplyChangesService:
                 playbook=playbook,
                 change=change,
                 pip_pk=pip.pk,
+                ref_map=ref_map,
             )
             if change.internal_ref and created_pk is not None:
                 key = normalize_internal_ref(change.internal_ref)
@@ -92,6 +96,7 @@ class PipApplyChangesService:
                 entity_type=et,
                 change=change,
                 pip_pk=pip.pk,
+                ref_map=ref_map,
             )
             return
         if ct == PipChange.CHANGE_DROP:
@@ -113,34 +118,91 @@ class PipApplyChangesService:
         raise ValidationError(f"Unknown change_type {ct}.")
 
     @staticmethod
+    def _resolve_parent_workflow_id(
+        *,
+        change: PipChange,
+        playbook: Playbook,
+        ref_map: dict[str, tuple[str, int]],
+    ) -> int:
+        if change.parent_workflow_ref:
+            return resolve_entity_ref(
+                ref=change.parent_workflow_ref,
+                expected_type=PipChange.ENTITY_WORKFLOW,
+                playbook_id=playbook.pk,
+                ref_map=ref_map,
+            )
+        if change.parent_workflow_id:
+            return change.parent_workflow_id
+        raise ValidationError("ADD Activity requires parent_workflow in target playbook.")
+
+    @staticmethod
+    def _resolve_insert_after_activity_id(
+        *,
+        change: PipChange,
+        playbook: Playbook,
+        ref_map: dict[str, tuple[str, int]],
+    ) -> int | None:
+        if change.insert_after_activity_ref:
+            return resolve_entity_ref(
+                ref=change.insert_after_activity_ref,
+                expected_type=PipChange.ENTITY_ACTIVITY,
+                playbook_id=playbook.pk,
+                ref_map=ref_map,
+            )
+        if change.insert_after_activity_id:
+            return change.insert_after_activity_id
+        return None
+
+    @staticmethod
+    def _resolve_phase_id(
+        *,
+        change: PipChange,
+        playbook: Playbook,
+        ref_map: dict[str, tuple[str, int]],
+    ) -> int | None:
+        if not change.phase_ref:
+            return None
+        return resolve_entity_ref(
+            ref=change.phase_ref,
+            expected_type=PipChange.ENTITY_PHASE,
+            playbook_id=playbook.pk,
+            ref_map=ref_map,
+        )
+
+    @staticmethod
     def _apply_add(
         *,
         playbook: Playbook,
         change: PipChange,
         pip_pk: int,
+        ref_map: dict[str, tuple[str, int]],
     ) -> int | None:
         et = change.entity_type
         if et == PipChange.ENTITY_ACTIVITY:
-            parent = change.parent_workflow
-            if parent is None or parent.playbook_id != playbook.pk:
-                raise ValidationError("ADD Activity requires parent_workflow in target playbook.")
+            parent_id = PipApplyChangesService._resolve_parent_workflow_id(
+                change=change, playbook=playbook, ref_map=ref_map,
+            )
+            parent = Workflow.objects.get(pk=parent_id, playbook_id=playbook.pk)
             name = change.name.strip()
             if not name:
                 raise ValidationError("ADD Activity requires a name.")
             guidance_body = (
                 change.content.strip() if change.content and change.content.strip() else "## TBD"
             )
-            if change.append_to_playbook_end or change.insert_after_activity_id is None:
+            after_id = PipApplyChangesService._resolve_insert_after_activity_id(
+                change=change, playbook=playbook, ref_map=ref_map,
+            )
+            phase_id = PipApplyChangesService._resolve_phase_id(
+                change=change, playbook=playbook, ref_map=ref_map,
+            )
+            if change.append_to_playbook_end or after_id is None:
                 agg = Activity.objects.filter(workflow_id=parent.pk).aggregate(
                     m=Max("order"),
                 )
                 next_order = int(agg["m"] or 0) + 1
             else:
-                after = change.insert_after_activity
-                if (
-                    after is None
-                    or after.workflow_id != parent.pk
-                ):
+                after = Activity.objects.get(pk=after_id)
+                if after.workflow_id != parent.pk:
                     raise ValidationError("Insert-after activity mismatch.")
                 _bump_orders_after_activity(after.workflow_id, after.order)
                 next_order = after.order + 1
@@ -149,15 +211,32 @@ class PipApplyChangesService:
                 name=name[:200],
                 guidance=guidance_body,
                 order=next_order,
+                phase_id=phase_id,
             )
             logger.info(
-                "PIP apply ADD Activity pk=%s pip=%s workflow=%s order=%s",
+                "PIP apply ADD Activity pk=%s pip=%s workflow=%s order=%s phase=%s",
                 act.pk,
                 pip_pk,
                 parent.pk,
                 next_order,
+                phase_id,
             )
             return act.pk
+
+        if et == PipChange.ENTITY_PHASE:
+            name = change.name.strip()
+            if not name:
+                raise ValidationError("ADD Phase requires a name.")
+            agg = Phase.objects.filter(playbook_id=playbook.pk).aggregate(m=Max("order"))
+            next_order = int(agg["m"] or 0) + 1
+            ph = Phase.objects.create(
+                playbook=playbook,
+                name=name[:200],
+                description=(change.content or "")[:500],
+                order=next_order,
+            )
+            logger.info("PIP apply ADD Phase pk=%s pip=%s order=%s", ph.pk, pip_pk, next_order)
+            return ph.pk
 
         if et == PipChange.ENTITY_WORKFLOW:
             name = change.name.strip()
@@ -226,9 +305,30 @@ class PipApplyChangesService:
             return ru.pk
 
         if et == PipChange.ENTITY_ARTIFACT:
-            raise ValidationError(
-                "ADD Artifact via PIP is not supported yet (producer activity unknown)."
+            if not change.produced_by_activity_ref:
+                raise ValidationError("ADD Artifact requires produced_by_activity_ref.")
+            producer_id = resolve_entity_ref(
+                ref=change.produced_by_activity_ref,
+                expected_type=PipChange.ENTITY_ACTIVITY,
+                playbook_id=playbook.pk,
+                ref_map=ref_map,
             )
+            producer = Activity.objects.select_related("workflow").get(pk=producer_id)
+            if producer.workflow.playbook_id != playbook.pk:
+                raise ValidationError("Producer activity playbook mismatch.")
+            name = change.name.strip()
+            if not name:
+                raise ValidationError("ADD Artifact requires a name.")
+            art = ArtifactService.create_artifact(
+                playbook=playbook,
+                produced_by=producer,
+                name=name[:200],
+                description=(change.content or "").strip(),
+                type=(change.artifact_type or "Document").strip() or "Document",
+                is_required=bool(change.artifact_is_required),
+            )
+            logger.info("PIP apply ADD Artifact pk=%s pip=%s producer=%s", art.pk, pip_pk, producer_id)
+            return art.pk
         raise ValidationError(f"Unsupported ADD entity '{et}'.")
 
     @staticmethod
@@ -290,6 +390,18 @@ class PipApplyChangesService:
                 WorkflowService.add_activity_to_workflow(src_id, tgt_id, order=change.order)
             else:
                 WorkflowService.remove_activity_from_workflow(src_id, tgt_id)
+        elif rel == PipChange.REL_ARTIFACT_ACTIVITY:
+            if is_link:
+                ArtifactInput.objects.get_or_create(
+                    artifact_id=src_id,
+                    activity_id=tgt_id,
+                    defaults={"is_required": True},
+                )
+            else:
+                ArtifactInput.objects.filter(
+                    artifact_id=src_id,
+                    activity_id=tgt_id,
+                ).delete()
         else:
             raise ValidationError(f"Unsupported relationship_type '{rel}'.")
 
@@ -309,6 +421,7 @@ class PipApplyChangesService:
         entity_type: str,
         change: PipChange,
         pip_pk: int,
+        ref_map: dict[str, tuple[str, int]],
     ) -> None:
         cid = change.target_id
         if cid is None:
@@ -324,7 +437,11 @@ class PipApplyChangesService:
                 act.guidance = body
             if change.name.strip():
                 act.name = change.name.strip()[:200]
-            act.save(update_fields=["guidance", "name", "updated_at"])
+            if change.phase_ref:
+                act.phase_id = PipApplyChangesService._resolve_phase_id(
+                    change=change, playbook=playbook, ref_map=ref_map,
+                )
+            act.save(update_fields=["guidance", "name", "phase_id", "updated_at"])
             logger.info("PIP apply ALTER Activity pk=%s pip=%s", cid, pip_pk)
             return
 
@@ -332,9 +449,23 @@ class PipApplyChangesService:
             wf = Workflow.objects.get(pk=cid)
             if wf.playbook_id != playbook.pk:
                 raise ValidationError("Workflow playbook mismatch.")
+            if change.name.strip():
+                wf.name = change.name.strip()[:100]
             wf.description = (body or wf.description or "")[:500]
-            wf.save(update_fields=["description", "updated_at"])
+            wf.save(update_fields=["name", "description", "updated_at"])
             logger.info("PIP apply ALTER Workflow pk=%s pip=%s", cid, pip_pk)
+            return
+
+        if entity_type == PipChange.ENTITY_PHASE:
+            ph = Phase.objects.get(pk=cid)
+            if ph.playbook_id != playbook.pk:
+                raise ValidationError("Phase playbook mismatch.")
+            if change.name.strip():
+                ph.name = change.name.strip()[:200]
+            if body:
+                ph.description = body[:500]
+            ph.save(update_fields=["name", "description", "updated_at"])
+            logger.info("PIP apply ALTER Phase pk=%s pip=%s", cid, pip_pk)
             return
 
         if entity_type == PipChange.ENTITY_SKILL:
@@ -365,9 +496,27 @@ class PipApplyChangesService:
             art = Artifact.objects.get(pk=cid)
             if art.playbook_id != playbook.pk:
                 raise ValidationError("Artifact playbook mismatch.")
-            art.description = body or art.description or ""
-            art.save(update_fields=["description", "updated_at"])
+            if change.name.strip():
+                art.name = change.name.strip()[:200]
+            if body:
+                art.description = body
+            if change.artifact_type.strip():
+                art.type = change.artifact_type.strip()[:50]
+            art.is_required = bool(change.artifact_is_required)
+            art.save(update_fields=["name", "description", "type", "is_required", "updated_at"])
             logger.info("PIP apply ALTER Artifact pk=%s pip=%s", cid, pip_pk)
+            return
+
+        if entity_type == PipChange.ENTITY_RULE:
+            ru = Rule.objects.get(pk=cid)
+            if ru.playbook_id != playbook.pk:
+                raise ValidationError("Rule playbook mismatch.")
+            if change.name.strip():
+                ru.title = change.name.strip()[:200]
+            if body:
+                ru.content = body
+            ru.save(update_fields=["title", "content", "updated_at"])
+            logger.info("PIP apply ALTER Rule pk=%s pip=%s", cid, pip_pk)
             return
 
         raise ValidationError(f"Unsupported ALTER entity '{entity_type}'.")
@@ -414,6 +563,21 @@ class PipApplyChangesService:
         if entity_type == PipChange.ENTITY_ARTIFACT:
             Artifact.objects.filter(pk=cid, playbook_id=playbook.pk).delete()
             logger.info("PIP apply DROP Artifact pk=%s pip=%s", cid, pip_pk)
+            return
+
+        if entity_type == PipChange.ENTITY_RULE:
+            Rule.objects.filter(pk=cid, playbook_id=playbook.pk).delete()
+            logger.info("PIP apply DROP Rule pk=%s pip=%s", cid, pip_pk)
+            return
+
+        if entity_type == PipChange.ENTITY_PHASE:
+            ph = Phase.objects.get(pk=cid, playbook_id=playbook.pk)
+            if ph.activities.exists():
+                raise ValidationError(
+                    "Cannot DROP Phase with assigned activities — reassign activities first."
+                )
+            ph.delete()
+            logger.info("PIP apply DROP Phase pk=%s pip=%s", cid, pip_pk)
             return
 
         raise ValidationError(f"Unsupported DROP entity '{entity_type}'.")

@@ -81,6 +81,19 @@
                              · {% if ch.target_name_snapshot %}{{ ch.target_name_snapshot }}{% else %}#{{ ch.target_id }}{% endif %}
                             {% endif %}
                         </p>
+                        {% if ch.internal_ref or ch.parent_workflow_ref or ch.insert_after_activity_ref or ch.phase_ref or ch.produced_by_activity_ref or ch.artifact_type or ch.relationship_type or ch.source_entity_ref or ch.target_entity_ref or ch.parent_workflow_id or ch.insert_after_activity_id %}
+                        <p class="small text-muted mb-2" data-testid="pip-change-refs-{{ ch.order }}">
+                            {% if ch.internal_ref %}<span class="me-2">ref: <code>{{ ch.internal_ref }}</code></span>{% endif %}
+                            {% if ch.parent_workflow_ref %}<span class="me-2">parent wf: <code>{{ ch.parent_workflow_ref }}</code></span>{% elif ch.parent_workflow_id %}<span class="me-2">parent wf: #{{ ch.parent_workflow_id }}</span>{% endif %}
+                            {% if ch.insert_after_activity_ref %}<span class="me-2">after: <code>{{ ch.insert_after_activity_ref }}</code></span>{% elif ch.insert_after_activity_id %}<span class="me-2">after: #{{ ch.insert_after_activity_id }}</span>{% endif %}
+                            {% if ch.phase_ref %}<span class="me-2">phase: <code>{{ ch.phase_ref }}</code></span>{% endif %}
+                            {% if ch.produced_by_activity_ref %}<span class="me-2">producer: <code>{{ ch.produced_by_activity_ref }}</code></span>{% endif %}
+                            {% if ch.artifact_type %}<span class="me-2">artifact type: {{ ch.artifact_type }}{% if ch.artifact_is_required %} (required){% endif %}</span>{% endif %}
+                            {% if ch.relationship_type %}<span class="me-2">link: {{ ch.relationship_type }}</span>{% endif %}
+                            {% if ch.source_entity_ref %}<span class="me-2">src: <code>{{ ch.source_entity_ref }}</code></span>{% endif %}
+                            {% if ch.target_entity_ref %}<span class="me-2">tgt: <code>{{ ch.target_entity_ref }}</code></span>{% endif %}
+                        </p>
+                        {% endif %}
                         <pre class="bg-light border rounded p-3 small mb-2" style="white-space: pre-wrap;" data-testid="pip-change-content-{{ ch.order }}">{{ ch.content|default:'(empty)' }}</pre>
                         {% if ch.galdr_reasoning %}
                         <div class="small mt-2" data-testid="galdr-reason-{{ ch.order }}">

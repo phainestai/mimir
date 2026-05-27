@@ -27,15 +27,18 @@ class PipChange(models.Model):
     REL_RULE_ACTIVITY = "rule_activity"
     REL_AGENT_ACTIVITY = "agent_activity"
     REL_ACTIVITY_WORKFLOW = "activity_workflow"
+    REL_ARTIFACT_ACTIVITY = "artifact_activity"
     RELATIONSHIP_TYPE_CHOICES = [
         (REL_SKILL_ACTIVITY, "Skill → Activity"),
         (REL_RULE_ACTIVITY, "Rule → Activity"),
         (REL_AGENT_ACTIVITY, "Agent → Activity"),
         (REL_ACTIVITY_WORKFLOW, "Activity → Workflow"),
+        (REL_ARTIFACT_ACTIVITY, "Artifact → Activity"),
     ]
 
     ENTITY_WORKFLOW = "Workflow"
     ENTITY_ACTIVITY = "Activity"
+    ENTITY_PHASE = "Phase"
     ENTITY_SKILL = "Skill"
     ENTITY_AGENT = "Agent"
     ENTITY_ARTIFACT = "Artifact"
@@ -43,6 +46,7 @@ class PipChange(models.Model):
     ENTITY_TYPE_CHOICES = [
         (ENTITY_WORKFLOW, "Workflow"),
         (ENTITY_ACTIVITY, "Activity"),
+        (ENTITY_PHASE, "Phase"),
         (ENTITY_SKILL, "Skill"),
         (ENTITY_AGENT, "Agent"),
         (ENTITY_ARTIFACT, "Artifact"),
@@ -121,6 +125,40 @@ class PipChange(models.Model):
         on_delete=models.SET_NULL,
         related_name="pip_inserts_pending",
         help_text="ADD Activity: sibling to insert immediately after.",
+    )
+    parent_workflow_ref = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="ADD Activity: workflow pk or #internal_ref for pending ADD Workflow.",
+    )
+    insert_after_activity_ref = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="ADD Activity: activity pk or #internal_ref for ordering.",
+    )
+    phase_ref = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="ADD/ALTER Activity: phase pk or #internal_ref.",
+    )
+    produced_by_activity_ref = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="ADD Artifact: producer activity pk or #internal_ref.",
+    )
+    artifact_type = models.CharField(
+        max_length=50,
+        blank=True,
+        default="Document",
+        help_text="ADD/ALTER Artifact: Document, Template, Code, etc.",
+    )
+    artifact_is_required = models.BooleanField(
+        default=False,
+        help_text="ADD/ALTER Artifact: required deliverable flag.",
     )
     append_to_playbook_end = models.BooleanField(
         default=False,
