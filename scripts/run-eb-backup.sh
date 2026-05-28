@@ -46,19 +46,14 @@ if [ -z "\$CONTAINER" ]; then
   docker ps -a >&2 || true
   exit 1
 fi
-echo "Loading EB environment variables for ${IDLE_ENV}"
+echo "Loading EB environment variables from get-config"
 ENV_FILE=\$(mktemp)
-EB_ENV_RAW=\$(mktemp)
-aws elasticbeanstalk describe-configuration-settings \
-  --application-name ${EB_APP} \
-  --environment-name ${IDLE_ENV} \
-  --query "ConfigurationSettings[0].OptionSettings[?Namespace=='aws:elasticbeanstalk:application:environment'].[OptionName,Value]" \
-  --output text > "\$EB_ENV_RAW"
-: > "\$ENV_FILE"
-while IFS=\$'\t' read -r name value; do
-  [ -n "\$name" ] && printf '%s=%s\n' "\$name" "\$value" >> "\$ENV_FILE"
-done < "\$EB_ENV_RAW"
-rm -f "\$EB_ENV_RAW"
+if [ -x /opt/elasticbeanstalk/bin/get-config ]; then
+  /opt/elasticbeanstalk/bin/get-config environment > "\$ENV_FILE"
+else
+  echo "ERROR: /opt/elasticbeanstalk/bin/get-config not found on EB host" >&2
+  exit 1
+fi
 {
   echo "S3_BACKUP_BUCKET=${S3_BACKUP_BUCKET}"
   echo "MIMIR_GIT_REVISION=${GIT_REVISION}"
