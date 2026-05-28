@@ -1,0 +1,1371 @@
+{
+  "mimir-prod": [
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "Availability Zones",
+      "value": "Any"
+    },
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "Cooldown",
+      "value": "360"
+    },
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "Custom Availability Zones",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "EnableCapacityRebalancing",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "MaxSize",
+      "value": "2"
+    },
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "MinSize",
+      "value": "1"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "BlockDeviceMappings",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "DisableDefaultEC2SecurityGroup",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "DisableIMDSv1",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "EC2KeyName",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "IamInstanceProfile",
+      "value": "aws-elasticbeanstalk-ec2-role"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "ImageId",
+      "value": "ami-063c4d8a076f053f5"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "InstanceType",
+      "value": "t3.small"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "LaunchTemplateTagPropagationEnabled",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "MonitoringInterval",
+      "value": "5 minute"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "RootVolumeIOPS",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "RootVolumeSize",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "RootVolumeThroughput",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "RootVolumeType",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "SSHSourceRestriction",
+      "value": "tcp,22,22,0.0.0.0/0"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "SecurityGroups",
+      "value": "sg-03f4090a028cf0084,sg-06e92f30da1444e79"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "BreachDuration",
+      "value": "5"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "EvaluationPeriods",
+      "value": "1"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "LowerBreachScaleIncrement",
+      "value": "-1"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "LowerThreshold",
+      "value": "2000000"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "MeasureName",
+      "value": "NetworkOut"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "Period",
+      "value": "5"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "Statistic",
+      "value": "Average"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "Unit",
+      "value": "Bytes"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "UpperBreachScaleIncrement",
+      "value": "1"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "UpperThreshold",
+      "value": "6000000"
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "MaxBatchSize",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "MinInstancesInService",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "PauseTime",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "RollingUpdateEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "RollingUpdateType",
+      "value": "Time"
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "Timeout",
+      "value": "PT30M"
+    },
+    {
+      "namespace": "aws:cloudformation:template:parameter",
+      "option_name": "AppSource",
+      "value": "https://elasticbeanstalk-platform-assets-us-east-1.s3.amazonaws.com/stalks/eb_docker_amazon_linux_2023_1.0.2676.0_20260506135436/sampleapp/EBSampleApp-Docker.zip"
+    },
+    {
+      "namespace": "aws:cloudformation:template:parameter",
+      "option_name": "HooksPkgUrl",
+      "value": "https://elasticbeanstalk-platform-assets-us-east-1.s3.amazonaws.com/stalks/eb_docker_amazon_linux_2023_1.0.2676.0_20260506135436/lib/hooks.tar.gz"
+    },
+    {
+      "namespace": "aws:cloudformation:template:parameter",
+      "option_name": "InstancePort",
+      "value": "80"
+    },
+    {
+      "namespace": "aws:cloudformation:template:parameter",
+      "option_name": "InstanceTypeFamily",
+      "value": "t3"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "EnableSpot",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "InstanceTypes",
+      "value": "t3.small"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "SpotAllocationStrategy",
+      "value": "capacity-optimized"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "SpotFleetOnDemandAboveBasePercentage",
+      "value": "70"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "SpotFleetOnDemandBase",
+      "value": "0"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "SpotMaxPrice",
+      "value": ""
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "SupportedArchitectures",
+      "value": "x86_64"
+    },
+    {
+      "namespace": "aws:ec2:vpc",
+      "option_name": "AssociatePublicIpAddress",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:ec2:vpc",
+      "option_name": "ELBScheme",
+      "value": "public"
+    },
+    {
+      "namespace": "aws:ec2:vpc",
+      "option_name": "ELBSubnets",
+      "value": "subnet-f82d49d9,subnet-40a08e0d,subnet-686df637"
+    },
+    {
+      "namespace": "aws:ec2:vpc",
+      "option_name": "Subnets",
+      "value": "subnet-686df637,subnet-f82d49d9,subnet-40a08e0d"
+    },
+    {
+      "namespace": "aws:ec2:vpc",
+      "option_name": "VPCId",
+      "value": "vpc-a2af05df"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application",
+      "option_name": "Application Healthcheck URL",
+      "value": "/health/"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "AWS_SES_CONFIGURATION_SET",
+      "value": "mimir-transactional"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "AWS_SES_REGION_NAME",
+      "value": "us-east-1"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "COOKIE_SECURE",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "CSRF_TRUSTED_ORIGINS",
+      "value": "https://mimir.featurefactory.io,https://djwlr2sinmq0w.cloudfront.net"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "DEFAULT_FROM_EMAIL",
+      "value": "noreply@featurefactory.io"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "DJANGO_ALLOWED_HOSTS",
+      "value": "mimir.featurefactory.io,.elasticbeanstalk.com,djwlr2sinmq0w.cloudfront.net,localhost"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "DJANGO_SETTINGS_MODULE",
+      "value": "mimir.settings.prod"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "FRONTEND_URL",
+      "value": "https://mimir.featurefactory.io"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "GALDR_MODEL",
+      "value": "claude-sonnet-4-5"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "GITHUB_BUG_REPO",
+      "value": "phainestai/mimir"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "MIMIR_ENV",
+      "value": "prod"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "MIMIR_GIT_REVISION",
+      "value": "v0.0.47"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs",
+      "option_name": "DeleteOnTerminate",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs",
+      "option_name": "RetentionInDays",
+      "value": "30"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs",
+      "option_name": "StreamLogs",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs:health",
+      "option_name": "DeleteOnTerminate",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs:health",
+      "option_name": "HealthStreamingEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs:health",
+      "option_name": "RetentionInDays",
+      "value": "7"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:command",
+      "option_name": "BatchSize",
+      "value": "100"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:command",
+      "option_name": "BatchSizeType",
+      "value": "Percentage"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:command",
+      "option_name": "DeploymentPolicy",
+      "value": "AllAtOnce"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:command",
+      "option_name": "IgnoreHealthCheck",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:command",
+      "option_name": "Timeout",
+      "value": "600"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:control",
+      "option_name": "DefaultSSHPort",
+      "value": "22"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:control",
+      "option_name": "LaunchTimeout",
+      "value": "0"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:control",
+      "option_name": "LaunchType",
+      "value": "Migration"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:control",
+      "option_name": "RollbackLaunchOnFailure",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "EnvironmentType",
+      "value": "LoadBalanced"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "ExternalExtensionsS3Bucket",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "ExternalExtensionsS3Key",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "LoadBalancerIsShared",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "LoadBalancerType",
+      "value": "application"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "ServiceRole",
+      "value": "aws-elasticbeanstalk-service-role"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "DeregistrationDelay",
+      "value": "20"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "HealthCheckInterval",
+      "value": "15"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "HealthCheckPath",
+      "value": "/"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "HealthCheckTimeout",
+      "value": "5"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "HealthyThresholdCount",
+      "value": "3"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "MatcherHTTPCode",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "Port",
+      "value": "80"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "Protocol",
+      "value": "HTTP"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "StickinessEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "StickinessLBCookieDuration",
+      "value": "86400"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "StickinessType",
+      "value": "lb_cookie"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "UnhealthyThresholdCount",
+      "value": "5"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:proxy",
+      "option_name": "ProxyServer",
+      "value": "nginx"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:healthreporting:system",
+      "option_name": "ConfigDocument",
+      "value": "{\"Version\":1,\"CloudWatchMetrics\":{\"Instance\":{\"CPUIrq\":null,\"LoadAverage5min\":null,\"ApplicationRequests5xx\":null,\"ApplicationRequests4xx\":null,\"CPUUser\":null,\"LoadAverage1min\":null,\"ApplicationLatencyP50\":null,\"CPUIdle\":null,\"InstanceHealth\":null,\"ApplicationLatencyP95\":null,\"ApplicationLatencyP85\":null,\"RootFilesystemUtil\":null,\"ApplicationLatencyP90\":null,\"CPUSystem\":null,\"ApplicationLatencyP75\":null,\"CPUSoftirq\":null,\"ApplicationLatencyP10\":null,\"ApplicationLatencyP99\":null,\"ApplicationRequestsTotal\":null,\"ApplicationLatencyP99.9\":null,\"ApplicationRequests3xx\":null,\"ApplicationRequests2xx\":null,\"CPUIowait\":null,\"CPUNice\":null},\"Environment\":{\"InstancesSevere\":null,\"InstancesDegraded\":null,\"ApplicationRequests5xx\":null,\"ApplicationRequests4xx\":null,\"ApplicationLatencyP50\":null,\"ApplicationLatencyP95\":null,\"ApplicationLatencyP85\":null,\"InstancesUnknown\":null,\"ApplicationLatencyP90\":null,\"InstancesInfo\":null,\"InstancesPending\":null,\"ApplicationLatencyP75\":null,\"ApplicationLatencyP10\":null,\"ApplicationLatencyP99\":null,\"ApplicationRequestsTotal\":null,\"InstancesNoData\":null,\"ApplicationLatencyP99.9\":null,\"ApplicationRequests3xx\":null,\"ApplicationRequests2xx\":null,\"InstancesOk\":null,\"InstancesWarning\":null}}}"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:healthreporting:system",
+      "option_name": "EnhancedHealthAuthEnabled",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:healthreporting:system",
+      "option_name": "HealthCheckSuccessThreshold",
+      "value": "Ok"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:healthreporting:system",
+      "option_name": "SystemType",
+      "value": "enhanced"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:hostmanager",
+      "option_name": "LogPublicationControl",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:managedactions",
+      "option_name": "ManagedActionsEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:managedactions",
+      "option_name": "PreferredStartTime",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:managedactions",
+      "option_name": "ServiceRoleForManagedUpdates",
+      "value": "aws-elasticbeanstalk-service-role"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:managedactions:platformupdate",
+      "option_name": "InstanceRefreshEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:managedactions:platformupdate",
+      "option_name": "UpdateLevel",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:monitoring",
+      "option_name": "Automatically Terminate Unhealthy Instances",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:sns:topics",
+      "option_name": "Notification Endpoint",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:sns:topics",
+      "option_name": "Notification Protocol",
+      "value": "email"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:sns:topics",
+      "option_name": "Notification Topic ARN",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:sns:topics",
+      "option_name": "Notification Topic Name",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:trafficsplitting",
+      "option_name": "EvaluationTime",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:trafficsplitting",
+      "option_name": "NewVersionPercent",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:xray",
+      "option_name": "XRayEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "DefaultProcess",
+      "value": "default"
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "ListenerEnabled",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "Protocol",
+      "value": "HTTPS"
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "Rules",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "SSLCertificateArns",
+      "value": "arn:aws:acm:us-east-1:411113550285:certificate/b0d774c7-b9e4-46a5-ad27-3197d61b46f6"
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "SSLPolicy",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "DefaultProcess",
+      "value": "default"
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "ListenerEnabled",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "Protocol",
+      "value": "HTTP"
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "Rules",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "SSLCertificateArns",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "SSLPolicy",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "AccessLogsS3Bucket",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "AccessLogsS3Enabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "AccessLogsS3Prefix",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "IdleTimeout",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "IpAddressType",
+      "value": "ipv4"
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "SecurityGroups",
+      "value": "sg-0a1da6773a7d264d9"
+    },
+    {
+      "namespace": "aws:rds:dbinstance",
+      "option_name": "HasCoupledDatabase",
+      "value": "false"
+    }
+  ],
+  "mimir-idle": [
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "Availability Zones",
+      "value": "Any"
+    },
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "Cooldown",
+      "value": "360"
+    },
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "Custom Availability Zones",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "EnableCapacityRebalancing",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "MaxSize",
+      "value": "2"
+    },
+    {
+      "namespace": "aws:autoscaling:asg",
+      "option_name": "MinSize",
+      "value": "1"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "BlockDeviceMappings",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "DisableDefaultEC2SecurityGroup",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "DisableIMDSv1",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "EC2KeyName",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "IamInstanceProfile",
+      "value": "aws-elasticbeanstalk-ec2-role"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "ImageId",
+      "value": "ami-063c4d8a076f053f5"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "InstanceType",
+      "value": "t3.small"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "LaunchTemplateTagPropagationEnabled",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "MonitoringInterval",
+      "value": "5 minute"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "RootVolumeIOPS",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "RootVolumeSize",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "RootVolumeThroughput",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "RootVolumeType",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "SSHSourceRestriction",
+      "value": "tcp,22,22,0.0.0.0/0"
+    },
+    {
+      "namespace": "aws:autoscaling:launchconfiguration",
+      "option_name": "SecurityGroups",
+      "value": "sg-03f4090a028cf0084,sg-06bd51302e9c9e000"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "BreachDuration",
+      "value": "5"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "EvaluationPeriods",
+      "value": "1"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "LowerBreachScaleIncrement",
+      "value": "-1"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "LowerThreshold",
+      "value": "2000000"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "MeasureName",
+      "value": "NetworkOut"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "Period",
+      "value": "5"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "Statistic",
+      "value": "Average"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "Unit",
+      "value": "Bytes"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "UpperBreachScaleIncrement",
+      "value": "1"
+    },
+    {
+      "namespace": "aws:autoscaling:trigger",
+      "option_name": "UpperThreshold",
+      "value": "6000000"
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "MaxBatchSize",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "MinInstancesInService",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "PauseTime",
+      "value": ""
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "RollingUpdateEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "RollingUpdateType",
+      "value": "Time"
+    },
+    {
+      "namespace": "aws:autoscaling:updatepolicy:rollingupdate",
+      "option_name": "Timeout",
+      "value": "PT30M"
+    },
+    {
+      "namespace": "aws:cloudformation:template:parameter",
+      "option_name": "AppSource",
+      "value": "https://elasticbeanstalk-platform-assets-us-east-1.s3.amazonaws.com/stalks/eb_docker_amazon_linux_2023_1.0.2676.0_20260506135436/sampleapp/EBSampleApp-Docker.zip"
+    },
+    {
+      "namespace": "aws:cloudformation:template:parameter",
+      "option_name": "HooksPkgUrl",
+      "value": "https://elasticbeanstalk-platform-assets-us-east-1.s3.amazonaws.com/stalks/eb_docker_amazon_linux_2023_1.0.2676.0_20260506135436/lib/hooks.tar.gz"
+    },
+    {
+      "namespace": "aws:cloudformation:template:parameter",
+      "option_name": "InstancePort",
+      "value": "80"
+    },
+    {
+      "namespace": "aws:cloudformation:template:parameter",
+      "option_name": "InstanceTypeFamily",
+      "value": "t3"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "EnableSpot",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "InstanceTypes",
+      "value": "t3.small"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "SpotAllocationStrategy",
+      "value": "capacity-optimized"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "SpotFleetOnDemandAboveBasePercentage",
+      "value": "70"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "SpotFleetOnDemandBase",
+      "value": "0"
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "SpotMaxPrice",
+      "value": ""
+    },
+    {
+      "namespace": "aws:ec2:instances",
+      "option_name": "SupportedArchitectures",
+      "value": "x86_64"
+    },
+    {
+      "namespace": "aws:ec2:vpc",
+      "option_name": "AssociatePublicIpAddress",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:ec2:vpc",
+      "option_name": "ELBScheme",
+      "value": "public"
+    },
+    {
+      "namespace": "aws:ec2:vpc",
+      "option_name": "ELBSubnets",
+      "value": "subnet-f82d49d9,subnet-40a08e0d,subnet-686df637"
+    },
+    {
+      "namespace": "aws:ec2:vpc",
+      "option_name": "Subnets",
+      "value": "subnet-686df637,subnet-f82d49d9,subnet-40a08e0d"
+    },
+    {
+      "namespace": "aws:ec2:vpc",
+      "option_name": "VPCId",
+      "value": "vpc-a2af05df"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application",
+      "option_name": "Application Healthcheck URL",
+      "value": "/health/"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "AWS_SES_CONFIGURATION_SET",
+      "value": "mimir-transactional"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "AWS_SES_REGION_NAME",
+      "value": "us-east-1"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "CSRF_TRUSTED_ORIGINS",
+      "value": "https://mimir.featurefactory.io,https://djwlr2sinmq0w.cloudfront.net"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "DEFAULT_FROM_EMAIL",
+      "value": "noreply@featurefactory.io"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "DEPLOYED_REVISION",
+      "value": "v0.0.32"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "DJANGO_ALLOWED_HOSTS",
+      "value": "mimir.featurefactory.io,.elasticbeanstalk.com,djwlr2sinmq0w.cloudfront.net,localhost"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "DJANGO_SETTINGS_MODULE",
+      "value": "mimir.settings.prod"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "FRONTEND_URL",
+      "value": "https://mimir.featurefactory.io"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "GALDR_MODEL",
+      "value": "claude-sonnet-4-5"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "MIMIR_ENV",
+      "value": "prod"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:application:environment",
+      "option_name": "MIMIR_GIT_REVISION",
+      "value": "main-25eed66"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs",
+      "option_name": "DeleteOnTerminate",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs",
+      "option_name": "RetentionInDays",
+      "value": "30"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs",
+      "option_name": "StreamLogs",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs:health",
+      "option_name": "DeleteOnTerminate",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs:health",
+      "option_name": "HealthStreamingEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:cloudwatch:logs:health",
+      "option_name": "RetentionInDays",
+      "value": "7"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:command",
+      "option_name": "BatchSize",
+      "value": "100"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:command",
+      "option_name": "BatchSizeType",
+      "value": "Percentage"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:command",
+      "option_name": "DeploymentPolicy",
+      "value": "AllAtOnce"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:command",
+      "option_name": "IgnoreHealthCheck",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:command",
+      "option_name": "Timeout",
+      "value": "600"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:control",
+      "option_name": "DefaultSSHPort",
+      "value": "22"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:control",
+      "option_name": "LaunchTimeout",
+      "value": "0"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:control",
+      "option_name": "LaunchType",
+      "value": "Migration"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:control",
+      "option_name": "RollbackLaunchOnFailure",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "EnvironmentType",
+      "value": "LoadBalanced"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "ExternalExtensionsS3Bucket",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "ExternalExtensionsS3Key",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "LoadBalancerIsShared",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "LoadBalancerType",
+      "value": "application"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment",
+      "option_name": "ServiceRole",
+      "value": "aws-elasticbeanstalk-service-role"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "DeregistrationDelay",
+      "value": "20"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "HealthCheckInterval",
+      "value": "15"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "HealthCheckPath",
+      "value": "/"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "HealthCheckTimeout",
+      "value": "5"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "HealthyThresholdCount",
+      "value": "3"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "MatcherHTTPCode",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "Port",
+      "value": "80"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "Protocol",
+      "value": "HTTP"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "StickinessEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "StickinessLBCookieDuration",
+      "value": "86400"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "StickinessType",
+      "value": "lb_cookie"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:process:default",
+      "option_name": "UnhealthyThresholdCount",
+      "value": "5"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:environment:proxy",
+      "option_name": "ProxyServer",
+      "value": "nginx"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:healthreporting:system",
+      "option_name": "ConfigDocument",
+      "value": "{\"Version\":1,\"CloudWatchMetrics\":{\"Instance\":{\"CPUIrq\":null,\"LoadAverage5min\":null,\"ApplicationRequests5xx\":null,\"ApplicationRequests4xx\":null,\"CPUUser\":null,\"LoadAverage1min\":null,\"ApplicationLatencyP50\":null,\"CPUIdle\":null,\"InstanceHealth\":null,\"ApplicationLatencyP95\":null,\"ApplicationLatencyP85\":null,\"RootFilesystemUtil\":null,\"ApplicationLatencyP90\":null,\"CPUSystem\":null,\"ApplicationLatencyP75\":null,\"CPUSoftirq\":null,\"ApplicationLatencyP10\":null,\"ApplicationLatencyP99\":null,\"ApplicationRequestsTotal\":null,\"ApplicationLatencyP99.9\":null,\"ApplicationRequests3xx\":null,\"ApplicationRequests2xx\":null,\"CPUIowait\":null,\"CPUNice\":null},\"Environment\":{\"InstancesSevere\":null,\"InstancesDegraded\":null,\"ApplicationRequests5xx\":null,\"ApplicationRequests4xx\":null,\"ApplicationLatencyP50\":null,\"ApplicationLatencyP95\":null,\"ApplicationLatencyP85\":null,\"InstancesUnknown\":null,\"ApplicationLatencyP90\":null,\"InstancesInfo\":null,\"InstancesPending\":null,\"ApplicationLatencyP75\":null,\"ApplicationLatencyP10\":null,\"ApplicationLatencyP99\":null,\"ApplicationRequestsTotal\":null,\"InstancesNoData\":null,\"ApplicationLatencyP99.9\":null,\"ApplicationRequests3xx\":null,\"ApplicationRequests2xx\":null,\"InstancesOk\":null,\"InstancesWarning\":null}}}"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:healthreporting:system",
+      "option_name": "EnhancedHealthAuthEnabled",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:healthreporting:system",
+      "option_name": "HealthCheckSuccessThreshold",
+      "value": "Ok"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:healthreporting:system",
+      "option_name": "SystemType",
+      "value": "enhanced"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:hostmanager",
+      "option_name": "LogPublicationControl",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:managedactions",
+      "option_name": "ManagedActionsEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:managedactions",
+      "option_name": "PreferredStartTime",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:managedactions",
+      "option_name": "ServiceRoleForManagedUpdates",
+      "value": "aws-elasticbeanstalk-service-role"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:managedactions:platformupdate",
+      "option_name": "InstanceRefreshEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:managedactions:platformupdate",
+      "option_name": "UpdateLevel",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:monitoring",
+      "option_name": "Automatically Terminate Unhealthy Instances",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:sns:topics",
+      "option_name": "Notification Endpoint",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:sns:topics",
+      "option_name": "Notification Protocol",
+      "value": "email"
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:sns:topics",
+      "option_name": "Notification Topic ARN",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:sns:topics",
+      "option_name": "Notification Topic Name",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:trafficsplitting",
+      "option_name": "EvaluationTime",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:trafficsplitting",
+      "option_name": "NewVersionPercent",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elasticbeanstalk:xray",
+      "option_name": "XRayEnabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "DefaultProcess",
+      "value": "default"
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "ListenerEnabled",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "Protocol",
+      "value": "HTTPS"
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "Rules",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "SSLCertificateArns",
+      "value": "arn:aws:acm:us-east-1:411113550285:certificate/b0d774c7-b9e4-46a5-ad27-3197d61b46f6"
+    },
+    {
+      "namespace": "aws:elbv2:listener:443",
+      "option_name": "SSLPolicy",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "DefaultProcess",
+      "value": "default"
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "ListenerEnabled",
+      "value": "true"
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "Protocol",
+      "value": "HTTP"
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "Rules",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "SSLCertificateArns",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:listener:default",
+      "option_name": "SSLPolicy",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "AccessLogsS3Bucket",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "AccessLogsS3Enabled",
+      "value": "false"
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "AccessLogsS3Prefix",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "IdleTimeout",
+      "value": ""
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "IpAddressType",
+      "value": "ipv4"
+    },
+    {
+      "namespace": "aws:elbv2:loadbalancer",
+      "option_name": "SecurityGroups",
+      "value": "sg-00f880634e4d1778c"
+    },
+    {
+      "namespace": "aws:rds:dbinstance",
+      "option_name": "HasCoupledDatabase",
+      "value": "false"
+    }
+  ]
+}

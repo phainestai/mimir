@@ -159,16 +159,16 @@ class TestMimirApp:
     def test_two_eb_environments_created(self, template):
         template.resource_count_is("AWS::ElasticBeanstalk::Environment", 2)
 
-    def test_eb_env_blue_exists(self, template):
+    def test_eb_env_prod_exists(self, template):
         template.has_resource_properties(
             "AWS::ElasticBeanstalk::Environment",
-            {"EnvironmentName": "mimir-blue"},
+            {"EnvironmentName": "mimir-prod"},
         )
 
-    def test_eb_env_green_exists(self, template):
+    def test_eb_env_idle_exists(self, template):
         template.has_resource_properties(
             "AWS::ElasticBeanstalk::Environment",
-            {"EnvironmentName": "mimir-green"},
+            {"EnvironmentName": "mimir-idle"},
         )
 
     def test_eb_envs_load_balanced(self, template):
@@ -185,17 +185,33 @@ class TestMimirApp:
             },
         )
 
-    def test_https_listener_configured(self, template):
+    def test_eb_mirrors_live_http_listener(self, template):
+        """Live envs use HTTP on the default ALB listener (HTTPS is on CloudFront)."""
         template.has_resource_properties(
             "AWS::ElasticBeanstalk::Environment",
             {
                 "OptionSettings": assertions.Match.array_with([
                     assertions.Match.object_like({
-                        "Namespace": "aws:elbv2:listener:443",
-                        "OptionName": "SSLCertificateArns",
-                        "Value": ACM_CERT_ARN,
+                        "Namespace": "aws:elbv2:listener:default",
+                        "OptionName": "Protocol",
+                        "Value": "HTTP",
                     })
                 ])
+            },
+        )
+
+    def test_eb_template_omits_secrets_without_dotenv(self, template):
+        """Secrets come from .env at deploy time, not from committed JSON."""
+        template.all_resources_properties(
+            "AWS::ElasticBeanstalk::Environment",
+            {
+                "OptionSettings": assertions.Match.not_(
+                    assertions.Match.array_with([
+                        assertions.Match.object_like({
+                            "OptionName": "DATABASE_URL",
+                        }),
+                    ])
+                ),
             },
         )
 
@@ -231,11 +247,12 @@ class TestMimirApp:
             {"AlarmName": "mimir-rds-cpu-high"},
         )
 
-    def test_eb_unhealthy_alarm_created(self, template):
-        template.has_resource_properties(
-            "AWS::CloudWatch::Alarm",
-            {"AlarmName": "mimir-eb-unhealthy"},
-        )
+    def test_eb_unhealthy_alarms_for_prod_and_idle(self, template):
+        for suffix in ("prod", "idle"):
+            template.has_resource_properties(
+                "AWS::CloudWatch::Alarm",
+                {"AlarmName": f"mimir-eb-unhealthy-{suffix}"},
+            )
 
 
 # ── MimirBackups ──────────────────────────────────────────────────────────────

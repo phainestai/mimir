@@ -1,0 +1,14 @@
+{
+  "EbEnvMimirprod": {
+    "EnvironmentName": "mimir-prod"
+  },
+  "EbEnvMimiridle": {
+    "EnvironmentName": "mimir-idle"
+  },
+  "CiDeployUserC7580D90": {
+    "UserName": "mimir-ci"
+  },
+  "CiDeployPolicy8DEBE455": {
+    "PolicyArn": "arn:aws:iam::411113550285:policy/mimir-ci-policy"
+  }
+}

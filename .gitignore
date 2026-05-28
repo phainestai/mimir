@@ -216,6 +216,7 @@ playwright/.cache/
 .playwright/
 
 # Project specific
+backups/
 tmp/
 tests.log
 *.sqlite3
@@ -229,4 +230,5 @@ tests.log
 
 # CDK
 infra/cdk.out/
+infra/cfn-import-artifacts/
 infra/.venv/

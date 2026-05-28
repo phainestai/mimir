@@ -1,0 +1,8 @@
+{
+  "EbEnvMimirprod": {
+    "EnvironmentName": "mimir-prod"
+  },
+  "EbEnvMimiridle": {
+    "EnvironmentName": "mimir-idle"
+  }
+}
