@@ -302,7 +302,7 @@ function _renderGraph(pk, graphData, filters) {
       container,
       elements,
       style: _cytoscapeStyle(),
-      layout: { name: 'dagre', rankDir: 'TB', nodeSep: 30, rankSep: 50, padding: 20 },
+      layout: { name: 'dagre', rankDir: 'TB', nodeSep: 50, rankSep: 70, edgeSep: 10, ranker: 'network-simplex', padding: 30 },
       minZoom: 0.1,
       maxZoom: 3,
     });
@@ -371,21 +371,36 @@ function _cytoscapeStyle() {
       style: { ..._nodeBase, 'background-color': '#6c757d', 'shape': 'ellipse' } },
     { selector: 'node:selected',
       style: { 'border-width': 3, 'border-color': '#dc3545' } },
-    // Edges
+    // Edges — taxi (right-angle) routing for clean hierarchical layout.
+    // 'contains' and 'predecessor' use downward/auto taxi; resource edges use
+    // a shorter turn so they branch off activities cleanly.
     { selector: 'edge[relationship = "contains"]',
-      style: { 'line-color': '#0d6efd', 'target-arrow-color': '#0d6efd', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'width': 2 } },
+      style: { 'line-color': '#0d6efd', 'target-arrow-color': '#0d6efd', 'target-arrow-shape': 'triangle',
+               'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '50%', 'width': 2 } },
     { selector: 'edge[relationship = "predecessor"]',
-      style: { 'line-color': '#198754', 'target-arrow-color': '#198754', 'target-arrow-shape': 'triangle', 'line-style': 'dashed', 'curve-style': 'bezier', 'width': 1, 'opacity': 0.7 } },
+      style: { 'line-color': '#198754', 'target-arrow-color': '#198754', 'target-arrow-shape': 'triangle',
+               'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'auto', 'taxi-turn': '50%',
+               'width': 1, 'opacity': 0.7 } },
     { selector: 'edge[relationship = "produces"]',
-      style: { 'line-color': '#ffc107', 'target-arrow-color': '#ffc107', 'target-arrow-shape': 'triangle', 'line-style': 'dashed', 'curve-style': 'bezier', 'width': 1.5 } },
+      style: { 'line-color': '#ffc107', 'target-arrow-color': '#ffc107', 'target-arrow-shape': 'triangle',
+               'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
+               'width': 1.5 } },
     { selector: 'edge[relationship = "consumes"]',
-      style: { 'line-color': '#ffc107', 'target-arrow-color': '#ffc107', 'target-arrow-shape': 'triangle', 'line-style': 'dashed', 'curve-style': 'bezier', 'width': 1.5, 'opacity': 0.8 } },
+      style: { 'line-color': '#ffc107', 'target-arrow-color': '#ffc107', 'target-arrow-shape': 'triangle',
+               'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
+               'width': 1.5, 'opacity': 0.8 } },
     { selector: 'edge[relationship = "uses_skill"]',
-      style: { 'line-color': '#fd7e14', 'target-arrow-color': '#fd7e14', 'target-arrow-shape': 'triangle', 'line-style': 'dotted', 'curve-style': 'bezier', 'width': 1.5 } },
+      style: { 'line-color': '#fd7e14', 'target-arrow-color': '#fd7e14', 'target-arrow-shape': 'triangle',
+               'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
+               'width': 1.5 } },
     { selector: 'edge[relationship = "assigned_agent"]',
-      style: { 'line-color': '#0dcaf0', 'target-arrow-color': '#0dcaf0', 'target-arrow-shape': 'triangle', 'line-style': 'dotted', 'curve-style': 'bezier', 'width': 1.5 } },
+      style: { 'line-color': '#0dcaf0', 'target-arrow-color': '#0dcaf0', 'target-arrow-shape': 'triangle',
+               'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
+               'width': 1.5 } },
     { selector: 'edge[relationship = "governed_by_rule"]',
-      style: { 'line-color': '#6c757d', 'target-arrow-color': '#6c757d', 'target-arrow-shape': 'triangle', 'line-style': 'dotted', 'curve-style': 'bezier', 'width': 1.5 } },
+      style: { 'line-color': '#6c757d', 'target-arrow-color': '#6c757d', 'target-arrow-shape': 'triangle',
+               'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
+               'width': 1.5 } },
   ];
 }
 

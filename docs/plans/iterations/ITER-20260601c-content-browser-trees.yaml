@@ -135,6 +135,27 @@ scenarios:
         - "resource tree clears when detail panel is closed"
         - "resource row click opens panel even if that canvas node type is not visible (FOB-32)"
 
+  - id: S12
+    issue: 13
+    title: "ELK hierarchical layout with orthogonal edge routing"
+    feature_refs: []
+    parallel_group: A
+    depends_on: [S8]
+    time_budget_minutes: 45
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_graph.py -x"
+      pass_criteria: "all graph E2E tests pass with ELK layout"
+    scope:
+      server_side:
+        - file: templates/browser/browser_graph.html
+          changes:
+            - "Add cytoscape-elk@2.2.0 CDN script tag (bundles its own ELK worker)"
+        - file: static/js/content-browser.js
+          changes:
+            - "Replace dagre layout with ELK: algorithm=layered, direction=DOWN, edgeRouting=ORTHOGONAL"
+            - "Update fallback chain: ELK → dagre → breadthfirst"
+            - "Keep taxi curve-style on edges (ELK orthogonal routing acts at layout level; taxi handles visual rendering)"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # NEXT ITERATION PREVIEW
 # ─────────────────────────────────────────────────────────────────────────────
