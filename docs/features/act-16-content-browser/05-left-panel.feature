@@ -15,8 +15,12 @@ Feature: FOB-CONTENT-BROWSER-LEFT-PANEL Content Browser Left Panel
       | Left panel   | left     | expanded (~280px)       |
       | Canvas       | center   | always visible          |
       | Detail panel | right    | hidden until node click |
-    And a [‹] toggle button on the left panel edge collapses / expands it
-    And collapsing the left panel gives the canvas the full remaining width
+    And a [‹] toggle button sits on the right edge of the left panel, vertically centred
+    And clicking [‹] collapses the left panel to zero width and changes the icon to [›]
+    And when collapsed, the [›] button remains visible on the left edge of the viewport
+      so Maria can always find and click it to expand the panel again
+    And clicking [›] expands the left panel back to ~280px and changes the icon to [‹]
+    And collapsing or expanding the left panel causes the canvas to resize to fill the new available width
 
 
   # ── Playbook selector ────────────────────────────────────────────────────────

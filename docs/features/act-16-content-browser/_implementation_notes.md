@@ -28,6 +28,15 @@
 └──────────────┴──────────────────────────────┴──────────────────┘
 ```
 
+### Left panel toggle requirements
+- Toggle button sits at `position: absolute; end: 0; top: 50%` on the left panel edge
+- `z-index: 30` — must sit above Cytoscape canvas and zoom controls (z-index: 10)
+- **When expanded:** button shows `‹`, positioned at right edge of the 280px panel
+- **When collapsed:** panel width drops to 0, button shows `›`; its `translate(50%, -50%)`
+  transform keeps the button centre at x ≈ 10px (the button half-width) — always visible
+  at the left edge of the canvas area, providing a persistent "expand" affordance
+- `cy.resize()` must be called after every toggle so Cytoscape redraws to the new canvas width
+
 ---
 
 ## Tech stack (per SAO.md § Interactive Graph Views)
@@ -142,7 +151,18 @@ The view passes `pk=None` or `pk=<int>` as a data attribute on `#browser-root`.
 2. Detect and skip circular predecessor chains (log warning; drop cyclic edges)
 3. Emit only edges whose source AND target node both exist in the nodes list (skip dangling FK references to deleted entities)
 4. Scope ALL related entities to current playbook (skills, agents, rules, phases) — drop cross-playbook FK leaks
-5. Namespace all node IDs: `"workflow:7"`, `"activity:12"`, `"artifact:3"` — prevents PK collisions in Cytoscape
+5. Namespace all node IDs: `"workflow:7"`, `"activity:12"` for structural nodes; `"rule:7:activity:3"` for resource nodes — prevents PK collisions in Cytoscape
+6. **Resource nodes (rules, skills, agents, artifacts) are per-activity duplicates** — do NOT deduplicate across activities.
+   If two activities both use Rule "Validate Input" (pk=7), emit TWO nodes:
+   - id: `"rule:7:activity:3"` (attached to Activity 3)
+   - id: `"rule:7:activity:5"` (attached to Activity 5)
+   Both carry the same `entity_pk=7`, `detail_url`, `embed_url`.
+   Rationale: shared resource nodes create cross-referencing edge chaos; per-activity scoping
+   produces clean hierarchical layouts. The resource *tree* (left panel) still deduplicates.
+   Artifacts produced by an activity use: `"artifact:<pk>:activity:<producer_pk>"`.
+   Artifacts consumed by an activity use: `"artifact:<pk>:activity:<consumer_pk>"`.
+   If an artifact is both produced by one activity and consumed by another, it appears as
+   two separate nodes (one child of the producer, one child of the consumer).
 
 ### Client JS (content-browser.js) MUST:
 1. Check `response.ok AND content-type === 'application/json'` before `JSON.parse()` → catches session-expired redirects
