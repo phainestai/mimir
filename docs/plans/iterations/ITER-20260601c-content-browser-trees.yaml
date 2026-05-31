@@ -84,6 +84,27 @@ scenarios:
         - "closing the detail panel clears the tree highlight"
         - "activity with a phase shows a coloured chip in the tree row"
 
+  - id: S11
+    issue: 12
+    title: "Fix left panel expand button clipped when collapsed (FOB-20)"
+    feature_refs: [FOB-20]
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 30
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_left_panel.py -x"
+      pass_criteria: "all E2E tests pass; test_collapse_toggle_re_expands uses real button click (no page.evaluate workaround)"
+    scope:
+      server_side:
+        - file: templates/browser/browser_graph.html
+          changes:
+            - "Change #browser-left-panel to overflow: visible (button never clipped)"
+            - "Wrap panel contents in #browser-left-panel-content with overflow-y: auto; overflow-x: hidden; height: 100%"
+            - "Toggle button stays in panel but above the scrollable wrapper — visible at 0 width"
+      test_file: tests/e2e/test_content_browser_left_panel.py
+      test_cases:
+        - "test_collapse_toggle_re_expands: replace page.evaluate('_toggleLeftPanel()') with actual button click"
+
   - id: S10
     issue: 11
     title: "Resource tree: grouped resources for selected Workflow in left panel (FOB-28/32)"
