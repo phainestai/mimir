@@ -70,11 +70,43 @@
     </div>
     {% endif %}
 
+    {# No-content state — shown by JS when the selected playbook has no entities #}
+    <div data-testid="browser-no-content-state"
+         class="position-absolute top-50 start-50 translate-middle text-center d-none">
+      <i class="bi bi-inbox display-1 text-muted"></i>
+      <h5 class="mt-3">This playbook has no content yet.</h5>
+      <p class="text-muted">Add workflows and activities to see the graph.</p>
+      <a data-testid="browser-go-to-playbook"
+         href="{% if playbook %}/playbooks/{{ playbook.pk }}/{% else %}#{% endif %}"
+         class="btn btn-outline-primary">Go to Playbook</a>
+    </div>
+
     {# Error state — shown by JS on fetch failure #}
     <div data-testid="browser-error-state"
          class="position-absolute top-50 start-50 translate-middle text-center d-none">
       <p class="text-danger">Could not load graph data.</p>
       <button data-testid="browser-retry" class="btn btn-outline-danger btn-sm">Retry</button>
+    </div>
+
+    {# Degraded mode banner — shown when graph has >300 nodes #}
+    <div data-testid="browser-degraded-banner"
+         class="position-absolute top-0 start-50 translate-middle-x mt-2 alert alert-warning py-1 px-3 small d-none"
+         role="alert">
+    </div>
+
+    {# Zoom controls and node count — shown when graph is rendered #}
+    <div class="position-absolute bottom-0 end-0 mb-3 me-3 d-flex flex-column gap-1"
+         style="z-index: 10;">
+      <span data-testid="browser-node-count" class="badge bg-secondary text-end"></span>
+      <button data-testid="browser-zoom-in"
+              class="btn btn-sm btn-outline-secondary"
+              title="Zoom in">+</button>
+      <button data-testid="browser-zoom-out"
+              class="btn btn-sm btn-outline-secondary"
+              title="Zoom out">−</button>
+      <button data-testid="browser-zoom-fit"
+              class="btn btn-sm btn-outline-secondary"
+              title="Fit graph">⊡</button>
     </div>
 
     {# Cytoscape canvas target — JS mounts here #}
@@ -106,6 +138,8 @@
 {% endblock %}
 
 {% block extra_js %}
+{# dagre must load BEFORE cytoscape-dagre (it's a peer dependency, not bundled) #}
+<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
 {# Cytoscape.js and layout/navigation plugins from CDN — pinned versions #}
 <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
