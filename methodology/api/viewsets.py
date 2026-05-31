@@ -347,7 +347,8 @@ def _build_playbook_graph(playbook, user) -> dict:
     for wf in workflows:
         wf_id = f'workflow:{wf.pk}'
         detail_url = reverse('workflow_detail', kwargs={'playbook_pk': playbook.pk, 'pk': wf.pk})
-        _emit_node(wf_id, 'workflow', wf.name, wf.pk, detail_url, detail_url + '?embed=1')
+        _emit_node(wf_id, 'workflow', wf.name, wf.pk, detail_url, detail_url + '?embed=1',
+                   {'abbreviation': wf.abbreviation or ''})
 
     # --- Activities (single efficient query for all workflows) ---
     activities_qs = ActivityModel.objects.filter(

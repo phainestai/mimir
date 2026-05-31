@@ -358,7 +358,13 @@ function _cytoscapeStyle() {
   };
   return [
     { selector: 'node[type = "workflow"]',
-      style: { ..._nodeBase, 'background-color': '#0d6efd', 'shape': 'round-rectangle', 'width': 130, 'height': 44, 'font-size': 12 } },
+      style: { ..._nodeBase,
+               'label': function(ele) {
+                 const abbr = ele.data('meta') && ele.data('meta').abbreviation;
+                 return abbr ? `${abbr}\n${ele.data('label')}` : ele.data('label');
+               },
+               'background-color': '#0d6efd', 'shape': 'round-rectangle',
+               'width': 130, 'height': 50, 'font-size': 10 } },
     { selector: 'node[type = "activity"]',
       style: { ..._nodeBase,
                'label': function(ele) {
