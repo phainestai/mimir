@@ -11,9 +11,9 @@
      class="d-flex position-relative"
      style="height: calc(100vh - 56px); overflow: hidden;">
 
-  {# Collapse/expand toggle — lives OUTSIDE the panel as a sibling so it is never
-     clipped by overflow:hidden or covered by the <main> container at 0-panel-width.
-     JS updates its `left` position on each toggle. #}
+  <!-- Collapse/expand toggle — lives OUTSIDE the panel as a sibling so it is never
+       clipped by overflow:hidden or covered by the main container at 0-panel-width.
+       JS updates its `left` position on each toggle. -->
   <button data-testid="browser-toggle-left-panel"
           title="Toggle left panel"
           class="position-absolute top-50 btn btn-sm btn-light border border-secondary rounded-circle p-0"
