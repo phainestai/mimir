@@ -34,7 +34,35 @@ Feature: FOB-CONTENT-BROWSER-API Content Browser Graph API and Data
       Node id format for structural nodes: "<type>:<entity_pk>" (unchanged)
 
 
-  Scenario: FOB-CONTENT-BROWSER-13b Graph API failure shows error state
+  Scenario: FOB-CONTENT-BROWSER-13f Activity nodes include a display code label
+    Given a playbook has a workflow "Build Phase Execution" with abbreviation "BPE"
+    And that workflow has activities with order 1, 2, 3 named "Plan", "Implement", "Test"
+    When the graph API is called for that playbook
+    Then each activity node in the response includes a display_code field:
+      e.g. "BPE-1", "BPE-2", "BPE-3"
+    And the display_code is derived from: "{workflow.abbreviation}-{activity.order}"
+    And when a workflow has no abbreviation set the display_code is an empty string
+    And Cytoscape renders activity nodes with a two-line label:
+      first line: display_code (smaller, muted)
+      second line: activity name (normal weight)
+    And if display_code is empty only the activity name is shown (single line, no blank line)
+
+
+  Scenario: FOB-CONTENT-BROWSER-13g Sequence edges show execution order within a workflow
+    Given a workflow has three activities with order 1, 2, 3
+    When the graph API is called for that playbook
+    Then the response contains sequence edges connecting consecutive activities:
+      activity(order=1) → activity(order=2) → activity(order=3)
+    And sequence edges have relationship="sequence"
+    And sequence edges are distinct from predecessor edges (relationship="predecessor")
+      — predecessor edges represent explicit cross-step or cross-workflow dependencies
+        while sequence edges always represent the natural execution order within a workflow
+    And if a workflow has only one activity no sequence edge is emitted for it
+    And sequence edges are NOT emitted across workflow boundaries
+    And on the canvas sequence edges are rendered as solid mid-weight arrows
+      distinct from the dashed predecessor edges
+
+
     Given Maria opens a playbook in the graph view
     When the GET /api/playbooks/<pk>/graph/ request fails (network error or 5xx)
     Then the canvas shows an error message: "Could not load graph data."

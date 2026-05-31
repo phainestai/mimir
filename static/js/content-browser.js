@@ -360,7 +360,13 @@ function _cytoscapeStyle() {
     { selector: 'node[type = "workflow"]',
       style: { ..._nodeBase, 'background-color': '#0d6efd', 'shape': 'round-rectangle', 'width': 130, 'height': 44, 'font-size': 12 } },
     { selector: 'node[type = "activity"]',
-      style: { ..._nodeBase, 'background-color': '#198754', 'shape': 'round-rectangle' } },
+      style: { ..._nodeBase,
+               'label': function(ele) {
+                 const code = ele.data('meta') && ele.data('meta').display_code;
+                 return code ? `${code}\n${ele.data('label')}` : ele.data('label');
+               },
+               'background-color': '#198754', 'shape': 'round-rectangle',
+               'height': 50, 'font-size': 10, 'text-max-width': 110 } },
     { selector: 'node[type = "artifact"]',
       style: { ..._nodeBase, 'background-color': '#ffc107', 'shape': 'ellipse', 'color': '#212529' } },
     { selector: 'node[type = "skill"]',
@@ -381,6 +387,10 @@ function _cytoscapeStyle() {
       style: { 'line-color': '#198754', 'target-arrow-color': '#198754', 'target-arrow-shape': 'triangle',
                'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'auto', 'taxi-turn': '50%',
                'width': 1, 'opacity': 0.7 } },
+    { selector: 'edge[relationship = "sequence"]',
+      style: { 'line-color': '#343a40', 'target-arrow-color': '#343a40', 'target-arrow-shape': 'triangle',
+               'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '50%',
+               'width': 2, 'opacity': 0.55 } },
     { selector: 'edge[relationship = "produces"]',
       style: { 'line-color': '#ffc107', 'target-arrow-color': '#ffc107', 'target-arrow-shape': 'triangle',
                'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',

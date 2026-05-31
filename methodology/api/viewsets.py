@@ -378,6 +378,8 @@ def _build_playbook_graph(playbook, user) -> dict:
             meta['phase_id'] = act.phase_id
             meta['phase_name'] = act.phase.name if act.phase else ''
             meta['phase_colour'] = phase_colour_map.get(act.phase_id, '#6c757d')
+        meta['display_code'] = act.reference_label or ''
+        meta['order'] = act.order
         _emit_node(act_id, 'activity', act.name, act.pk, detail_url, detail_url + '?embed=1', meta)
         pending_edges.append((wf_id, act_id, 'contains'))
 
@@ -408,6 +410,20 @@ def _build_playbook_graph(playbook, user) -> dict:
             art_detail = reverse('artifact_detail', kwargs={'pk': art.pk})
             _emit_node(art_id, 'artifact', art.name, art.pk, art_detail, art_detail + '?embed=1')
             pending_edges.append((art_id, act_id, 'consumes'))
+
+    # --- Sequence edges: consecutive activities per workflow, ordered by `order` ---
+    from collections import defaultdict
+    workflow_act_map = defaultdict(list)
+    for act in activities_qs:
+        workflow_act_map[act.workflow_id].append(act)
+    for wf_acts in workflow_act_map.values():
+        sorted_acts = sorted(wf_acts, key=lambda a: (a.order, a.pk))
+        for i in range(len(sorted_acts) - 1):
+            pending_edges.append((
+                f'activity:{sorted_acts[i].pk}',
+                f'activity:{sorted_acts[i + 1].pk}',
+                'sequence',
+            ))
 
     # --- Artifacts (produced_by — catch artifacts not yet added via input_artifacts) ---
     artifacts_qs = Artifact.objects.filter(playbook=playbook).select_related('produced_by')
