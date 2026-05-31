@@ -14,28 +14,52 @@
   {# ── Left panel ── #}
   <div id="browser-left-panel"
        data-testid="browser-left-panel"
-       class="border-end bg-light"
-       style="width: 280px; min-width: 280px; overflow-y: auto;">
+       class="border-end bg-light position-relative"
+       style="width: 280px; min-width: 280px; overflow-y: auto; transition: width 0.2s;">
 
-    <div class="p-3">
+    {# Collapse toggle — sits on the right edge #}
+    <button data-testid="browser-toggle-left-panel"
+            title="Toggle left panel"
+            class="position-absolute top-50 end-0 translate-middle-y btn btn-sm btn-light border border-secondary rounded-circle p-0"
+            style="width: 20px; height: 20px; font-size: 10px; z-index: 30; transform: translate(50%, -50%);">
+      ‹
+    </button>
+
+    <div class="p-3" id="browser-left-panel-content">
       {# Playbook name + status badge #}
-      <div data-testid="browser-playbook-name" class="fw-bold mb-1">
+      <div class="fw-bold mb-1" data-testid="browser-playbook-name">
         {% if playbook %}{{ playbook.name }}{% else %}(No playbook selected){% endif %}
+      </div>
+      <div class="mb-2">
+        <span data-testid="browser-playbook-status"
+              class="badge bg-{{ playbook.get_status_badge_color|default:'secondary' }} small">
+          {% if playbook %}{{ playbook.get_status_display }}{% endif %}
+        </span>
       </div>
 
       {% if playbook %}
-        <button data-testid="browser-change-playbook" class="btn btn-sm btn-outline-secondary mb-3">
+        <button data-testid="browser-change-playbook" class="btn btn-sm btn-outline-secondary mb-2">
           Change Playbook
         </button>
       {% else %}
-        <button data-testid="browser-select-playbook" class="btn btn-sm btn-primary mb-3">
+        <button data-testid="browser-select-playbook" class="btn btn-sm btn-primary mb-2">
           Select Playbook
         </button>
       {% endif %}
 
-      {# Structural tree — hidden when no playbook #}
+      {# Picker — hidden until opened #}
+      <div data-testid="browser-picker" id="browser-picker" class="d-none mb-3">
+        <input data-testid="browser-picker-search"
+               type="text"
+               class="form-control form-control-sm mb-2"
+               placeholder="Search playbooks…"
+               autocomplete="off">
+        <div id="browser-picker-list" class="list-group" style="max-height: 240px; overflow-y: auto;"></div>
+      </div>
+
+      {# Structural tree — populated by JS #}
       {% if playbook %}
-        <div data-testid="browser-structure-tree"></div>
+        <div data-testid="browser-structure-tree" class="mt-1"></div>
       {% endif %}
 
       {# Resource section #}

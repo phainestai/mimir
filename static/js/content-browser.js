@@ -417,6 +417,150 @@ function _showNoContentState(pk) {
   }
 }
 
+// ─── Picker state ────────────────────────────────────────────────────────────
+let _allPlaybooks = [];   // cached from last GET /api/playbooks/
+let _pickerOpen  = false;
+
+/**
+ * Open the playbook picker: fetch list, render, show.
+ * Auto-expands left panel if it was collapsed.
+ */
+async function _openPicker() {
+  const panel = document.getElementById('browser-left-panel');
+  if (panel && panel.classList.contains('browser-collapsed')) {
+    _toggleLeftPanel();
+  }
+  const picker = document.getElementById('browser-picker');
+  if (!picker) return;
+
+  if (!_pickerOpen) {
+    picker.classList.remove('d-none');
+    _pickerOpen = true;
+    const search = picker.querySelector('[data-testid="browser-picker-search"]');
+    if (search) { search.value = ''; search.focus(); }
+  }
+
+  try {
+    const resp = await fetch('/api/playbooks/', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    _allPlaybooks = data.results || data;
+    _renderPickerItems(_allPlaybooks);
+  } catch (_) { /* network error — leave list empty */ }
+}
+
+/**
+ * Render picker rows from a playbooks array.
+ * @param {Array} playbooks
+ */
+function _renderPickerItems(playbooks) {
+  const list = document.getElementById('browser-picker-list');
+  if (!list) return;
+  const currentPk = _getPlaybookPk();
+  list.innerHTML = '';
+  if (!playbooks.length) {
+    list.innerHTML = '<div class="list-group-item text-muted small">No playbooks found.</div>';
+    return;
+  }
+  playbooks.forEach(pb => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('data-testid', 'browser-picker-item');
+    btn.setAttribute('data-pk', String(pb.id));
+    btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center small py-2';
+    if (String(pb.id) === String(currentPk)) {
+      btn.classList.add('active');
+    }
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = pb.name;
+    const right = document.createElement('span');
+    right.className = 'd-flex align-items-center gap-1';
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-secondary';
+    badge.textContent = pb.status;
+    right.appendChild(badge);
+    if (String(pb.id) === String(currentPk)) {
+      const check = document.createElement('i');
+      check.className = 'fa-solid fa-check text-white ms-1';
+      right.appendChild(check);
+    }
+    btn.appendChild(nameSpan);
+    btn.appendChild(right);
+    btn.addEventListener('click', () => _selectPlaybook(pb.id));
+    list.appendChild(btn);
+  });
+}
+
+/**
+ * Filter picker items by substring on keyup.
+ * @param {string} term
+ */
+function _filterPickerItems(term) {
+  const lower = term.toLowerCase();
+  const filtered = lower
+    ? _allPlaybooks.filter(pb => pb.name.toLowerCase().includes(lower))
+    : _allPlaybooks;
+  _renderPickerItems(filtered);
+}
+
+/**
+ * Close the picker.
+ */
+function _closePicker() {
+  const picker = document.getElementById('browser-picker');
+  if (picker) picker.classList.add('d-none');
+  _pickerOpen = false;
+}
+
+/**
+ * Select a playbook: close picker, update URL, update header, fetch graph.
+ * @param {number|string} pk
+ */
+function _selectPlaybook(pk) {
+  _closePicker();
+  _pushPlaybookUrl(pk, { types: [], phases: [] });
+  // Reset phases (playbook-scoped) before fetch
+  const root = document.getElementById('browser-root');
+  if (root) { root.dataset.playbookPk = String(pk); root.dataset.playbookPhases = '[]'; }
+  _fetchGraph(pk);
+}
+
+/**
+ * Update playbook name and status badge in left panel header.
+ * Called after graph data arrives.
+ * @param {string|number} pk
+ * @param {string} name
+ * @param {string} status
+ */
+function _updatePlaybookHeader(pk, name, status) {
+  const nameEl = document.querySelector('[data-testid="browser-playbook-name"]');
+  if (nameEl) nameEl.textContent = name;
+  const statusEl = document.querySelector('[data-testid="browser-playbook-status"]');
+  if (statusEl) { statusEl.textContent = status; statusEl.className = 'badge bg-secondary small'; }
+
+  // Ensure Change Playbook button is visible; swap Select → Change if needed.
+  const select = document.querySelector('[data-testid="browser-select-playbook"]');
+  if (select) { select.setAttribute('data-testid', 'browser-change-playbook'); select.textContent = 'Change Playbook'; select.className = 'btn btn-sm btn-outline-secondary mb-2'; }
+}
+
+/**
+ * Toggle left panel collapsed / expanded.
+ */
+function _toggleLeftPanel() {
+  const panel = document.getElementById('browser-left-panel');
+  const toggle = document.querySelector('[data-testid="browser-toggle-left-panel"]');
+  if (!panel) return;
+  const collapsed = panel.classList.toggle('browser-collapsed');
+  panel.style.width = collapsed ? '0' : '280px';
+  panel.style.minWidth = collapsed ? '0' : '280px';
+  const content = document.getElementById('browser-left-panel-content');
+  if (content) content.style.display = collapsed ? 'none' : '';
+  if (toggle) toggle.textContent = collapsed ? '›' : '‹';
+  if (window.cy) window.cy.resize();
+}
+
 /**
  * Main entry point — called on DOMContentLoaded.
  * Reads PK, normalises URL params, fetches graph if PK present.
@@ -426,6 +570,19 @@ function _init() {
   const phases = _getPlaybookPhases();
   const filters = _parseUrlParams();
   _normaliseFilters(filters, phases);
+
+  // Wire collapse toggle.
+  const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
+  if (toggleBtn) toggleBtn.addEventListener('click', _toggleLeftPanel);
+
+  // Wire picker open — both Change Playbook and Select Playbook buttons.
+  document.querySelectorAll('[data-testid="browser-change-playbook"], [data-testid="browser-select-playbook"]').forEach(btn => {
+    btn.addEventListener('click', _openPicker);
+  });
+
+  // Wire picker search input.
+  const pickerSearch = document.querySelector('[data-testid="browser-picker-search"]');
+  if (pickerSearch) pickerSearch.addEventListener('input', e => _filterPickerItems(e.target.value));
 
   if (!pk) {
     _showEmptyState();
