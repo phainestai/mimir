@@ -309,46 +309,74 @@ class TestGraphAPIContainsEdges:
 class TestGraphAPIResourceEdges:
 
     def test_skill_node_and_uses_skill_edge_present(self, auth_client, playbook_with_resources):
-        """Skill appears as a node; 'uses_skill' edge connects activity to skill."""
+        """Skill appears as a per-activity node; 'uses_skill' edge connects activity to skill."""
         data = auth_client.get(f'/api/playbooks/{playbook_with_resources.pk}/graph/').json()
         skill_nodes = [n for n in data['nodes'] if n['type'] == 'skill']
         assert len(skill_nodes) == 1
         assert skill_nodes[0]['id'].startswith('skill:')
+        assert ':activity:' in skill_nodes[0]['id'], 'Skill node must be scoped per-activity'
         uses_edges = [e for e in data['edges'] if e['relationship'] == 'uses_skill']
         assert len(uses_edges) == 1
 
     def test_agent_node_and_assigned_agent_edge_present(self, auth_client, playbook_with_resources):
-        """Agent appears as a node; 'assigned_agent' edge connects activity to agent."""
+        """Agent appears as a per-activity node; 'assigned_agent' edge connects activity to agent."""
         data = auth_client.get(f'/api/playbooks/{playbook_with_resources.pk}/graph/').json()
         agent_nodes = [n for n in data['nodes'] if n['type'] == 'agent']
         assert len(agent_nodes) == 1
         assert agent_nodes[0]['id'].startswith('agent:')
+        assert ':activity:' in agent_nodes[0]['id'], 'Agent node must be scoped per-activity'
         agent_edges = [e for e in data['edges'] if e['relationship'] == 'assigned_agent']
         assert len(agent_edges) == 1
 
     def test_rule_node_and_governed_by_rule_edge_present(self, auth_client, playbook_with_resources):
-        """Rule appears as a node; 'governed_by_rule' edge connects activity to rule."""
+        """Rule appears as a per-activity node; 'governed_by_rule' edge connects activity to rule."""
         data = auth_client.get(f'/api/playbooks/{playbook_with_resources.pk}/graph/').json()
         rule_nodes = [n for n in data['nodes'] if n['type'] == 'rule']
         assert len(rule_nodes) == 1
         assert rule_nodes[0]['id'].startswith('rule:')
+        assert ':activity:' in rule_nodes[0]['id'], 'Rule node must be scoped per-activity'
         rule_edges = [e for e in data['edges'] if e['relationship'] == 'governed_by_rule']
         assert len(rule_edges) == 1
 
     def test_artifact_node_and_produces_edge_present(self, auth_client, playbook_with_resources):
-        """Artifact appears as a node; 'produces' edge connects activity to artifact."""
+        """Artifact appears as a per-activity node; 'produces' edge connects activity to artifact."""
         data = auth_client.get(f'/api/playbooks/{playbook_with_resources.pk}/graph/').json()
         artifact_nodes = [n for n in data['nodes'] if n['type'] == 'artifact']
         assert len(artifact_nodes) == 1
         assert artifact_nodes[0]['id'].startswith('artifact:')
+        assert ':activity:' in artifact_nodes[0]['id'], 'Artifact node must be scoped per-activity'
         produces_edges = [e for e in data['edges'] if e['relationship'] == 'produces']
         assert len(produces_edges) == 1
 
     def test_no_duplicate_node_ids(self, auth_client, playbook_with_resources):
-        """Node IDs must be unique within a graph response."""
+        """All node IDs must be globally unique (per-activity scoping guarantees this)."""
         data = auth_client.get(f'/api/playbooks/{playbook_with_resources.pk}/graph/').json()
         ids = [n['id'] for n in data['nodes']]
         assert len(ids) == len(set(ids)), 'Duplicate node IDs found'
+
+    def test_same_resource_linked_to_two_activities_creates_two_nodes(self, user, auth_client, db):
+        """Same skill on two activities → two distinct per-activity nodes, two edges (FOB-13e)."""
+        pb = Playbook.objects.create(
+            name='SharedResource', description='', category='development',
+            status='released', version='1.0', source='owned', author=user,
+        )
+        wf = Workflow.objects.create(name='WF', playbook=pb, order=1)
+        skill = Skill.objects.create(playbook=pb, title='Shared Skill')
+        act1 = Activity.objects.create(name='Step 1', workflow=wf, order=1)
+        act2 = Activity.objects.create(name='Step 2', workflow=wf, order=2)
+        act1.skills.add(skill)
+        act2.skills.add(skill)
+
+        data = auth_client.get(f'/api/playbooks/{pb.pk}/graph/').json()
+        skill_nodes = [n for n in data['nodes'] if n['type'] == 'skill']
+        assert len(skill_nodes) == 2, 'Shared skill must produce two per-activity nodes'
+        ids = {n['id'] for n in skill_nodes}
+        assert f'skill:{skill.pk}:activity:{act1.pk}' in ids
+        assert f'skill:{skill.pk}:activity:{act2.pk}' in ids
+        # entity_pk is the same on both — they represent the same underlying entity
+        assert all(n['entity_pk'] == skill.pk for n in skill_nodes)
+        uses_edges = [e for e in data['edges'] if e['relationship'] == 'uses_skill']
+        assert len(uses_edges) == 2
 
     def test_cross_playbook_resources_not_emitted(self, user, auth_client, db):
         """Skills from another playbook must NOT appear as nodes in this playbook's graph."""
@@ -367,6 +395,6 @@ class TestGraphAPIResourceEdges:
         act.skills.add(orphan_skill)  # cross-playbook M2M link
 
         data = auth_client.get(f'/api/playbooks/{pb.pk}/graph/').json()
-        skill_ids = [n['id'] for n in data['nodes'] if n['type'] == 'skill']
-        # orphan_skill belongs to other_pb; must not appear in pb's graph
-        assert f'skill:{orphan_skill.pk}' not in skill_ids
+        skill_nodes = [n for n in data['nodes'] if n['type'] == 'skill']
+        assert not any(n['entity_pk'] == orphan_skill.pk for n in skill_nodes), \
+            'Cross-playbook skill must not appear in graph'

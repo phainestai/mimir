@@ -388,26 +388,26 @@ def _build_playbook_graph(playbook, user) -> dict:
             pending_edges.append((f'activity:{act.predecessor_id}', act_id, 'predecessor'))
 
         if act.agent_id and act.agent and act.agent.playbook_id == playbook.pk:
-            ag_id = f'agent:{act.agent_id}'
+            ag_id = f'agent:{act.agent_id}:activity:{act.pk}'
             ag_detail = reverse('agent_detail', kwargs={'pk': act.agent_id})
             _emit_node(ag_id, 'agent', act.agent.name, act.agent_id, ag_detail, ag_detail + '?embed=1')
             pending_edges.append((act_id, ag_id, 'assigned_agent'))
 
         for skill in act.skills.all():
-            sk_id = f'skill:{skill.pk}'
+            sk_id = f'skill:{skill.pk}:activity:{act.pk}'
             sk_detail = reverse('skill_detail', kwargs={'playbook_pk': playbook.pk, 'skill_pk': skill.pk})
             _emit_node(sk_id, 'skill', skill.title, skill.pk, sk_detail, sk_detail + '?embed=1')
             pending_edges.append((act_id, sk_id, 'uses_skill'))
 
         for rule in act.rules.all():
-            r_id = f'rule:{rule.pk}'
+            r_id = f'rule:{rule.pk}:activity:{act.pk}'
             r_detail = reverse('rule_detail', kwargs={'playbook_pk': playbook.pk, 'rule_pk': rule.pk})
             _emit_node(r_id, 'rule', rule.title, rule.pk, r_detail, r_detail + '?embed=1')
             pending_edges.append((act_id, r_id, 'governed_by_rule'))
 
         for ai in act.input_artifacts.all():
             art = ai.artifact
-            art_id = f'artifact:{art.pk}'
+            art_id = f'artifact:{art.pk}:activity:{act.pk}'
             art_detail = reverse('artifact_detail', kwargs={'pk': art.pk})
             _emit_node(art_id, 'artifact', art.name, art.pk, art_detail, art_detail + '?embed=1')
             pending_edges.append((art_id, act_id, 'consumes'))
@@ -429,10 +429,10 @@ def _build_playbook_graph(playbook, user) -> dict:
     # --- Artifacts (produced_by — catch artifacts not yet added via input_artifacts) ---
     artifacts_qs = Artifact.objects.filter(playbook=playbook).select_related('produced_by')
     for art in artifacts_qs:
-        art_id = f'artifact:{art.pk}'
-        art_detail = reverse('artifact_detail', kwargs={'pk': art.pk})
-        _emit_node(art_id, 'artifact', art.name, art.pk, art_detail, art_detail + '?embed=1')
         if art.produced_by_id:
+            art_id = f'artifact:{art.pk}:activity:{art.produced_by_id}'
+            art_detail = reverse('artifact_detail', kwargs={'pk': art.pk})
+            _emit_node(art_id, 'artifact', art.name, art.pk, art_detail, art_detail + '?embed=1')
             pending_edges.append((f'activity:{art.produced_by_id}', art_id, 'produces'))
 
     # --- Emit edges (all nodes now known; skip dangling endpoints) ---
