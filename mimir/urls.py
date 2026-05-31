@@ -74,6 +74,7 @@ urlpatterns = [
     path("api/auth/", include("accounts.api_urls")),  # Registration, token refresh, etc.
     path("auth/", include("accounts.urls")),  # Changed from accounts/ per SAO.md URL convention
     path("notifications/", include("methodology.notification_urls")),
+    path("browser/", include("methodology.browser_urls")),
     # Legal documents (public, no login required)
     path("legal/privacy/", legal_views.privacy_policy, name="privacy_policy"),
     path("legal/privacy/pdf/", legal_views.privacy_policy_pdf, name="privacy_policy_pdf"),

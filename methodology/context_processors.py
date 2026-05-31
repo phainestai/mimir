@@ -59,6 +59,8 @@ def _resolve_nav_section(path: str):
     """
     if "/activities/" in path:
         return "activities"
+    if path.startswith("/browser/"):
+        return "browser"
     if path.startswith("/dashboard/"):
         return "home"
     if path.startswith("/workflows/") or "/workflows/" in path:
