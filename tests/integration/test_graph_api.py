@@ -398,3 +398,97 @@ class TestGraphAPIResourceEdges:
         skill_nodes = [n for n in data['nodes'] if n['type'] == 'skill']
         assert not any(n['entity_pk'] == orphan_skill.pk for n in skill_nodes), \
             'Cross-playbook skill must not appear in graph'
+
+
+# ---------------------------------------------------------------------------
+# FOB-CONTENT-BROWSER-13f/13g: display_code and sequence edges
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestGraphAPIDisplayCodeAndSequence:
+
+    @pytest.fixture
+    def ordered_playbook(self, user, db):
+        """Playbook with a workflow (abbreviation BPE) and three ordered activities."""
+        pb = Playbook.objects.create(
+            name='OrderedPB', description='', category='development',
+            status='released', version='1.0', source='owned', author=user,
+        )
+        wf = Workflow.objects.create(name='Build Phase', abbreviation='BPE', playbook=pb, order=1)
+        act1 = Activity.objects.create(name='Plan', workflow=wf, order=1)
+        act2 = Activity.objects.create(name='Implement', workflow=wf, order=2)
+        act3 = Activity.objects.create(name='Test', workflow=wf, order=3)
+        return pb, wf, act1, act2, act3
+
+    def test_activity_node_includes_display_code(self, auth_client, ordered_playbook):
+        """Activity nodes include meta.display_code with format '<abbr>-<order>' (FOB-13f)."""
+        pb, wf, act1, act2, act3 = ordered_playbook
+        data = auth_client.get(f'/api/playbooks/{pb.pk}/graph/').json()
+        act_nodes = {n['entity_pk']: n for n in data['nodes'] if n['type'] == 'activity'}
+        assert act_nodes[act1.pk]['meta']['display_code'] == 'BPE-1'
+        assert act_nodes[act2.pk]['meta']['display_code'] == 'BPE-2'
+        assert act_nodes[act3.pk]['meta']['display_code'] == 'BPE-3'
+
+    def test_activity_display_code_empty_when_no_abbreviation(self, user, auth_client, db):
+        """Activity node display_code is empty string when workflow has no abbreviation.
+
+        NOTE: Workflow.save() auto-generates abbreviation from the name, so we bypass
+        it by using update() to force an empty abbreviation after creation.
+        """
+        pb = Playbook.objects.create(
+            name='NoAbbrPB', description='', category='development',
+            status='released', version='1.0', source='owned', author=user,
+        )
+        from methodology.models import Workflow as WorkflowModel
+        wf = Workflow.objects.create(name='No Abbr Workflow', playbook=pb, order=1)
+        # Force empty abbreviation via queryset update (bypasses save() auto-gen)
+        WorkflowModel.objects.filter(pk=wf.pk).update(abbreviation='')
+        act = Activity.objects.create(name='Solo', workflow=wf, order=1)
+        data = auth_client.get(f'/api/playbooks/{pb.pk}/graph/').json()
+        act_nodes = [n for n in data['nodes'] if n['type'] == 'activity']
+        assert len(act_nodes) == 1
+        assert act_nodes[0]['meta']['display_code'] == ''
+
+    def test_sequence_edges_emitted_in_order(self, auth_client, ordered_playbook):
+        """Consecutive activities produce sequence edges: 1→2→3 (FOB-13g)."""
+        pb, wf, act1, act2, act3 = ordered_playbook
+        data = auth_client.get(f'/api/playbooks/{pb.pk}/graph/').json()
+        seq_edges = [e for e in data['edges'] if e['relationship'] == 'sequence']
+        assert len(seq_edges) == 2
+        sources = {e['source'] for e in seq_edges}
+        targets = {e['target'] for e in seq_edges}
+        assert f'activity:{act1.pk}' in sources
+        assert f'activity:{act2.pk}' in sources
+        assert f'activity:{act2.pk}' in targets
+        assert f'activity:{act3.pk}' in targets
+
+    def test_single_activity_workflow_has_no_sequence_edge(self, user, auth_client, db):
+        """A workflow with one activity emits no sequence edge."""
+        pb = Playbook.objects.create(
+            name='SingleActPB', description='', category='development',
+            status='released', version='1.0', source='owned', author=user,
+        )
+        wf = Workflow.objects.create(name='Solo WF', playbook=pb, order=1)
+        Activity.objects.create(name='Solo', workflow=wf, order=1)
+        data = auth_client.get(f'/api/playbooks/{pb.pk}/graph/').json()
+        seq_edges = [e for e in data['edges'] if e['relationship'] == 'sequence']
+        assert len(seq_edges) == 0
+
+    def test_sequence_edges_not_cross_workflow(self, user, auth_client, db):
+        """Sequence edges are NOT emitted across different workflows."""
+        pb = Playbook.objects.create(
+            name='TwoWFPB', description='', category='development',
+            status='released', version='1.0', source='owned', author=user,
+        )
+        wf1 = Workflow.objects.create(name='WF One', playbook=pb, order=1)
+        wf2 = Workflow.objects.create(name='WF Two', playbook=pb, order=2)
+        act1 = Activity.objects.create(name='WF1 Act', workflow=wf1, order=1)
+        act2 = Activity.objects.create(name='WF2 Act', workflow=wf2, order=1)
+        data = auth_client.get(f'/api/playbooks/{pb.pk}/graph/').json()
+        seq_edges = [e for e in data['edges'] if e['relationship'] == 'sequence']
+        # Single-activity workflows → no sequence edges
+        assert len(seq_edges) == 0
+        # Confirm no edge crosses the two workflows
+        cross = [e for e in seq_edges
+                 if e['source'] == f'activity:{act1.pk}' and e['target'] == f'activity:{act2.pk}']
+        assert len(cross) == 0
