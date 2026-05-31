@@ -25,9 +25,18 @@ Feature: FOB-CONTENT-BROWSER-LEFT-PANEL Content Browser Left Panel
     Given Maria is viewing "FeatureFactory" in the graph view
     Then the top of the left panel shows:
       | element               | value                                                |
-      | Playbook name heading | FeatureFactory                                       |
+      | Playbook name heading | FeatureFactory (a link to /playbooks/<pk>/)          |
       | Status badge          | draft / released / active / disabled (badge colours) |
       | [Change Playbook] btn | visible below the name                               |
+    And the playbook name heading is a hyperlink to the playbook's detail page (/playbooks/<pk>/)
+    And clicking the playbook name navigates to the full playbook detail page in the current tab
+
+
+  Scenario: FOB-CONTENT-BROWSER-21b Open playbook detail from left panel
+    Given Maria is viewing "FeatureFactory" in the graph view
+    When she clicks the playbook name heading in the left panel
+    Then the browser navigates to /playbooks/<pk>/ (the full playbook detail page)
+    And the full detail page is shown with navbar, breadcrumbs, and all playbook actions
 
 
   Scenario: FOB-CONTENT-BROWSER-22 Change Playbook and Select Playbook open the same picker
