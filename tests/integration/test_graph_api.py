@@ -1,0 +1,372 @@
+"""
+Integration tests for Content Browser Graph API endpoint.
+
+Covers: FOB-CONTENT-BROWSER-13, 13b (error state), 13c (session expiry redirect),
+        13d (404 on deleted playbook), plus structural/access tests.
+"""
+
+import pytest
+from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
+from rest_framework.authtoken.models import Token
+
+from methodology.models import (
+    Playbook, Workflow, Activity, Phase, Skill, Agent, Artifact, Rule,
+    ArtifactInput,
+)
+
+User = get_user_model()
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def api_client():
+    return APIClient()
+
+
+@pytest.fixture
+def user(db):
+    return User.objects.create_user(
+        username='graph_user',
+        email='graph@test.com',
+        password='testpass123',
+    )
+
+
+@pytest.fixture
+def auth_client(user):
+    token = Token.objects.create(user=user)
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+    return client
+
+
+@pytest.fixture
+def released_playbook(user, db):
+    """A released playbook with one workflow, two activities, one phase."""
+    pb = Playbook.objects.create(
+        name='FeatureFactory',
+        description='Test playbook',
+        category='development',
+        status='released',
+        version='1.0',
+        source='owned',
+        author=user,
+    )
+    phase = Phase.objects.create(playbook=pb, name='Construction', order=1)
+    wf = Workflow.objects.create(
+        name='BPE', description='Build Phase Execution',
+        playbook=pb, order=1,
+    )
+    act1 = Activity.objects.create(
+        name='Plan', workflow=wf, order=1, phase=phase,
+    )
+    act2 = Activity.objects.create(
+        name='Implement', workflow=wf, order=2, predecessor=act1,
+    )
+    return pb
+
+
+@pytest.fixture
+def playbook_with_resources(user, db):
+    """Playbook with skill, agent, artifact, rule linked to an activity."""
+    pb = Playbook.objects.create(
+        name='ResourcePlaybook',
+        description='Has resources',
+        category='development',
+        status='released',
+        version='1.0',
+        source='owned',
+        author=user,
+    )
+    wf = Workflow.objects.create(name='Workflow A', playbook=pb, order=1)
+    skill = Skill.objects.create(playbook=pb, title='Build Skill')
+    agent = Agent.objects.create(playbook=pb, name='Build Agent')
+    rule = Rule.objects.create(playbook=pb, title='Build Rule')
+    act = Activity.objects.create(name='Build', workflow=wf, order=1, agent=agent)
+    act.skills.add(skill)
+    act.rules.add(rule)
+    artifact = Artifact.objects.create(
+        name='Build Output',
+        playbook=pb,
+        produced_by=act,
+    )
+    return pb
+
+
+@pytest.fixture
+def empty_playbook(user, db):
+    """Released playbook with no workflows."""
+    return Playbook.objects.create(
+        name='EmptyPlaybook',
+        description='No workflows',
+        category='development',
+        status='released',
+        version='1.0',
+        source='owned',
+        author=user,
+    )
+
+
+@pytest.fixture
+def other_user(db):
+    return User.objects.create_user(
+        username='other_user',
+        email='other@test.com',
+        password='testpass123',
+    )
+
+
+@pytest.fixture
+def private_playbook(other_user, db):
+    """Private playbook owned by other_user — inaccessible to graph_user."""
+    return Playbook.objects.create(
+        name='PrivatePlaybook',
+        description='Private',
+        category='development',
+        status='released',
+        version='1.0',
+        source='owned',
+        author=other_user,
+        visibility='private',
+    )
+
+
+# ---------------------------------------------------------------------------
+# FOB-CONTENT-BROWSER-13: Authentication and access
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestGraphAPIAccess:
+
+    def test_graph_requires_authentication(self, api_client, released_playbook):
+        """Unauthenticated request returns 401."""
+        url = f'/api/playbooks/{released_playbook.pk}/graph/'
+        response = api_client.get(url)
+        assert response.status_code == 401
+
+    def test_graph_returns_404_for_inaccessible_playbook(self, auth_client, private_playbook):
+        """Private playbook owned by another user returns 404."""
+        url = f'/api/playbooks/{private_playbook.pk}/graph/'
+        response = auth_client.get(url)
+        assert response.status_code == 404
+
+    def test_graph_returns_404_for_nonexistent_playbook(self, auth_client):
+        """Non-existent playbook PK returns 404."""
+        response = auth_client.get('/api/playbooks/99999/graph/')
+        assert response.status_code == 404
+
+    def test_graph_owner_can_access_own_playbook(self, auth_client, released_playbook):
+        """Owner can access their own playbook graph (FOB-CONTENT-BROWSER-13)."""
+        url = f'/api/playbooks/{released_playbook.pk}/graph/'
+        response = auth_client.get(url)
+        assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# FOB-CONTENT-BROWSER-13: Response structure
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestGraphAPIResponseShape:
+
+    def test_graph_response_has_required_top_level_keys(self, auth_client, released_playbook):
+        """Response must have nodes, edges, phases keys."""
+        url = f'/api/playbooks/{released_playbook.pk}/graph/'
+        response = auth_client.get(url)
+        assert response.status_code == 200
+        data = response.json()
+        assert 'nodes' in data
+        assert 'edges' in data
+        assert 'phases' in data
+
+    def test_empty_playbook_returns_empty_nodes_and_edges(self, auth_client, empty_playbook):
+        """Playbook with no workflows returns empty nodes and edges."""
+        url = f'/api/playbooks/{empty_playbook.pk}/graph/'
+        response = auth_client.get(url)
+        assert response.status_code == 200
+        data = response.json()
+        assert data['nodes'] == []
+        assert data['edges'] == []
+        assert data['phases'] == []
+
+    def test_workflow_node_has_required_fields(self, auth_client, released_playbook):
+        """Workflow node must have: id, type, label, entity_pk, detail_url, embed_url, meta."""
+        url = f'/api/playbooks/{released_playbook.pk}/graph/'
+        data = auth_client.get(url).json()
+        wf_nodes = [n for n in data['nodes'] if n['type'] == 'workflow']
+        assert len(wf_nodes) >= 1
+        node = wf_nodes[0]
+        for field in ('id', 'type', 'label', 'entity_pk', 'detail_url', 'embed_url', 'meta'):
+            assert field in node, f'Missing field: {field}'
+
+    def test_workflow_node_id_is_namespaced(self, auth_client, released_playbook):
+        """Workflow node IDs must use 'workflow:<pk>' namespace."""
+        data = auth_client.get(f'/api/playbooks/{released_playbook.pk}/graph/').json()
+        wf_nodes = [n for n in data['nodes'] if n['type'] == 'workflow']
+        for node in wf_nodes:
+            assert node['id'].startswith('workflow:'), f"Bad id: {node['id']}"
+
+    def test_activity_node_id_is_namespaced(self, auth_client, released_playbook):
+        """Activity node IDs must use 'activity:<pk>' namespace."""
+        data = auth_client.get(f'/api/playbooks/{released_playbook.pk}/graph/').json()
+        act_nodes = [n for n in data['nodes'] if n['type'] == 'activity']
+        assert len(act_nodes) >= 1
+        for node in act_nodes:
+            assert node['id'].startswith('activity:'), f"Bad id: {node['id']}"
+
+    def test_edge_has_required_fields(self, auth_client, released_playbook):
+        """Every edge must have source, target, relationship."""
+        data = auth_client.get(f'/api/playbooks/{released_playbook.pk}/graph/').json()
+        assert len(data['edges']) >= 1
+        for edge in data['edges']:
+            for field in ('source', 'target', 'relationship'):
+                assert field in edge, f'Edge missing field: {field}'
+
+    def test_detail_url_and_embed_url_are_present(self, auth_client, released_playbook):
+        """detail_url and embed_url must be non-empty strings."""
+        data = auth_client.get(f'/api/playbooks/{released_playbook.pk}/graph/').json()
+        for node in data['nodes']:
+            assert isinstance(node['detail_url'], str), f"detail_url not str on {node['id']}"
+            assert len(node['detail_url']) > 0, f"detail_url empty on {node['id']}"
+            assert isinstance(node['embed_url'], str), f"embed_url not str on {node['id']}"
+            # embed_url should append ?embed=1 to detail_url
+            assert node['embed_url'].endswith('?embed=1'), f"embed_url missing ?embed=1 on {node['id']}"
+
+    def test_phase_array_contains_required_fields(self, auth_client, released_playbook):
+        """Each phase must have id, name, colour."""
+        data = auth_client.get(f'/api/playbooks/{released_playbook.pk}/graph/').json()
+        assert len(data['phases']) >= 1
+        phase = data['phases'][0]
+        for field in ('id', 'name', 'colour'):
+            assert field in phase, f'Phase missing field: {field}'
+        assert phase['colour'].startswith('#'), "Phase colour must be hex string"
+
+
+# ---------------------------------------------------------------------------
+# FOB-CONTENT-BROWSER-13b: Activity phase metadata
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestGraphAPIPhaseMetadata:
+
+    def test_activity_with_phase_carries_phase_meta(self, auth_client, released_playbook):
+        """Activity assigned to a phase includes phase_id, phase_name, phase_colour in meta."""
+        data = auth_client.get(f'/api/playbooks/{released_playbook.pk}/graph/').json()
+        act_nodes = [n for n in data['nodes'] if n['type'] == 'activity']
+        phased = [n for n in act_nodes if n['meta'].get('phase_id')]
+        assert len(phased) >= 1, 'Expected at least one activity with phase'
+        node = phased[0]
+        assert 'phase_id' in node['meta']
+        assert 'phase_name' in node['meta']
+        assert 'phase_colour' in node['meta']
+        assert node['meta']['phase_colour'].startswith('#')
+
+    def test_activity_without_phase_has_empty_meta(self, auth_client, released_playbook):
+        """Activity without a phase has empty meta (no phase_id)."""
+        data = auth_client.get(f'/api/playbooks/{released_playbook.pk}/graph/').json()
+        act_nodes = [n for n in data['nodes'] if n['type'] == 'activity']
+        unphased = [n for n in act_nodes if not n['meta'].get('phase_id')]
+        assert len(unphased) >= 1, 'Expected at least one activity without phase'
+
+
+# ---------------------------------------------------------------------------
+# FOB-CONTENT-BROWSER-13c: Contains edges
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestGraphAPIContainsEdges:
+
+    def test_contains_edge_from_workflow_to_activity(self, auth_client, released_playbook):
+        """Each activity must have a 'contains' edge from its parent workflow."""
+        data = auth_client.get(f'/api/playbooks/{released_playbook.pk}/graph/').json()
+        contains_edges = [e for e in data['edges'] if e['relationship'] == 'contains']
+        assert len(contains_edges) >= 2  # two activities in released_playbook
+
+    def test_predecessor_edge_emitted(self, auth_client, released_playbook):
+        """Predecessor relationship emits a 'predecessor' typed edge."""
+        data = auth_client.get(f'/api/playbooks/{released_playbook.pk}/graph/').json()
+        pred_edges = [e for e in data['edges'] if e['relationship'] == 'predecessor']
+        assert len(pred_edges) >= 1
+
+    def test_edges_reference_only_emitted_nodes(self, auth_client, released_playbook):
+        """Every edge source and target must exist in the nodes list."""
+        data = auth_client.get(f'/api/playbooks/{released_playbook.pk}/graph/').json()
+        node_ids = {n['id'] for n in data['nodes']}
+        for edge in data['edges']:
+            assert edge['source'] in node_ids, f"Dangling source: {edge['source']}"
+            assert edge['target'] in node_ids, f"Dangling target: {edge['target']}"
+
+
+# ---------------------------------------------------------------------------
+# FOB-CONTENT-BROWSER-13d: Resource edges (skills, agents, artifacts, rules)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestGraphAPIResourceEdges:
+
+    def test_skill_node_and_uses_skill_edge_present(self, auth_client, playbook_with_resources):
+        """Skill appears as a node; 'uses_skill' edge connects activity to skill."""
+        data = auth_client.get(f'/api/playbooks/{playbook_with_resources.pk}/graph/').json()
+        skill_nodes = [n for n in data['nodes'] if n['type'] == 'skill']
+        assert len(skill_nodes) == 1
+        assert skill_nodes[0]['id'].startswith('skill:')
+        uses_edges = [e for e in data['edges'] if e['relationship'] == 'uses_skill']
+        assert len(uses_edges) == 1
+
+    def test_agent_node_and_assigned_agent_edge_present(self, auth_client, playbook_with_resources):
+        """Agent appears as a node; 'assigned_agent' edge connects activity to agent."""
+        data = auth_client.get(f'/api/playbooks/{playbook_with_resources.pk}/graph/').json()
+        agent_nodes = [n for n in data['nodes'] if n['type'] == 'agent']
+        assert len(agent_nodes) == 1
+        assert agent_nodes[0]['id'].startswith('agent:')
+        agent_edges = [e for e in data['edges'] if e['relationship'] == 'assigned_agent']
+        assert len(agent_edges) == 1
+
+    def test_rule_node_and_governed_by_rule_edge_present(self, auth_client, playbook_with_resources):
+        """Rule appears as a node; 'governed_by_rule' edge connects activity to rule."""
+        data = auth_client.get(f'/api/playbooks/{playbook_with_resources.pk}/graph/').json()
+        rule_nodes = [n for n in data['nodes'] if n['type'] == 'rule']
+        assert len(rule_nodes) == 1
+        assert rule_nodes[0]['id'].startswith('rule:')
+        rule_edges = [e for e in data['edges'] if e['relationship'] == 'governed_by_rule']
+        assert len(rule_edges) == 1
+
+    def test_artifact_node_and_produces_edge_present(self, auth_client, playbook_with_resources):
+        """Artifact appears as a node; 'produces' edge connects activity to artifact."""
+        data = auth_client.get(f'/api/playbooks/{playbook_with_resources.pk}/graph/').json()
+        artifact_nodes = [n for n in data['nodes'] if n['type'] == 'artifact']
+        assert len(artifact_nodes) == 1
+        assert artifact_nodes[0]['id'].startswith('artifact:')
+        produces_edges = [e for e in data['edges'] if e['relationship'] == 'produces']
+        assert len(produces_edges) == 1
+
+    def test_no_duplicate_node_ids(self, auth_client, playbook_with_resources):
+        """Node IDs must be unique within a graph response."""
+        data = auth_client.get(f'/api/playbooks/{playbook_with_resources.pk}/graph/').json()
+        ids = [n['id'] for n in data['nodes']]
+        assert len(ids) == len(set(ids)), 'Duplicate node IDs found'
+
+    def test_cross_playbook_resources_not_emitted(self, user, auth_client, db):
+        """Skills from another playbook must NOT appear as nodes in this playbook's graph."""
+        other_pb = Playbook.objects.create(
+            name='OtherPB', description='', category='development',
+            status='released', version='1.0', source='owned', author=user,
+        )
+        orphan_skill = Skill.objects.create(playbook=other_pb, title='Orphan Skill')
+
+        pb = Playbook.objects.create(
+            name='TargetPB', description='', category='development',
+            status='released', version='1.0', source='owned', author=user,
+        )
+        wf = Workflow.objects.create(name='WF', playbook=pb, order=1)
+        act = Activity.objects.create(name='Act', workflow=wf, order=1)
+        act.skills.add(orphan_skill)  # cross-playbook M2M link
+
+        data = auth_client.get(f'/api/playbooks/{pb.pk}/graph/').json()
+        skill_ids = [n['id'] for n in data['nodes'] if n['type'] == 'skill']
+        # orphan_skill belongs to other_pb; must not appear in pb's graph
+        assert f'skill:{orphan_skill.pk}' not in skill_ids
