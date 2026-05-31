@@ -336,6 +336,8 @@ function _renderGraph(pk, graphData, filters) {
   window.cy.on('tap', function(evt) {
     if (evt.target === window.cy) { _closeDetailPanel(); }
   });
+
+  _renderStructureTree();
 }
 
 /**
@@ -459,6 +461,203 @@ function _showNoContentState(pk) {
 let _currentPanelNode = null;   // Cytoscape node currently shown in panel
 
 /**
+ * Build and render the Workflow → Activity collapsible tree in the left panel.
+ * Called after each graph load. Tree rows navigate the canvas on click.
+ */
+function _renderStructureTree() {
+  const container = document.querySelector('[data-testid="browser-structure-tree"]');
+  if (!container || !window.cy) return;
+
+  const wfNodes = window.cy.nodes('[type="workflow"]').sort((a, b) => a.data('entity_pk') - b.data('entity_pk'));
+  if (wfNodes.length === 0) { container.innerHTML = ''; return; }
+
+  let html = '<div class="small fw-semibold text-muted text-uppercase mb-1 mt-2">Structure</div>';
+  wfNodes.forEach(wfNode => {
+    const wfId    = wfNode.id();
+    const abbr    = (wfNode.data('meta') || {}).abbreviation || '';
+    const wfLabel = wfNode.data('label') || wfId;
+    const sectionId = 'tree-wf-' + wfNode.data('entity_pk');
+
+    html += `
+      <div class="mb-1">
+        <div class="d-flex align-items-center gap-1 px-1 py-1 rounded browser-tree-row"
+             data-node-id="${wfId}" data-testid="browser-tree-row" style="cursor:pointer;">
+          <span class="browser-tree-toggle small text-muted" data-section="${sectionId}">▾</span>
+          ${abbr ? `<span class="small text-muted" style="min-width:2.2em;">${abbr}</span>` : ''}
+          <span class="small fw-semibold text-truncate" title="${wfLabel}">${wfLabel}</span>
+        </div>
+        <div id="${sectionId}" class="ps-3">`;
+
+    // Activities connected to this workflow via 'contains' edges, sorted by order
+    const actNodes = wfNode.outgoers('edge[relationship="contains"]').targets()
+      .sort((a, b) => ((a.data('meta') || {}).order || 0) - ((b.data('meta') || {}).order || 0));
+
+    actNodes.forEach(actNode => {
+      const actId    = actNode.id();
+      const meta     = actNode.data('meta') || {};
+      const code     = meta.display_code || '';
+      const colour   = meta.phase_colour || '';
+      const actLabel = actNode.data('label') || actId;
+
+      const chip = colour
+        ? `<span class="rounded-circle flex-shrink-0"
+                style="width:8px;height:8px;background:${colour};display:inline-block;"></span>`
+        : '';
+
+      html += `
+          <div class="d-flex align-items-center gap-1 px-1 py-1 rounded browser-tree-row"
+               data-node-id="${actId}" data-testid="browser-tree-row" style="cursor:pointer;">
+            ${code ? `<span class="small text-muted" style="min-width:2.8em;">${code}</span>` : ''}
+            <span class="small text-truncate flex-grow-1" title="${actLabel}">${actLabel}</span>
+            ${chip}
+          </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+
+  // Wire clicks: pan/zoom canvas to the node (no detail panel open).
+  container.querySelectorAll('[data-node-id]').forEach(row => {
+    row.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const nodeId = this.dataset.nodeId;
+
+      // Toggle collapse for workflow rows only (workflow rows contain a toggle span)
+      const toggleSpan = this.querySelector('.browser-tree-toggle');
+      if (toggleSpan) {
+        const sId = toggleSpan.dataset.section;
+        const section = document.getElementById(sId);
+        if (section) {
+          const hidden = section.style.display === 'none';
+          section.style.display = hidden ? '' : 'none';
+          toggleSpan.textContent = hidden ? '▾' : '▸';
+          return; // collapse toggle — don't navigate
+        }
+      }
+
+      // Navigate canvas to this node.
+      if (window.cy) {
+        const node = window.cy.getElementById(nodeId);
+        if (node && node.length) {
+          window.cy.animate({ fit: { eles: node, padding: 80 }, duration: 300 });
+        }
+      }
+    });
+  });
+}
+
+/**
+ * Highlight the tree row matching `nodeId` (bold + accent).
+ * @param {string} nodeId
+ */
+function _highlightTreeNode(nodeId) {
+  document.querySelectorAll('[data-testid="browser-tree-row"]').forEach(row => {
+    if (row.dataset.nodeId === nodeId) {
+      row.classList.add('fw-bold', 'text-primary', 'bg-primary-subtle');
+    } else {
+      row.classList.remove('fw-bold', 'text-primary', 'bg-primary-subtle');
+    }
+  });
+}
+
+/**
+ * Clear all tree row highlights.
+ */
+function _clearTreeHighlight() {
+  document.querySelectorAll('[data-testid="browser-tree-row"]').forEach(row => {
+    row.classList.remove('fw-bold', 'text-primary', 'bg-primary-subtle');
+  });
+}
+
+// ─── Resource tree ────────────────────────────────────────────────────────────
+
+const _RESOURCE_ICONS = { artifact: '📦', skill: '🔧', agent: '🤖', rule: '📋' };
+const _RESOURCE_ORDER = ['artifact', 'skill', 'agent', 'rule'];
+
+/**
+ * Render resource tree for a selected Workflow or Activity node.
+ * Groups resource nodes by type, deduplicates by entity_pk.
+ *
+ * @param {cytoscape.NodeSingular} node
+ */
+function _renderResourceTree(node) {
+  const container = document.querySelector('[data-testid="browser-resource-tree"]');
+  if (!container || !window.cy) return;
+
+  const nodeType = node.data('type');
+  let activityNodes;
+
+  if (nodeType === 'workflow') {
+    activityNodes = node.outgoers('edge[relationship="contains"]').targets();
+  } else if (nodeType === 'activity') {
+    activityNodes = node;
+  } else {
+    return; // resource node clicked — keep existing tree
+  }
+
+  // Collect resource nodes connected to each activity; deduplicate by entity_pk within type.
+  const grouped = {};
+  _RESOURCE_ORDER.forEach(t => { grouped[t] = new Map(); }); // entity_pk → cy node
+
+  activityNodes.forEach(actNode => {
+    actNode.outgoers('node').forEach(rNode => {
+      const rType = rNode.data('type');
+      if (!_RESOURCE_ORDER.includes(rType)) return;
+      const epk = rNode.data('entity_pk');
+      if (!grouped[rType].has(epk)) grouped[rType].set(epk, rNode);
+    });
+  });
+
+  const anyResources = _RESOURCE_ORDER.some(t => grouped[t].size > 0);
+  if (!anyResources) {
+    container.innerHTML = '<span class="small text-muted">No resources linked.</span>';
+    return;
+  }
+
+  let html = '<div class="small fw-semibold text-muted text-uppercase mb-1">Resources</div>';
+  _RESOURCE_ORDER.forEach(rType => {
+    if (grouped[rType].size === 0) return;
+    const label = rType.charAt(0).toUpperCase() + rType.slice(1) + 's';
+    html += `<div class="small text-muted mt-1 mb-1">${label}</div>`;
+    grouped[rType].forEach((rNode, _epk) => {
+      const icon  = _RESOURCE_ICONS[rType] || '';
+      const label = rNode.data('label') || '';
+      const nId   = rNode.id();
+      html += `
+        <div class="d-flex align-items-center gap-1 px-1 py-1 rounded browser-resource-row"
+             data-node-id="${nId}" data-testid="browser-resource-row" style="cursor:pointer;"
+             title="${label}">
+          <span>${icon}</span>
+          <span class="small text-truncate">${label}</span>
+        </div>`;
+    });
+  });
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('[data-node-id]').forEach(row => {
+    row.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const nodeId = this.dataset.nodeId;
+      if (window.cy) {
+        const rNode = window.cy.getElementById(nodeId);
+        if (rNode && rNode.length) _openDetailPanel(rNode);
+      }
+    });
+  });
+}
+
+/**
+ * Clear the resource tree back to its default placeholder.
+ */
+function _clearResourceTree() {
+  const container = document.querySelector('[data-testid="browser-resource-tree"]');
+  if (container) container.innerHTML = '<span class="small text-muted">Select a Workflow or Activity to see its resources.</span>';
+}
+
+/**
  * Open (or replace content of) the detail panel for a given node.
  * Applies selection ring to the tapped node; dims all others.
  *
@@ -477,6 +676,10 @@ function _openDetailPanel(node) {
     node.style({ 'border-width': 3, 'border-color': '#dc3545', 'opacity': 1 });
   }
   _currentPanelNode = node;
+
+  // Sync tree highlight and resource tree.
+  _highlightTreeNode(node.id());
+  _renderResourceTree(node);
 
   const embedUrl = node.data('embed_url');
   const detailUrl = node.data('detail_url');
@@ -514,6 +717,8 @@ function _closeDetailPanel() {
     window.cy.nodes().style({ 'border-width': 0, 'opacity': 1 });
   }
   _currentPanelNode = null;
+  _clearTreeHighlight();
+  _clearResourceTree();
 }
 
 /**
