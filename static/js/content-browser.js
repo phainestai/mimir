@@ -329,6 +329,13 @@ function _renderGraph(pk, graphData, filters) {
   if (error) error.classList.add('d-none');
 
   _applyFilters(filters);
+
+  // Wire node tap → detail panel.
+  window.cy.on('tap', 'node', function(evt) { _openDetailPanel(evt.target); });
+  // Canvas background tap → close panel; edges do nothing.
+  window.cy.on('tap', function(evt) {
+    if (evt.target === window.cy) { _closeDetailPanel(); }
+  });
 }
 
 /**
@@ -414,6 +421,80 @@ function _showNoContentState(pk) {
     const link = noContent.querySelector('[data-testid="browser-go-to-playbook"]');
     if (link && pk) link.href = `/playbooks/${pk}/`;
     noContent.classList.remove('d-none');
+  }
+}
+
+// ─── Detail panel state ───────────────────────────────────────────────────────
+let _currentPanelNode = null;   // Cytoscape node currently shown in panel
+
+/**
+ * Open (or replace content of) the detail panel for a given node.
+ * Applies selection ring to the tapped node; dims all others.
+ *
+ * @param {cytoscape.NodeSingular} node
+ */
+function _openDetailPanel(node) {
+  const panel = document.querySelector('[data-testid="browser-detail-panel"]');
+  const panelContent = document.querySelector('[data-testid="browser-panel-content"]');
+  const openTabBtn = document.querySelector('[data-testid="browser-panel-open-tab"]');
+  const openFullBtn = document.querySelector('[data-testid="browser-panel-open-full"]');
+  if (!panel || !panelContent) return;
+
+  // Update selection ring: clear previous, apply to current node.
+  if (window.cy) {
+    window.cy.nodes().style({ 'border-width': 0, 'opacity': 0.4 });
+    node.style({ 'border-width': 3, 'border-color': '#dc3545', 'opacity': 1 });
+  }
+  _currentPanelNode = node;
+
+  const embedUrl = node.data('embed_url');
+  const detailUrl = node.data('detail_url');
+
+  // Wire header buttons.
+  if (openTabBtn) openTabBtn.onclick = () => detailUrl && window.open(detailUrl, '_blank');
+  if (openFullBtn) openFullBtn.onclick = () => detailUrl && (window.location.href = detailUrl);
+
+  // Show panel.
+  panel.classList.remove('d-none');
+
+  // Load embed content via fetch.
+  if (embedUrl) {
+    panelContent.innerHTML = '<p class="text-muted p-3 small">Loading…</p>';
+    fetch(embedUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(r => r.text())
+      .then(html => {
+        _checkSessionExpiry(html);
+        // Only update panel if it's still open (user may have closed it).
+        if (_currentPanelNode === node) panelContent.innerHTML = html;
+      })
+      .catch(() => { panelContent.innerHTML = '<p class="text-danger p-3">Failed to load.</p>'; });
+  }
+}
+
+/**
+ * Close the detail panel and clear selection ring.
+ */
+function _closeDetailPanel() {
+  const panel = document.querySelector('[data-testid="browser-detail-panel"]');
+  const panelContent = document.querySelector('[data-testid="browser-panel-content"]');
+  if (panel) panel.classList.add('d-none');
+  if (panelContent) panelContent.innerHTML = '';
+  if (window.cy) {
+    window.cy.nodes().style({ 'border-width': 0, 'opacity': 1 });
+  }
+  _currentPanelNode = null;
+}
+
+/**
+ * Detect session expiry in HTMX-swapped HTML.
+ * If the login page is swapped in, redirect the tab.
+ *
+ * @param {string} html
+ */
+function _checkSessionExpiry(html) {
+  if (html.includes('id="login-form"') || html.includes('/auth/login/')) {
+    const pk = _getPlaybookPk();
+    window.location.href = '/auth/login/?next=' + encodeURIComponent('/browser/' + (pk || '') + '/');
   }
 }
 
@@ -570,6 +651,10 @@ function _init() {
   const phases = _getPlaybookPhases();
   const filters = _parseUrlParams();
   _normaliseFilters(filters, phases);
+
+  // Wire panel close button.
+  const panelClose = document.querySelector('[data-testid="browser-panel-close"]');
+  if (panelClose) panelClose.addEventListener('click', _closeDetailPanel);
 
   // Wire collapse toggle.
   const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
