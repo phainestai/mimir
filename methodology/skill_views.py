@@ -249,6 +249,8 @@ def skill_detail(request, playbook_pk, skill_pk):
         'activities': activities,
         'can_edit': playbook.can_edit(request.user),
     }
+    if request.GET.get('embed') == '1':
+        return render(request, 'skills/_embed.html', context)
     return render(request, 'skills/detail.html', context)
 
 

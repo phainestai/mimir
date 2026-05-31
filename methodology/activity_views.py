@@ -393,9 +393,9 @@ def activity_detail(request, playbook_pk, workflow_pk, activity_pk):
             and playbook.is_released
         ),
         'artifact_inputs': artifact_inputs,
-
     }
-    
+    if request.GET.get('embed') == '1':
+        return render(request, 'activities/_embed.html', context)
     logger.info(
         "Activity detail rendered user=%s activity=%s can_edit=%s can_submit_pip=%s",
         request.user.username,

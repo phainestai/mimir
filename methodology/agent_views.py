@@ -194,13 +194,14 @@ def agent_detail(request, pk):
 
     activities = AgentService.get_activities_for_agent(agent.pk)
 
-    logger.info(f"User {request.user.username} viewing agent {pk}")
     context = {
         'agent': agent,
         'playbook': agent.playbook,
         'activities': activities,
         'can_edit': agent.can_edit(request.user),
     }
+    if request.GET.get('embed') == '1':
+        return render(request, 'agents/_embed.html', context)
     return render(request, 'agents/detail.html', context)
 
 

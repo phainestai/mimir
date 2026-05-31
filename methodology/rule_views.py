@@ -130,16 +130,15 @@ def rule_detail(request, playbook_pk, rule_pk):
     rule = _get_rule_in_playbook(playbook, rule_pk)
     activities = RuleService.get_activities_for_rule(rule_pk)
 
-    return render(
-        request,
-        'rules/detail.html',
-        {
-            'playbook': playbook,
-            'rule': rule,
-            'activities': activities,
-            'can_edit': playbook.can_edit(request.user),
-        },
-    )
+    context = {
+        'playbook': playbook,
+        'rule': rule,
+        'activities': activities,
+        'can_edit': playbook.can_edit(request.user),
+    }
+    if request.GET.get('embed') == '1':
+        return render(request, 'rules/_embed.html', context)
+    return render(request, 'rules/detail.html', context)
 
 
 @login_required

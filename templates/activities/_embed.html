@@ -1,0 +1,53 @@
+{% load markdown_filters %}
+<div class="card" data-testid="activity-embed">
+  <div class="card-header">
+    <h5 class="mb-0">
+      <i class="fa-solid fa-list-check me-1"></i>
+      <span data-testid="embed-entity-name">{{ activity.name }}</span>
+    </h5>
+    <div class="mt-1">
+      <span class="badge bg-secondary me-1">#{{ activity.order }}</span>
+      {% if activity.phase %}
+      <span class="badge bg-info me-1">{{ activity.phase.name }}</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    {% if activity.guidance %}
+    <div class="markdown-content mb-3" data-testid="embed-guidance">
+      {{ activity.guidance|markdown }}
+    </div>
+    {% else %}
+    <p class="text-muted mb-3">No guidance provided.</p>
+    {% endif %}
+
+    <dl class="row mb-0 small">
+      <dt class="col-5">Workflow</dt>
+      <dd class="col-7">{{ workflow.name }}</dd>
+      {% if activity.predecessor %}
+      <dt class="col-5">Predecessor</dt>
+      <dd class="col-7">{{ activity.predecessor.name }}</dd>
+      {% endif %}
+      {% if activity.agent %}
+      <dt class="col-5">Agent</dt>
+      <dd class="col-7">{{ activity.agent.name }}</dd>
+      {% endif %}
+    </dl>
+
+    {% if artifact_inputs %}
+    <hr class="my-2">
+    <h6 class="text-muted small text-uppercase mb-1">Input Artifacts</h6>
+    <ul class="list-unstyled small mb-0">
+      {% for inp in artifact_inputs %}
+      <li><i class="fa-solid fa-gift text-warning me-1"></i>{{ inp.artifact.name }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+<style>
+.markdown-content { line-height: 1.6; font-size: 0.9rem; }
+.markdown-content pre { background: #f8f9fa; padding: 0.75rem; border-radius: 4px; }
+.markdown-content code { background: #f8f9fa; padding: 0.1em 0.3em; border-radius: 3px; }
+.markdown-content pre code { background: none; padding: 0; }
+</style>
