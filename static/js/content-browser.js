@@ -659,17 +659,23 @@ function _updatePlaybookHeader(pk, name, status) {
 
 /**
  * Toggle left panel collapsed / expanded.
+ * The toggle button lives outside the panel (sibling in browser-root) so it is
+ * never clipped. Its `left` CSS position tracks the panel width.
  */
 function _toggleLeftPanel() {
   const panel = document.getElementById('browser-left-panel');
   const toggle = document.querySelector('[data-testid="browser-toggle-left-panel"]');
   if (!panel) return;
   const collapsed = panel.classList.toggle('browser-collapsed');
-  panel.style.width = collapsed ? '0' : '280px';
-  panel.style.minWidth = collapsed ? '0' : '280px';
+  const expandedWidth = '280px';
+  panel.style.width = collapsed ? '0' : expandedWidth;
+  panel.style.minWidth = collapsed ? '0' : expandedWidth;
   const content = document.getElementById('browser-left-panel-content');
   if (content) content.style.display = collapsed ? 'none' : '';
-  if (toggle) toggle.textContent = collapsed ? '›' : '‹';
+  if (toggle) {
+    toggle.textContent = collapsed ? '›' : '‹';
+    toggle.style.left = collapsed ? '0' : expandedWidth;
+  }
   if (window.cy) window.cy.resize();
 }
 

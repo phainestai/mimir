@@ -8,24 +8,30 @@
 <div id="browser-root"
      data-playbook-pk="{{ playbook_pk|default:'' }}"
      data-playbook-phases="{{ phases_json }}"
-     class="d-flex"
+     class="d-flex position-relative"
      style="height: calc(100vh - 56px); overflow: hidden;">
+
+  {# Collapse/expand toggle — lives OUTSIDE the panel as a sibling so it is never
+     clipped by overflow:hidden or covered by the <main> container at 0-panel-width.
+     JS updates its `left` position on each toggle. #}
+  <button data-testid="browser-toggle-left-panel"
+          title="Toggle left panel"
+          class="position-absolute top-50 btn btn-sm btn-light border border-secondary rounded-circle p-0"
+          style="left: 280px; width: 20px; height: 20px; font-size: 10px;
+                 z-index: 9999; transform: translate(-50%, -50%);">
+    ‹
+  </button>
 
   {# ── Left panel ── #}
   <div id="browser-left-panel"
        data-testid="browser-left-panel"
-       class="border-end bg-light position-relative"
-       style="width: 280px; min-width: 280px; overflow-y: auto; transition: width 0.2s;">
+       class="border-end bg-light flex-shrink-0"
+       style="width: 280px; min-width: 280px; overflow: hidden; transition: width 0.2s;">
 
-    {# Collapse toggle — sits on the right edge #}
-    <button data-testid="browser-toggle-left-panel"
-            title="Toggle left panel"
-            class="position-absolute top-50 end-0 translate-middle-y btn btn-sm btn-light border border-secondary rounded-circle p-0"
-            style="width: 20px; height: 20px; font-size: 10px; z-index: 30; transform: translate(50%, -50%);">
-      ‹
-    </button>
-
-    <div class="p-3" id="browser-left-panel-content">
+    {# Scrollable content wrapper — owns overflow-y, not the panel itself #}
+    <div id="browser-left-panel-content"
+         style="height: 100%; overflow-y: auto; overflow-x: hidden;">
+    <div class="p-3">
       {# Playbook name + status badge #}
       <div class="fw-bold mb-1" data-testid="browser-playbook-name">
         {% if playbook %}{{ playbook.name }}{% else %}(No playbook selected){% endif %}
@@ -66,7 +72,8 @@
       <div data-testid="browser-resource-tree" class="mt-3 text-muted small">
         Select a Workflow to see its resources.
       </div>
-    </div>
+    </div>{# /p-3 #}
+    </div>{# /browser-left-panel-content #}
   </div>
 
   {# ── Canvas ── #}

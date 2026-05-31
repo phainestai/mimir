@@ -91,16 +91,17 @@ class TestThreePanelLayout:
         expect(panel_content).to_be_hidden()
 
     def test_collapse_toggle_re_expands(self, page: Page, live_server, left_panel_user, playbook_a):
-        """Clicking toggle twice restores left panel (FOB-20)."""
+        """Clicking toggle twice restores left panel (FOB-20). Button must be clickable at 0 width."""
         _login(page, live_server.url, 'lp_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
         page.wait_for_load_state('networkidle')
 
         toggle = page.locator('[data-testid="browser-toggle-left-panel"]')
         toggle.click()
-        page.wait_for_timeout(300)  # wait for collapse
-        # Toggle is at edge of 0-width panel; call JS directly to re-expand
-        page.evaluate('_toggleLeftPanel()')
+        page.wait_for_timeout(300)  # wait for CSS transition
+        # Toggle stays visible at edge of 0-width panel (overflow:visible on panel)
+        expect(toggle).to_be_visible()
+        toggle.click()
         page.wait_for_timeout(300)
         expect(page.locator('#browser-left-panel-content')).to_be_visible(timeout=5000)
 
