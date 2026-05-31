@@ -1,0 +1,139 @@
+iteration:
+  goal: "Implement Content Browser graph data layer and Cytoscape.js rendering —
+    REST API endpoint, serializer, graph fetch in JS, node/edge render with entity
+    colours and dagre layout, loading/error/empty states, mini-map, zoom controls"
+  doctrine_version: "2.0"
+  created_at: "2026-06-01T00:00:00+02:00"
+  feature_specs:
+    - "docs/features/act-16-content-browser/02-graph-api.feature"
+    - "docs/features/act-16-content-browser/03-graph-rendering.feature"
+  implementation_notes: "docs/features/act-16-content-browser/_implementation_notes.md"
+
+conflict_map:
+  methodology/api/viewsets.py: [S4]
+  methodology/api/serializers.py: [S4]
+  tests/integration/test_graph_api.py: [S4]
+  static/js/content-browser.js: [S5]
+  templates/browser/browser_graph.html: [S5]
+  tests/e2e/test_content_browser_graph.py: [S5]
+
+parallel_groups:
+  A: [S4]
+  B: [S5]   # strictly after A; no file overlap
+
+drift_thresholds:
+  absorbed:
+    checkpoint_fail_retry: 1
+  escalated:
+    footprint_violation: true
+    method_explosion: true
+    sao_violation: true
+    checkpoint_fail_after_retry: true
+
+scenarios:
+  S4:
+    title: "Content Browser graph API endpoint (FOB-CONTENT-BROWSER-13, 13b, 13c, 13d)"
+    github_issue: 4
+    scenarios_covered:
+      - FOB-CONTENT-BROWSER-13
+      - FOB-CONTENT-BROWSER-13b
+      - FOB-CONTENT-BROWSER-13c
+      - FOB-CONTENT-BROWSER-13d
+    parallel_group: A
+    codebase_footprint:
+      - methodology/api/viewsets.py
+      - methodology/api/serializers.py
+      - tests/integration/test_graph_api.py
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/integration/test_graph_api.py -x"
+      expected_exit_code: 0
+    dependencies: []
+    sao_sections:
+      - "§REST API — DRF @action pattern on PlaybookViewSet"
+      - "§Authentication — access rules identical to playbook detail"
+      - "§Services Layer — all entity queries through services, no ORM in viewset"
+    context_map:
+      - file: "methodology/api/viewsets.py"
+        lines: "53-120"
+        note: "PlaybookViewSet structure — add @action(detail=True, methods=['get'], url_path='graph') method following same get_queryset permission pattern"
+      - file: "methodology/api/serializers.py"
+        lines: "1-50"
+        note: "Serializer style — add GraphNodeSerializer and GraphEdgeSerializer; fields: id(namespaced), type, label, entity_pk, detail_url, embed_url, meta"
+      - file: "methodology/services/workflow_service.py"
+        lines: "49-54"
+        note: "get_workflows_for_playbook(playbook_id) — primary entry point for graph traversal"
+      - file: "methodology/services/activity_service.py"
+        lines: "195-210"
+        note: "get_activities_for_workflow(workflow) — returns queryset with skills/agent/rules prefetched"
+      - file: "methodology/services/artifact_service.py"
+        lines: "113-130"
+        note: "Artifact.objects.filter(playbook=playbook) — artifacts have playbook FK; use direct queryset"
+      - file: "methodology/services/skill_service.py"
+        lines: "110-130"
+        note: "list_skills_for_playbook(playbook_id, user) — returns skills queryset"
+      - file: "methodology/services/agent_service.py"
+        lines: "89-100"
+        note: "list_agents_for_playbook(playbook_id) — returns agents queryset"
+      - file: "methodology/services/rule_service.py"
+        lines: "62-80"
+        note: "list_rules_for_playbook(playbook_id) — returns rules queryset"
+      - file: "methodology/services/phase_service.py"
+        note: "list_phases(playbook_id, user) — returns phases; include in response as top-level phases array"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Graph API serializer MUST"
+        note: "Namespace IDs: 'workflow:7', 'activity:12' etc; skip dangling FK edges; detect circular predecessor chains (log + drop); phases as top-level array"
+    do_not_do:
+      - "Do NOT build a new service — graph serialization belongs in the API layer (viewset action + serializer)"
+      - "Do NOT emit Phase as a graph node — Phase is metadata on Activity nodes only (meta.phase_id, meta.phase_name)"
+      - "Do NOT add a new URL pattern — DRF router generates /api/playbooks/<pk>/graph/ automatically via @action"
+      - "Do NOT use activity.phase_set — Activity has a single FK to Phase (activity.phase field)"
+      - "Do NOT skip the circular predecessor guard — actitivy.predecessor forms a linked list; detect cycles before serializing edges"
+    rollback_point: "git stash"
+
+  S5:
+    title: "Content Browser Cytoscape.js graph rendering (FOB-CONTENT-BROWSER-04, 06, 07, 10, 14, 14b, 15)"
+    github_issue: 5
+    scenarios_covered:
+      - FOB-CONTENT-BROWSER-04
+      - FOB-CONTENT-BROWSER-06
+      - FOB-CONTENT-BROWSER-07
+      - FOB-CONTENT-BROWSER-10
+      - FOB-CONTENT-BROWSER-14
+      - FOB-CONTENT-BROWSER-14b
+      - FOB-CONTENT-BROWSER-15
+    parallel_group: B
+    codebase_footprint:
+      - static/js/content-browser.js
+      - templates/browser/browser_graph.html
+      - tests/e2e/test_content_browser_graph.py
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_graph.py -x"
+      expected_exit_code: 0
+    dependencies: [S4]
+    sao_sections:
+      - "§Interactive Graph Views — CDN only, plain browser JS, no build step"
+      - "§Interactive Graph Views rule 4 — window.cy exposed globally for Playwright"
+      - "§Interactive Graph Views rule 2 — AbortController on fetch"
+    context_map:
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Entity colour and shape table"
+        note: "Node colours from Bootstrap CSS vars; shapes: diamond(Playbook), round-rect(Workflow/Activity), ellipse(others)"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Edge visual style table"
+        note: "8 relationship types: solid/dashed/dotted; colours match entity type"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Defensive implementation — Client JS items 1-3"
+        note: "AbortController: cancel in-flight fetch on playbook switch; JSON check: if response not JSON, redirect to login; loading state must appear immediately before fetch"
+      - file: "static/js/content-browser.js"
+        note: "_init() already implemented — extend it to call _fetchGraph(pk) when pk is present; _normaliseFilters already in place"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Phase chip on Activity node"
+        note: "Small filled circle (CSS overlay) in phase.colour, bottom-right of Activity node — use Cytoscape pie-slice-of-4-background-color or a label overlay"
+    do_not_do:
+      - "Do NOT implement left-panel tree or detail panel — those are Iteration 3 (S6, S7)"
+      - "Do NOT implement filter toolbar or search — those are Iteration 4 (S8)"
+      - "Do NOT add any server-side changes — S5 is purely static/js/ and templates/"
+      - "Do NOT use setTimeout hacks for layout — cytoscape-dagre handles positioning synchronously"
+      - "Do NOT remove window.cy = null initialisation — just reassign after Cytoscape init"
+      - "Do NOT block on phase chip implementation if it causes test failures — ship without chip and log a TODO"
+    rollback_point: "git stash"
