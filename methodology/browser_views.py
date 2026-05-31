@@ -6,6 +6,7 @@ Both views share a single template (browser/browser_graph.html) and differ only 
 whether a playbook pk is passed to the template context.
 """
 
+import json
 import logging
 
 from django.contrib.auth.decorators import login_required
@@ -13,6 +14,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, render
 
 from methodology.models import Playbook
+from methodology.services.phase_service import PhaseService
 from methodology.services.playbook_service import PlaybookService
 
 logger = logging.getLogger(__name__)
@@ -69,6 +71,7 @@ def browser_root(request):
         {
             "playbook": None,
             "playbook_pk": None,
+            "phases_json": "[]",
             "accessible_playbooks": accessible,
         },
     )
@@ -94,6 +97,8 @@ def browser_playbook(request, pk):
     """
     playbook = _playbook_readable_or_404(request, pk)
     accessible = _get_accessible_playbooks(request.user)
+    phases = PhaseService.list_phases(pk, request.user)
+    phases_json = json.dumps([{"id": p.id, "name": p.name} for p in phases])
     logger.info(
         "User %s accessed browser for playbook id=%s name=%s",
         request.user.username,
@@ -106,6 +111,7 @@ def browser_playbook(request, pk):
         {
             "playbook": playbook,
             "playbook_pk": pk,
+            "phases_json": phases_json,
             "accessible_playbooks": accessible,
         },
     )

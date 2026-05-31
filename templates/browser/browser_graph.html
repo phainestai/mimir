@@ -7,6 +7,7 @@
 {# Three-panel layout shell — all panels rendered server-side; JS drives content #}
 <div id="browser-root"
      data-playbook-pk="{{ playbook_pk|default:'' }}"
+     data-playbook-phases="{{ phases_json }}"
      class="d-flex"
      style="height: calc(100vh - 56px); overflow: hidden;">
 
@@ -45,7 +46,8 @@
   </div>
 
   {# ── Canvas ── #}
-  <div id="browser-canvas-wrapper" class="flex-grow-1 position-relative">
+  <div id="browser-canvas-wrapper" class="flex-grow-1 position-relative"
+       style="min-height: 0; height: 100%;">
 
     {# Loading state #}
     <div data-testid="browser-loading"
@@ -76,7 +78,7 @@
     </div>
 
     {# Cytoscape canvas target — JS mounts here #}
-    <div data-testid="browser-canvas" id="cy" style="width:100%; height:100%;"></div>
+    <div data-testid="browser-canvas" id="cy" style="position: absolute; inset: 0;"></div>
   </div>
 
   {# ── Detail panel — hidden until node click ── #}
@@ -104,6 +106,10 @@
 {% endblock %}
 
 {% block extra_js %}
+{# Cytoscape.js and layout/navigation plugins from CDN — pinned versions #}
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-navigator@2.0.2/cytoscape-navigator.js"></script>
 {# CDN bootstrap guard — must come before content-browser.js #}
 <script>
   if (typeof window.cytoscape === 'undefined') {
