@@ -34,9 +34,9 @@ scenarios:
       - FOB-CONTENT-BROWSER-02
       - FOB-CONTENT-BROWSER-03
       - FOB-CONTENT-BROWSER-03c
-    github_issue: TBD
+    github_issue: 1
     parallel_group: A
-    skeleton_commit: TBD
+    skeleton_commit: befff3b
     codebase_footprint:
       - templates/base.html
       - methodology/context_processors.py
@@ -82,9 +82,9 @@ scenarios:
     title: "Content Browser picker access control (FOB-CONTENT-BROWSER-03e)"
     scenarios_covered:
       - FOB-CONTENT-BROWSER-03e
-    github_issue: TBD
+    github_issue: 2
     parallel_group: B
-    skeleton_commit: TBD
+    skeleton_commit: befff3b
     codebase_footprint:
       - methodology/browser_views.py
       - tests/integration/test_content_browser_access.py
@@ -116,9 +116,9 @@ scenarios:
     scenarios_covered:
       - FOB-CONTENT-BROWSER-03b
       - FOB-CONTENT-BROWSER-03f
-    github_issue: TBD
+    github_issue: 3
     parallel_group: B
-    skeleton_commit: TBD
+    skeleton_commit: 0e00d8d
     codebase_footprint:
       - static/js/content-browser.js
       - templates/browser/browser_graph.html
