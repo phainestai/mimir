@@ -1,0 +1,208 @@
+# ITER-20260601b — Content Browser: Left Panel, Embed Mode & Detail Panel
+# Iteration 3 of act-16 Content Browser
+# Branch: iteration/20260531-content-browser-access (same branch, all work is additive)
+# GitHub Milestone: #3
+
+milestone: 3
+milestone_title: "ITER-20260601b | Content Browser left panel, embed mode & detail panel"
+branch: iteration/20260531-content-browser-access
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PREREQUISITE STATE
+# ─────────────────────────────────────────────────────────────────────────────
+prerequisites:
+  completed_iterations:
+    - ITER-20260531: "S1 scaffold, S2 access control, S3 URL/history management"
+    - ITER-20260601: "S4 graph API, S5 Cytoscape.js rendering"
+  key_facts:
+    - "graph API already serializes embed_url for all 7 entity types (S4)"
+    - "window.cy exposed globally for Playwright tap pattern (S5)"
+    - "cy.destroy() pattern already in place for playbook switch (S5)"
+    - "GET /api/playbooks/ already exists and returns accessible playbooks"
+    - "AbortController pattern already in _fetchGraph (S5)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIOS
+# ─────────────────────────────────────────────────────────────────────────────
+scenarios:
+
+  - id: S6a
+    issue: 6
+    title: "Left panel chrome: layout, toggle, playbook header, picker"
+    feature_refs: [FOB-20, FOB-21, FOB-22, FOB-23]
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 90
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_left_panel.py -x"
+      pass_criteria: "all E2E tests pass"
+    scope:
+      client_side:
+        - file: static/js/content-browser.js
+          changes:
+            - "_openPicker(): fetch GET /api/playbooks/, render picker items"
+            - "_renderPickerItems(playbooks): build list items; mark active with checkmark"
+            - "_filterPickerItems(term): substring filter on picker search input"
+            - "_selectPlaybook(pk): close picker, call _fetchGraph(pk), update URL, update heading+status"
+            - "_toggleLeftPanel(): toggle 'collapsed' class; auto-expand before picker open if collapsed"
+            - "_updatePlaybookHeader(pk, name, status): update browser-playbook-name + browser-playbook-status"
+        - file: templates/browser/browser_graph.html
+          changes:
+            - "Three-panel flexbox layout: browser-left-panel (~280px) | #cy canvas (flex-grow) | browser-detail-panel (0px until open)"
+            - "Left panel: collapse toggle button (browser-toggle-left-panel), playbook name heading (browser-playbook-name), status badge (browser-playbook-status)"
+            - "[Change Playbook] button (browser-change-playbook) in left panel header"
+            - "Picker container (browser-picker): slide-down, search input (browser-picker-search), each row (browser-picker-item)"
+            - "Auto-expand left panel when picker triggered from [Select Playbook] in empty state"
+      test_file: tests/e2e/test_content_browser_left_panel.py
+      test_cases:
+        - "picker opens on [Change Playbook] click"
+        - "picker opens on [Select Playbook] in canvas empty-state card"
+        - "picker auto-expands left panel if collapsed before opening"
+        - "picker search input filters by name substring"
+        - "active playbook shows checkmark in picker"
+        - "selecting different playbook closes picker, updates URL, updates heading"
+        - "collapse toggle hides left panel; canvas expands to fill width"
+        - "collapse toggle again shows left panel"
+
+  - id: S6b
+    issue: 7
+    title: "Embed mode: ?embed=1 for 7 entity detail views"
+    feature_refs: [FOB-08b]
+    parallel_group: B
+    depends_on: []
+    time_budget_minutes: 60
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/integration/test_embed_views.py -x"
+      pass_criteria: "all integration tests pass"
+    scope:
+      server_side:
+        embed_urls:
+          playbook:  "/playbooks/<pk>/?embed=1"
+          workflow:  "/playbooks/<pb>/workflows/<wf>/?embed=1"
+          activity:  "/playbooks/<pb>/workflows/<wf>/activities/<act>/?embed=1"
+          artifact:  "/artifacts/<art>/?embed=1"
+          skill:     "/playbooks/<pb>/skills/<sk>/?embed=1"
+          agent:     "/agents/<ag>/?embed=1"
+          rule:      "/playbooks/<pb>/rules/<r>/?embed=1"
+        view_changes:
+          - "Each view: if request.GET.get('embed') == '1': render <entity>/_embed.html; else: existing template unchanged"
+        embed_template_spec:
+          - "No 'extends' — standalone HTML fragment"
+          - "Bootstrap card markup OK"
+          - "Includes: entity name, all key fields, Markdown-rendered guidance (activities), tags, metadata"
+          - "Excludes: <html>/<body>, navbar, breadcrumbs, header action buttons, Bootstrap outer layout"
+          - "Auth: same permission check as full view; 403/404 returned unchanged"
+        files_to_modify:
+          - methodology/playbook_views.py
+          - methodology/workflow_views.py
+          - methodology/activity_views.py
+          - methodology/artifact_views.py
+          - methodology/skill_views.py
+          - methodology/agent_views.py
+          - methodology/rule_views.py
+        files_to_create:
+          - templates/playbooks/_embed.html
+          - templates/workflows/_embed.html
+          - templates/activities/_embed.html
+          - templates/artifacts/_embed.html
+          - templates/skills/_embed.html
+          - templates/agents/_embed.html
+          - templates/rules/_embed.html
+          - tests/integration/test_embed_views.py
+      test_cases:
+        - "?embed=1 returns 200, HTML fragment without <html> tag, without <nav>, includes entity name (all 7 types)"
+        - "Without ?embed=1 returns full-page response unchanged (regression check for all 7 types)"
+        - "?embed=1 with unauthorized user returns 403/404 (same as full view)"
+
+  - id: S7
+    issue: 8
+    title: "Detail panel: node tap → HTMX embed, selection ring, close, open-tab, open-full"
+    feature_refs: [FOB-08, FOB-08c, FOB-09, FOB-09b, FOB-09c]
+    parallel_group: sequential
+    depends_on: [S6b]
+    time_budget_minutes: 90
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_detail_panel.py -x"
+      pass_criteria: "all E2E tests pass"
+    scope:
+      client_side:
+        - file: static/js/content-browser.js
+          changes:
+            - "cy.on('tap', 'node', fn): calls _openDetailPanel(node)"
+            - "_openDetailPanel(node): clear previous selection, apply 3px --bs-danger ring to tapped node, dim all others to 0.4 opacity"
+            - "  HTMX load: htmx.ajax('GET', node.data('embed_url'), {target:'#browser-panel-content', swap:'innerHTML'})"
+            - "  Store current node ref for [Open new tab] / [Open full] buttons"
+            - "  If panel already open: swap content in-place (no animation)"
+            - "  Show panel div (remove 'hidden' class / set display)"
+            - "cy.on('tap', fn) on canvas background: call _closeDetailPanel()"
+            - "cy.on('tap', 'edge', fn): no-op (do NOT call _closeDetailPanel)"
+            - "_closeDetailPanel(): hide panel, clear selection ring, restore node opacities, clear _currentPanelNode"
+            - "Session expiry: htmx:afterSwap listener — check if swapped content contains login-page indicator; if so redirect to /auth/login/?next=/browser/<pk>/"
+            - "[Open new tab] button: window.open(node.data('detail_url'), '_blank')"
+            - "[Open full] button: window.location.href = node.data('detail_url')"
+            - "[×] close button: _closeDetailPanel()"
+        - file: templates/browser/browser_graph.html
+          changes:
+            - "Detail panel div: #browser-detail-panel, position fixed/absolute right-0, z-index:20, width ~380px, hidden initially"
+            - "Panel header: [Open new tab] (browser-panel-open-tab), [Open full] (browser-panel-open-full), [×] (browser-panel-close)"
+            - "#browser-panel-content: HTMX swap target"
+            - "htmx CDN script tag if not already present"
+      test_file: tests/e2e/test_content_browser_detail_panel.py
+      test_cases:
+        - "clicking a workflow node opens detail panel with embed content"
+        - "clicking a different activity node replaces panel content in-place"
+        - "selection ring appears on tapped node; other nodes dimmed"
+        - "[×] button closes panel; selection ring cleared; nodes return to full opacity"
+        - "canvas background click closes panel"
+        - "clicking an edge does NOT open or close panel"
+        - "[Open new tab] opens entity detail URL in new browser tab (full-page, not embed)"
+        - "[Open full] navigates current tab to entity detail URL"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# IMPLEMENTATION NOTES (decisions made in prior iterations)
+# ─────────────────────────────────────────────────────────────────────────────
+implementation_notes:
+  htmx_pattern:
+    description: "Use htmx.ajax() imperative call from content-browser.js; do NOT use hx-get attributes"
+    rationale: "Node tap is wired in JS; HTMX declarative attrs on dynamic nodes would require re-processing"
+
+  panel_layout:
+    description: "Detail panel floats over canvas (position:fixed or absolute, right-0); canvas does NOT resize"
+    css_z_index: "z-index: 20 (above zoom controls at z-index: 10, above cy canvas)"
+
+  selection_ring:
+    colour: "--bs-danger (#dc3545)"
+    width: "3px"
+    dimmed_opacity: "0.4 (selected node remains at 1.0; all others at 0.4)"
+
+  session_expiry_detection:
+    trigger: "htmx:afterSwap event on #browser-panel-content"
+    check: "swapped HTML contains login page indicator (e.g. 'id=\"login-form\"' or '/auth/login/' in content)"
+    action: "window.location.href = '/auth/login/?next=/browser/<pk>/'"
+    note: "Filter params intentionally NOT preserved on redirect — user re-applies after re-auth"
+
+  embed_url_already_serialized:
+    note: "S4 graph API already emits embed_url for each node; JS accesses it via node.data('embed_url')"
+
+  playwright_panel_pattern:
+    open: |
+      await page.evaluate(() =>
+        window.cy.getElementById('workflow:3').emit('tap', [{position:{x:0,y:0}}])
+      );
+      await expect(page.locator('[data-testid="browser-detail-panel"]')).toBeVisible();
+    close: |
+      await page.locator('[data-testid="browser-panel-close"]').click();
+      await expect(page.locator('[data-testid="browser-detail-panel"]')).toBeHidden();
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FUTURE ITERATIONS (deferred from this iteration)
+# ─────────────────────────────────────────────────────────────────────────────
+deferred_to_iteration_4:
+  - "S8: Structural tree (FOB-24, FOB-25, FOB-26, FOB-27) — Workflow→Activity hierarchy, collapsible, tree↔canvas selection sync"
+  - "S9: Resource tree (FOB-28, FOB-32) — grouped resources for selected Workflow, click → detail panel"
+
+deferred_to_iteration_5:
+  - "S10: Entity type filter toolbar (FOB-11)"
+  - "S11: Phase filter (FOB-11b)"
+  - "S12: Node search (FOB-12)"
+  - "S10b: Switching playbooks resets stale phase filter (FOB-03g)"
