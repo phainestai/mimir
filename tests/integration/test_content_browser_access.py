@@ -50,52 +50,84 @@ class TestContentBrowserServerSide:
     # FOB-CONTENT-BROWSER-01
     def test_content_browser_link_in_nav(self):
         """Content Browser nav link is present and positioned after Home."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/")
+        assert response.status_code == 200
+        content = response.content.decode()
+        assert 'data-testid="nav-browser"' in content
+        dashboard_pos = content.index('data-testid="nav-dashboard"')
+        browser_pos = content.index('data-testid="nav-browser"')
+        playbooks_pos = content.index('data-testid="nav-playbooks"')
+        assert dashboard_pos < browser_pos < playbooks_pos
 
     # FOB-CONTENT-BROWSER-01b
     def test_unauthenticated_browser_root_redirects_to_login(self):
         """GET /browser/ while logged out redirects to login with next= preserved."""
-        raise NotImplementedError()
+        self.client.logout()
+        response = self.client.get("/browser/")
+        assert response.status_code == 302
+        location = response["Location"]
+        assert "login" in location
+        assert "next=" in location
 
     # FOB-CONTENT-BROWSER-01b
     def test_unauthenticated_browser_playbook_redirects_to_login(self):
         """GET /browser/<pk>/ while logged out redirects to login with next= preserved."""
-        raise NotImplementedError()
+        self.client.logout()
+        response = self.client.get(f"/browser/{self.public_playbook.pk}/")
+        assert response.status_code == 302
+        location = response["Location"]
+        assert "login" in location
+        assert "next=" in location
 
     # FOB-CONTENT-BROWSER-02
     def test_browser_root_returns_200_with_three_panel_shell(self):
         """GET /browser/ returns 200 with correct template and empty-state elements."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/")
+        assert response.status_code == 200
+        content = response.content.decode()
+        assert 'data-testid="browser-left-panel"' in content
+        assert 'data-testid="browser-canvas"' in content
+        assert 'data-testid="browser-detail-panel"' in content
 
     # FOB-CONTENT-BROWSER-02
     def test_browser_root_shows_no_playbook_selected_heading(self):
         """Left panel heading shows '(No playbook selected)' when no pk in URL."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/")
+        assert "(No playbook selected)" in response.content.decode()
 
     # FOB-CONTENT-BROWSER-02
     def test_browser_root_shows_select_playbook_button_not_change(self):
         """Empty state shows [Select Playbook], not [Change Playbook]."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/")
+        content = response.content.decode()
+        assert 'data-testid="browser-select-playbook"' in content
+        assert 'data-testid="browser-change-playbook"' not in content
 
     # FOB-CONTENT-BROWSER-03
     def test_browser_playbook_returns_200_for_accessible_playbook(self):
         """GET /browser/<pk>/ returns 200 for a playbook accessible to the user."""
-        raise NotImplementedError()
+        response = self.client.get(f"/browser/{self.public_playbook.pk}/")
+        assert response.status_code == 200
 
     # FOB-CONTENT-BROWSER-03
     def test_browser_playbook_passes_pk_as_data_attribute(self):
         """Template contains data-playbook-pk={{ pk }} so JS can init the graph."""
-        raise NotImplementedError()
+        response = self.client.get(f"/browser/{self.public_playbook.pk}/")
+        assert response.status_code == 200
+        assert f'data-playbook-pk="{self.public_playbook.pk}"' in response.content.decode()
 
     # FOB-CONTENT-BROWSER-03
     def test_browser_playbook_shows_playbook_name_in_left_panel(self):
         """Left panel heading shows the playbook name when pk is provided."""
-        raise NotImplementedError()
+        response = self.client.get(f"/browser/{self.public_playbook.pk}/")
+        assert response.status_code == 200
+        assert "FeatureFactory" in response.content.decode()
 
     # FOB-CONTENT-BROWSER-03c
     def test_browser_playbook_returns_404_for_nonexistent_pk(self):
         """GET /browser/9999/ returns 404 for a playbook that does not exist."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/9999/")
+        assert response.status_code == 404
 
     # FOB-CONTENT-BROWSER-03c
     def test_browser_playbook_returns_404_for_inaccessible_private_playbook(self):
@@ -103,17 +135,24 @@ class TestContentBrowserServerSide:
 
         Bob cannot access maria's private playbook — 404 does not reveal existence.
         """
-        raise NotImplementedError()
+        self.client.login(username="bob_test", password="testpass123")
+        response = self.client.get(f"/browser/{self.private_playbook.pk}/")
+        assert response.status_code == 404
 
     # FOB-CONTENT-BROWSER-03c
     def test_browser_playbook_404_does_not_render_browser_chrome(self):
         """The 404 response renders Django's standard 404, not the browser shell."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/9999/")
+        assert response.status_code == 404
+        assert 'data-testid="browser-canvas"' not in response.content.decode()
 
     # FOB-CONTENT-BROWSER-01 (nav_section active state)
     def test_browser_nav_section_is_active_on_browser_pages(self):
         """nav_section == 'browser' is set in context for both /browser/ routes."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/")
+        assert response.context["nav_section"] == "browser"
+        response2 = self.client.get(f"/browser/{self.public_playbook.pk}/")
+        assert response2.context["nav_section"] == "browser"
 
 
 @pytest.mark.django_db
@@ -158,24 +197,34 @@ class TestPickerAccessControl:
     # FOB-CONTENT-BROWSER-03e
     def test_picker_includes_own_playbooks_of_any_status(self):
         """Picker includes playbooks owned by the user regardless of status."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/")
+        assert response.status_code == 200
+        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        assert "Maria Private" in names
 
     # FOB-CONTENT-BROWSER-03e
     def test_picker_includes_public_non_draft_playbooks_from_others(self):
         """Picker includes public released/active/disabled playbooks from other users."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/")
+        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        assert "Others Public Released" in names
 
     # FOB-CONTENT-BROWSER-03e
     def test_picker_excludes_private_playbooks_from_others(self):
         """Picker does NOT include private playbooks owned by other users."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/")
+        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        assert "Others Private" not in names
 
     # FOB-CONTENT-BROWSER-03e
     def test_picker_excludes_public_draft_playbooks_from_others(self):
         """Picker does NOT include public draft playbooks owned by other users."""
-        raise NotImplementedError()
+        response = self.client.get("/browser/")
+        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        assert "Others Public Draft" not in names
 
     # FOB-CONTENT-BROWSER-03e
     def test_accessible_public_released_playbook_renders_in_browser(self):
         """Maria can open /browser/<pk>/ for a public released playbook she does not own."""
-        raise NotImplementedError()
+        response = self.client.get(f"/browser/{self.others_public_released.pk}/")
+        assert response.status_code == 200
