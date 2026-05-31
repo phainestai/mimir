@@ -45,11 +45,11 @@ scenarios:
             - "_filterPickerItems(term): substring filter on picker search input"
             - "_selectPlaybook(pk): close picker, call _fetchGraph(pk), update URL, update heading+status"
             - "_toggleLeftPanel(): toggle 'collapsed' class; auto-expand before picker open if collapsed"
-            - "_updatePlaybookHeader(pk, name, status): update browser-playbook-name as <a href='/playbooks/<pk>/'> link, update browser-playbook-status badge"
+            - "_updatePlaybookHeader(pk, name, status): update browser-playbook-name + browser-playbook-status"
         - file: templates/browser/browser_graph.html
           changes:
             - "Three-panel flexbox layout: browser-left-panel (~280px) | #cy canvas (flex-grow) | browser-detail-panel (0px until open)"
-            - "Playbook name heading rendered as <a href='/playbooks/<pk>/'> link (browser-playbook-name); opens in current tab"
+            - "Left panel: collapse toggle button (browser-toggle-left-panel), playbook name heading (browser-playbook-name), status badge (browser-playbook-status)"
             - "[Change Playbook] button (browser-change-playbook) in left panel header"
             - "Picker container (browser-picker): slide-down, search input (browser-picker-search), each row (browser-picker-item)"
             - "Auto-expand left panel when picker triggered from [Select Playbook] in empty state"
@@ -60,7 +60,7 @@ scenarios:
         - "picker auto-expands left panel if collapsed before opening"
         - "picker search input filters by name substring"
         - "active playbook shows checkmark in picker"
-        - "clicking playbook name heading navigates to /playbooks/<pk>/ (FOB-21b)"
+        - "selecting different playbook closes picker, updates URL, updates heading"
         - "collapse toggle hides left panel; canvas expands to fill width"
         - "collapse toggle again shows left panel"
 
