@@ -1,0 +1,149 @@
+iteration:
+  goal: "Implement Content Browser access layer — Django view scaffold, URL routing,
+    login enforcement, nav entry, 404 handling, picker access control, and client-side
+    URL management"
+  doctrine_version: "2.0"
+  created_at: "2026-05-31T20:00:00+02:00"
+  feature_spec: "docs/features/act-16-content-browser/01-access-and-nav.feature"
+  implementation_notes: "docs/features/act-16-content-browser/_implementation_notes.md"
+
+conflict_map:
+  methodology/browser_views.py: [S1, S2]
+  tests/integration/test_content_browser_access.py: [S1, S2]
+  templates/browser/browser_graph.html: [S1, S3]
+
+parallel_groups:
+  A: [S1]
+  B: [S2, S3]   # both depend on A; S2 and S3 do not share files
+
+drift_thresholds:
+  absorbed:
+    checkpoint_fail_retry: 1
+  escalated:
+    footprint_violation: true
+    method_explosion: true
+    sao_violation: true
+    checkpoint_fail_after_retry: true
+
+scenarios:
+  S1:
+    title: "Content Browser server-side scaffold (nav, auth, views, template shell, 404)"
+    scenarios_covered:
+      - FOB-CONTENT-BROWSER-01
+      - FOB-CONTENT-BROWSER-01b
+      - FOB-CONTENT-BROWSER-02
+      - FOB-CONTENT-BROWSER-03
+      - FOB-CONTENT-BROWSER-03c
+    github_issue: TBD
+    parallel_group: A
+    skeleton_commit: TBD
+    codebase_footprint:
+      - templates/base.html
+      - methodology/context_processors.py
+      - methodology/browser_views.py
+      - methodology/browser_urls.py
+      - mimir/urls.py
+      - templates/browser/browser_graph.html
+      - tests/integration/test_content_browser_access.py
+    checkpoint:
+      command: "pytest tests/integration/test_content_browser_access.py::TestContentBrowserServerSide -x"
+      expected_exit_code: 0
+    dependencies: []
+    sao_sections:
+      - "§Interactive Graph Views — rules 1-8"
+      - "§Authentication — all web views require @login_required"
+      - "§URL Conventions — /browser/ and /browser/<pk>/"
+      - "§Services Layer — views are thin controllers, data through services"
+    context_map:
+      - file: "methodology/playbook_views.py"
+        lines: "79-94"
+        note: "Copy _playbook_readable_or_404 verbatim — browser view uses same pattern"
+      - file: "methodology/playbook_views.py"
+        lines: "95-130"
+        note: "@login_required + render() view structure — follow exactly"
+      - file: "methodology/context_processors.py"
+        lines: "50-70"
+        note: "_resolve_nav_section — add 'browser' case: if path.startswith('/browser/'): return 'browser'"
+      - file: "templates/base.html"
+        lines: "163-250"
+        note: "Nav link pattern with nav_section == 'x' — insert Content Browser AFTER Home li block, BEFORE Playbooks"
+      - file: "tests/integration/test_playbook_create.py"
+        lines: "18-38"
+        note: "pytest fixture setup pattern — use same @pytest.mark.django_db + Client() + user creation"
+    do_not_do:
+      - "Do NOT put any ORM calls in browser_views.py — all data through PlaybookService"
+      - "Do NOT initialise Cytoscape.js in this iteration — template shell only, no graph JS"
+      - "Do NOT create a new Django app — browser_views.py lives in methodology/"
+      - "Do NOT add middleware or custom auth backends — Django login_required is sufficient"
+      - "Do NOT render any graph data in the template — pass pk as data-playbook-pk attribute only"
+    rollback_point: "git stash"
+
+  S2:
+    title: "Content Browser picker access control (FOB-CONTENT-BROWSER-03e)"
+    scenarios_covered:
+      - FOB-CONTENT-BROWSER-03e
+    github_issue: TBD
+    parallel_group: B
+    skeleton_commit: TBD
+    codebase_footprint:
+      - methodology/browser_views.py
+      - tests/integration/test_content_browser_access.py
+    checkpoint:
+      command: "pytest tests/integration/test_content_browser_access.py::TestPickerAccessControl -x"
+      expected_exit_code: 0
+    dependencies: [S1]
+    sao_sections:
+      - "§Authentication — access rules for playbook visibility"
+      - "§Services Layer — use PlaybookService, no ORM in views"
+    context_map:
+      - file: "methodology/services/playbook_service.py"
+        lines: "250-270"
+        note: "get_accessible_playbook_ids(user) already exists — use this for picker queryset filtering"
+      - file: "methodology/playbook_views.py"
+        lines: "108-120"
+        note: "list_playbooks + list_public_playbooks + list_team_playbooks_for_user pattern — picker view follows same approach"
+      - file: "tests/integration/test_playbook_list_team_display.py"
+        lines: "1-50"
+        note: "Team access control test pattern — follow for TestPickerAccessControl fixtures"
+    do_not_do:
+      - "Do NOT add new service methods — PlaybookService.get_accessible_playbook_ids already exists"
+      - "Do NOT build the picker UI/HTML in this scenario — access control validation only"
+      - "Do NOT duplicate the visibility logic — delegate entirely to PlaybookService"
+    rollback_point: "git stash"
+
+  S3:
+    title: "Content Browser client-side URL management (FOB-CONTENT-BROWSER-03b, 03f)"
+    scenarios_covered:
+      - FOB-CONTENT-BROWSER-03b
+      - FOB-CONTENT-BROWSER-03f
+    github_issue: TBD
+    parallel_group: B
+    skeleton_commit: TBD
+    codebase_footprint:
+      - static/js/content-browser.js
+      - templates/browser/browser_graph.html
+      - tests/e2e/test_content_browser_url.py
+    checkpoint:
+      command: "pytest tests/e2e/test_content_browser_url.py -x"
+      expected_exit_code: 0
+    dependencies: [S1]
+    sao_sections:
+      - "§Interactive Graph Views rule 1 — Cytoscape restricted to /browser/ route family"
+      - "§Interactive Graph Views rule 2 — CDN only, no build step, plain browser JS"
+      - "§Interactive Graph Views rule 4 — window.cy exposed globally for Playwright"
+    context_map:
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Defensive implementation requirements — Client JS items 1-3"
+        note: "AbortController, JSON check, URL normalisation spec — implement exactly as specified"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§URL structure"
+        note: "Canonical URL format — /browser/, /browser/<pk>/, /browser/<pk>/?types=...&phases=..."
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Scenario implementation notes — URL normalisation"
+        note: "Empty types = all shown; unknown phase IDs dropped + URL rewritten"
+    do_not_do:
+      - "Do NOT initialise Cytoscape.js in this iteration — window.cy = null on load"
+      - "Do NOT implement graph rendering or node events — URL stub only"
+      - "Do NOT add package.json or any build tooling — static/js/ is plain browser JS"
+      - "Do NOT use history.replaceState everywhere — use pushState for playbook switch, replaceState for param normalisation only"
+    rollback_point: "git stash"

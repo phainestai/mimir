@@ -1,0 +1,77 @@
+Feature: FOB-CONTENT-BROWSER-GRAPH Content Browser Graph Rendering
+  As a methodology author (Maria) or team member
+  I want to see all playbook entities rendered as a navigable graph
+  So that I can understand the full structure and relationships of a playbook at a glance
+
+  Background:
+    Given Maria is authenticated in FOB
+    And the playbook "FeatureFactory" exists with workflows, activities, phases, skills, agents, and rules
+
+
+  Scenario: FOB-CONTENT-BROWSER-04 Graph shows all playbook entities and their relationships
+    Given Maria has opened "FeatureFactory" in the graph view
+    Then the canvas shows a node for each entity in the playbook:
+      Playbook (anchor), Workflows, Activities, Artifacts, Skills, Agents, Rules
+    And nodes are visually differentiated by entity type (distinct colour per type)
+    And Activity nodes that belong to a Phase show a small Phase colour chip
+    And Phase is NOT a graph node — it is a filter and a label on Activity nodes
+    And directed edges connect related entities:
+      | relationship            | example                 |
+      | Playbook contains       | Playbook → Workflow     |
+      | Workflow contains       | Workflow → Activity     |
+      | Activity produces       | Activity → Artifact     |
+      | Activity consumes       | Artifact → Activity     |
+      | Activity uses skill     | Activity → Skill        |
+      | Activity assigned agent | Activity → Agent        |
+      | Activity governed by    | Activity → Rule         |
+      | Predecessor dependency  | Activity → Activity     |
+    And edges are visually differentiated by relationship type
+
+
+  Scenario: FOB-CONTENT-BROWSER-06 Default layout is hierarchical top-down
+    Given Maria opens a playbook in the graph view
+    Then nodes are arranged in a top-down hierarchy:
+      Playbook → Workflows → Activities → (Skills / Agents / Rules / Artifacts)
+    And Artifacts sit at the same level as Activities' resource nodes (below Activities)
+    And Predecessor edges between Activities are horizontal within the same level
+    And the layout is computed automatically (no manual positioning needed)
+
+
+  Scenario: FOB-CONTENT-BROWSER-07 Pan, zoom and navigate the canvas
+    Given Maria is on the graph view canvas
+    Then she can pan by clicking and dragging the background
+    And she can zoom in/out using the scroll wheel or pinch gesture
+    And a mini-map (cytoscape-navigator) shows her viewport position
+    And zoom controls (+/−/fit) are available on the canvas
+
+
+  Scenario: FOB-CONTENT-BROWSER-10 Fit graph to screen
+    Given Maria has panned or zoomed the canvas
+    When she clicks the [Fit] button
+    Then the graph zooms and pans to fit all nodes in the viewport
+
+
+  Scenario: FOB-CONTENT-BROWSER-14 Loading state while graph data is fetched
+    Given Maria opens a playbook in the graph view
+    Then she sees a loading spinner on the canvas
+    Until the API response is received and nodes are rendered
+
+
+  Scenario: FOB-CONTENT-BROWSER-14b CDN scripts fail to load
+    Given Maria navigates to /browser/ or /browser/<pk>/
+    When the Cytoscape.js CDN script fails to load
+    Then a bootstrap guard detects that window.cytoscape is undefined
+    And replaces the canvas area with a static HTML fallback:
+      "The graph view failed to load." and a [Reload page] button
+    And this fallback is pure HTML — it does NOT depend on content-browser.js executing
+
+
+  Scenario: FOB-CONTENT-BROWSER-15 Empty playbook shows friendly empty state
+    Given a playbook "Empty Playbook" exists with no workflows or activities
+    When Maria opens it in the Content Browser
+    Then the canvas shows: "This playbook has no content yet."
+    And a [Go to Playbook] button links to the playbook detail page
+    And the structural tree section is hidden (nothing to show)
+    And the resource section shows: "Select a Workflow to see its resources."
+    And the entity-type filter toolbar is shown with all counts at zero
+    And the Phase filter is hidden (no phases in an empty playbook)
