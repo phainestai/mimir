@@ -297,25 +297,35 @@ function _renderGraph(pk, graphData, filters) {
     ...edges.map(e => ({ data: e })),
   ];
 
+  const elkLayout = {
+    name: 'elk',
+    elk: {
+      algorithm: 'layered',
+      'elk.direction': 'DOWN',
+      'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+      'elk.spacing.nodeNode': 50,
+      'elk.layered.spacing.nodeNodeBetweenLayers': 70,
+      'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+    },
+    padding: 30,
+  };
+  const dagreLayout = {
+    name: 'dagre', rankDir: 'TB', nodeSep: 50, rankSep: 70,
+    edgeSep: 10, ranker: 'network-simplex', padding: 30,
+  };
+  const breadthfirstLayout = { name: 'breadthfirst', directed: true, padding: 20, spacingFactor: 1.5 };
+
+  const tryLayout = (layout) => cytoscape({ container, elements, style: _cytoscapeStyle(), layout, minZoom: 0.1, maxZoom: 3 });
+
   try {
-    window.cy = cytoscape({
-      container,
-      elements,
-      style: _cytoscapeStyle(),
-      layout: { name: 'dagre', rankDir: 'TB', nodeSep: 50, rankSep: 70, edgeSep: 10, ranker: 'network-simplex', padding: 30 },
-      minZoom: 0.1,
-      maxZoom: 3,
-    });
-  } catch (layoutErr) {
-    // dagre layout unavailable — fall back to built-in breadthfirst layout.
-    window.cy = cytoscape({
-      container,
-      elements,
-      style: _cytoscapeStyle(),
-      layout: { name: 'breadthfirst', directed: true, padding: 20, spacingFactor: 1.5 },
-      minZoom: 0.1,
-      maxZoom: 3,
-    });
+    window.cy = tryLayout(elkLayout);
+  } catch (_elkErr) {
+    try {
+      window.cy = tryLayout(dagreLayout);
+    } catch (_dagreErr) {
+      window.cy = tryLayout(breadthfirstLayout);
+    }
   }
 
   // Hide overlay states, make canvas visible.
