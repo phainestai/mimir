@@ -285,3 +285,25 @@ class TestPlaybookTitleTransition:
         expect(page.locator('[data-testid="browser-change-playbook"]')).to_be_visible()
         # The left-panel select button is swapped to change-playbook; canvas empty-state is hidden
         expect(page.locator('[data-testid="browser-empty-state"]')).to_be_hidden()
+
+
+# ---------------------------------------------------------------------------
+# S25: Canvas empty-state "Select Playbook" button opens picker
+# ---------------------------------------------------------------------------
+
+class TestCanvasSelectPlaybook:
+
+    def test_canvas_select_playbook_opens_picker(
+        self, page: Page, live_server, left_panel_user,
+    ):
+        """Canvas empty-state 'Select Playbook' button opens the playbook picker (S25)."""
+        _login(page, live_server.url, 'lp_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/")
+        page.wait_for_load_state('networkidle')
+
+        # Find the canvas button specifically (inside browser-empty-state)
+        canvas_btn = page.locator('[data-testid="browser-empty-state"] [data-testid="browser-select-playbook"]')
+        expect(canvas_btn).to_be_visible()
+        canvas_btn.click()
+
+        expect(page.locator('[data-testid="browser-picker"]')).to_be_visible()
