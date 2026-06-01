@@ -20,7 +20,7 @@ drift_thresholds:
 scenarios:
   S33:
     title: "Deterministic node insertion order for ELK layout (FOB-33)"
-    github_issue: TBD
+    github_issue: 35
     parallel_group: A
     skeleton_commit: "2eda6e2"
     codebase_footprint:
