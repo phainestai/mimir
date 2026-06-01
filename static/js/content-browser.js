@@ -1141,13 +1141,8 @@ function _closePicker() {
  * @param {number|string} pk
  */
 function _selectPlaybook(pk) {
-  _closePicker();
-  // FOB-03g: preserve entity-type filter; reset phases (they are playbook-scoped)
-  _pushPlaybookUrl(pk, { types: _currentFilters.types, phases: [] });
-  // Reset phases in DOM root data so _normaliseFilters finds no stale IDs
-  const root = document.getElementById('browser-root');
-  if (root) { root.dataset.playbookPk = String(pk); root.dataset.playbookPhases = '[]'; }
-  _fetchGraph(pk);
+  // FOB-23b: full page navigation so initialisation is identical to opening /browser/<pk>/ directly.
+  window.location.href = '/browser/' + pk + '/';
 }
 
 /**

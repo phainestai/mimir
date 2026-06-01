@@ -219,7 +219,7 @@ class TestPickerOpen:
 class TestSelectPlaybook:
 
     def test_selecting_playbook_updates_url_and_heading(self, page: Page, live_server, left_panel_user, playbook_a, playbook_b):
-        """Selecting a playbook closes picker, updates URL and heading (FOB-23)."""
+        """Selecting a playbook performs full page nav to /browser/<pk>/ (FOB-23, FOB-23b)."""
         _login(page, live_server.url, 'lp_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
         page.wait_for_load_state('networkidle')
@@ -227,13 +227,14 @@ class TestSelectPlaybook:
         page.locator('[data-testid="browser-change-playbook"]').click()
         page.wait_for_timeout(500)
 
-        # Click the BetaPlaybook row
+        # Click the BetaPlaybook row — triggers full page navigation
         page.locator('[data-testid="browser-picker-item"]').filter(has_text='BetaPlaybook').click()
+        page.wait_for_load_state('networkidle')
 
-        # Picker closes
-        expect(page.locator('[data-testid="browser-picker"]')).to_be_hidden()
-        # URL updated to BetaPlaybook
+        # URL navigated to BetaPlaybook
         assert f'/browser/{playbook_b.pk}/' in page.url
+        # Heading reflects new playbook (rendered server-side on reload)
+        expect(page.locator('[data-testid="browser-playbook-title"]')).to_contain_text('BetaPlaybook')
 
 
 # ---------------------------------------------------------------------------
@@ -256,7 +257,7 @@ class TestPlaybookTitleTransition:
     def test_title_updates_to_playbook_name_after_selection(
         self, page: Page, live_server, left_panel_user, playbook_a,
     ):
-        """After selecting a playbook, title element updates to its name (FOB-21a)."""
+        """After selecting a playbook, full page nav loads /browser/<pk>/ and title shows name (FOB-21a, FOB-23b)."""
         _login(page, live_server.url, 'lp_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/")
         page.wait_for_load_state('networkidle')
@@ -264,15 +265,16 @@ class TestPlaybookTitleTransition:
         page.locator('[data-testid="browser-select-playbook"]').first.click()
         page.wait_for_timeout(500)
         page.locator('[data-testid="browser-picker-item"]').filter(has_text='AlphaPlaybook').click()
-        page.wait_for_timeout(500)
+        page.wait_for_load_state('networkidle')
 
+        assert f'/browser/{playbook_a.pk}/' in page.url
         title = page.locator('[data-testid="browser-playbook-title"]')
         expect(title).to_contain_text('AlphaPlaybook')
 
     def test_button_label_switches_from_select_to_change(
         self, page: Page, live_server, left_panel_user, playbook_a,
     ):
-        """Button switches from 'Select Playbook' to 'Change Playbook' after selection (FOB-21a)."""
+        """After full page nav to /browser/<pk>/, Change Playbook button is shown (FOB-21a, FOB-23b)."""
         _login(page, live_server.url, 'lp_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/")
         page.wait_for_load_state('networkidle')
@@ -280,10 +282,10 @@ class TestPlaybookTitleTransition:
         page.locator('[data-testid="browser-select-playbook"]').first.click()
         page.wait_for_timeout(500)
         page.locator('[data-testid="browser-picker-item"]').filter(has_text='AlphaPlaybook').click()
-        page.wait_for_timeout(500)
+        page.wait_for_load_state('networkidle')
 
+        # After navigation to /browser/<pk>/ a playbook is loaded — Change Playbook button visible
         expect(page.locator('[data-testid="browser-change-playbook"]')).to_be_visible()
-        # The left-panel select button is swapped to change-playbook; canvas empty-state is hidden
         expect(page.locator('[data-testid="browser-empty-state"]')).to_be_hidden()
 
 
