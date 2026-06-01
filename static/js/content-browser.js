@@ -718,11 +718,11 @@ function _renderStructureTree() {
       <div class="mb-1">
         <div class="d-flex align-items-center gap-1 px-1 py-1 rounded browser-tree-row"
              data-node-id="${wfId}" data-testid="browser-tree-row" style="cursor:pointer;">
-          <span class="browser-tree-toggle small text-muted" data-section="${sectionId}">▾</span>
+          <span class="browser-tree-toggle small text-muted" data-section="${sectionId}">▸</span>
           ${abbr ? `<span class="small text-muted" style="min-width:2.2em;">${abbr}</span>` : ''}
           <span class="small fw-semibold text-truncate" title="${wfLabel}">${wfLabel}</span>
         </div>
-        <div id="${sectionId}" class="ps-3">`;
+        <div id="${sectionId}" class="ps-3" style="display:none;">`;
 
     actNodes.forEach(actNode => {
       const actId    = actNode.id();
@@ -760,13 +760,8 @@ function _renderStructureTree() {
       const toggleSpan = this.querySelector('.browser-tree-toggle');
       if (toggleSpan) {
         const sId = toggleSpan.dataset.section;
-        const section = document.getElementById(sId);
-        if (section) {
-          const hidden = section.style.display === 'none';
-          section.style.display = hidden ? '' : 'none';
-          toggleSpan.textContent = hidden ? '▾' : '▸';
-          return; // collapse toggle — don't navigate
-        }
+        _accordionWorkflow(sId);
+        return; // collapse toggle — don't navigate
       }
 
       // Navigate canvas to this node.
@@ -777,6 +772,25 @@ function _renderStructureTree() {
         }
       }
     });
+  });
+}
+
+/**
+ * Accordion: collapse all workflow sections except the given one, expand it.
+ * @param {string} sectionId - The id of the section div to expand (e.g. "tree-wf-3")
+ */
+function _accordionWorkflow(sectionId) {
+  document.querySelectorAll('[data-testid="browser-structure-tree"] .browser-tree-toggle').forEach(span => {
+    const sid = span.dataset.section;
+    const section = document.getElementById(sid);
+    if (!section) return;
+    if (sid === sectionId) {
+      section.style.display = '';
+      span.textContent = '▾';
+    } else {
+      section.style.display = 'none';
+      span.textContent = '▸';
+    }
   });
 }
 
@@ -792,6 +806,20 @@ function _highlightTreeNode(nodeId) {
       row.classList.remove('fw-bold', 'text-primary', 'bg-primary-subtle');
     }
   });
+
+  // Accordion: find the section this node belongs to and expand only it.
+  const targetRow = document.querySelector(`[data-testid="browser-tree-row"][data-node-id="${nodeId}"]`);
+  if (targetRow) {
+    // Walk up to find the nearest parent section div (id starts with "tree-wf-")
+    let el = targetRow.parentElement;
+    while (el) {
+      if (el.id && el.id.startsWith('tree-wf-')) {
+        _accordionWorkflow(el.id);
+        break;
+      }
+      el = el.parentElement;
+    }
+  }
 }
 
 /**

@@ -129,6 +129,11 @@ class TestStructureTreeNavigation:
         page.wait_for_load_state('networkidle')
         page.wait_for_selector('[data-testid="browser-tree-row"]', timeout=8000)
 
+        # Tree starts collapsed — expand the first workflow to reveal activity rows
+        rows = page.locator('[data-testid="browser-tree-row"]')
+        rows.first.click()
+        page.wait_for_timeout(300)
+
         rows = page.locator('[data-testid="browser-tree-row"]')
         for i in range(rows.count()):
             if 'Activity Alpha' in rows.nth(i).inner_text():
@@ -226,3 +231,104 @@ class TestFOB27ResourceNodeNoHighlight:
         assert highlighted.count() == 0, (
             "Resource node click must NOT leave any structural tree row highlighted"
         )
+
+
+# ---------------------------------------------------------------------------
+# FOB-24 updated: Tree starts fully collapsed
+# FOB-26 updated: Accordion — clicking node expands only its parent workflow
+# ---------------------------------------------------------------------------
+
+class TestTreeCollapsedDefault:
+
+    def test_tree_starts_fully_collapsed(
+        self, page: Page, live_server, st_user, st_playbook,
+    ):
+        """All workflow sections collapsed on initial render (FOB-24)."""
+        _login(page, live_server.url, 'st_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
+        page.wait_for_function(
+            "() => window.cy !== null && window.cy.nodes().length > 0",
+            timeout=10000,
+        )
+        page.wait_for_timeout(500)
+
+        # All section divs (tree-wf-*) should be hidden
+        expanded_sections = page.evaluate("""
+            () => Array.from(
+                document.querySelectorAll('[id^="tree-wf-"]')
+            ).filter(el => el.style.display !== 'none').length
+        """)
+        assert expanded_sections == 0, f"Expected 0 expanded sections, got {expanded_sections}"
+
+    def test_toggle_arrows_show_collapsed_state(
+        self, page: Page, live_server, st_user, st_playbook,
+    ):
+        """Toggle arrows show ▸ (collapsed) on initial render (FOB-24)."""
+        _login(page, live_server.url, 'st_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
+        page.wait_for_function(
+            "() => window.cy !== null && window.cy.nodes().length > 0",
+            timeout=10000,
+        )
+        page.wait_for_timeout(500)
+
+        expanded_arrows = page.evaluate("""
+            () => Array.from(
+                document.querySelectorAll('.browser-tree-toggle')
+            ).filter(el => el.textContent.trim() === '▾').length
+        """)
+        assert expanded_arrows == 0, f"Expected 0 expanded arrows (▾), got {expanded_arrows}"
+
+
+class TestTreeAccordion:
+
+    def test_clicking_workflow_expands_only_that_workflow(
+        self, page: Page, live_server, st_user, st_playbook,
+    ):
+        """Clicking a workflow row expands it and collapses all others (FOB-26)."""
+        _login(page, live_server.url, 'st_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
+        page.wait_for_function(
+            "() => window.cy !== null && window.cy.nodes().length > 0",
+            timeout=10000,
+        )
+        page.wait_for_timeout(500)
+
+        # Click first workflow row
+        rows = page.locator('[data-testid="browser-tree-row"]')
+        rows.first.click()
+        page.wait_for_timeout(300)
+
+        expanded_sections = page.evaluate("""
+            () => Array.from(
+                document.querySelectorAll('[id^="tree-wf-"]')
+            ).filter(el => el.style.display !== 'none').length
+        """)
+        assert expanded_sections == 1, f"Expected exactly 1 expanded section, got {expanded_sections}"
+
+    def test_canvas_activity_click_opens_parent_workflow(
+        self, page: Page, live_server, st_user, st_playbook,
+    ):
+        """Clicking an activity on canvas expands its parent workflow section (FOB-26)."""
+        from methodology.models import Activity
+        act = Activity.objects.filter(workflow__playbook=st_playbook).first()
+
+        _login(page, live_server.url, 'st_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
+        page.wait_for_function(
+            "() => window.cy !== null && window.cy.nodes().length > 0",
+            timeout=10000,
+        )
+        page.wait_for_timeout(500)
+
+        page.evaluate(
+            f"window.cy.getElementById('activity:{act.pk}').emit('tap', [{{position:{{x:0,y:0}}}}])"
+        )
+        page.wait_for_timeout(500)
+
+        expanded_sections = page.evaluate("""
+            () => Array.from(
+                document.querySelectorAll('[id^="tree-wf-"]')
+            ).filter(el => el.style.display !== 'none').length
+        """)
+        assert expanded_sections == 1, f"Expected exactly 1 section expanded after activity tap, got {expanded_sections}"
