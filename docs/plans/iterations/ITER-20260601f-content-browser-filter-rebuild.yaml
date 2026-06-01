@@ -1,58 +1,106 @@
-id: ITER-20260601f-content-browser-filter-rebuild
-title: Content Browser — Entity-Type Filter Rebuild
-feature: act-16-content-browser
-branch: iteration/20260531-content-browser-access
-pr: 27
-created: 2026-06-01
-status: planned
+iteration:
+  goal: "Content Browser — entity-type filter removes nodes from Cytoscape + auto-re-layout"
+  doctrine_version: "2.0"
+  created_at: "2026-06-01T10:38:00+02:00"
+  branch: "iteration/20260531-content-browser-access"
+  pr: 27
 
-goal: |
-  Change the entity-type filter from CSS hide/show to a full Cytoscape
-  graph rebuild on each toggle. Filtered-out nodes and their edges are
-  removed from cy entirely; the ELK layout auto-runs after every change.
-  Phase filter and search keep their existing dim model — no change.
-
-spec_changes_already_applied:
-  - FOB-11 (06-filters-and-search.feature): "hidden" → "removed from cy + auto-re-layout"
-  - FOB-29 (03-graph-rendering.feature): Re-plot reframed as manual re-trigger
-  - FOB-32 (06-filters-and-search.feature): wording updated to "removed from canvas graph"
-
-scenarios:
-  - id: S30
-    issue: 32
-    title: "Entity-type filter removes nodes from Cytoscape and auto-re-layouts (FOB-11)"
-    time_budget_min: 90
-    dependencies: []
-
-  - id: S31
-    issue: 33
-    title: "Update Re-plot button test description to match new filter-rebuild model (FOB-29)"
-    time_budget_min: 20
-    dependencies: [S30]
-
-  - id: S32
-    issue: 34
-    title: "Tree-panel click on removed-type node still opens detail panel (FOB-32)"
-    time_budget_min: 30
-    dependencies: [S30]
-
-total_budget_min: 140
+conflict_map:
+  tests/e2e/test_content_browser_filters.py: [S30, S32]
 
 parallel_groups:
-  - group: 1
-    scenarios: [S30]
-  - group: 2
-    scenarios: [S31, S32]   # both depend on S30, can run in parallel
+  A: [S30]
+  B: [S31]   # no shared files with S30 — runs in parallel
+  C: [S32]   # depends on S30 (shared test file + needs S30 implemented to pass)
 
-implementation_notes: |
-  S30 is the core change:
-  - Replace `_applyTypeFilter()` in content-browser.js with a rebuild approach:
-    1. Determine active types from toggle state
-    2. From raw graph data (_graphData), build element set = nodes whose type is active
-       (plus Playbook root always)
-    3. Remove all non-active nodes + their edges via cy.remove()
-    4. Add back previously removed nodes when type re-activated via cy.add()
-    5. Call _runElkLayout() after every add/remove
-  - Alternatively: re-render from _graphData on every toggle (simpler but more disruptive)
-  - Keep URL ?types= param logic unchanged
-  - Phase filter (_applyPhaseFilter) untouched — dim model stays
+drift_thresholds:
+  absorbed:
+    checkpoint_fail_retry: 1
+  escalated:
+    footprint_violation: true
+    method_explosion: true
+    sao_violation: true
+    checkpoint_fail_after_retry: true
+
+scenarios:
+  S30:
+    title: "Entity-type filter removes nodes from Cytoscape and auto-re-layouts (FOB-11)"
+    github_issue: 32
+    parallel_group: A
+    skeleton_commit: "aec8bf5"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_filters.py
+    checkpoint:
+      command: "pytest tests/e2e/test_content_browser_filters.py::TestEntityTypeFilter -v"
+      expected_exit_code: 0
+    dependencies: []
+    sao_sections:
+      - "§Frontend — plain browser JS, no build step"
+      - "§Cytoscape.js — element management via cy.remove/add"
+    context_map:
+      - file: "static/js/content-browser.js"
+        lines: "464-475"
+        note: "_applyFilters — add _applyTypeRebuild call (already stubbed), keep phase + panel logic"
+      - file: "static/js/content-browser.js"
+        lines: "481-548"
+        note: "_refreshVisualState — remove type visibility logic; type filtering is now in _applyTypeRebuild"
+      - file: "static/js/content-browser.js"
+        lines: "790-810"
+        note: "_runElkLayout — call after every rebuild; already used by _replot and _cycleLayout"
+      - file: "tests/e2e/test_content_browser_filters.py"
+        lines: "156-182"
+        note: "test_toggle_off_type_hides_nodes_on_canvas — skeleton already updated to cy.length checks"
+    do_not_do:
+      - "Do NOT destroy/recreate the whole cy instance on filter toggle — use cy.remove()+cy.add()"
+      - "Do NOT change phase filter behaviour — phase keeps dim model in _refreshVisualState"
+      - "Do NOT change search behaviour — search keeps dim model in _refreshVisualState"
+      - "Do NOT change URL param logic — ?types= handling unchanged"
+      - "Do NOT add async to _applyTypeRebuild"
+    rollback_point: "git stash"
+
+  S31:
+    title: "Update Re-plot button test framing (FOB-29)"
+    github_issue: 33
+    parallel_group: B
+    skeleton_commit: "22876f5"
+    codebase_footprint:
+      - tests/e2e/test_content_browser_layout_position.py
+    checkpoint:
+      command: "pytest tests/e2e/test_content_browser_layout_position.py::TestReplotButton -v"
+      expected_exit_code: 0
+    dependencies: []
+    sao_sections: []
+    context_map:
+      - file: "tests/e2e/test_content_browser_layout_position.py"
+        lines: "295-350"
+        note: "TestReplotButton — docstring already updated; tests functionally unchanged, must pass as-is"
+    do_not_do:
+      - "Do NOT change the actual Re-plot button JS implementation"
+      - "Do NOT remove or rename any test methods"
+    rollback_point: "git stash"
+
+  S32:
+    title: "Tree-panel click on removed-type node still opens detail panel (FOB-32)"
+    github_issue: 34
+    parallel_group: C
+    skeleton_commit: "aec8bf5"
+    codebase_footprint:
+      - tests/e2e/test_content_browser_filters.py
+    checkpoint:
+      command: "pytest tests/e2e/test_content_browser_filters.py::TestEntityTypeFilter::test_resource_tree_click_opens_panel_when_canvas_node_hidden -v"
+      expected_exit_code: 0
+    dependencies: [S30]
+    sao_sections:
+      - "§Detail Panel — opens from resource tree regardless of canvas node state"
+    context_map:
+      - file: "tests/e2e/test_content_browser_filters.py"
+        lines: "254-295"
+        note: "test_resource_tree_click_opens_panel_when_canvas_node_hidden — skeleton already updated"
+      - file: "static/js/content-browser.js"
+        lines: "884-950"
+        note: "_renderResourceTree / resource row click handler — must NOT require cy node to exist"
+    do_not_do:
+      - "Do NOT require cy node existence to open panel from resource tree"
+      - "Do NOT highlight the canvas node when it is absent from cy"
+    rollback_point: "git stash"
