@@ -598,10 +598,32 @@ function _buildFilteredElements(activeTypes) {
  * @returns {object[]}      New array sorted for layout insertion
  */
 function _sortForLayout(nodes) {
-  // TODO(FOB-33): implement deterministic ordering
-  // Tier map: workflow=0, activity=1, resources=2
-  // Resources group by parent activity position extracted from node ID "<type>:<pk>:activity:<act_pk>"
-  return [...nodes];
+  const TYPE_TIER = { workflow: 0, activity: 1 };
+
+  // Build activity-pk → sort index map from the already-ordered activity nodes.
+  const activitySortIndex = new Map();
+  let idx = 0;
+  nodes.forEach(n => { if (n.type === 'activity') activitySortIndex.set(String(n.entity_pk), idx++); });
+
+  // Extract parent activity PK from resource node IDs like "skill:3:activity:7".
+  const parentActPk = id => { const m = id.match(/:activity:(\d+)$/); return m ? m[1] : null; };
+
+  return [...nodes].sort((a, b) => {
+    const tierA = TYPE_TIER[a.type] ?? 2;
+    const tierB = TYPE_TIER[b.type] ?? 2;
+    if (tierA !== tierB) return tierA - tierB;
+
+    if (a.type === 'activity') {
+      const ordA = (a.meta && a.meta.order != null) ? a.meta.order : 9999;
+      const ordB = (b.meta && b.meta.order != null) ? b.meta.order : 9999;
+      return ordA !== ordB ? ordA - ordB : a.entity_pk - b.entity_pk;
+    }
+
+    // Resource nodes: group by parent activity sort position.
+    const posA = activitySortIndex.get(parentActPk(a.id)) ?? 9999;
+    const posB = activitySortIndex.get(parentActPk(b.id)) ?? 9999;
+    return posA - posB;
+  });
 }
 
 /**

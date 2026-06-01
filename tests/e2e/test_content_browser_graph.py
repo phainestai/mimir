@@ -311,7 +311,6 @@ def order_playbook(transactional_db):
     }
 
 
-@pytest.mark.django_db(transaction=True)
 class TestNodeInsertionOrder:
     """FOB-CONTENT-BROWSER-33: Nodes are inserted into Cytoscape in deterministic order."""
 
@@ -325,22 +324,91 @@ class TestNodeInsertionOrder:
         self, page: Page, live_server, order_playbook,
     ):
         """All workflow nodes appear before any activity node in _lastElementOrder."""
-        raise NotImplementedError()
+        data = order_playbook
+        _login(page, live_server.url, data['username'], data['password'])
+        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        self._wait_for_order(page)
+
+        order = page.evaluate("() => window._lastElementOrder.map(n => n.type)")
+        wf_indices = [i for i, t in enumerate(order) if t == 'workflow']
+        act_indices = [i for i, t in enumerate(order) if t == 'activity']
+        assert wf_indices, "No workflow nodes found in _lastElementOrder"
+        assert act_indices, "No activity nodes found in _lastElementOrder"
+        assert max(wf_indices) < min(act_indices), (
+            f"Workflow nodes must all precede activity nodes. "
+            f"Last wf at {max(wf_indices)}, first act at {min(act_indices)}"
+        )
 
     def test_activity_nodes_precede_resource_nodes(
         self, page: Page, live_server, order_playbook,
     ):
         """All activity nodes appear before any resource (skill/rule/agent/artifact) node."""
-        raise NotImplementedError()
+        data = order_playbook
+        _login(page, live_server.url, data['username'], data['password'])
+        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        self._wait_for_order(page)
+
+        order = page.evaluate("() => window._lastElementOrder.map(n => n.type)")
+        act_indices = [i for i, t in enumerate(order) if t == 'activity']
+        resource_types = {'skill', 'rule', 'agent', 'artifact'}
+        res_indices = [i for i, t in enumerate(order) if t in resource_types]
+        assert act_indices, "No activity nodes found"
+        assert res_indices, "No resource nodes found — check fixture has skills/rules/agent"
+        assert max(act_indices) < min(res_indices), (
+            f"All activity nodes must precede resource nodes. "
+            f"Last act at {max(act_indices)}, first resource at {min(res_indices)}"
+        )
 
     def test_resource_nodes_grouped_after_parent_activity(
         self, page: Page, live_server, order_playbook,
     ):
         """Resource nodes for act1 appear before resource nodes for act2."""
-        raise NotImplementedError()
+        data = order_playbook
+        _login(page, live_server.url, data['username'], data['password'])
+        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        self._wait_for_order(page)
+
+        act1_pk = str(data['act1'].pk)
+        act2_pk = str(data['act2'].pk)
+        order = page.evaluate("() => window._lastElementOrder.map(n => n.id)")
+        resource_types = {'skill', 'rule', 'agent', 'artifact'}
+
+        def resource_indices_for(act_pk):
+            return [
+                i for i, node_id in enumerate(order)
+                if f':activity:{act_pk}' in node_id
+            ]
+
+        act1_res = resource_indices_for(act1_pk)
+        act2_res = resource_indices_for(act2_pk)
+        assert act1_res, f"No resource nodes found for act1 (pk={act1_pk})"
+        assert act2_res, f"No resource nodes found for act2 (pk={act2_pk})"
+        assert max(act1_res) < min(act2_res), (
+            f"Resources for act1 must precede resources for act2. "
+            f"act1 last at {max(act1_res)}, act2 first at {min(act2_res)}"
+        )
 
     def test_order_preserved_after_filter_rebuild(
         self, page: Page, live_server, order_playbook,
     ):
         """After deactivating and reactivating a type, insertion order is still correct."""
-        raise NotImplementedError()
+        data = order_playbook
+        _login(page, live_server.url, data['username'], data['password'])
+        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        self._wait_for_order(page)
+
+        # Toggle a filter type off then back on to trigger a rebuild.
+        skill_btn = page.locator('[data-filter-type="skill"]')
+        skill_btn.click()
+        page.wait_for_timeout(500)
+        skill_btn.click()
+        self._wait_for_order(page)
+
+        order = page.evaluate("() => window._lastElementOrder.map(n => n.type)")
+        wf_indices = [i for i, t in enumerate(order) if t == 'workflow']
+        act_indices = [i for i, t in enumerate(order) if t == 'activity']
+        res_indices = [i for i, t in enumerate(order) if t not in ('workflow', 'activity')]
+        assert wf_indices and act_indices, "Missing workflow or activity nodes after rebuild"
+        assert max(wf_indices) < min(act_indices), "Workflows not before activities after rebuild"
+        if res_indices:
+            assert max(act_indices) < min(res_indices), "Activities not before resources after rebuild"
