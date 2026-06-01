@@ -28,11 +28,16 @@ Feature: FOB-CONTENT-BROWSER-FILTERS Content Browser Filters and Search
     And if all entity types are active the types param is removed from the URL entirely
 
 
-  Scenario: FOB-CONTENT-BROWSER-11b Phase filter is shared between canvas and structural tree
+  Scenario: FOB-CONTENT-BROWSER-11b Phase filter is a second row in the canvas filter toolbar
     Given Maria is on the graph view and the playbook has phases defined
-    Then both the canvas filter toolbar and the structural tree show a Phase filter control
-    And the filter lists all phases in the playbook plus "(Unphased)"
-    And if a playbook has NO phases defined, the Phase filter control is hidden entirely
+    Then the canvas filter toolbar shows two rows:
+      | row | content                                              |
+      | 1   | Entity-type toggle buttons (Workflow, Activity, …)   |
+      | 2   | Phase filter buttons — one per phase + "(Unphased)"  |
+    And the Phase filter row (data-testid="browser-phase-filter") sits directly below
+      the entity-type row inside the same toolbar container
+    And the Phase filter is NOT present in the left panel
+    And if a playbook has NO phases defined, the Phase filter row is hidden entirely
     When Maria activates only "Inception"
     Then on the canvas: Activity nodes not in "Inception" are dimmed (opacity 0.2 — still visible)
     And edges to/from dimmed Activity nodes are also dimmed
@@ -40,8 +45,6 @@ Feature: FOB-CONTENT-BROWSER-FILTERS Content Browser Filters and Search
     And on the structural tree: only Workflows with at least one "Inception" activity are shown,
       and within those Workflows only "Inception" activities appear
     And the active phase filter is reflected in the URL: ?phases=<id1>,<id2>
-    And the canvas and structural tree share the same phase filter state and URL query param —
-      changing either control updates both simultaneously
     When she clears the Phase filter
     Then all nodes return to normal visibility
     And the phases param is removed from the URL
