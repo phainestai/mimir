@@ -276,3 +276,71 @@ def test_cdn_guard_shows_error_state_when_cytoscape_missing(
 
     error_state = page.locator('[data-testid="browser-error-state"]')
     expect(error_state).to_be_visible()
+
+
+# ---------------------------------------------------------------------------
+# FOB-CONTENT-BROWSER-33: Deterministic node insertion order (S33)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def order_playbook(transactional_db):
+    """Playbook with 2 workflows, 3 activities, and resources per activity for order verification."""
+    user = User.objects.create_user(
+        username='order_user', email='order@test.com', password='testpass123',
+    )
+    mark_email_verified(user)
+    pb = Playbook.objects.create(
+        name='OrderTest', description='For FOB-33',
+        category='development', status='released', version='1.0',
+        source='owned', author=user, visibility='public',
+    )
+    wf1 = Workflow.objects.create(name='Alpha', playbook=pb, order=1)
+    wf2 = Workflow.objects.create(name='Beta', playbook=pb, order=2)
+    skill = Skill.objects.create(playbook=pb, title='Test Skill')
+    rule = Rule.objects.create(playbook=pb, title='Test Rule')
+    agent = Agent.objects.create(playbook=pb, name='Test Agent')
+    act1 = Activity.objects.create(name='Act1', workflow=wf1, order=1, agent=agent)
+    act2 = Activity.objects.create(name='Act2', workflow=wf1, order=2)
+    act2.skills.add(skill)
+    act2.rules.add(rule)
+    act3 = Activity.objects.create(name='Act3', workflow=wf2, order=1)
+    return {
+        'username': 'order_user', 'password': 'testpass123',
+        'pb': pb, 'wf1': wf1, 'wf2': wf2,
+        'act1': act1, 'act2': act2, 'act3': act3,
+    }
+
+
+@pytest.mark.django_db(transaction=True)
+class TestNodeInsertionOrder:
+    """FOB-CONTENT-BROWSER-33: Nodes are inserted into Cytoscape in deterministic order."""
+
+    def _wait_for_order(self, page):
+        page.wait_for_function(
+            "() => Array.isArray(window._lastElementOrder) && window._lastElementOrder.length > 0",
+            timeout=10000,
+        )
+
+    def test_workflow_nodes_precede_activity_nodes(
+        self, page: Page, live_server, order_playbook,
+    ):
+        """All workflow nodes appear before any activity node in _lastElementOrder."""
+        raise NotImplementedError()
+
+    def test_activity_nodes_precede_resource_nodes(
+        self, page: Page, live_server, order_playbook,
+    ):
+        """All activity nodes appear before any resource (skill/rule/agent/artifact) node."""
+        raise NotImplementedError()
+
+    def test_resource_nodes_grouped_after_parent_activity(
+        self, page: Page, live_server, order_playbook,
+    ):
+        """Resource nodes for act1 appear before resource nodes for act2."""
+        raise NotImplementedError()
+
+    def test_order_preserved_after_filter_rebuild(
+        self, page: Page, live_server, order_playbook,
+    ):
+        """After deactivating and reactivating a type, insertion order is still correct."""
+        raise NotImplementedError()

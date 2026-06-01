@@ -37,6 +37,21 @@ Feature: FOB-CONTENT-BROWSER-GRAPH Content Browser Graph Rendering
     And the layout is computed automatically (no manual positioning needed)
 
 
+  Scenario: FOB-CONTENT-BROWSER-33 Graph nodes are inserted in a deterministic order for optimal ELK layout
+    Given Maria opens any playbook in the graph view
+    Then the Cytoscape element array passed to ELK is constructed in this exact order:
+      1. All Workflow nodes (in their stored workflow order)
+      2. All Activity nodes, sorted by workflow order then by activity order within each workflow
+      3. For each Activity (in the order above): its resource nodes immediately follow —
+           Agent, Skills, Rules, Artifacts linked to that activity
+    And this ordering applies both on initial page load and after every entity-type filter rebuild
+    And the ELK layout algorithm receives the workflow→activity backbone first,
+      so it can treat that backbone as the primary structure and group resource nodes
+      naturally around their parent activities
+    Note: resource node IDs encode their parent activity ("<type>:<pk>:activity:<act_pk>")
+      so ordering is derived client-side without additional API changes
+
+
   Scenario: FOB-CONTENT-BROWSER-19 Layout mode switcher toggles between ELK algorithms
     Given Maria is on the graph view canvas with a playbook loaded
     Then a layout-mode button (data-testid="browser-layout-btn") is visible in the canvas controls area

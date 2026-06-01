@@ -1,28 +1,23 @@
 ## Orient Summary — 2026-06-01
 
 ### Input Scope
-Goal: Content Browser — Entity-Type Filter Rebuild (filter removes nodes from Cytoscape + auto-re-layout)
-Scenarios:
-  - #32: [S30] Entity-type filter removes nodes from Cytoscape and auto-re-layouts (FOB-11)
-  - #33: [S31] Update Re-plot button test description to match new filter-rebuild model (FOB-29)
-  - #34: [S32] Tree-panel click on removed-type node still opens detail panel (FOB-32)
+Goal: Content Browser — deterministic node insertion order for optimal ELK layout (FOB-33)
+Scenarios: New — FOB-CONTENT-BROWSER-33 (spec just added to 03-graph-rendering.feature)
 
 ### Velocity Trend
-Last 3 ratios: 1.0 (only 1 entry) — insufficient data (first substantive entry)
-Trend: stable (single data point)
+Last entries: 1.0 (only one prior entry) — stable
 
 ### Dominant Drift
-none (0/1 iterations)
+none (1/1 iterations)
 
 ### Footprint Accuracy
 met_checkpoints — stable
 
 ### Scope Validation
-- S30: Core JS rebuild — content-browser.js is a ~1350-line file; _applyTypeFilter is deep inside.
-  Risk: moderate complexity. No drift flag triggered (velocity stable, <3 scenarios).
-- S31: Test-only update. Low risk.
-- S32: Likely test + JS behaviour. Low risk, depends on S30.
+- Single scenario, pure client-side JS change to `static/js/content-browser.js`
+- No backend, no model, no service changes required
+- Low risk: reference implementation already exists in git stash `sort-nodes-reference`
 
 ### Watch For
-- S30 touches content-browser.js which is also touched by S31 and S32 — serialize these.
-- ELK layout call after cy.remove/add may need timing care (layout fires before elements settle).
+- E2E test needs a way to observe insertion order; plan to expose `window._lastElementOrder`
+  debug array from `_buildFilteredElements` so tests can assert order without layout coupling

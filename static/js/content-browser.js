@@ -528,10 +528,30 @@ function _buildFilteredElements(activeTypes) {
   // Step 5: Re-filter edges for the final node set.
   const finalEdges = filteredEdges.filter(e => finalIds.has(e.source) && finalIds.has(e.target));
 
+  const orderedNodes = _sortForLayout(finalNodes);
+  // Expose insertion order for E2E tests (FOB-33 checkpoint).
+  window._lastElementOrder = orderedNodes.map(n => ({ id: n.id, type: n.type }));
+
   return [
-    ...finalNodes.map(n => ({ data: n })),
+    ...orderedNodes.map(n => ({ data: n })),
     ...finalEdges.map(e => ({ data: e })),
   ];
+}
+
+/**
+ * Sort nodes so ELK sees them in an order that produces a clean layout.
+ * Tier 0: workflow nodes → Tier 1: activity nodes → Tier 2: resource nodes.
+ * Resource nodes (skill/rule/agent/artifact) are grouped immediately after
+ * their parent activity using the parent activity PK encoded in the node ID.
+ *
+ * @param {object[]} nodes  Raw node data objects
+ * @returns {object[]}      New array sorted for layout insertion
+ */
+function _sortForLayout(nodes) {
+  // TODO(FOB-33): implement deterministic ordering
+  // Tier map: workflow=0, activity=1, resources=2
+  // Resources group by parent activity position extracted from node ID "<type>:<pk>:activity:<act_pk>"
+  return [...nodes];
 }
 
 /**
