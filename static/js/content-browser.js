@@ -291,17 +291,6 @@ function _renderGraph(pk, graphData, filters) {
     return;
   }
 
-  // Degraded mode banner for large graphs.
-  const degradedBanner = document.querySelector('[data-testid="browser-degraded-banner"]');
-  if (nodes.length > 300) {
-    if (degradedBanner) {
-      degradedBanner.textContent = `Graph is large (${nodes.length} nodes). Performance may be reduced.`;
-      degradedBanner.classList.remove('d-none');
-    }
-  } else {
-    if (degradedBanner) degradedBanner.classList.add('d-none');
-  }
-
   // Node count badge.
   const countBadge = document.querySelector('[data-testid="browser-node-count"]');
   if (countBadge) countBadge.textContent = `${nodes.length} nodes`;

@@ -159,3 +159,21 @@ class TestLayoutPosition:
         )
         centre_x = (btn_rect['left'] + btn_rect['right']) / 2
         assert centre_x <= 20, f"Collapsed toggle button should be near left, got {centre_x}px"
+
+
+# ---------------------------------------------------------------------------
+# FOB-20b: No performance warning banner in DOM (S19)
+# ---------------------------------------------------------------------------
+
+class TestNoDegradedBanner:
+
+    def test_degraded_banner_absent_from_dom(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """browser-degraded-banner must not exist in the DOM at all (FOB-20b)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+
+        count = page.locator('[data-testid="browser-degraded-banner"]').count()
+        assert count == 0, "Degraded-mode banner must be absent from the DOM"
