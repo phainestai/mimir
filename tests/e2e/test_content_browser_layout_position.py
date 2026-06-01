@@ -31,8 +31,16 @@ def _login(page, live_server_url, username, password):
 
 def _wait_for_graph(page):
     page.wait_for_function(
-        "() => window.cy !== null && window.cy.nodes().length > 0",
+        "() => window.cy != null && window.cy.nodes().length > 0",
         timeout=10000,
+    )
+
+
+def _wait_for_elk_complete(page):
+    """Wait for ELK layoutstop to have fired at least once (initial render done)."""
+    page.wait_for_function(
+        "() => (window._elkLayoutCount || 0) >= 1",
+        timeout=15000,
     )
 
 
@@ -262,6 +270,7 @@ class TestLayoutSwitcher:
         _login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
         _wait_for_graph(page)
+        _wait_for_elk_complete(page)  # ensure initial ELK is done before counting
 
         # Capture positions of all nodes before layout switch
         positions_before = page.evaluate("""() => {
@@ -270,9 +279,10 @@ class TestLayoutSwitcher:
         }""")
         assert positions_before and len(positions_before) > 0
 
+        count_before = page.evaluate("() => window._elkLayoutCount || 0")
         page.locator('[data-testid="browser-layout-btn"]').click()
-        # Wait for ELK layout to complete — allow up to 5 seconds for re-layout
-        page.wait_for_timeout(3000)
+        # Wait for ELK layoutstop event (counter increments on each layout completion)
+        page.wait_for_function(f"window._elkLayoutCount > {count_before}", timeout=10000)
 
         positions_after = page.evaluate("""() => {
             if (!window.cy) return null;
@@ -316,10 +326,12 @@ class TestReplotButton:
         _login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
         _wait_for_graph(page)
+        _wait_for_elk_complete(page)  # ensure initial ELK is done before counting
 
         # Switch to mrtree so re-plot produces a different layout than initial layered
+        count1 = page.evaluate("() => window._elkLayoutCount || 0")
         page.locator('[data-testid="browser-layout-btn"]').click()
-        page.wait_for_timeout(3000)
+        page.wait_for_function(f"window._elkLayoutCount > {count1}", timeout=10000)
 
         positions_before = page.evaluate("""() => {
             if (!window.cy) return null;
@@ -328,10 +340,12 @@ class TestReplotButton:
         assert positions_before and len(positions_before) > 0
 
         # Switch back to layered, then click re-plot — positions should change
+        count2 = page.evaluate("() => window._elkLayoutCount || 0")
         page.locator('[data-testid="browser-layout-btn"]').click()
-        page.wait_for_timeout(3000)
+        page.wait_for_function(f"window._elkLayoutCount > {count2}", timeout=10000)
+        count3 = page.evaluate("() => window._elkLayoutCount || 0")
         page.locator('[data-testid="browser-replot-btn"]').click()
-        page.wait_for_timeout(3000)
+        page.wait_for_function(f"window._elkLayoutCount > {count3}", timeout=10000)
 
         positions_after = page.evaluate("""() => {
             if (!window.cy) return null;

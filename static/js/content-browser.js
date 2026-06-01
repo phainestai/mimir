@@ -365,6 +365,10 @@ function _renderGraph(pk, graphData, filters) {
   window.cy.on('tap', function(evt) {
     if (evt.target === window.cy) { _closeDetailPanel(); }
   });
+  // Track layout completion count (used by E2E tests to wait for ELK to finish).
+  window.cy.on('layoutstop', function() {
+    window._elkLayoutCount = (window._elkLayoutCount || 0) + 1;
+  });
 
   // Apply phase/search dim (no type rebuild — cy was created with correct elements).
   _refreshVisualState();
