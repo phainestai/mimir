@@ -16,6 +16,12 @@
 
 const _ALL_TYPES = ['workflow', 'activity', 'skill', 'agent', 'artifact', 'rule', 'phase'];
 
+// ─── Module-level filter + search state ──────────────────────────────────────
+// Mutated by _applyFilters / _applySearch; read by _openDetailPanel / _closeDetailPanel.
+let _currentFilters = { types: _ALL_TYPES.slice(), phases: [] };
+let _currentSearchTerm = '';
+let _searchDebounceTimer = null;
+
 /**
  * Read the playbook PK from the #browser-root data attribute.
  * Returns null if no PK is set (empty state: /browser/).
@@ -68,7 +74,7 @@ function _parseUrlParams() {
   const phases = phasesRaw
     ? phasesRaw.split(',')
         .map(s => parseInt(s, 10))
-        .filter(n => Number.isFinite(n) && n > 0)
+        .filter(n => Number.isFinite(n) && n >= 0)  // 0 = "Unphased" sentinel
     : [];
 
   return { types, phases };
@@ -85,7 +91,9 @@ function _parseUrlParams() {
  */
 function _normaliseFilters(filters, playbookPhases) {
   const validPhaseIds = new Set(playbookPhases.map(p => p.id));
-  const cleanPhases = filters.phases.filter(id => validPhaseIds.has(id));
+  // 0 is the "Unphased" sentinel — always valid when the playbook has ≥1 phase.
+  const hasPhases = playbookPhases.length > 0;
+  const cleanPhases = filters.phases.filter(id => (id === 0 && hasPhases) || validPhaseIds.has(id));
   const normalised = { types: filters.types, phases: cleanPhases };
   _replaceCanonicalUrl(_getPlaybookPk(), normalised);
   return normalised;
@@ -101,9 +109,15 @@ function _normaliseFilters(filters, playbookPhases) {
  */
 function _filtersToQueryString(filters) {
   const parts = [];
-  const allActive = _ALL_TYPES.every(t => filters.types.includes(t));
+  // "All active" is evaluated only for filterable/toolbar types (phase is not filterable via toolbar).
+  const FILTERABLE = ['workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
+  const allActive = FILTERABLE.every(t => filters.types.includes(t));
   if (!allActive && filters.types.length > 0) {
-    parts.push('types=' + filters.types.join(','));
+    // Only encode filterable types in the URL; exclude 'phase' (internal only)
+    const encodable = filters.types.filter(t => FILTERABLE.includes(t));
+    if (encodable.length > 0 && encodable.length < FILTERABLE.length) {
+      parts.push('types=' + encodable.join(','));
+    }
   }
   if (filters.phases.length > 0) {
     parts.push('phases=' + filters.phases.join(','));
@@ -347,7 +361,8 @@ function _renderGraph(pk, graphData, filters) {
     if (evt.target === window.cy) { _closeDetailPanel(); }
   });
 
-  _renderStructureTree();
+  // Render entity-type filter toolbar after graph loads (counts won't change).
+  _renderFilterToolbar(filters);
 }
 
 /**
@@ -433,17 +448,224 @@ function _cytoscapeStyle() {
 }
 
 /**
- * Dim nodes whose type is not in the active filter set.
- * Only affects opacity — all nodes remain in the DOM.
+ * Apply filter state to the graph.
+ * Stores state to _currentFilters and calls _refreshVisualState.
+ * Also closes detail panel if the currently-selected node's type is now hidden.
  *
  * @param {{ types: string[], phases: number[] }} filters
  */
 function _applyFilters(filters) {
+  _currentFilters = filters;
+  _refreshVisualState();
+  // Close panel if the selected node's type is being hidden.
+  if (_currentPanelNode) {
+    const activeTypes = new Set(filters.types);
+    if (!activeTypes.has(_currentPanelNode.data('type'))) {
+      _closeDetailPanel();
+    }
+  }
+}
+
+/**
+ * Apply the combined visual state (entity type visibility, phase dim, search dim)
+ * to all canvas nodes and edges. Also re-renders the structural tree and phase filter
+ * controls so they stay in sync with the active filter.
+ */
+function _refreshVisualState() {
   if (!window.cy) return;
-  const activeTypes = new Set(filters.types);
+  const activeTypes = new Set(_currentFilters.types);
+  const activePhases = _currentFilters.phases.length > 0 ? new Set(_currentFilters.phases) : null;
+  const searchLower = _currentSearchTerm.toLowerCase().trim();
+
   window.cy.nodes().forEach(node => {
-    node.style('opacity', activeTypes.has(node.data('type')) ? 1 : 0.15);
+    const nodeType = node.data('type');
+    if (!activeTypes.has(nodeType)) {
+      node.style({ 'visibility': 'hidden', 'opacity': 1 });
+      return;
+    }
+    node.style('visibility', 'visible');
+
+    let dimmed = false;
+    // Phase dim — activity nodes only; 0 = unphased sentinel
+    if (activePhases && nodeType === 'activity') {
+      const meta = node.data('meta') || {};
+      const phaseId = meta.phase_id != null ? meta.phase_id : 0;
+      if (!activePhases.has(phaseId)) dimmed = true;
+    }
+    // Search dim — all visible nodes; edges are NOT dimmed by search (per FOB-12)
+    if (searchLower) {
+      const label = (node.data('label') || '').toLowerCase();
+      if (!label.includes(searchLower)) dimmed = true;
+    }
+    node.style('opacity', dimmed ? 0.2 : 1);
   });
+
+  window.cy.edges().forEach(edge => {
+    const srcType = edge.source().data('type');
+    const tgtType = edge.target().data('type');
+    if (!activeTypes.has(srcType) || !activeTypes.has(tgtType)) {
+      edge.style({ 'visibility': 'hidden', 'opacity': 1 });
+      return;
+    }
+    edge.style('visibility', 'visible');
+    // Phase dim on edges connected to phase-dimmed activities (not search)
+    if (activePhases) {
+      let edgeDimmed = false;
+      if (srcType === 'activity') {
+        const m = edge.source().data('meta') || {};
+        const pid = m.phase_id != null ? m.phase_id : 0;
+        if (!activePhases.has(pid)) edgeDimmed = true;
+      }
+      if (tgtType === 'activity') {
+        const m = edge.target().data('meta') || {};
+        const pid = m.phase_id != null ? m.phase_id : 0;
+        if (!activePhases.has(pid)) edgeDimmed = true;
+      }
+      edge.style('opacity', edgeDimmed ? 0.2 : 1);
+    } else {
+      edge.style('opacity', 1);
+    }
+  });
+
+  // Keep structural tree and phase filter controls in sync.
+  _renderStructureTree();
+  _renderPhaseFilter();
+}
+
+/**
+ * Apply a name-based search term. Matching nodes are bright; others dimmed.
+ * Edges are unaffected by search (per FOB-12).
+ * Uses 250 ms debounce to avoid thrashing during typing.
+ *
+ * @param {string} term
+ */
+function _applySearch(term) {
+  if (_searchDebounceTimer) clearTimeout(_searchDebounceTimer);
+  _searchDebounceTimer = setTimeout(() => {
+    _currentSearchTerm = term;
+    _refreshVisualState();
+  }, 250);
+}
+
+/**
+ * Render the entity-type filter toolbar on the canvas.
+ * One toggle button per type that has nodes; shows total count (static).
+ * Called once after graph loads — recreated on playbook switch.
+ *
+ * @param {{ types: string[], phases: number[] }} filters
+ */
+function _renderFilterToolbar(filters) {
+  const container = document.querySelector('[data-testid="browser-filter-toolbar"]');
+  if (!container || !window.cy) return;
+
+  const displayTypes = ['workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
+  const typeCounts = {};
+  displayTypes.forEach(t => { typeCounts[t] = 0; });
+  window.cy.nodes().forEach(node => {
+    const t = node.data('type');
+    if (t in typeCounts) typeCounts[t]++;
+  });
+
+  container.innerHTML = '';
+  displayTypes.forEach(type => {
+    if (typeCounts[type] === 0) return;
+    const isActive = filters.types.includes(type);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `btn btn-sm ${isActive ? 'btn-secondary' : 'btn-outline-secondary'}`;
+    btn.setAttribute('data-testid', 'browser-filter-btn');
+    btn.setAttribute('data-filter-type', type);
+    btn.title = `Toggle ${type} nodes`;
+    const label = type.charAt(0).toUpperCase() + type.slice(1);
+    btn.textContent = `${label} (${typeCounts[type]})`;
+    btn.addEventListener('click', () => {
+      const types = _currentFilters.types.slice();
+      const idx = types.indexOf(type);
+      if (idx >= 0) {
+        types.splice(idx, 1);
+      } else {
+        types.push(type);
+      }
+      const newFilters = { ..._currentFilters, types };
+      _applyFilters(newFilters);
+      _replaceCanonicalUrl(_getPkFromPath(), newFilters);
+      _renderFilterToolbar(newFilters);
+    });
+    container.appendChild(btn);
+  });
+}
+
+/**
+ * Render phase filter pills in both the left panel and the canvas filter toolbar.
+ * Hidden entirely when the playbook has no phases.
+ * Called from _refreshVisualState to stay in sync.
+ */
+function _renderPhaseFilter() {
+  const playbookPhases = _getPlaybookPhases();
+  const leftContainer = document.querySelector('[data-testid="browser-phase-filter"]');
+
+  if (!leftContainer) return;
+  if (playbookPhases.length === 0) {
+    leftContainer.innerHTML = '';
+    return;
+  }
+
+  const activePhases = new Set(_currentFilters.phases);
+  const allPhaseIds = playbookPhases.map(p => p.id);
+  // Include 0 (Unphased) as an option
+  const phaseOptions = [{ id: 0, name: '(Unphased)' }, ...playbookPhases];
+  const allActive = phaseOptions.every(p => activePhases.size === 0 || activePhases.has(p.id));
+
+  const buildPills = (container) => {
+    container.innerHTML = '<div class="small fw-semibold text-muted text-uppercase mb-1">Phases</div>';
+    phaseOptions.forEach(phase => {
+      const isActive = activePhases.size === 0 || activePhases.has(phase.id);
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = `btn btn-sm me-1 mb-1 ${isActive ? 'btn-primary' : 'btn-outline-secondary'}`;
+      pill.setAttribute('data-testid', 'browser-phase-pill');
+      pill.setAttribute('data-phase-id', String(phase.id));
+      pill.textContent = phase.name;
+      pill.addEventListener('click', () => {
+        let phases = _currentFilters.phases.slice();
+        if (phases.length === 0) {
+          // All active → deactivate all except clicked
+          phases = allPhaseIds.concat([0]).filter(id => id !== phase.id);
+          // But if the clicked is now the only one missing, select only it
+          // Actually: clicking when all active → show only clicked phase
+          phases = [phase.id];
+        } else if (phases.includes(phase.id)) {
+          phases = phases.filter(id => id !== phase.id);
+          if (phases.length === 0) phases = []; // all active again
+        } else {
+          phases = phases.concat([phase.id]);
+          // If all options now selected, simplify to empty (= all active)
+          if (phaseOptions.every(p => phases.includes(p.id))) phases = [];
+        }
+        const newFilters = { ..._currentFilters, phases };
+        _applyFilters(newFilters);
+        _replaceCanonicalUrl(_getPkFromPath(), newFilters);
+      });
+      container.appendChild(pill);
+    });
+
+    // "All" reset button when filter is active
+    if (activePhases.size > 0) {
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'btn btn-sm btn-outline-danger mb-1';
+      clearBtn.setAttribute('data-testid', 'browser-phase-clear');
+      clearBtn.textContent = 'All';
+      clearBtn.addEventListener('click', () => {
+        const newFilters = { ..._currentFilters, phases: [] };
+        _applyFilters(newFilters);
+        _replaceCanonicalUrl(_getPkFromPath(), newFilters);
+      });
+      container.appendChild(clearBtn);
+    }
+  };
+
+  buildPills(leftContainer);
 }
 
 /**
@@ -478,6 +700,7 @@ function _renderStructureTree() {
   const container = document.querySelector('[data-testid="browser-structure-tree"]');
   if (!container || !window.cy) return;
 
+  const activePhases = _currentFilters.phases.length > 0 ? new Set(_currentFilters.phases) : null;
   const wfNodes = window.cy.nodes('[type="workflow"]').sort((a, b) => a.data('entity_pk') - b.data('entity_pk'));
   if (wfNodes.length === 0) { container.innerHTML = ''; return; }
 
@@ -488,6 +711,19 @@ function _renderStructureTree() {
     const wfLabel = wfNode.data('label') || wfId;
     const sectionId = 'tree-wf-' + wfNode.data('entity_pk');
 
+    // All activities ordered, then filtered by active phases
+    let actNodes = wfNode.outgoers('edge[relationship="contains"]').targets()
+      .sort((a, b) => ((a.data('meta') || {}).order || 0) - ((b.data('meta') || {}).order || 0));
+
+    if (activePhases) {
+      actNodes = actNodes.filter(actNode => {
+        const meta = actNode.data('meta') || {};
+        const phaseId = meta.phase_id != null ? meta.phase_id : 0;
+        return activePhases.has(phaseId);
+      });
+      if (actNodes.length === 0) return; // skip this workflow when no activities match
+    }
+
     html += `
       <div class="mb-1">
         <div class="d-flex align-items-center gap-1 px-1 py-1 rounded browser-tree-row"
@@ -497,10 +733,6 @@ function _renderStructureTree() {
           <span class="small fw-semibold text-truncate" title="${wfLabel}">${wfLabel}</span>
         </div>
         <div id="${sectionId}" class="ps-3">`;
-
-    // Activities connected to this workflow via 'contains' edges, sorted by order
-    const actNodes = wfNode.outgoers('edge[relationship="contains"]').targets()
-      .sort((a, b) => ((a.data('meta') || {}).order || 0) - ((b.data('meta') || {}).order || 0));
 
     actNodes.forEach(actNode => {
       const actId    = actNode.id();
@@ -602,9 +834,15 @@ function _renderResourceTree(node) {
   if (nodeType === 'workflow') {
     activityNodes = node.outgoers('edge[relationship="contains"]').targets();
   } else if (nodeType === 'activity') {
-    activityNodes = node;
+    // FOB-28: show resources for the parent Workflow (all siblings), not just this activity.
+    const parentWf = node.incomers('edge[relationship="contains"]').sources();
+    if (parentWf && parentWf.length) {
+      activityNodes = parentWf.outgoers('edge[relationship="contains"]').targets();
+    } else {
+      activityNodes = node; // fallback if orphaned activity
+    }
   } else {
-    return; // resource node clicked — keep existing tree
+    return; // resource node clicked — keep existing tree (no change)
   }
 
   // Collect resource nodes connected to each activity; deduplicate by entity_pk within type.
@@ -664,7 +902,7 @@ function _renderResourceTree(node) {
  */
 function _clearResourceTree() {
   const container = document.querySelector('[data-testid="browser-resource-tree"]');
-  if (container) container.innerHTML = '<span class="small text-muted">Select a Workflow or Activity to see its resources.</span>';
+  if (container) container.innerHTML = '<span class="small text-muted">Select a Workflow to see its resources.</span>';
 }
 
 /**
@@ -680,15 +918,28 @@ function _openDetailPanel(node) {
   const openFullBtn = document.querySelector('[data-testid="browser-panel-open-full"]');
   if (!panel || !panelContent) return;
 
-  // Update selection ring: clear previous, apply to current node.
+  // Only apply canvas selection ring + dim when the node is actually visible.
+  // FOB-32: resource nodes filtered out (visibility:hidden) open panel without canvas update.
   if (window.cy) {
-    window.cy.nodes().style({ 'border-width': 0, 'opacity': 0.4 });
-    node.style({ 'border-width': 3, 'border-color': '#dc3545', 'opacity': 1 });
+    const nodeIsVisible = node.style('visibility') !== 'hidden';
+    if (nodeIsVisible) {
+      window.cy.nodes().forEach(n => {
+        n.style('border-width', 0);
+        if (n.style('visibility') !== 'hidden') n.style('opacity', 0.4);
+      });
+      node.style({ 'border-width': 3, 'border-color': '#dc3545', 'opacity': 1 });
+    }
   }
   _currentPanelNode = node;
 
-  // Sync tree highlight and resource tree.
-  _highlightTreeNode(node.id());
+  // FOB-27: only highlight structural tree for Workflow / Activity nodes.
+  // Resource entity types (skill, agent, artifact, rule) must NOT highlight tree rows.
+  const nodeType = node.data('type');
+  if (nodeType === 'workflow' || nodeType === 'activity') {
+    _highlightTreeNode(node.id());
+  } else {
+    _clearTreeHighlight();
+  }
   _renderResourceTree(node);
 
   const embedUrl = node.data('embed_url');
@@ -724,7 +975,9 @@ function _closeDetailPanel() {
   if (panel) panel.classList.add('d-none');
   if (panelContent) panelContent.innerHTML = '';
   if (window.cy) {
-    window.cy.nodes().style({ 'border-width': 0, 'opacity': 1 });
+    window.cy.nodes().style({ 'border-width': 0 });
+    // Re-apply filter/search visual state (restores correct opacity + visibility).
+    _refreshVisualState();
   }
   _currentPanelNode = null;
   _clearTreeHighlight();
@@ -847,8 +1100,9 @@ function _closePicker() {
  */
 function _selectPlaybook(pk) {
   _closePicker();
-  _pushPlaybookUrl(pk, { types: [], phases: [] });
-  // Reset phases (playbook-scoped) before fetch
+  // FOB-03g: preserve entity-type filter; reset phases (they are playbook-scoped)
+  _pushPlaybookUrl(pk, { types: _currentFilters.types, phases: [] });
+  // Reset phases in DOM root data so _normaliseFilters finds no stale IDs
   const root = document.getElementById('browser-root');
   if (root) { root.dataset.playbookPk = String(pk); root.dataset.playbookPhases = '[]'; }
   _fetchGraph(pk);
@@ -920,6 +1174,10 @@ function _init() {
   // Wire picker search input.
   const pickerSearch = document.querySelector('[data-testid="browser-picker-search"]');
   if (pickerSearch) pickerSearch.addEventListener('input', e => _filterPickerItems(e.target.value));
+
+  // Wire node search input (debounced canvas node name filter).
+  const nodeSearch = document.querySelector('[data-testid="browser-search-input"]');
+  if (nodeSearch) nodeSearch.addEventListener('input', e => _applySearch(e.target.value));
 
   if (!pk) {
     _showEmptyState();

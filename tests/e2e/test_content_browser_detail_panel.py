@@ -247,3 +247,36 @@ class TestDetailPanelNavigation:
         page.wait_for_load_state('networkidle')
         assert f'/playbooks/{pb.pk}/workflows/{wf.pk}/' in page.url
         assert '/browser/' not in page.url
+
+
+# ---------------------------------------------------------------------------
+# FOB-08c: Session expiry while detail panel is open
+# ---------------------------------------------------------------------------
+
+class TestSessionExpiry:
+
+    def test_session_expiry_during_panel_load_redirects_to_login(
+        self, page: Page, live_server, panel_playbook,
+    ):
+        """FOB-08c: if embed fetch returns login page HTML, browser redirects to /auth/login/."""
+        _login(page, live_server.url, panel_playbook['username'], panel_playbook['password'])
+        pb = panel_playbook['pb']
+        wf = panel_playbook['wf']
+
+        page.goto(f"{live_server.url}/browser/{pb.pk}/")
+        _wait_for_graph(page)
+
+        # Intercept the embed URL (query param ?embed=1) and return HTML containing the login form marker
+        page.route('**?embed=**', lambda route: route.fulfill(
+            status=200,
+            content_type='text/html',
+            body='<html><body><form id="login-form"><input name="username"></form></body></html>',
+        ))
+
+        _tap_node(page, f"workflow:{wf.pk}")
+        page.wait_for_timeout(1500)
+
+        # The JS _checkSessionExpiry should have triggered a redirect to /auth/login/
+        assert '/auth/login/' in page.url, (
+            f"Expected redirect to /auth/login/ after session expiry, got {page.url}"
+        )

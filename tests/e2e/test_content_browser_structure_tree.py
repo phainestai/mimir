@@ -185,3 +185,44 @@ class TestStructureTreeHighlight:
 
         highlighted = page.locator('[data-testid="browser-tree-row"].text-primary')
         assert highlighted.count() == 0, "Tree highlight should be cleared after panel close"
+
+
+class TestFOB27ResourceNodeNoHighlight:
+
+    def test_resource_node_click_does_not_highlight_tree_row(
+        self, page: Page, live_server, st_user, st_playbook,
+    ):
+        """FOB-27 / S18: clicking a Skill/Rule canvas node must NOT highlight any tree row."""
+        from methodology.models import Skill
+        skill = Skill.objects.create(playbook=st_playbook, title='TestSkillFOB27')
+        # Attach skill to the first activity
+        from methodology.models import Activity
+        act = Activity.objects.filter(workflow__playbook=st_playbook).first()
+        act.skills.add(skill)
+
+        _login(page, live_server.url, 'st_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
+        page.wait_for_function(
+            "() => window.cy !== null && window.cy.nodes().length > 0",
+            timeout=10000,
+        )
+
+        # First select an activity (highlights its tree row)
+        page.evaluate(
+            f"window.cy.getElementById('activity:{act.pk}').emit('tap', [{{position:{{x:0,y:0}}}}])"
+        )
+        page.wait_for_timeout(300)
+        assert page.locator('[data-testid="browser-tree-row"].text-primary').count() >= 1
+
+        # Now tap the skill node (resource node)
+        skill_node_id = f"skill:{skill.pk}:activity:{act.pk}"
+        page.evaluate(
+            f"window.cy.getElementById('{skill_node_id}').emit('tap', [{{position:{{x:0,y:0}}}}])"
+        )
+        page.wait_for_timeout(300)
+
+        # No tree row should be highlighted
+        highlighted = page.locator('[data-testid="browser-tree-row"].text-primary')
+        assert highlighted.count() == 0, (
+            "Resource node click must NOT leave any structural tree row highlighted"
+        )

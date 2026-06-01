@@ -258,3 +258,21 @@ def test_empty_playbook_does_not_render_cytoscape(page: Page, live_server_url: s
 
     cy_is_null = page.evaluate("() => window.cy === null")
     assert cy_is_null, "window.cy should be null for an empty playbook"
+
+
+def test_cdn_guard_shows_error_state_when_cytoscape_missing(
+    page: Page, live_server_url: str, graph_playbook,
+):
+    """FOB-14b: If cytoscape CDN fails, the inline guard shows the error state."""
+    _login(page, live_server_url, graph_playbook['username'], graph_playbook['password'])
+
+    # Block the cytoscape CDN request so window.cytoscape is undefined
+    page.route('**cytoscape*.min.js*', lambda r: r.abort())
+    page.route('**cytoscape*.js*', lambda r: r.abort())
+
+    page.goto(f"{live_server_url}/browser/{graph_playbook['pb'].pk}/")
+    page.wait_for_load_state('domcontentloaded')
+    page.wait_for_timeout(1500)
+
+    error_state = page.locator('[data-testid="browser-error-state"]')
+    expect(error_state).to_be_visible()

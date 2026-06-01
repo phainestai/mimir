@@ -73,7 +73,7 @@ class TestResourceTreeRendering:
         page.wait_for_load_state('networkidle')
 
         tree = page.locator('[data-testid="browser-resource-tree"]')
-        expect(tree).to_contain_text('Select a Workflow or Activity')
+        expect(tree).to_contain_text('Select a Workflow')
 
     def test_selecting_activity_shows_resource_tree(self, page: Page, live_server, rt_user, rt_playbook):
         """Selecting an activity node renders the resource tree (FOB-28)."""
@@ -93,7 +93,7 @@ class TestResourceTreeRendering:
 
         tree = page.locator('[data-testid="browser-resource-tree"]')
         # Resource tree should no longer show the placeholder
-        assert 'Select a Workflow or Activity' not in (tree.inner_text() or '')
+        assert 'Select a Workflow' not in (tree.inner_text() or '')
 
     def test_resource_tree_shows_skill(self, page: Page, live_server, rt_user, rt_playbook):
         """Resource tree lists the skill linked to the selected activity (FOB-28)."""
@@ -131,7 +131,7 @@ class TestResourceTreeRendering:
         page.wait_for_timeout(300)
 
         tree = page.locator('[data-testid="browser-resource-tree"]')
-        expect(tree).to_contain_text('Select a Workflow or Activity')
+        expect(tree).to_contain_text('Select a Workflow')
 
     def test_workflow_selection_aggregates_resources(self, page: Page, live_server, rt_user, rt_playbook):
         """Selecting a workflow shows resources from all its activities, deduplicated (FOB-28)."""
@@ -148,12 +148,39 @@ class TestResourceTreeRendering:
         """)
         page.wait_for_timeout(500)
 
-        tree = page.locator('[data-testid="browser-resource-tree"]')
         # Shared skill appears once (deduplicated by entity_pk)
         rows = page.locator('[data-testid="browser-resource-row"]')
+        page.wait_for_selector('[data-testid="browser-resource-row"]', timeout=5000)
         skill_rows = [rows.nth(i) for i in range(rows.count())
                       if 'Shared Skill' in (rows.nth(i).inner_text() or '')]
         assert len(skill_rows) == 1, f"Expected 1 Shared Skill row, got {len(skill_rows)}"
+
+    def test_activity_selection_shows_parent_workflow_resources(
+        self, page: Page, live_server, rt_user, rt_playbook,
+    ):
+        """FOB-28 / S18: Selecting Activity shows parent Workflow's resources (all siblings)."""
+        _login(page, live_server.url, 'rt_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{rt_playbook.pk}/")
+        page.wait_for_load_state('networkidle')
+        page.wait_for_selector('[data-testid="browser-tree-row"]', timeout=8000)
+
+        # act1 has: Shared Skill + Rule Alpha
+        # act2 has: Shared Skill
+        # Clicking act2 should show BOTH Shared Skill AND Rule Alpha (parent wf aggregation)
+        page.evaluate("""
+            () => {
+                // Get the second activity (act2)
+                const acts = window.cy && window.cy.nodes('[type="activity"]');
+                const act2 = acts && acts.length >= 2 ? acts[1] : null;
+                if (act2) act2.trigger('tap');
+            }
+        """)
+        page.wait_for_timeout(500)
+
+        tree = page.locator('[data-testid="browser-resource-tree"]')
+        # Should show resources from parent workflow (incl. act1's rule)
+        expect(tree).to_contain_text('Rule Alpha')
+        expect(tree).to_contain_text('Shared Skill')
 
 
 # ---------------------------------------------------------------------------
