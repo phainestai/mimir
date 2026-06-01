@@ -21,6 +21,7 @@ const _ALL_TYPES = ['workflow', 'activity', 'skill', 'agent', 'artifact', 'rule'
 let _currentFilters = { types: _ALL_TYPES.slice(), phases: [] };
 let _currentSearchTerm = '';
 let _searchDebounceTimer = null;
+let _currentLayout = 'layered'; // 'layered' | 'mrtree'
 
 /**
  * Read the playbook PK from the #browser-root data attribute.
@@ -62,6 +63,7 @@ function _parseUrlParams() {
   const params = new URLSearchParams(window.location.search);
   const typesRaw = params.get('types');
   const phasesRaw = params.get('phases');
+  const layoutRaw = params.get('layout');
 
   let types;
   if (typesRaw === null || typesRaw === '') {
@@ -74,8 +76,12 @@ function _parseUrlParams() {
   const phases = phasesRaw
     ? phasesRaw.split(',')
         .map(s => parseInt(s, 10))
-        .filter(n => Number.isFinite(n) && n >= 0)  // 0 = "Unphased" sentinel
+        .filter(n => Number.isFinite(n) && n >= 0)
     : [];
+
+  if (layoutRaw === 'mrtree' || layoutRaw === 'layered') {
+    _currentLayout = layoutRaw;
+  }
 
   return { types, phases };
 }
@@ -109,11 +115,9 @@ function _normaliseFilters(filters, playbookPhases) {
  */
 function _filtersToQueryString(filters) {
   const parts = [];
-  // "All active" is evaluated only for filterable/toolbar types (phase is not filterable via toolbar).
   const FILTERABLE = ['workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
   const allActive = FILTERABLE.every(t => filters.types.includes(t));
   if (!allActive && filters.types.length > 0) {
-    // Only encode filterable types in the URL; exclude 'phase' (internal only)
     const encodable = filters.types.filter(t => FILTERABLE.includes(t));
     if (encodable.length > 0 && encodable.length < FILTERABLE.length) {
       parts.push('types=' + encodable.join(','));
@@ -121,6 +125,9 @@ function _filtersToQueryString(filters) {
   }
   if (filters.phases.length > 0) {
     parts.push('phases=' + filters.phases.join(','));
+  }
+  if (_currentLayout !== 'layered') {
+    parts.push('layout=' + _currentLayout);
   }
   return parts.length ? '?' + parts.join('&') : '';
 }
@@ -304,7 +311,7 @@ function _renderGraph(pk, graphData, filters) {
   const elkLayout = {
     name: 'elk',
     elk: {
-      algorithm: 'layered',
+      algorithm: _currentLayout,
       'elk.direction': 'DOWN',
       'elk.edgeRouting': 'ORTHOGONAL',
       'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
@@ -766,7 +773,34 @@ function _renderStructureTree() {
 }
 
 /**
- * Accordion: collapse all workflow sections except the given one, expand it.
+ * Cycle the ELK layout between 'layered' and 'mrtree'.
+ * Re-runs layout on the existing cy instance without re-fetching.
+ */
+function _cycleLayout() {
+  _currentLayout = _currentLayout === 'layered' ? 'mrtree' : 'layered';
+  _updateLayoutBtn();
+  _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
+
+  if (!window.cy) return;
+  const layout = window.cy.layout({
+    name: 'elk',
+    elk: { algorithm: _currentLayout, 'elk.direction': 'DOWN' },
+    padding: 30,
+  });
+  layout.run();
+  layout.on('layoutstop', () => { window.cy.fit(undefined, 40); });
+}
+
+/**
+ * Update the layout button label to reflect current mode.
+ */
+function _updateLayoutBtn() {
+  const btn = document.querySelector('[data-testid="browser-layout-btn"]');
+  if (!btn) return;
+  btn.textContent = _currentLayout === 'layered' ? 'Layered' : 'MTree';
+}
+
+/**
  * @param {string} sectionId - The id of the section div to expand (e.g. "tree-wf-3")
  */
 function _accordionWorkflow(sectionId) {
@@ -1199,6 +1233,11 @@ function _init() {
   if (zoomIn) zoomIn.addEventListener('click', () => window.cy && window.cy.zoom({ level: window.cy.zoom() * 1.3, renderedPosition: { x: window.cy.width() / 2, y: window.cy.height() / 2 } }));
   if (zoomOut) zoomOut.addEventListener('click', () => window.cy && window.cy.zoom({ level: window.cy.zoom() / 1.3, renderedPosition: { x: window.cy.width() / 2, y: window.cy.height() / 2 } }));
   if (zoomFit) zoomFit.addEventListener('click', () => window.cy && window.cy.fit());
+
+  // Wire layout switcher.
+  const layoutBtn = document.querySelector('[data-testid="browser-layout-btn"]');
+  if (layoutBtn) layoutBtn.addEventListener('click', _cycleLayout);
+  _updateLayoutBtn();
 
   _fetchGraph(pk);
 }

@@ -177,3 +177,75 @@ class TestNoDegradedBanner:
 
         count = page.locator('[data-testid="browser-degraded-banner"]').count()
         assert count == 0, "Degraded-mode banner must be absent from the DOM"
+
+
+# ---------------------------------------------------------------------------
+# S21 / FOB-19: ELK layout switcher (Layered ↔ MTree)
+# ---------------------------------------------------------------------------
+
+class TestLayoutSwitcher:
+
+    def test_layout_button_present_and_shows_layered(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Layout switcher button is present and defaults to 'Layered' (FOB-19)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+
+        btn = page.locator('[data-testid="browser-layout-btn"]')
+        expect(btn).to_be_visible()
+        expect(btn).to_contain_text('Layered')
+
+    def test_clicking_layout_button_switches_to_mrtree(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Clicking layout button switches label to 'MTree' (FOB-19)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+
+        page.locator('[data-testid="browser-layout-btn"]').click()
+        page.wait_for_timeout(500)
+
+        expect(page.locator('[data-testid="browser-layout-btn"]')).to_contain_text('MTree')
+
+    def test_layout_persists_in_url(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """After switching to MTree, URL contains ?layout=mrtree (FOB-19)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+
+        page.locator('[data-testid="browser-layout-btn"]').click()
+        page.wait_for_timeout(500)
+
+        assert 'layout=mrtree' in page.url
+
+    def test_clicking_again_switches_back_to_layered(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Clicking layout button twice returns to 'Layered' and removes URL param (FOB-19)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+
+        btn = page.locator('[data-testid="browser-layout-btn"]')
+        btn.click()
+        page.wait_for_timeout(500)
+        btn.click()
+        page.wait_for_timeout(500)
+
+        expect(btn).to_contain_text('Layered')
+        assert 'layout=' not in page.url
+
+    def test_layout_url_param_applied_on_page_load(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Loading URL with ?layout=mrtree applies MTree layout (FOB-19)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/?layout=mrtree")
+        _wait_for_graph(page)
+
+        expect(page.locator('[data-testid="browser-layout-btn"]')).to_contain_text('MTree')
