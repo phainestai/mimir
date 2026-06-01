@@ -1,12 +1,14 @@
 iteration:
-  goal: "Content Browser — deterministic node insertion order for optimal ELK layout (FOB-33)"
+  goal: "Content Browser — node ordering, layout picker dropdown, and full layout catalog (FOB-33, FOB-19, FOB-34)"
   doctrine_version: "2.0"
   created_at: "2026-06-01T16:30:00Z"
 
-conflict_map: {}
+conflict_map:
+  S34_depends_on_S33: "S34 replaces _cycleLayout in content-browser.js; must follow S33 to avoid merge conflict"
 
 parallel_groups:
   A: [S33]
+  B: [S34]
 
 drift_thresholds:
   absorbed:
@@ -55,3 +57,55 @@ scenarios:
       Reference implementation already exists as local git stash 'sort-nodes-reference'.
       Run `git stash list` to find it. Key pattern: TYPE_TIER map + activitySortIndex Map
       built from activity nodes, then sort by (tier, activity position, parentActPk).
+
+  S34:
+    title: "Layout picker — 2-level dropdown, full library catalog, backward compat (FOB-19, FOB-34)"
+    github_issue: 36
+    parallel_group: B
+    skeleton_commit: "7695019"
+    dependencies: [S33]
+    codebase_footprint:
+      - static/js/content-browser.js
+      - templates/browser/browser_graph.html
+      - tests/e2e/test_content_browser_layout_picker.py
+      - tests/e2e/test_content_browser_layout_position.py
+    checkpoint:
+      command: "pytest tests/e2e/test_content_browser_layout_picker.py -x"
+      expected_exit_code: 0
+    sao_sections:
+      - "§Frontend Architecture: JS in static/js/, templates in templates/browser/"
+      - "§Testing Strategy: E2E via Playwright"
+    context_map:
+      - file: "static/js/content-browser.js"
+        note: "_LAYOUT_CATALOG constant (stub) + _applyLayout stub + _toggleLayoutDropdown stub already placed"
+      - file: "static/js/content-browser.js"
+        note: "_cycleLayout() and _runElkLayout() — S34 replaces _cycleLayout with _applyLayout; update _runElkLayout to dispatch by layout key"
+      - file: "templates/browser/browser_graph.html"
+        lines: "192-199"
+        note: "CDN scripts — add cola, klay, cise, euler, avsdf, cose-bilkent, fcose CDN tags here"
+      - file: "templates/browser/browser_graph.html"
+        lines: "138-145"
+        note: "browser-layout-btn button — replace with dropdown trigger + panel HTML"
+      - file: "tests/e2e/test_content_browser_layout_position.py"
+        note: "TestLayoutSwitcher tests use old toggle UI — update to use dropdown picker pattern"
+    do_not_do:
+      - "Do NOT change the backend API or add new Django views"
+      - "Do NOT change node/edge data structure (_fullGraphData)"
+      - "Do NOT use ES6 modules or import statements (vanilla script, no bundler)"
+      - "Do NOT lazy-load CDN scripts on layout selection — load all at page start"
+      - "Do NOT change ELK's orthogonal edge routing or node spacing defaults"
+    implementation_note: >
+      Build a self-contained vanilla-JS dropdown: on click of browser-layout-btn, toggle
+      a position:absolute div (browser-layout-dropdown) that renders _LAYOUT_CATALOG grouped
+      by group header. Each item sets _currentLayout = key, closes dropdown, calls _applyLayout(key).
+      _applyLayout dispatches: elk-* → elk with algorithm suffix, dagre-* → dagre with rankDir,
+      cy-* → native cytoscape layout name (strip 'cy-' prefix), single-name keys → name directly.
+      Update existing TestLayoutSwitcher tests to use the new dropdown pattern.
+      CDN URLs (jsDelivr):
+        cola:          cytoscape-cola@2.5.1
+        klay:          klayjs@0.4.1 + cytoscape-klay@3.1.4
+        cise:          cytoscape-cise@2.2.2
+        euler:         cytoscape-euler@1.2.2
+        avsdf:         cytoscape-avsdf@1.2.1
+        cose-bilkent:  cytoscape-cose-bilkent@4.1.0
+        fcose:         cytoscape-fcose@2.2.0
