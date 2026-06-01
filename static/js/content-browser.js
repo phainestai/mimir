@@ -19,6 +19,15 @@ const _ALL_TYPES = ['workflow', 'activity', 'skill', 'agent', 'artifact', 'rule'
 // ─── Module-level filter + search state ──────────────────────────────────────
 // Mutated by _applyFilters / _applySearch; read by _openDetailPanel / _closeDetailPanel.
 let _currentFilters = { types: _ALL_TYPES.slice(), phases: [] };
+
+/**
+ * Full graph element snapshot from the last successful API fetch.
+ * Used as the authoritative source when rebuilding cy after entity-type filter changes.
+ * Shape: { nodes: object[], edges: object[] }
+ *
+ * @type {{ nodes: object[], edges: object[] } | null}
+ */
+let _fullGraphData = null;
 let _currentSearchTerm = '';
 let _searchDebounceTimer = null;
 let _currentLayout = 'layered'; // 'layered' | 'mrtree'
@@ -265,6 +274,7 @@ async function _fetchGraph(pk) {
     }
 
     const data = await response.json();
+    _fullGraphData = { nodes: data.nodes || [], edges: data.edges || [] };
     const filters = _parseUrlParams();
     _renderGraph(pk, data, filters);
     _updatePlaybookHeader(pk, data.playbook_name || '', data.playbook_status || '');
@@ -453,14 +463,41 @@ function _cytoscapeStyle() {
  */
 function _applyFilters(filters) {
   _currentFilters = filters;
+  _applyTypeRebuild(new Set(filters.types));
   _refreshVisualState();
-  // Close panel if the selected node's type is being hidden.
+  // Close panel if the selected node's type is now excluded.
   if (_currentPanelNode) {
     const activeTypes = new Set(filters.types);
     if (!activeTypes.has(_currentPanelNode.data('type'))) {
       _closeDetailPanel();
     }
   }
+}
+
+/**
+ * Rebuild the Cytoscape element set to include only nodes of the active types,
+ * plus any edges whose both endpoints are in the active set.
+ * After rebuilding, automatically re-runs the current ELK layout.
+ *
+ * Only entity-type filtering causes a rebuild. Phase filter and search use
+ * the dim model (_refreshVisualState) and do NOT trigger a rebuild.
+ *
+ * @param {Set<string>} activeTypes - set of type strings that should be present in cy
+ */
+function _applyTypeRebuild(activeTypes) {
+  throw new Error('NotImplementedError: _applyTypeRebuild');
+}
+
+/**
+ * From _fullGraphData, return the Cytoscape element array (nodes + edges) for
+ * the given set of active types. Orphaned resource nodes (nodes whose type is
+ * active but whose Activity parent was excluded) are also removed.
+ *
+ * @param {Set<string>} activeTypes
+ * @returns {{ data: object }[]}
+ */
+function _buildFilteredElements(activeTypes) {
+  throw new Error('NotImplementedError: _buildFilteredElements');
 }
 
 /**

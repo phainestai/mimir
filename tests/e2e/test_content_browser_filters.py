@@ -156,27 +156,29 @@ class TestEntityTypeFilter:
     def test_toggle_off_type_hides_nodes_on_canvas(
         self, page: Page, live_server, filter_playbook,
     ):
-        """Deactivating 'Rule' hides rule nodes from canvas (FOB-11)."""
+        """Deactivating 'Rule' removes rule nodes from the Cytoscape graph entirely (FOB-11)."""
         _login(page, live_server.url, filter_playbook['username'], filter_playbook['password'])
         page.goto(f"{live_server.url}/browser/{filter_playbook['pb'].pk}/")
         _wait_for_graph(page)
         page.wait_for_selector('[data-filter-type="rule"]', timeout=5000)
 
-        # Before toggle: rule node is visible
         rule_id = f"rule:{filter_playbook['rule'].pk}:activity:{filter_playbook['act2'].pk}"
-        vis_before = page.evaluate(
-            f"window.cy.getElementById('{rule_id}').style('visibility')"
+
+        # Before toggle: rule node exists in cy
+        count_before = page.evaluate(
+            f"window.cy.getElementById('{rule_id}').length"
         )
-        assert vis_before == 'visible'
+        assert count_before == 1, "Rule node should exist in cy before filter toggle"
 
         # Toggle rule off
         page.locator('[data-filter-type="rule"]').click()
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(600)
 
-        vis_after = page.evaluate(
-            f"window.cy.getElementById('{rule_id}').style('visibility')"
+        # After toggle: node fully removed from cy (not just hidden)
+        count_after = page.evaluate(
+            f"window.cy.getElementById('{rule_id}').length"
         )
-        assert vis_after == 'hidden'
+        assert count_after == 0, "Rule node must be removed from cy after type deactivation"
 
     def test_toggle_off_updates_url_types_param(
         self, page: Page, live_server, filter_playbook,
@@ -196,20 +198,24 @@ class TestEntityTypeFilter:
     def test_re_activate_type_shows_nodes(
         self, page: Page, live_server, filter_playbook,
     ):
-        """Re-activating a hidden type makes nodes visible again (FOB-11)."""
+        """Re-activating a removed type adds nodes back to cy and re-layouts (FOB-11)."""
         _login(page, live_server.url, filter_playbook['username'], filter_playbook['password'])
         page.goto(f"{live_server.url}/browser/{filter_playbook['pb'].pk}/")
         _wait_for_graph(page)
         page.wait_for_selector('[data-filter-type="rule"]', timeout=5000)
 
         rule_id = f"rule:{filter_playbook['rule'].pk}:activity:{filter_playbook['act2'].pk}"
+        # Remove rules
         page.locator('[data-filter-type="rule"]').click()
-        page.wait_for_timeout(300)
-        page.locator('[data-filter-type="rule"]').click()
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(600)
+        assert page.evaluate(f"window.cy.getElementById('{rule_id}').length") == 0
 
-        vis = page.evaluate(f"window.cy.getElementById('{rule_id}').style('visibility')")
-        assert vis == 'visible'
+        # Re-activate rules
+        page.locator('[data-filter-type="rule"]').click()
+        page.wait_for_timeout(600)
+
+        count = page.evaluate(f"window.cy.getElementById('{rule_id}').length")
+        assert count == 1, "Rule node must be re-added to cy after type re-activation"
 
     def test_all_active_removes_types_from_url(
         self, page: Page, live_server, filter_playbook,
@@ -254,7 +260,7 @@ class TestEntityTypeFilter:
     def test_resource_tree_click_opens_panel_when_canvas_node_hidden(
         self, page: Page, live_server, filter_playbook,
     ):
-        """FOB-32: resource tree row opens panel even when canvas node is hidden."""
+        """FOB-32: resource tree row opens panel even when canvas node is removed from cy."""
         _login(page, live_server.url, filter_playbook['username'], filter_playbook['password'])
         page.goto(f"{live_server.url}/browser/{filter_playbook['pb'].pk}/")
         _wait_for_graph(page)
@@ -265,28 +271,28 @@ class TestEntityTypeFilter:
         _tap_node(page, wf_id)
         page.wait_for_selector('[data-testid="browser-resource-row"]', timeout=5000)
 
-        # Hide rule nodes
+        # Remove rule nodes via filter toggle
         page.locator('[data-filter-type="rule"]').click()
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(600)
 
         rule_id = f"rule:{filter_playbook['rule'].pk}:activity:{filter_playbook['act2'].pk}"
-        vis = page.evaluate(f"window.cy.getElementById('{rule_id}').style('visibility')")
-        assert vis == 'hidden', "Rule canvas node should be hidden by filter"
+        count = page.evaluate(f"window.cy.getElementById('{rule_id}').length")
+        assert count == 0, "Rule canvas node must be removed from cy by filter"
 
-        # Click the rule row in resource tree
+        # Click the rule row in resource tree — panel must still open
         rule_row = page.locator('[data-testid="browser-resource-row"]', has_text='Coding Rule')
         expect(rule_row).to_be_visible()
         rule_row.click()
         page.wait_for_timeout(400)
 
-        # Panel still opens
+        # Panel opens
         expect(page.locator('[data-testid="browser-detail-panel"]')).to_be_visible()
 
-        # No canvas selection ring on the (hidden) node
+        # The removed node has no selection ring (it doesn't exist in cy)
         border_width = page.evaluate(
             f"window.cy.getElementById('{rule_id}').style('border-width')"
         )
-        assert border_width in ('0', '0px', ''), "Hidden node must not show selection ring"
+        assert border_width in ('0', '0px', ''), "Removed node must not show selection ring"
 
 
 # ---------------------------------------------------------------------------
