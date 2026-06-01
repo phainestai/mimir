@@ -63,12 +63,13 @@ Feature: FOB-CONTENT-BROWSER-FILTERS Content Browser Filters and Search
     Then all nodes return to normal appearance
 
 
-  Scenario: FOB-CONTENT-BROWSER-03g Switching playbooks resets stale phase filter
-    Given Maria is on /browser/3/?phases=2,5 (phases from playbook 3)
-    When she switches to playbook 7 (which has different or no phases)
-    Then the phases param is cleared from the URL if none of the IDs exist in playbook 7
+  Scenario: FOB-CONTENT-BROWSER-03g Switching playbooks resets stale phase filter and entity-type filter
+    Given Maria is on /browser/3/?phases=2,5&types=workflow,activity (filters from playbook 3)
+    When she switches to playbook 7 via the playbook picker
+    Then the browser performs a full page navigation to /browser/7/ (no query params)
     And the Phase filter resets to "All phases" for the new playbook
-    And the entity-type filter is preserved across the switch
+    And the entity-type filter is reset to show all types
+    Note: full page load resets all filter and layout params per FOB-23b
 
 
   Scenario: FOB-CONTENT-BROWSER-32 Clicking resource with hidden canvas node still opens panel

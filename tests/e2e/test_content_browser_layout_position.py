@@ -57,7 +57,12 @@ def layout_playbook(layout_user, transactional_db):
         source='owned', author=layout_user, visibility='public',
     )
     wf = Workflow.objects.create(name='LayoutWF', playbook=pb, order=1)
+    wf2 = Workflow.objects.create(name='LayoutWF2', playbook=pb, order=2)
     Activity.objects.create(name='LayoutAct', workflow=wf, order=1)
+    Activity.objects.create(name='LayoutAct2', workflow=wf, order=2)
+    Activity.objects.create(name='LayoutAct3', workflow=wf, order=3)
+    Activity.objects.create(name='LayoutAct4', workflow=wf2, order=1)
+    Activity.objects.create(name='LayoutAct5', workflow=wf2, order=2)
     return pb
 
 
@@ -249,3 +254,146 @@ class TestLayoutSwitcher:
         _wait_for_graph(page)
 
         expect(page.locator('[data-testid="browser-layout-btn"]')).to_contain_text('MTree')
+
+    def test_clicking_layout_button_repositions_nodes(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Clicking layout button actually repositions nodes on canvas (FOB-19 bug fix S27)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+
+        # Capture positions of all nodes before layout switch
+        positions_before = page.evaluate("""() => {
+            if (!window.cy) return null;
+            return window.cy.nodes().map(n => ({ id: n.id(), x: n.position('x'), y: n.position('y') }));
+        }""")
+        assert positions_before and len(positions_before) > 0
+
+        page.locator('[data-testid="browser-layout-btn"]').click()
+        # Wait for ELK layout to complete — allow up to 5 seconds for re-layout
+        page.wait_for_timeout(3000)
+
+        positions_after = page.evaluate("""() => {
+            if (!window.cy) return null;
+            return window.cy.nodes().map(n => ({ id: n.id(), x: n.position('x'), y: n.position('y') }));
+        }""")
+        assert positions_after and len(positions_after) == len(positions_before)
+        # At least one node must have moved
+        changed = any(
+            abs(b['x'] - a['x']) > 1 or abs(b['y'] - a['y']) > 1
+            for b, a in zip(positions_before, positions_after)
+        )
+        assert changed, "No nodes repositioned after layout switch — layout did not run"
+
+
+# ---------------------------------------------------------------------------
+# S28 — Re-plot button (FOB-29)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db(transaction=True)
+class TestReplotButton:
+    """Re-plot button reruns ELK layout on visible nodes (FOB-29 / S28)."""
+
+    def test_replot_button_present(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Re-plot button is visible on the canvas controls (FOB-29)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+        expect(page.locator('[data-testid="browser-replot-btn"]')).to_be_visible()
+
+    def test_replot_button_repositions_nodes(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Clicking re-plot button repositions nodes (FOB-29 / S28)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+
+        # Switch to mrtree so re-plot produces a different layout than initial layered
+        page.locator('[data-testid="browser-layout-btn"]').click()
+        page.wait_for_timeout(3000)
+
+        positions_before = page.evaluate("""() => {
+            if (!window.cy) return null;
+            return window.cy.nodes().map(n => ({ id: n.id(), x: n.position('x'), y: n.position('y') }));
+        }""")
+        assert positions_before and len(positions_before) > 0
+
+        # Switch back to layered, then click re-plot — positions should change
+        page.locator('[data-testid="browser-layout-btn"]').click()
+        page.wait_for_timeout(3000)
+        page.locator('[data-testid="browser-replot-btn"]').click()
+        page.wait_for_timeout(3000)
+
+        positions_after = page.evaluate("""() => {
+            if (!window.cy) return null;
+            return window.cy.nodes().map(n => ({ id: n.id(), x: n.position('x'), y: n.position('y') }));
+        }""")
+        assert positions_after and len(positions_after) == len(positions_before)
+        changed = any(
+            abs(b['x'] - a['x']) > 1 or abs(b['y'] - a['y']) > 1
+            for b, a in zip(positions_before, positions_after)
+        )
+        assert changed, "Re-plot button did not reposition nodes"
+
+
+# ---------------------------------------------------------------------------
+# S29 — Zoom control buttons (FOB-07b)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db(transaction=True)
+class TestZoomControls:
+    """Zoom control buttons (+, -, fit) work on the canvas (FOB-07b / S29)."""
+
+    def test_zoom_in_button_increases_zoom(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Clicking zoom-in button increases the Cytoscape zoom level (FOB-07b)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+
+        zoom_before = page.evaluate("() => window.cy ? window.cy.zoom() : null")
+        assert zoom_before is not None
+        page.locator('[data-testid="browser-zoom-in"]').click()
+        page.wait_for_timeout(300)
+        zoom_after = page.evaluate("() => window.cy ? window.cy.zoom() : null")
+        assert zoom_after > zoom_before, f"Zoom-in did not increase zoom: {zoom_before} → {zoom_after}"
+
+    def test_zoom_out_button_decreases_zoom(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Clicking zoom-out button decreases the Cytoscape zoom level (FOB-07b)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+
+        zoom_before = page.evaluate("() => window.cy ? window.cy.zoom() : null")
+        assert zoom_before is not None
+        page.locator('[data-testid="browser-zoom-out"]').click()
+        page.wait_for_timeout(300)
+        zoom_after = page.evaluate("() => window.cy ? window.cy.zoom() : null")
+        assert zoom_after < zoom_before, f"Zoom-out did not decrease zoom: {zoom_before} → {zoom_after}"
+
+    def test_zoom_fit_button_restores_fit(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Clicking fit button adjusts zoom so all nodes are visible (FOB-07b)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+
+        # Zoom in dramatically so the graph is not fully visible
+        page.evaluate("() => window.cy && window.cy.zoom(3.0)")
+        page.wait_for_timeout(200)
+        zoom_after_manual = page.evaluate("() => window.cy ? window.cy.zoom() : null")
+        assert zoom_after_manual > 2.5
+
+        page.locator('[data-testid="browser-zoom-fit"]').click()
+        page.wait_for_timeout(500)
+        zoom_after_fit = page.evaluate("() => window.cy ? window.cy.zoom() : null")
+        # Fit should reduce zoom so all nodes are visible (zoom < 3)
+        assert zoom_after_fit < zoom_after_manual, f"Fit did not reduce zoom: {zoom_after_manual} → {zoom_after_fit}"

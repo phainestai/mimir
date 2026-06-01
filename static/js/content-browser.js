@@ -780,15 +780,30 @@ function _cycleLayout() {
   _currentLayout = _currentLayout === 'layered' ? 'mrtree' : 'layered';
   _updateLayoutBtn();
   _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
+  _runElkLayout();
+}
 
+/**
+ * Run ELK layout on the current cy instance using _currentLayout algorithm.
+ * Fits the graph to screen after layout completes.
+ */
+function _runElkLayout() {
   if (!window.cy) return;
   const layout = window.cy.layout({
     name: 'elk',
     elk: { algorithm: _currentLayout, 'elk.direction': 'DOWN' },
     padding: 30,
   });
+  layout.one('layoutstop', () => { window.cy.fit(undefined, 40); });
   layout.run();
-  layout.on('layoutstop', () => { window.cy.fit(undefined, 40); });
+}
+
+/**
+ * Re-run ELK layout on the current cy instance using visible nodes only.
+ * Useful after hiding node types or filtering, so freed space is reclaimed.
+ */
+function _replot() {
+  _runElkLayout();
 }
 
 /**
@@ -1233,6 +1248,10 @@ function _init() {
   const layoutBtn = document.querySelector('[data-testid="browser-layout-btn"]');
   if (layoutBtn) layoutBtn.addEventListener('click', _cycleLayout);
   _updateLayoutBtn();
+
+  // Wire re-plot button.
+  const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
+  if (replotBtn) replotBtn.addEventListener('click', _replot);
 
   _fetchGraph(pk);
 }

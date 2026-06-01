@@ -403,7 +403,7 @@ class TestPhaseFilter:
     def test_phase_filter_preserves_entity_type_filter_on_switch(
         self, page: Page, live_server, filter_playbook, filter_user, no_phase_playbook,
     ):
-        """FOB-03g: entity type filter is preserved when switching playbooks."""
+        """FOB-03g: switching playbooks via full page load resets all filters (per FOB-23b)."""
         _login(page, live_server.url, 'filter_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{filter_playbook['pb'].pk}/")
         _wait_for_graph(page)
@@ -414,15 +414,15 @@ class TestPhaseFilter:
         page.wait_for_timeout(400)
         assert 'types=' in page.url
 
-        # Switch playbook
+        # Switch playbook — full page navigation resets all filters (FOB-23b)
         page.locator('[data-testid="browser-change-playbook"]').click()
         page.wait_for_selector('[data-testid="browser-picker-item"]', timeout=5000)
         page.locator('[data-testid="browser-picker-item"]', has_text='NoPhasePB').click()
         page.wait_for_load_state('networkidle')
 
-        # Entity type filter is preserved (rule still excluded)
-        assert 'types=' in page.url
-        assert 'rule' not in page.url.split('types=')[1].split('&')[0]
+        # Full page reload to /browser/<pk>/ — no filter params preserved
+        assert 'types=' not in page.url
+        assert f'/browser/{no_phase_playbook.pk}/' in page.url
 
     def test_structural_tree_filters_by_active_phase(
         self, page: Page, live_server, filter_playbook,

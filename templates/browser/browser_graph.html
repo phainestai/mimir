@@ -133,11 +133,14 @@
 
     {# Zoom controls and node count — shown when graph is rendered #}
     <div class="position-absolute bottom-0 end-0 mb-3 me-3 d-flex flex-column gap-1"
-         style="z-index: 10;">
+         style="z-index: 20; pointer-events: auto;">
       <span data-testid="browser-node-count" class="badge bg-secondary text-end"></span>
       <button data-testid="browser-layout-btn"
               class="btn btn-sm btn-outline-secondary"
               title="Switch layout">Layered</button>
+      <button data-testid="browser-replot-btn"
+              class="btn btn-sm btn-outline-secondary"
+              title="Re-plot graph using current layout (useful after hiding nodes)">↺ Re-plot</button>
       <button data-testid="browser-zoom-in"
               class="btn btn-sm btn-outline-secondary"
               title="Zoom in">+</button>
@@ -152,7 +155,7 @@
     {# Entity type + phase filter toolbar — populated by JS after graph loads #}
     <div data-testid="browser-filter-toolbar"
          class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1"
-         style="z-index:10;">
+         style="z-index:20; pointer-events: auto;">
       <div data-testid="browser-type-filter-row" class="d-flex flex-wrap gap-1"></div>
       <div data-testid="browser-phase-filter" class="d-flex flex-wrap gap-1"></div>
     </div>
@@ -191,6 +194,7 @@
 {# Cytoscape.js and layout/navigation plugins from CDN — pinned versions #}
 <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-elk@2.2.0/dist/cytoscape-elk.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-navigator@2.0.2/cytoscape-navigator.js"></script>
 {# CDN bootstrap guard — must come before content-browser.js #}
