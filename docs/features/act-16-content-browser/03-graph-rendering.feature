@@ -37,6 +37,22 @@ Feature: FOB-CONTENT-BROWSER-GRAPH Content Browser Graph Rendering
     And the layout is computed automatically (no manual positioning needed)
 
 
+  Scenario: FOB-CONTENT-BROWSER-19 Layout mode switcher toggles between ELK algorithms
+    Given Maria is on the graph view canvas with a playbook loaded
+    Then a layout-mode button (data-testid="browser-layout-btn") is visible in the canvas controls area
+    And the button label reflects the current active layout ("Layered" or "MTree")
+    When Maria clicks the layout button
+    Then the graph re-runs layout with the next ELK algorithm in the cycle:
+      | cycle order | elk algorithm       | button label |
+      | 1 (default) | layered             | Layered      |
+      | 2           | mrtree              | MTree        |
+    And after MTree the next click cycles back to Layered
+    And the active layout name is stored in the URL query param "layout"
+      so that reloading or sharing the URL preserves the chosen layout
+    And the graph fits to screen automatically after each layout re-run
+    And the layout switch does NOT reset any active entity-type or phase filters
+
+
   Scenario: FOB-CONTENT-BROWSER-07 Pan, zoom and navigate the canvas
     Given Maria is on the graph view canvas
     Then she can pan by clicking and dragging the background
