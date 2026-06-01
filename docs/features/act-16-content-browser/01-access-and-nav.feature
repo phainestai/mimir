@@ -92,3 +92,14 @@ Feature: FOB-CONTENT-BROWSER-ACCESS Content Browser Access and Navigation
     And the client drops phase IDs not present in playbook 7's phase list (999, abc)
     And the URL is rewritten to its canonical form (removing invalid params)
     And the graph renders normally — invalid params do not hide content or cause errors
+
+
+  Scenario: FOB-CONTENT-BROWSER-23b Selecting a playbook from the picker navigates via full page load
+    Given the playbook picker is open
+    When Maria clicks a playbook entry in the picker
+    Then the browser performs a full page navigation to /browser/<selected_pk>/
+      (i.e. window.location.href assignment, not an in-place AJAX/JS state update)
+    So that the resulting loaded state is byte-for-byte identical to
+      opening /browser/<selected_pk>/ directly in a new tab
+    And any previously active filters and layout params are reset to their URL defaults
+    And the back button navigates to the page where the picker was opened

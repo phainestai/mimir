@@ -42,15 +42,19 @@ Feature: FOB-CONTENT-BROWSER-GRAPH Content Browser Graph Rendering
     Then a layout-mode button (data-testid="browser-layout-btn") is visible in the canvas controls area
     And the button label reflects the current active layout ("Layered" or "MTree")
     When Maria clicks the layout button
-    Then the graph re-runs layout with the next ELK algorithm in the cycle:
+    Then the active layout cycles to the next algorithm:
       | cycle order | elk algorithm       | button label |
       | 1 (default) | layered             | Layered      |
       | 2           | mrtree              | MTree        |
     And after MTree the next click cycles back to Layered
+    And the graph immediately re-runs the ELK layout with the new algorithm
+      — nodes are visibly repositioned in the canvas
+    And the graph fits to screen automatically after each layout re-run
     And the active layout name is stored in the URL query param "layout"
       so that reloading or sharing the URL preserves the chosen layout
-    And the graph fits to screen automatically after each layout re-run
     And the layout switch does NOT reset any active entity-type or phase filters
+    Note: the layoutstop event listener must be attached before layout.run() is called
+      to guarantee fit() fires even when layout completes synchronously
 
 
   Scenario: FOB-CONTENT-BROWSER-07 Pan, zoom and navigate the canvas
@@ -59,6 +63,32 @@ Feature: FOB-CONTENT-BROWSER-GRAPH Content Browser Graph Rendering
     And she can zoom in/out using the scroll wheel or pinch gesture
     And a mini-map (cytoscape-navigator) shows her viewport position
     And zoom controls (+/−/fit) are available on the canvas
+
+
+  Scenario: FOB-CONTENT-BROWSER-07b Canvas zoom control buttons are interactive
+    Given Maria is on the graph view canvas with a playbook loaded
+    Then the zoom control buttons are visible:
+      | button           | data-testid       | expected action                            |
+      | Zoom in  (+)     | browser-zoom-in   | increases canvas zoom level by ~30%        |
+      | Zoom out (−)     | browser-zoom-out  | decreases canvas zoom level by ~30%        |
+      | Fit      (⊡)    | browser-zoom-fit  | fits all nodes into the viewport           |
+    And each button is clickable — pointer events reach it (no invisible overlay blocks input)
+    And clicking [+] visibly zooms in the graph
+    And clicking [−] visibly zooms out the graph
+    And clicking [⊡] resets zoom so all nodes fit in the viewport
+
+
+  Scenario: FOB-CONTENT-BROWSER-29 Re-plot button re-runs layout on currently visible nodes
+    Given Maria is on the graph view canvas with a playbook loaded
+    And she has hidden some node types using the entity-type filter
+      (e.g. Skills, Rules hidden — those nodes no longer occupy canvas space)
+    Then a [Re-plot] button (data-testid="browser-replot-btn") is visible in the canvas controls area
+    When she clicks [Re-plot]
+    Then the graph re-runs the current ELK layout algorithm (no algorithm change)
+    And only the currently visible nodes are included in the layout calculation
+      — hidden nodes do not reserve whitespace in the new arrangement
+    And the graph fits to screen automatically after the layout completes
+    And clicking [Re-plot] does NOT change the active layout algorithm or any active filters
 
 
   Scenario: FOB-CONTENT-BROWSER-10 Fit graph to screen
