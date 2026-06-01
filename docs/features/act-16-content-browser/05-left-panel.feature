@@ -25,6 +25,18 @@ Feature: FOB-CONTENT-BROWSER-LEFT-PANEL Content Browser Left Panel
 
   # ── Playbook selector ────────────────────────────────────────────────────────
 
+  Scenario: FOB-CONTENT-BROWSER-21a Left panel header shows "No playbook selected" when none is loaded
+    Given Maria navigates to /browser/ with no playbook pre-selected
+    Then the top of the left panel shows the text "No playbook selected"
+      (data-testid="browser-playbook-title")
+    And no status badge is shown
+    And a [Select Playbook] button is shown below the heading
+    When Maria selects a playbook from the picker
+    Then the heading text immediately updates to the selected playbook's name
+    And the status badge for that playbook appears
+    And the button label changes from [Select Playbook] to [Change Playbook]
+
+
   Scenario: FOB-CONTENT-BROWSER-21 Left panel shows active playbook name at top
     Given Maria is viewing "FeatureFactory" in the graph view
     Then the top of the left panel shows:
