@@ -1,6 +1,7 @@
 id: ITER-20260601e
 title: "Content Browser: canvas interaction bug fixes + re-plot button"
 milestone: 7
+status: complete
 description: >
   Iteration 7 for act-16 (Content Browser). Fixes four canvas interaction
   regressions/gaps discovered post-Iteration-6: full-page navigation on picker
