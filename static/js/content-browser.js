@@ -30,7 +30,57 @@ let _currentFilters = { types: _ALL_TYPES.slice(), phases: [] };
 let _fullGraphData = null;
 let _currentSearchTerm = '';
 let _searchDebounceTimer = null;
-let _currentLayout = 'layered'; // 'layered' | 'mrtree'
+let _currentLayout = 'elk-layered'; // layout key — see _LAYOUT_CATALOG
+
+/**
+ * Full layout catalog used by the layout picker dropdown (FOB-19, FOB-34).
+ * Each entry: { key, label, group }  — key is also the URL param value.
+ * TODO S34: implement _applyLayout() to dispatch on these keys.
+ */
+const _LAYOUT_CATALOG = [
+  // ELK sub-algorithms (elkjs already loaded)
+  { key: 'elk-layered',   label: 'Layered',      group: 'ELK' },
+  { key: 'elk-mrtree',    label: 'Tree',          group: 'ELK' },
+  { key: 'elk-force',     label: 'Force',         group: 'ELK' },
+  { key: 'elk-stress',    label: 'Stress',        group: 'ELK' },
+  { key: 'elk-disco',     label: 'Disco',         group: 'ELK' },
+  // Dagre (dagre + cytoscape-dagre already loaded)
+  { key: 'dagre-tb',      label: 'Top-Down',      group: 'Dagre' },
+  { key: 'dagre-lr',      label: 'Left-Right',    group: 'Dagre' },
+  // Third-party extensions (CDN — added to browser_graph.html)
+  { key: 'cola',          label: 'Cola',          group: 'Cola' },
+  { key: 'klay',          label: 'Klay',          group: 'Klay' },
+  { key: 'cise',          label: 'CiSE',          group: 'CiSE' },
+  { key: 'euler',         label: 'Euler',         group: 'Euler' },
+  { key: 'avsdf',         label: 'AVSDF',         group: 'AVSDF' },
+  { key: 'cose-bilkent',  label: 'CoSE-Bilkent',  group: 'CoSE-Bilkent' },
+  { key: 'fcose',         label: 'fCoSE',         group: 'fCoSE' },
+  // Native Cytoscape layouts (already loaded)
+  { key: 'cy-grid',         label: 'Grid',          group: 'Cytoscape' },
+  { key: 'cy-circle',       label: 'Circle',        group: 'Cytoscape' },
+  { key: 'cy-concentric',   label: 'Concentric',    group: 'Cytoscape' },
+  { key: 'cy-breadthfirst', label: 'Breadth-first', group: 'Cytoscape' },
+  { key: 'cy-cose',         label: 'CoSE',          group: 'Cytoscape' },
+  { key: 'cy-random',       label: 'Random',        group: 'Cytoscape' },
+];
+
+/**
+ * Apply a layout by key and re-run graph layout.
+ * TODO S34: implement dispatch to ELK / dagre / cola / klay / cise / euler /
+ *           avsdf / cose-bilkent / fcose / native-cy based on layout key.
+ * @param {string} key  — one of the keys in _LAYOUT_CATALOG
+ */
+function _applyLayout(key) {
+  throw new Error('_applyLayout: not yet implemented (S34)');
+}
+
+/**
+ * Toggle the layout picker dropdown open/closed.
+ * TODO S34: build dropdown DOM from _LAYOUT_CATALOG and wire click handlers.
+ */
+function _toggleLayoutDropdown() {
+  throw new Error('_toggleLayoutDropdown: not yet implemented (S34)');
+}
 
 /**
  * Read the playbook PK from the #browser-root data attribute.

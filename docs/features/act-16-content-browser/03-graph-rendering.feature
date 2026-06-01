@@ -52,24 +52,75 @@ Feature: FOB-CONTENT-BROWSER-GRAPH Content Browser Graph Rendering
       so ordering is derived client-side without additional API changes
 
 
-  Scenario: FOB-CONTENT-BROWSER-19 Layout mode switcher toggles between ELK algorithms
+  Scenario: FOB-CONTENT-BROWSER-19 Layout picker — 2-level dropdown to select any layout algorithm
     Given Maria is on the graph view canvas with a playbook loaded
-    Then a layout-mode button (data-testid="browser-layout-btn") is visible in the canvas controls area
-    And the button label reflects the current active layout ("Layered" or "MTree")
-    When Maria clicks the layout button
-    Then the active layout cycles to the next algorithm:
-      | cycle order | elk algorithm       | button label |
-      | 1 (default) | layered             | Layered      |
-      | 2           | mrtree              | MTree        |
-    And after MTree the next click cycles back to Layered
-    And the graph immediately re-runs the ELK layout with the new algorithm
-      — nodes are visibly repositioned in the canvas
-    And the graph fits to screen automatically after each layout re-run
-    And the active layout name is stored in the URL query param "layout"
+    Then a layout picker button (data-testid="browser-layout-btn") is visible in the canvas controls area
+    And the button label shows the human-readable name of the currently active layout
+    And the button shows a chevron icon (▾) indicating it opens a dropdown
+    When Maria clicks the layout picker button
+    Then a 2-level dropdown panel (data-testid="browser-layout-dropdown") opens near the button
+    And the panel is grouped by layout library, each group showing:
+      | group header | data-testid prefix              |
+      | ELK          | browser-layout-group-elk        |
+      | Dagre        | browser-layout-group-dagre      |
+      | Cola         | browser-layout-group-cola       |
+      | Klay         | browser-layout-group-klay       |
+      | CiSE         | browser-layout-group-cise       |
+      | Euler        | browser-layout-group-euler      |
+      | AVSDF        | browser-layout-group-avsdf      |
+      | CoSE-Bilkent | browser-layout-group-cose-bilkent |
+      | fCoSE        | browser-layout-group-fcose      |
+      | Cytoscape    | browser-layout-group-cy         |
+    And each group lists its available layout options as clickable items
+      (data-testid="browser-layout-option-{layout-key}")
+    And the currently active layout option is visually highlighted (active/checked state)
+    When Maria clicks any layout option
+    Then the dropdown closes
+    And the layout picker button label updates to the chosen layout's human-readable name
+    And the graph immediately re-runs the new layout algorithm — nodes are visibly repositioned
+    And the graph fits to screen automatically after the layout completes
+    And the active layout key is stored in the URL query param "layout"
       so that reloading or sharing the URL preserves the chosen layout
     And the layout switch does NOT reset any active entity-type or phase filters
+    When Maria presses Escape while the dropdown is open
+    Then the dropdown closes without changing the active layout
     Note: the layoutstop event listener must be attached before layout.run() is called
       to guarantee fit() fires even when layout completes synchronously
+    Note: if the "layout" URL param contains an unrecognised value the browser falls back
+      to the default layout (elk-layered) silently
+
+
+  Scenario: FOB-CONTENT-BROWSER-34 Layout picker catalog — all available layout algorithms
+    Given Maria opens the layout picker dropdown
+    Then the following layout algorithms are available, grouped as shown:
+      | group        | layout-key       | label              | library CDN                              |
+      | ELK          | elk-layered      | Layered (default)  | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-mrtree       | Tree               | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-force        | Force              | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-stress       | Stress             | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-disco        | Disco              | elkjs + cytoscape-elk (already loaded)   |
+      | Dagre        | dagre-tb         | Top-Down           | dagre + cytoscape-dagre (already loaded) |
+      | Dagre        | dagre-lr         | Left-Right         | dagre + cytoscape-dagre (already loaded) |
+      | Cola         | cola             | Cola               | cytoscape-cola (CDN)                     |
+      | Klay         | klay             | Klay               | klayjs + cytoscape-klay (CDN)            |
+      | CiSE         | cise             | CiSE               | cytoscape-cise (CDN)                     |
+      | Euler        | euler            | Euler              | cytoscape-euler (CDN)                    |
+      | AVSDF        | avsdf            | AVSDF              | cytoscape-avsdf (CDN)                    |
+      | CoSE-Bilkent | cose-bilkent     | CoSE-Bilkent       | cytoscape-cose-bilkent (CDN)             |
+      | fCoSE        | fcose            | fCoSE              | cytoscape-fcose (CDN)                    |
+      | Cytoscape    | cy-grid          | Grid               | native cytoscape (already loaded)        |
+      | Cytoscape    | cy-circle        | Circle             | native cytoscape (already loaded)        |
+      | Cytoscape    | cy-concentric    | Concentric         | native cytoscape (already loaded)        |
+      | Cytoscape    | cy-breadthfirst  | Breadth-first      | native cytoscape (already loaded)        |
+      | Cytoscape    | cy-cose          | CoSE               | native cytoscape (already loaded)        |
+      | Cytoscape    | cy-random        | Random             | native cytoscape (already loaded)        |
+    And "elk-layered" is the default layout when no "layout" URL param is present
+    And legacy URL values "layered" and "mrtree" are mapped to "elk-layered" and "elk-mrtree"
+      for backward compatibility with existing bookmarks/shared URLs
+    And each layout library required but not yet loaded is fetched from CDN at page load
+      (all scripts listed in browser_graph.html <head> — not lazy-loaded at selection time)
+    Note: ELK sub-algorithms are driven by the elk.algorithm property — no additional CDN needed
+    Note: layout-key values are used verbatim as the URL "layout" query param value
 
 
   Scenario: FOB-CONTENT-BROWSER-07 Pan, zoom and navigate the canvas
