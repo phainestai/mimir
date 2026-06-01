@@ -78,17 +78,17 @@ Feature: FOB-CONTENT-BROWSER-GRAPH Content Browser Graph Rendering
     And clicking [⊡] resets zoom so all nodes fit in the viewport
 
 
-  Scenario: FOB-CONTENT-BROWSER-29 Re-plot button re-runs layout on currently visible nodes
+  Scenario: FOB-CONTENT-BROWSER-29 Re-plot button re-runs layout on demand
     Given Maria is on the graph view canvas with a playbook loaded
-    And she has hidden some node types using the entity-type filter
-      (e.g. Skills, Rules hidden — those nodes no longer occupy canvas space)
     Then a [Re-plot] button (data-testid="browser-replot-btn") is visible in the canvas controls area
     When she clicks [Re-plot]
     Then the graph re-runs the current ELK layout algorithm (no algorithm change)
-    And only the currently visible nodes are included in the layout calculation
-      — hidden nodes do not reserve whitespace in the new arrangement
+    And only the nodes currently present in the Cytoscape graph are included in the layout
     And the graph fits to screen automatically after the layout completes
     And clicking [Re-plot] does NOT change the active layout algorithm or any active filters
+    Note: entity-type filter toggles already auto-trigger a re-layout; Re-plot is a manual
+      re-trigger for cases where re-arrangement is desired without changing filter state
+      (e.g. after window resize, after phase dimming, or on user preference)
 
 
   Scenario: FOB-CONTENT-BROWSER-10 Fit graph to screen

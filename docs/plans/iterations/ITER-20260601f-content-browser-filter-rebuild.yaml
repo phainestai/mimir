@@ -1,0 +1,58 @@
+id: ITER-20260601f-content-browser-filter-rebuild
+title: Content Browser — Entity-Type Filter Rebuild
+feature: act-16-content-browser
+branch: iteration/20260531-content-browser-access
+pr: 27
+created: 2026-06-01
+status: planned
+
+goal: |
+  Change the entity-type filter from CSS hide/show to a full Cytoscape
+  graph rebuild on each toggle. Filtered-out nodes and their edges are
+  removed from cy entirely; the ELK layout auto-runs after every change.
+  Phase filter and search keep their existing dim model — no change.
+
+spec_changes_already_applied:
+  - FOB-11 (06-filters-and-search.feature): "hidden" → "removed from cy + auto-re-layout"
+  - FOB-29 (03-graph-rendering.feature): Re-plot reframed as manual re-trigger
+  - FOB-32 (06-filters-and-search.feature): wording updated to "removed from canvas graph"
+
+scenarios:
+  - id: S30
+    issue: 32
+    title: "Entity-type filter removes nodes from Cytoscape and auto-re-layouts (FOB-11)"
+    time_budget_min: 90
+    dependencies: []
+
+  - id: S31
+    issue: 33
+    title: "Update Re-plot button test description to match new filter-rebuild model (FOB-29)"
+    time_budget_min: 20
+    dependencies: [S30]
+
+  - id: S32
+    issue: 34
+    title: "Tree-panel click on removed-type node still opens detail panel (FOB-32)"
+    time_budget_min: 30
+    dependencies: [S30]
+
+total_budget_min: 140
+
+parallel_groups:
+  - group: 1
+    scenarios: [S30]
+  - group: 2
+    scenarios: [S31, S32]   # both depend on S30, can run in parallel
+
+implementation_notes: |
+  S30 is the core change:
+  - Replace `_applyTypeFilter()` in content-browser.js with a rebuild approach:
+    1. Determine active types from toggle state
+    2. From raw graph data (_graphData), build element set = nodes whose type is active
+       (plus Playbook root always)
+    3. Remove all non-active nodes + their edges via cy.remove()
+    4. Add back previously removed nodes when type re-activated via cy.add()
+    5. Call _runElkLayout() after every add/remove
+  - Alternatively: re-render from _graphData on every toggle (simpler but more disruptive)
+  - Keep URL ?types= param logic unchanged
+  - Phase filter (_applyPhaseFilter) untouched — dim model stays

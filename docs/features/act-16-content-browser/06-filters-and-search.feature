@@ -8,7 +8,7 @@ Feature: FOB-CONTENT-BROWSER-FILTERS Content Browser Filters and Search
     And the playbook "FeatureFactory" exists with workflows, activities, phases, skills, agents, and rules
 
 
-  Scenario: FOB-CONTENT-BROWSER-11 Filter canvas nodes by entity type
+  Scenario: FOB-CONTENT-BROWSER-11 Filter canvas nodes by entity type — removes nodes and re-layouts
     Given Maria is on the graph view
     Then she sees an entity type filter toolbar (above or beside the canvas)
     And each filterable entity type has a toggle button showing its total node count:
@@ -16,16 +16,19 @@ Feature: FOB-CONTENT-BROWSER-FILTERS Content Browser Filters and Search
     And the single Playbook root node is NOT filterable — it is always shown
     And the count does not change when the type is toggled off (it reflects total, not visible)
     When she deactivates "Rules"
-    Then all Rule nodes are hidden from the canvas
-    And edges whose source OR target is a Rule node are also hidden
+    Then all Rule nodes are removed from the Cytoscape graph entirely (not just hidden)
+    And edges whose source OR target is a Rule node are also removed from the graph
     And if "Activities" is deactivated, orphaned resource nodes (Skills, Agents, Rules,
-      Artifacts with no other visible connections) are also hidden
+      Artifacts with no other active-type connections) are also removed
+    And the graph automatically re-runs the current ELK layout algorithm after the rebuild
     And the active filter state is reflected in the URL: ?types=workflow,activity,...
-    When the currently selected node type is hidden (e.g. she hides Activities while an Activity is selected)
+    When the currently selected node type is deactivated (e.g. she deactivates Activities while an Activity is selected)
     Then the detail panel closes and the selection ring is cleared
     When she re-activates "Rules"
-    Then Rule nodes and edges reappear
+    Then Rule nodes and their edges are added back to the Cytoscape graph
+    And the graph automatically re-runs the current ELK layout algorithm after the rebuild
     And if all entity types are active the types param is removed from the URL entirely
+    Note: Phase filter uses a different (dim) model — only entity-type filter triggers full rebuild
 
 
   Scenario: FOB-CONTENT-BROWSER-11b Phase filter is a second row in the canvas filter toolbar
@@ -72,9 +75,9 @@ Feature: FOB-CONTENT-BROWSER-FILTERS Content Browser Filters and Search
     Note: full page load resets all filter and layout params per FOB-23b
 
 
-  Scenario: FOB-CONTENT-BROWSER-32 Clicking resource with hidden canvas node still opens panel
-    Given the entity-type filter is active and Rule nodes are hidden from the canvas
+  Scenario: FOB-CONTENT-BROWSER-32 Clicking resource with removed canvas node still opens panel
+    Given the entity-type filter is active and Rule nodes are removed from the Cytoscape graph
     And a Rule is linked to an Activity and appears in the resource tree
     When Maria clicks that Rule in the resource tree
     Then the detail panel still opens with the Rule's embed view
-    And no canvas highlighting occurs (the node is filtered out, not visible)
+    And no canvas highlighting occurs (the node is filtered out — not present in the graph)
