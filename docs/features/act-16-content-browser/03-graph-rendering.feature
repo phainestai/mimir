@@ -73,6 +73,14 @@ Feature: FOB-CONTENT-BROWSER-GRAPH Content Browser Graph Rendering
     Until the API response is received and nodes are rendered
 
 
+  Scenario: FOB-CONTENT-BROWSER-20b No performance warning banner is ever shown
+    Given Maria opens any playbook in the graph view
+    Then the canvas never shows a "performance may be reduced" or degraded-mode banner
+      regardless of how many nodes or edges the playbook contains
+    And the element data-testid="browser-degraded-banner" is absent from the DOM
+      (it must be fully removed, not merely hidden)
+
+
   Scenario: FOB-CONTENT-BROWSER-14b CDN scripts fail to load
     Given Maria navigates to /browser/ or /browser/<pk>/
     When the Cytoscape.js CDN script fails to load

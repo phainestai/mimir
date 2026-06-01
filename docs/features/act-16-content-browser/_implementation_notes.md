@@ -192,9 +192,9 @@ The view passes `pk=None` or `pk=<int>` as a data attribute on `#browser-root`.
 
 ## Performance envelope (SAO.md rule 8)
 
-- Supported size: up to ~300 nodes + ~500 edges without degraded mode
+- Supported size: up to ~300 nodes + ~500 edges
 - Expected load time: graph API < 500ms (server); render < 2s (client)
-- Degraded mode: if node count > 300, canvas shows a warning banner and offers `[Collapse to Workflows only]`
+- No degraded-mode banner — the performance warning has been removed (see FOB-CONTENT-BROWSER-20b)
 - Pagination: not supported in MVP-1
 
 ---
@@ -314,7 +314,6 @@ mimir/urls.py                    (include browser_urls)
 
 ## Deferred
 
-- Large graph degraded mode (>200 nodes: simplified layout, clustering)
 - Node drag-to-reposition
 - Export graph as PNG/SVG
 - Multi-playbook view (compare two playbooks side by side)
