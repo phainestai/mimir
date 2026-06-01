@@ -292,7 +292,7 @@ class TestEntityTypeFilter:
         border_width = page.evaluate(
             f"window.cy.getElementById('{rule_id}').style('border-width')"
         )
-        assert border_width in ('0', '0px', ''), "Removed node must not show selection ring"
+        assert border_width in ('0', '0px', '', None), "Removed node must not show selection ring"
 
 
 # ---------------------------------------------------------------------------

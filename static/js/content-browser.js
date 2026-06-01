@@ -309,14 +309,14 @@ function _renderGraph(pk, graphData, filters) {
     return;
   }
 
-  // Node count badge.
+  // Node count badge (always shows total, not filtered).
   const countBadge = document.querySelector('[data-testid="browser-node-count"]');
   if (countBadge) countBadge.textContent = `${nodes.length} nodes`;
 
-  const elements = [
-    ...nodes.map(n => ({ data: n })),
-    ...edges.map(e => ({ data: e })),
-  ];
+  // Build initial elements respecting URL type-filter params so the first render
+  // is already correct — avoids a redundant remove+re-add cycle after cy creation.
+  _currentFilters = filters;
+  const elements = _buildFilteredElements(new Set(filters.types));
 
   const elkLayout = {
     name: 'elk',
@@ -359,14 +359,15 @@ function _renderGraph(pk, graphData, filters) {
   if (noContent) noContent.classList.add('d-none');
   if (error) error.classList.add('d-none');
 
-  _applyFilters(filters);
-
   // Wire node tap → detail panel.
   window.cy.on('tap', 'node', function(evt) { _openDetailPanel(evt.target); });
   // Canvas background tap → close panel; edges do nothing.
   window.cy.on('tap', function(evt) {
     if (evt.target === window.cy) { _closeDetailPanel(); }
   });
+
+  // Apply phase/search dim (no type rebuild — cy was created with correct elements).
+  _refreshVisualState();
 
   // Render entity-type filter toolbar after graph loads (counts won't change).
   _renderFilterToolbar(filters);
@@ -485,7 +486,11 @@ function _applyFilters(filters) {
  * @param {Set<string>} activeTypes - set of type strings that should be present in cy
  */
 function _applyTypeRebuild(activeTypes) {
-  throw new Error('NotImplementedError: _applyTypeRebuild');
+  if (!window.cy || !_fullGraphData) return;
+  const elements = _buildFilteredElements(activeTypes);
+  window.cy.remove(window.cy.elements());
+  window.cy.add(elements);
+  _runElkLayout();
 }
 
 /**
@@ -497,7 +502,32 @@ function _applyTypeRebuild(activeTypes) {
  * @returns {{ data: object }[]}
  */
 function _buildFilteredElements(activeTypes) {
-  throw new Error('NotImplementedError: _buildFilteredElements');
+  if (!_fullGraphData) return [];
+  const { nodes, edges } = _fullGraphData;
+  const resourceTypes = new Set(['skill', 'agent', 'rule', 'artifact']);
+
+  // Step 1: Keep nodes whose type is active.
+  const typeFilteredNodes = nodes.filter(n => activeTypes.has(n.type));
+  const typeFilteredIds = new Set(typeFilteredNodes.map(n => n.id));
+
+  // Step 2: Filter edges — both endpoints must remain.
+  const filteredEdges = edges.filter(e => typeFilteredIds.has(e.source) && typeFilteredIds.has(e.target));
+
+  // Step 3: Find all node IDs that have at least one edge.
+  const connectedIds = new Set();
+  filteredEdges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+
+  // Step 4: Remove orphaned resource nodes (active type but no remaining edges).
+  const finalNodes = typeFilteredNodes.filter(n => !resourceTypes.has(n.type) || connectedIds.has(n.id));
+  const finalIds = new Set(finalNodes.map(n => n.id));
+
+  // Step 5: Re-filter edges for the final node set.
+  const finalEdges = filteredEdges.filter(e => finalIds.has(e.source) && finalIds.has(e.target));
+
+  return [
+    ...finalNodes.map(n => ({ data: n })),
+    ...finalEdges.map(e => ({ data: e })),
+  ];
 }
 
 /**
@@ -507,18 +537,13 @@ function _buildFilteredElements(activeTypes) {
  */
 function _refreshVisualState() {
   if (!window.cy) return;
-  const activeTypes = new Set(_currentFilters.types);
   const activePhases = _currentFilters.phases.length > 0 ? new Set(_currentFilters.phases) : null;
   const searchLower = _currentSearchTerm.toLowerCase().trim();
 
+  // All nodes in cy are of active types (excluded types are removed by _applyTypeRebuild).
+  // This pass applies phase-dim and search-dim only.
   window.cy.nodes().forEach(node => {
     const nodeType = node.data('type');
-    if (!activeTypes.has(nodeType)) {
-      node.style({ 'visibility': 'hidden', 'opacity': 1 });
-      return;
-    }
-    node.style('visibility', 'visible');
-
     let dimmed = false;
     // Phase dim — activity nodes only; 0 = unphased sentinel
     if (activePhases && nodeType === 'activity') {
@@ -526,24 +551,20 @@ function _refreshVisualState() {
       const phaseId = meta.phase_id != null ? meta.phase_id : 0;
       if (!activePhases.has(phaseId)) dimmed = true;
     }
-    // Search dim — all visible nodes; edges are NOT dimmed by search (per FOB-12)
+    // Search dim — all nodes; edges are NOT dimmed by search (per FOB-12)
     if (searchLower) {
       const label = (node.data('label') || '').toLowerCase();
       if (!label.includes(searchLower)) dimmed = true;
     }
-    node.style('opacity', dimmed ? 0.2 : 1);
+    node.style({ visibility: 'visible', opacity: dimmed ? 0.2 : 1 });
   });
 
   window.cy.edges().forEach(edge => {
-    const srcType = edge.source().data('type');
-    const tgtType = edge.target().data('type');
-    if (!activeTypes.has(srcType) || !activeTypes.has(tgtType)) {
-      edge.style({ 'visibility': 'hidden', 'opacity': 1 });
-      return;
-    }
     edge.style('visibility', 'visible');
     // Phase dim on edges connected to phase-dimmed activities (not search)
     if (activePhases) {
+      const srcType = edge.source().data('type');
+      const tgtType = edge.target().data('type');
       let edgeDimmed = false;
       if (srcType === 'activity') {
         const m = edge.source().data('meta') || {};
@@ -595,9 +616,8 @@ function _renderFilterToolbar(filters) {
   const displayTypes = ['workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
   const typeCounts = {};
   displayTypes.forEach(t => { typeCounts[t] = 0; });
-  window.cy.nodes().forEach(node => {
-    const t = node.data('type');
-    if (t in typeCounts) typeCounts[t]++;
+  (_fullGraphData ? _fullGraphData.nodes : []).forEach(n => {
+    if (n.type in typeCounts) typeCounts[n.type]++;
   });
 
   container.innerHTML = '';
