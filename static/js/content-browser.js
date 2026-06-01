@@ -545,7 +545,7 @@ function _applySearch(term) {
  * @param {{ types: string[], phases: number[] }} filters
  */
 function _renderFilterToolbar(filters) {
-  const container = document.querySelector('[data-testid="browser-filter-toolbar"]');
+  const container = document.querySelector('[data-testid="browser-type-filter-row"]');
   if (!container || !window.cy) return;
 
   const displayTypes = ['workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
@@ -586,17 +586,17 @@ function _renderFilterToolbar(filters) {
 }
 
 /**
- * Render phase filter pills in both the left panel and the canvas filter toolbar.
+ * Render phase filter pills in the canvas filter toolbar (second row).
  * Hidden entirely when the playbook has no phases.
  * Called from _refreshVisualState to stay in sync.
  */
 function _renderPhaseFilter() {
   const playbookPhases = _getPlaybookPhases();
-  const leftContainer = document.querySelector('[data-testid="browser-phase-filter"]');
+  const container = document.querySelector('[data-testid="browser-phase-filter"]');
 
-  if (!leftContainer) return;
+  if (!container) return;
   if (playbookPhases.length === 0) {
-    leftContainer.innerHTML = '';
+    container.innerHTML = '';
     return;
   }
 
@@ -604,58 +604,48 @@ function _renderPhaseFilter() {
   const allPhaseIds = playbookPhases.map(p => p.id);
   // Include 0 (Unphased) as an option
   const phaseOptions = [{ id: 0, name: '(Unphased)' }, ...playbookPhases];
-  const allActive = phaseOptions.every(p => activePhases.size === 0 || activePhases.has(p.id));
 
-  const buildPills = (container) => {
-    container.innerHTML = '<div class="small fw-semibold text-muted text-uppercase mb-1">Phases</div>';
-    phaseOptions.forEach(phase => {
-      const isActive = activePhases.size === 0 || activePhases.has(phase.id);
-      const pill = document.createElement('button');
-      pill.type = 'button';
-      pill.className = `btn btn-sm me-1 mb-1 ${isActive ? 'btn-primary' : 'btn-outline-secondary'}`;
-      pill.setAttribute('data-testid', 'browser-phase-pill');
-      pill.setAttribute('data-phase-id', String(phase.id));
-      pill.textContent = phase.name;
-      pill.addEventListener('click', () => {
-        let phases = _currentFilters.phases.slice();
-        if (phases.length === 0) {
-          // All active → deactivate all except clicked
-          phases = allPhaseIds.concat([0]).filter(id => id !== phase.id);
-          // But if the clicked is now the only one missing, select only it
-          // Actually: clicking when all active → show only clicked phase
-          phases = [phase.id];
-        } else if (phases.includes(phase.id)) {
-          phases = phases.filter(id => id !== phase.id);
-          if (phases.length === 0) phases = []; // all active again
-        } else {
-          phases = phases.concat([phase.id]);
-          // If all options now selected, simplify to empty (= all active)
-          if (phaseOptions.every(p => phases.includes(p.id))) phases = [];
-        }
-        const newFilters = { ..._currentFilters, phases };
-        _applyFilters(newFilters);
-        _replaceCanonicalUrl(_getPkFromPath(), newFilters);
-      });
-      container.appendChild(pill);
+  container.innerHTML = '';
+  phaseOptions.forEach(phase => {
+    const isActive = activePhases.size === 0 || activePhases.has(phase.id);
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = `btn btn-sm me-1 mb-1 ${isActive ? 'btn-primary' : 'btn-outline-secondary'}`;
+    pill.setAttribute('data-testid', 'browser-phase-pill');
+    pill.setAttribute('data-phase-id', String(phase.id));
+    pill.textContent = phase.name;
+    pill.addEventListener('click', () => {
+      let phases = _currentFilters.phases.slice();
+      if (phases.length === 0) {
+        phases = [phase.id];
+      } else if (phases.includes(phase.id)) {
+        phases = phases.filter(id => id !== phase.id);
+        if (phases.length === 0) phases = [];
+      } else {
+        phases = phases.concat([phase.id]);
+        if (phaseOptions.every(p => phases.includes(p.id))) phases = [];
+      }
+      const newFilters = { ..._currentFilters, phases };
+      _applyFilters(newFilters);
+      _replaceCanonicalUrl(_getPkFromPath(), newFilters);
     });
+    container.appendChild(pill);
+  });
 
-    // "All" reset button when filter is active
-    if (activePhases.size > 0) {
-      const clearBtn = document.createElement('button');
-      clearBtn.type = 'button';
-      clearBtn.className = 'btn btn-sm btn-outline-danger mb-1';
-      clearBtn.setAttribute('data-testid', 'browser-phase-clear');
-      clearBtn.textContent = 'All';
-      clearBtn.addEventListener('click', () => {
-        const newFilters = { ..._currentFilters, phases: [] };
-        _applyFilters(newFilters);
-        _replaceCanonicalUrl(_getPkFromPath(), newFilters);
-      });
-      container.appendChild(clearBtn);
-    }
-  };
-
-  buildPills(leftContainer);
+  // "All" reset button when filter is active
+  if (activePhases.size > 0) {
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'btn btn-sm btn-outline-danger mb-1';
+    clearBtn.setAttribute('data-testid', 'browser-phase-clear');
+    clearBtn.textContent = 'All';
+    clearBtn.addEventListener('click', () => {
+      const newFilters = { ..._currentFilters, phases: [] };
+      _applyFilters(newFilters);
+      _replaceCanonicalUrl(_getPkFromPath(), newFilters);
+    });
+    container.appendChild(clearBtn);
+  }
 }
 
 /**

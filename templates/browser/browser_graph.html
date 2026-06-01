@@ -76,9 +76,6 @@
 
         {# Structural tree — populated by JS #}
         <div data-testid="browser-structure-tree" class="mt-1"></div>
-
-        {# Phase filter — populated by JS; hidden when playbook has no phases #}
-        <div data-testid="browser-phase-filter" class="mt-2"></div>
       {% endif %}
       </div>{# /browser-panel-compact font wrapper #}
 
@@ -150,8 +147,11 @@
 
     {# Entity type + phase filter toolbar — populated by JS after graph loads #}
     <div data-testid="browser-filter-toolbar"
-         class="position-absolute top-0 start-0 m-2 d-flex flex-wrap align-items-center gap-1"
-         style="z-index:10;"></div>
+         class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1"
+         style="z-index:10;">
+      <div data-testid="browser-type-filter-row" class="d-flex flex-wrap gap-1"></div>
+      <div data-testid="browser-phase-filter" class="d-flex flex-wrap gap-1"></div>
+    </div>
 
     {# Cytoscape canvas target — JS mounts here #}
     <div data-testid="browser-canvas" id="cy" style="position: absolute; inset: 0;"></div>
