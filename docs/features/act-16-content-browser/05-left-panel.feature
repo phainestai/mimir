@@ -86,8 +86,8 @@ Feature: FOB-CONTENT-BROWSER-LEFT-PANEL Content Browser Left Panel
       | 2     | Activity | list-check (green)     |
     And each Activity row shows a small Phase colour chip if the activity is assigned to a phase
     And unassigned activities show no Phase chip
-    And the tree is expanded by default to show all Workflows
-    And Activities are collapsed by default under each Workflow
+    And the tree starts fully collapsed — all Workflow rows are collapsed,
+      no Activity rows are visible on initial load
 
 
   Scenario: FOB-CONTENT-BROWSER-25 Structural tree Workflow nodes are collapsible
@@ -96,14 +96,18 @@ Feature: FOB-CONTENT-BROWSER-LEFT-PANEL Content Browser Left Panel
     Then that Workflow's Activities collapse / expand
 
 
-  Scenario: FOB-CONTENT-BROWSER-26 Clicking a structural tree node navigates the canvas
+  Scenario: FOB-CONTENT-BROWSER-26 Clicking a structural tree node navigates the canvas and focuses the tree
     Given Maria sees the structural tree
     When she clicks "Build Feature" (a Workflow node) in the tree
     Then the Cytoscape canvas pans and zooms to centre that node in the viewport
     And the corresponding canvas node is highlighted with a selection ring
     And the detail panel does NOT open automatically (tree navigation ≠ detail open)
+    And all other Workflow rows collapse
+    And "Build Feature" expands to reveal its Activity rows (accordion behaviour)
     And the same behaviour applies when she clicks an Activity row in the tree:
-      the canvas pans to centre the Activity node; panel does NOT open automatically
+      the canvas pans to centre the Activity node; panel does NOT open automatically;
+      all Workflow rows collapse except the parent Workflow of that Activity,
+      which expands to show its Activities with the clicked row highlighted
 
 
   Scenario: FOB-CONTENT-BROWSER-27 Active node in structural tree is highlighted
