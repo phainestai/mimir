@@ -1,0 +1,57 @@
+iteration:
+  goal: "Content Browser — deterministic node insertion order for optimal ELK layout (FOB-33)"
+  doctrine_version: "2.0"
+  created_at: "2026-06-01T16:30:00Z"
+
+conflict_map: {}
+
+parallel_groups:
+  A: [S33]
+
+drift_thresholds:
+  absorbed:
+    checkpoint_fail_retry: 1
+  escalated:
+    footprint_violation: true
+    method_explosion: true
+    sao_violation: true
+    checkpoint_fail_after_retry: true
+
+scenarios:
+  S33:
+    title: "Deterministic node insertion order for ELK layout (FOB-33)"
+    github_issue: TBD
+    parallel_group: A
+    skeleton_commit: "2eda6e2"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_graph.py
+      - docs/features/act-16-content-browser/03-graph-rendering.feature
+    checkpoint:
+      command: "pytest tests/e2e/test_content_browser_graph.py::TestNodeInsertionOrder -x"
+      expected_exit_code: 0
+    dependencies: []
+    sao_sections:
+      - "§Frontend Architecture: JS in static/js/, no bundler, vanilla ES6"
+      - "§Testing Strategy: E2E via Playwright"
+    context_map:
+      - file: "static/js/content-browser.js"
+        lines: "508-535"
+        note: "_buildFilteredElements return — call _sortForLayout, populate window._lastElementOrder"
+      - file: "static/js/content-browser.js"
+        lines: "535-560"
+        note: "_sortForLayout stub already placed here — fill in the sort logic"
+      - file: "tests/e2e/test_content_browser_graph.py"
+        lines: "1-80"
+        note: "Follow fixture + _wait_for_graph pattern; use window._lastElementOrder for assertions"
+    do_not_do:
+      - "Do NOT modify the backend API (methodology/api/viewsets.py)"
+      - "Do NOT change _fullGraphData structure or loading"
+      - "Do NOT modify _renderGraph beyond the elements variable"
+      - "Do NOT change ELK configuration options"
+      - "Do NOT affect filtering logic (steps 1-4) in _buildFilteredElements"
+    rollback_point: "git stash (sort-nodes-reference stash has reference implementation)"
+    implementation_note: >
+      Reference implementation already exists as local git stash 'sort-nodes-reference'.
+      Run `git stash list` to find it. Key pattern: TYPE_TIER map + activitySortIndex Map
+      built from activity nodes, then sort by (tier, activity position, parentActPk).
