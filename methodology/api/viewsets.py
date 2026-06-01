@@ -449,7 +449,13 @@ def _build_playbook_graph(playbook, user) -> dict:
         seen_edge_keys.add(edge_key)
         edges.append({'source': source_id, 'target': target_id, 'relationship': relationship})
 
-    return {'nodes': nodes, 'edges': edges, 'phases': phases_data}
+    return {
+        'nodes': nodes,
+        'edges': edges,
+        'phases': phases_data,
+        'playbook_name': playbook.name,
+        'playbook_status': playbook.status,
+    }
 
 
 class WorkflowViewSet(viewsets.ModelViewSet):

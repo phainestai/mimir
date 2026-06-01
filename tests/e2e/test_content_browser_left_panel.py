@@ -118,7 +118,7 @@ class TestPlaybookHeader:
         page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
         page.wait_for_load_state('networkidle')
 
-        name_el = page.locator('[data-testid="browser-playbook-name"]')
+        name_el = page.locator('[data-testid="browser-playbook-title"]')
         expect(name_el).to_contain_text('AlphaPlaybook')
 
     def test_status_badge_shown(self, page: Page, live_server, left_panel_user, playbook_a):
@@ -234,3 +234,54 @@ class TestSelectPlaybook:
         expect(page.locator('[data-testid="browser-picker"]')).to_be_hidden()
         # URL updated to BetaPlaybook
         assert f'/browser/{playbook_b.pk}/' in page.url
+
+
+# ---------------------------------------------------------------------------
+# FOB-21a: Header title shows "No playbook selected" and updates on selection
+# ---------------------------------------------------------------------------
+
+class TestPlaybookTitleTransition:
+
+    def test_title_shows_no_playbook_selected_on_empty_browser(
+        self, page: Page, live_server, left_panel_user,
+    ):
+        """At /browser/ with no pk, header shows 'No playbook selected' (FOB-21a)."""
+        _login(page, live_server.url, 'lp_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/")
+        page.wait_for_load_state('networkidle')
+
+        title = page.locator('[data-testid="browser-playbook-title"]')
+        expect(title).to_contain_text('No playbook selected')
+
+    def test_title_updates_to_playbook_name_after_selection(
+        self, page: Page, live_server, left_panel_user, playbook_a,
+    ):
+        """After selecting a playbook, title element updates to its name (FOB-21a)."""
+        _login(page, live_server.url, 'lp_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/")
+        page.wait_for_load_state('networkidle')
+
+        page.locator('[data-testid="browser-select-playbook"]').first.click()
+        page.wait_for_timeout(500)
+        page.locator('[data-testid="browser-picker-item"]').filter(has_text='AlphaPlaybook').click()
+        page.wait_for_timeout(500)
+
+        title = page.locator('[data-testid="browser-playbook-title"]')
+        expect(title).to_contain_text('AlphaPlaybook')
+
+    def test_button_label_switches_from_select_to_change(
+        self, page: Page, live_server, left_panel_user, playbook_a,
+    ):
+        """Button switches from 'Select Playbook' to 'Change Playbook' after selection (FOB-21a)."""
+        _login(page, live_server.url, 'lp_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/")
+        page.wait_for_load_state('networkidle')
+
+        page.locator('[data-testid="browser-select-playbook"]').first.click()
+        page.wait_for_timeout(500)
+        page.locator('[data-testid="browser-picker-item"]').filter(has_text='AlphaPlaybook').click()
+        page.wait_for_timeout(500)
+
+        expect(page.locator('[data-testid="browser-change-playbook"]')).to_be_visible()
+        # The left-panel select button is swapped to change-playbook; canvas empty-state is hidden
+        expect(page.locator('[data-testid="browser-empty-state"]')).to_be_hidden()

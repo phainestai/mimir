@@ -260,6 +260,7 @@ async function _fetchGraph(pk) {
     const data = await response.json();
     const filters = _parseUrlParams();
     _renderGraph(pk, data, filters);
+    _updatePlaybookHeader(pk, data.playbook_name || '', data.playbook_status || '');
   } catch (err) {
     if (err.name === 'AbortError') return;
     _showErrorState('Could not load graph data.');
@@ -1105,7 +1106,7 @@ function _selectPlaybook(pk) {
  * @param {string} status
  */
 function _updatePlaybookHeader(pk, name, status) {
-  const nameEl = document.querySelector('[data-testid="browser-playbook-name"]');
+  const nameEl = document.querySelector('[data-testid="browser-playbook-title"]');
   if (nameEl) nameEl.textContent = name;
   const statusEl = document.querySelector('[data-testid="browser-playbook-status"]');
   if (statusEl) { statusEl.textContent = status; statusEl.className = 'badge bg-secondary small'; }
