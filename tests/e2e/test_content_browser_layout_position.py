@@ -293,7 +293,12 @@ class TestLayoutSwitcher:
 
 @pytest.mark.django_db(transaction=True)
 class TestReplotButton:
-    """Re-plot button reruns ELK layout on visible nodes (FOB-29 / S28)."""
+    """Re-plot button is a manual re-trigger for ELK layout (FOB-29 / S28).
+
+    Note: entity-type filter toggles auto-trigger re-layout on their own.
+    Re-plot is for cases where manual re-arrangement is desired without
+    changing filter state (e.g. after window resize, after phase dimming).
+    """
 
     def test_replot_button_present(
         self, page: Page, live_server, layout_user, layout_playbook,
@@ -307,7 +312,7 @@ class TestReplotButton:
     def test_replot_button_repositions_nodes(
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
-        """Clicking re-plot button repositions nodes (FOB-29 / S28)."""
+        """Clicking re-plot manually re-runs ELK layout on current nodes (FOB-29 / S28)."""
         _login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
         _wait_for_graph(page)
