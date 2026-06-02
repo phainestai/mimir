@@ -229,3 +229,47 @@ class TestCompoundViewActivation:
             "() => window.cy.nodes(':parent').first().style('text-margin-y')"
         )
         assert float(margin_y) < 0, f"text-margin-y should be negative, got {margin_y}"
+
+
+    # ── S46 skeleton: compound layout reflowing activity nodes ────────────────
+
+    def test_activity_nodes_positioned_inside_workflow_box(self, graph_page: Page):
+        """Activity nodes must be visually contained within their parent compound box (S46)."""
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true && window.cy != null")
+        graph_page.wait_for_function("() => window.cy.nodes(':parent').length > 0")
+        result = graph_page.evaluate("""
+        () => {
+            const parent = window.cy.nodes(':parent').first();
+            const parentBB = parent.boundingBox();
+            const children = parent.children();
+            let allInside = true;
+            children.forEach(child => {
+                const childBB = child.boundingBox();
+                if (childBB.x1 < parentBB.x1 || childBB.x2 > parentBB.x2) {
+                    allInside = false;
+                }
+            });
+            return allInside;
+        }
+        """)
+        assert result, "All activity nodes should be inside their parent workflow box"
+
+    def test_compound_reflow_on_layout_change_repositions_children(self, graph_page: Page):
+        """Switching layout in compound mode must move activity nodes (S46)."""
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true && window.cy != null")
+        graph_page.wait_for_function("() => window.cy.nodes(':parent').length > 0")
+        positions_before = graph_page.evaluate(
+            "() => window.cy.nodes(':parent').first().children().map(n => ({x: n.position('x'), y: n.position('y')}))"
+        )
+        graph_page.click('[data-testid="browser-layout-btn"]')
+        graph_page.wait_for_selector('[data-testid="browser-layout-dropdown"]')
+        options = graph_page.locator('[data-testid^="browser-layout-option-"]').all()
+        if len(options) > 1:
+            options[1].click()
+            graph_page.wait_for_function("() => window.cy.nodes().length > 0")
+        positions_after = graph_page.evaluate(
+            "() => window.cy.nodes(':parent').first().children().map(n => ({x: n.position('x'), y: n.position('y')}))"
+        )
+        assert positions_before != positions_after, "Positions should change after layout switch"

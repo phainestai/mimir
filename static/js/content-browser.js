@@ -1982,6 +1982,8 @@ function _buildCompoundElements(activeTypes) {
     } else if (resourceTypes.has(n.type)) {
       const wfId = resourceToWorkflow.get(n.id);
       if (wfId) nodeData.parent = wfId;
+    } else if (n.type === 'workflow') {
+      _addElkCompoundData(nodeData);
     }
     return { data: nodeData };
   });
@@ -1992,6 +1994,25 @@ function _buildCompoundElements(activeTypes) {
     .map(e => ({ data: e }));
 
   return [...compoundNodes, ...compoundEdges];
+}
+
+/**
+ * Mutate a workflow nodeData object to include ELK layout attributes so that
+ * ELK recursively lays out the children (activity nodes) inside the compound box.
+ *
+ * Expected mutations (when implemented):
+ *   nodeData['elk:algorithm'] = 'layered';
+ *   nodeData['elk:direction'] = 'DOWN';
+ *   nodeData['elk:padding'] = '[top=30,left=10,bottom=10,right=10]';
+ *
+ * Without these, cytoscape-elk only positions the top-level boxes and ignores
+ * the internal structure of each compound parent.
+ *
+ * @param {object} nodeData — mutable nodeData object for a workflow node
+ */
+function _addElkCompoundData(nodeData) {
+  // TODO: NotImplementedError — add ELK compound layout data
+  throw new Error('NotImplementedError: _addElkCompoundData');
 }
 
 /**
