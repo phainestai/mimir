@@ -147,3 +147,44 @@ class TestSeqToggleInteraction:
         assert predecessor_count == 0
         # _seqEdgesOn still false
         assert graph_page.evaluate("() => window._seqEdgesOn") is False
+
+
+    # ── S44 skeleton: seq toggle works in compound mode ───────────────────────
+
+    def test_seq_toggle_works_when_compound_view_is_active(self, graph_page: Page):
+        """Toggling seq while compound is ON keeps compound mode ON (S44 — FOB-36+37 fix)."""
+        # Activate compound view
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        # Now toggle seq off
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === false")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        # Compound mode must still be ON
+        assert graph_page.evaluate("() => window._compoundViewOn") is True
+        # Predecessor edges must be gone
+        predecessor_count = graph_page.evaluate(
+            "() => window.cy.edges('[relationship = \"predecessor\"]').length"
+        )
+        assert predecessor_count == 0
+
+    def test_seq_toggle_off_then_on_in_compound_mode_preserves_compound(self, graph_page: Page):
+        """Toggling seq off then back on in compound mode does not revert to flat (S44)."""
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === false")
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === true")
+        assert graph_page.evaluate("() => window._compoundViewOn") is True
+        assert graph_page.evaluate("() => window._seqEdgesOn") is True
+
+    def test_compound_toggle_off_then_seq_toggle_uses_flat_rebuild(self, graph_page: Page):
+        """After turning compound OFF, seq toggle uses flat rebuild path (S44)."""
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === false")
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === false")
+        assert graph_page.evaluate("() => window._compoundViewOn") is False

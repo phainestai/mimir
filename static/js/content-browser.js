@@ -1813,7 +1813,27 @@ function _applySeqToggle() {
   _seqEdgesOn = !_seqEdgesOn;
   _updateSeqToggleBtn();
   _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
-  _applyTypeRebuild(new Set(_currentFilters.types));
+  _rebuildRespectingMode(new Set(_currentFilters.types));
+}
+
+/**
+ * Rebuild the graph using either flat or compound layout depending on the
+ * current value of _compoundViewOn. Called by _applySeqToggle so that toggling
+ * sequence edges does not inadvertently reset compound/flat state.
+ *
+ * When _compoundViewOn === true:
+ *   1. Build compound elements via _buildCompoundElements(activeTypes).
+ *   2. Apply compound + base stylesheet.
+ *   3. Re-run the current layout with _buildLayoutOptions(_currentLayout).
+ *   4. Fit the viewport.
+ * When _compoundViewOn === false:
+ *   delegate to _applyTypeRebuild(activeTypes) (existing flat path).
+ *
+ * @param {Set<string>} activeTypes — currently active entity-type filter set
+ */
+function _rebuildRespectingMode(activeTypes) {
+  // TODO: NotImplementedError — implement compound-aware rebuild
+  throw new Error('NotImplementedError: _rebuildRespectingMode');
 }
 
 /**
