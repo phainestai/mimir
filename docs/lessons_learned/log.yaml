@@ -17,3 +17,15 @@ entries:
     pip_candidates:
       - "Consider Playwright installation in CI to run E2E tests (all 44 tests currently skip)"
       - "SQLite concurrent write limitation — test_concurrent_creates pre-existing failure"
+  - milestone: 11
+    date: "2026-06-04"
+    goal: "ITER-20260602c | Canvas Bug-Fix Batch (FOB-50–58, S50–S58)"
+    velocity_ratio: 1.1
+    dominant_drift: implementation_complexity
+    footprint_accuracy: met_checkpoints
+    pip_candidates:
+      - "FA6 icon codepoints must be verified against Free vs Pro tier — Pro-only glyphs silently fail in Free kits"
+      - "Cytoscape curve-style 'round-segments' (not 'round-seg') — always validate keys against Cytoscape docs"
+      - "E2E graph tests require released playbook with workflows/activities in DB; consider adding to e2e_seed.json"
+      - "Seq toggle removal pattern: mark old test file with pytestmark=skip rather than deleting to preserve history"
+      - "top-level const/let in browser script NOT on window; only function declarations and var are globally accessible for page.evaluate()"
