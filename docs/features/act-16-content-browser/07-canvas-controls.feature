@@ -316,4 +316,171 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
     Note: the toggle state must be preserved when entity-type filter, phase filter, seq toggle,
       or compound toggle changes — the rebuild triggered by those controls must respect the
       current node-size-mode
+    Note: BUG FOB-50 — the layout re-run MUST be triggered after the stylesheet update so
+      that node size changes are visible on the canvas; previously the stylesheet was updated
+      but _runLayout() was not called — nodes remained at old fixed dimensions visually
+
+
+  # ---------------------------------------------------------------------------
+  # FOB-50 — Node size toggle must trigger layout reflow
+  # ---------------------------------------------------------------------------
+
+  Scenario: FOB-CONTENT-BROWSER-50 Switching node size mode visibly repositions nodes on canvas
+    Given Maria is on the graph view canvas with a playbook loaded in "Fixed size" mode
+    When she clicks the node-size-mode toggle to switch to "Auto-width"
+    Then the Cytoscape stylesheet is updated to use width="label" for all node types
+    And _runLayout() is immediately called so nodes reposition to avoid overlap
+    And the canvas visibly reflects the new node widths (wider nodes for long names)
+    When she clicks the toggle again to switch back to "Fixed size"
+    Then the stylesheet reverts to explicit fixed widths per node type
+    And _runLayout() is called again so nodes reposition to their original uniform spacing
+    And this reflow MUST happen whether compound view is on or off
+    Note: the bug was that _applyNodeSizeToggle() called cy.style() to update the stylesheet
+      but never called _runLayout() — the stylesheet change alone does not reposition nodes
+
+
+  # ---------------------------------------------------------------------------
+  # FOB-51 — Remove activity sequence (predecessor-order) edges toggle
+  # ---------------------------------------------------------------------------
+
+  Scenario: FOB-CONTENT-BROWSER-51 Sequence edges toggle removed — predecessor edges are always visible
+    Given Maria is on the graph view canvas with a playbook loaded
+    Then the sequence toggle button (data-testid="browser-seq-toggle") is NOT present in the DOM
+    And predecessor edges (relationship="predecessor") between activities are ALWAYS shown
+    And there is no URL param "seq" — this param is removed from _parseUrlParams and _replaceCanonicalUrl
+    And the _applySeqToggle, _updateSeqToggleBtn, _parseSeqParam, _seqEdgesOn functions are removed
+    And all callers of _rebuildRespectingMode that previously depended on _seqEdgesOn are updated
+      to always include predecessor edges (rebuild always uses the full edge set)
+    Note: predecessor relationships are already defined via Activity.predecessor model field
+      and surfaced in the graph API — the seq toggle was an additional redundant toggle that
+      added edges purely based on workflow order numbers, which is not desired behaviour;
+      predecessor edges shown are ONLY those explicitly set via the Activity.predecessor field
+
+
+  # ---------------------------------------------------------------------------
+  # FOB-52 — Flat mode: workflows connected to their activities via edges
+  # ---------------------------------------------------------------------------
+
+  Scenario: FOB-CONTENT-BROWSER-52 In flat (ungrouped) mode workflows connect to their activities via edges
+    Given Maria is on the graph view canvas with a playbook loaded in flat (not grouped) mode
+    Then each Workflow node has visible edges connecting it to each of its Activity nodes
+    And these "contains" edges are rendered as visible lines (NOT hidden) in flat mode
+    And the edges run from Workflow node → Activity node with an arrowhead at the Activity end
+    And in compound (grouped) mode these same "contains" edges are hidden (display:none)
+      because the parent/child nesting already implies the relationship visually
+    Note: BUG FOB-52 — previously "contains" edges (relationship="contains") were always
+      hidden via the edge stylesheet regardless of compound state; in flat mode they MUST
+      be shown so the graph is connected; the fix is to conditionally show "contains" edges
+      in flat mode and hide them only in compound mode (update stylesheet per mode)
+
+
+  # ---------------------------------------------------------------------------
+  # FOB-53 — FontAwesome icons in Cytoscape node labels
+  # ---------------------------------------------------------------------------
+
+  Scenario: FOB-CONTENT-BROWSER-53 Node type icons render correctly using FA6 Unicode glyphs
+    Given Maria opens a playbook in the graph view
+    Then each graph node displays a FontAwesome icon to the left of its label text
+    And the icon is rendered as a Unicode character within the Cytoscape node label
+    And the font-family for the node label MUST include "Font Awesome 6 Free" FIRST in the list
+      followed by Montserrat and system-ui fallbacks
+    And font-weight MUST be 900 (FA solid icons require weight 900 to render correctly)
+    And the icon characters are:
+      | entity type | Unicode | visible glyph          |
+      | Playbook    | \uf5da  | fa-book-open-reader    |
+      | Workflow    | \uf542  | fa-diagram-project     |
+      | Activity    | \ue0a3  | fa-bars-progress       |
+      | Artifact    | \uf06b  | fa-gift                |
+      | Skill       | \uf544  | fa-hand-sparkles       |
+      | Agent       | \ue0c4  | fa-robot               |
+      | Rule        | \uf24e  | fa-scale-balanced      |
+    And no node shows a blank rectangle or empty box in place of the icon
+    Note: BUG FOB-53 — previously some icon codepoints were from FA6 Pro or did not
+      exist in FA6 Free, causing blank rectangles to appear; all codepoints above are
+      confirmed valid FA6 Free solid icons
+    Note: the Cytoscape label function must compose icon glyph + space + node label string
+      (e.g. ele => '\uf542 ' + ele.data('label')) — a plain string template literal
+      like `${icon} data(label)` is NOT a Cytoscape data() mapper and renders literally
+
+
+  # ---------------------------------------------------------------------------
+  # FOB-54 — Compound mode workflow label always visible
+  # ---------------------------------------------------------------------------
+
+  Scenario: FOB-CONTENT-BROWSER-54 Workflow name label is always visible above compound box in grouped mode
+    Given Maria has activated compound (grouped) view
+    Then each compound Workflow box displays the Workflow name as a label
+    And the label is positioned ABOVE the top-left corner of the compound box boundary,
+      floating in empty space above the box (not inside it, not overlapping child nodes)
+    And the label is NOT clipped or hidden by any overflow or containment rule
+    And Cytoscape's ":parent" selector is used to apply this label style
+    And the text-valign is "top" and text-halign is "left" with text-margin-y: -20px
+      and text-margin-x: 8px so the label clears the box border
+    And the label has a white semi-transparent text-background (opacity 0.9, padding 4px)
+      so it is readable against both the canvas background and any overlapping elements
+    And the label is always the Workflow name from data('label') — NOT empty or undefined
+    Note: BUG FOB-54 — previous implementation set _buildCompoundLabelStyle() with negative
+      margin but the ":parent" selector in _cytoscapeCompoundStyle() may not have applied
+      the label property at all; the fix must explicitly set 'label': ele => ele.data('label')
+      on the :parent selector in addition to the margin and background properties
+
+
+  # ---------------------------------------------------------------------------
+  # FOB-55 — Canvas controls button layout: compact grouped rows
+  # ---------------------------------------------------------------------------
+
+  Scenario: FOB-CONTENT-BROWSER-55 Canvas control buttons are compact and grouped by function in the bottom-right
+    Given Maria is on the graph view canvas with a playbook loaded
+    Then all canvas control buttons remain in the bottom-right corner of the canvas area
+    And the buttons are approximately HALF the current size (use Bootstrap .btn-sm class or
+      equivalent small sizing — no custom oversized buttons)
+    And the buttons are arranged in compact rows grouped by function:
+      Row 1 — Zoom controls:  [+] [−] [⊡]   (zoom in, zoom out, fit)
+      Row 2 — Layout/Routing: [Layout ▾] [Routing ▾] [Re-plot]
+      Row 3 — View modes:     [Grouped ✗] [Fixed size ✓] [Node size toggle]
+    And the button group container has data-testid="browser-controls-panel"
+    And the overall footprint of the controls panel is compact enough that it does not
+      obscure more than 15% of the canvas area at 1280×800 viewport
+    Note: do NOT change data-testid values on existing buttons — tests depend on them
+
+
+  # ---------------------------------------------------------------------------
+  # FOB-56 — Full-screen canvas layout: no scroll, no gaps
+  # ---------------------------------------------------------------------------
+
+  Scenario: FOB-CONTENT-BROWSER-56 Content browser page fills the viewport with no scrollbars or blank gaps
+    Given Maria navigates to /browser/<pk>/
+    Then the entire page fits within the browser viewport height (no vertical scrollbar)
+    And there is NO visible gap between the top navigation bar and the top of the canvas area
+    And there is NO visible gap between the bottom of the canvas area and the page footer (if any)
+    And the canvas <div> (data-testid="browser-canvas") fills all available vertical space
+      between the top nav and the bottom of the viewport using CSS flex or calc(100vh - navHeight)
+    And the three-panel layout (left panel + canvas + detail panel) also fills full height
+    And at viewport widths ≥ 1024px no horizontal scrollbar appears
+    Note: the fix involves ensuring browser_graph.html and its wrapping Django template
+      do not add extra padding/margin that creates gaps; the body and main container must
+      use height: 100vh or a flex column that stretches to fill the viewport
+
+
+  # ---------------------------------------------------------------------------
+  # FOB-57 — Complete edge routing catalog
+  # ---------------------------------------------------------------------------
+
+  Scenario: FOB-CONTENT-BROWSER-57 All Cytoscape curve-style values are available in the routing picker
+    Given Maria opens the edge routing dropdown
+    Then the following routing options are available (ALL valid Cytoscape 3.x curve-style values):
+      | routing-key       | label              | Cytoscape curve-style |
+      | bezier            | Bezier (default)   | bezier                |
+      | unbundled-bezier  | Unbundled Bezier   | unbundled-bezier      |
+      | straight          | Straight           | straight              |
+      | taxi              | Orthogonal (Taxi)  | taxi                  |
+      | haystack          | Haystack           | haystack              |
+      | segments          | Segments           | segments              |
+      | round-segments    | Round Segments     | round-segments        |
+    And the routing-key "round-segments" maps to Cytoscape curve-style "round-segments"
+      (previously stored as "round-seg" which is NOT a valid Cytoscape value — BUG FOB-57)
+    And each routing option produces a visually distinct edge style on the canvas
+    Note: BUG FOB-57 — the previous _ROUTING_CATALOG contained "round-seg" as both the key
+      and the curve-style value; Cytoscape does not recognise "round-seg" — it silently falls
+      back to bezier; the correct curve-style string is "round-segments"
 

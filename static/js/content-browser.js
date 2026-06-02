@@ -1765,6 +1765,41 @@ function _buildEdgeStyle() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// FOB-52 — Mode-aware edge style helper (skeleton — implemented in MIT)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Return edge stylesheet entries, aware of the current view mode.
+ * In flat mode: 'contains' edges are VISIBLE (workflow→activity connections shown).
+ * In compound mode: 'contains' edges are HIDDEN (they become compound parent-child relationships).
+ *
+ * @param {boolean} compoundOn — true when compound (grouped) view is active
+ * @returns {object[]} Cytoscape stylesheet entries for edges
+ * @throws {Error} Not yet implemented
+ */
+function _buildEdgeStyleForMode(compoundOn) {
+  throw new Error('_buildEdgeStyleForMode not yet implemented (FOB-52)');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FOB-58 — Expand workflow accordion row (skeleton — implemented in MIT)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Expand the accordion section for a workflow node in the structure tree.
+ * If workflowNodeId corresponds to a workflow row, expands its OWN section.
+ * If workflowNodeId is an activity, expands the PARENT workflow's section.
+ *
+ * Called by _highlightTreeNode to ensure the highlighted node is visible.
+ *
+ * @param {string} nodeId — cy node ID (workflow or activity)
+ * @throws {Error} Not yet implemented
+ */
+function _expandTreeNodeAccordion(nodeId) {
+  throw new Error('_expandTreeNodeAccordion not yet implemented (FOB-58)');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // S35 — Edge routing picker (FOB-35)
 // ─────────────────────────────────────────────────────────────────────────────
 

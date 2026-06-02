@@ -105,7 +105,8 @@ Feature: FOB-CONTENT-BROWSER-LEFT-PANEL Content Browser Left Panel
     And the Workflow canvas node receives a selection ring (same red highlight as canvas tap)
     And the right detail panel opens with the Workflow's embed content
     And the structural tree row is highlighted (bold + accent background)
-    And the accordion expands that Workflow's Activities (same as clicking the chevron would)
+    And the accordion ALSO expands that Workflow's Activities (same as clicking the chevron)
+      so the user can immediately see the highlighted child activities without an extra click
 
     # ── Clicking the chevron only ─────────────────────────────────────────────
     When she clicks ONLY the chevron ▸/▾ on a Workflow row
@@ -141,6 +142,21 @@ Feature: FOB-CONTENT-BROWSER-LEFT-PANEL Content Browser Left Panel
       structural tree row — those entity types appear only in the resource tree
     When she deselects by clicking the canvas background or [×] on the detail panel
     Then the structural tree row highlight is cleared
+
+
+  Scenario: FOB-CONTENT-BROWSER-27b Canvas tap on activity expands its parent workflow in tree
+    Given Maria is viewing the structural tree (all workflows collapsed)
+    When she clicks an Activity node on the Cytoscape canvas
+    Then the structural tree highlights the Activity row (as per FOB-27)
+    And the parent Workflow accordion section is automatically expanded
+      so the highlighted Activity row is visible without Maria having to manually expand it
+    When she clicks a Workflow node on the canvas
+    Then the structural tree highlights the Workflow row
+    And the accordion for that Workflow expands (Activities become visible)
+    Note: BUG FOB-58 — previously canvas tap highlighted the tree row but did not expand
+      the parent workflow accordion, meaning the highlighted row was invisible (still collapsed)
+    Note: _highlightTreeNode must also call _expandTreeSection(nodeId) for activity nodes
+      and _expandTreeSection for workflow nodes so the relevant section is open
 
 
   # ── Resource tree ────────────────────────────────────────────────────────────
