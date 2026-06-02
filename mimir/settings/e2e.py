@@ -23,6 +23,19 @@ MIMIR_ENV = 'e2e'
 # Signed-cookie sessions bypass the DB entirely: no race, no 401.
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
+# --- Database ---
+# Force SQLite for e2e tests regardless of any DATABASE_URL env var.
+from pathlib import Path as _Path  # noqa: E402
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": _Path(__file__).resolve().parent.parent.parent / "mimir.db",
+        "OPTIONS": {
+            "timeout": 20,
+        },
+    }
+}
+
 # --- Auth ---
 # MD5 is fast enough for tests; bcrypt's key-stretching is wasteful.
 PASSWORD_HASHERS = [

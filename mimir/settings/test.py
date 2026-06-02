@@ -48,12 +48,11 @@ FRONTEND_URL = "http://testserver"
 # Uses the huginn-db container (postgres:16, localhost:5432, user=huginn)
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "mimir_test",
-        "USER": "huginn",
-        "PASSWORD": "huginn",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "mimir_test.db",
+        "OPTIONS": {
+            "timeout": 20,
+        },
     }
 }
 
