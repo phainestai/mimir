@@ -253,6 +253,8 @@ function _parseUrlParams() {
     _currentLayout = resolvedLayout;
   }
 
+  _parseRoutingParam();
+
   return { types, phases };
 }
 
@@ -298,6 +300,9 @@ function _filtersToQueryString(filters) {
   }
   if (_currentLayout !== 'elk-layered') {
     parts.push('layout=' + _currentLayout);
+  }
+  if (_currentRouting !== 'bezier') {
+    parts.push('routing=' + _currentRouting);
   }
   return parts.length ? '?' + parts.join('&') : '';
 }
@@ -1508,6 +1513,11 @@ function _init() {
   if (layoutBtn) layoutBtn.addEventListener('click', _toggleLayoutDropdown);
   _updateLayoutBtn();
 
+  // Wire routing picker.
+  const routingBtn = document.querySelector('[data-testid="browser-routing-btn"]');
+  if (routingBtn) routingBtn.addEventListener('click', _toggleRoutingDropdown);
+  _updateRoutingBtn();
+
   // Wire re-plot button.
   const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
   if (replotBtn) replotBtn.addEventListener('click', _replot);
@@ -1667,7 +1677,14 @@ const _ROUTING_CATALOG = [
  * @param {string} key — one of the keys in _ROUTING_CATALOG
  */
 function _applyRouting(key) {
-  throw new Error('NOT_IMPLEMENTED — S35');
+  if (!_ROUTING_CATALOG.some(e => e.key === key)) return;
+  _currentRouting = key;
+  _updateRoutingBtn();
+  _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
+  if (window.cy) {
+    const entry = _ROUTING_CATALOG.find(e => e.key === key);
+    window.cy.edges().style({ 'curve-style': entry.cyValue });
+  }
 }
 
 /**
@@ -1675,14 +1692,66 @@ function _applyRouting(key) {
  * Mirrors _toggleLayoutDropdown pattern: appended to document.body, Escape closes it.
  */
 function _toggleRoutingDropdown() {
-  throw new Error('NOT_IMPLEMENTED — S35');
+  const existing = document.querySelector('[data-testid="browser-routing-dropdown"]');
+  if (existing) { existing.remove(); return; }
+
+  const btn = document.querySelector('[data-testid="browser-routing-btn"]');
+  if (!btn) return;
+
+  const panel = document.createElement('div');
+  panel.setAttribute('data-testid', 'browser-routing-dropdown');
+  const rect = btn.getBoundingClientRect();
+  panel.style.cssText =
+    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
+    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
+    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:180px;max-height:60vh;overflow-y:auto;';
+
+  _ROUTING_CATALOG.forEach(entry => {
+    const item = document.createElement('button');
+    item.setAttribute('data-testid', `browser-routing-option-${entry.key}`);
+    item.type = 'button';
+    const isActive = _currentRouting === entry.key;
+    item.style.cssText =
+      'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
+      (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
+    item.textContent = entry.label + (isActive ? ' ✓' : '');
+    item.addEventListener('click', () => {
+      panel.remove();
+      document.removeEventListener('keydown', escHandler);
+      document.removeEventListener('click', outsideHandler);
+      _applyRouting(entry.key);
+    });
+    panel.appendChild(item);
+  });
+
+  document.body.appendChild(panel);
+
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      panel.remove();
+      document.removeEventListener('keydown', escHandler);
+      document.removeEventListener('click', outsideHandler);
+    }
+  };
+  const outsideHandler = (e) => {
+    if (!panel.contains(e.target) && e.target !== btn) {
+      panel.remove();
+      document.removeEventListener('keydown', escHandler);
+      document.removeEventListener('click', outsideHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
 }
 
 /**
  * Update the routing button label to reflect the current routing's human-readable name.
  */
 function _updateRoutingBtn() {
-  throw new Error('NOT_IMPLEMENTED — S35');
+  const btn = document.querySelector('[data-testid="browser-routing-btn"]');
+  if (!btn) return;
+  const entry = _ROUTING_CATALOG.find(e => e.key === _currentRouting);
+  btn.textContent = (entry ? entry.label : _currentRouting) + ' ▾';
 }
 
 /**
@@ -1691,7 +1760,13 @@ function _updateRoutingBtn() {
  * Called from _parseUrlParams (S35 implementation extends that function).
  */
 function _parseRoutingParam() {
-  throw new Error('NOT_IMPLEMENTED — S35');
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get('routing');
+  if (raw && _ROUTING_CATALOG.some(e => e.key === raw)) {
+    _currentRouting = raw;
+  } else {
+    _currentRouting = 'bezier';
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
