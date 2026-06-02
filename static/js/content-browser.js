@@ -1895,8 +1895,16 @@ function _applySeqToggle() {
  * @param {Set<string>} activeTypes — currently active entity-type filter set
  */
 function _rebuildRespectingMode(activeTypes) {
-  // TODO: NotImplementedError — implement compound-aware rebuild
-  throw new Error('NotImplementedError: _rebuildRespectingMode');
+  if (!window.cy || !_fullGraphData) return;
+  if (_compoundViewOn) {
+    const elements = _buildCompoundElements(activeTypes);
+    window.cy.remove(window.cy.elements());
+    window.cy.style(_cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyle()));
+    window.cy.add(elements);
+    _runLayout();
+  } else {
+    _applyTypeRebuild(activeTypes);
+  }
 }
 
 /**
