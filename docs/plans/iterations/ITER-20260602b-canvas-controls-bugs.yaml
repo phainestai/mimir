@@ -94,15 +94,29 @@ scenarios:
       - templates/browser/browser_graph.html
       - tests/e2e/test_content_browser_node_size_toggle.py
 
+  - id: S49
+    github_issue: 49
+    title: "FOB-26 (revised) — Uniform treeview click: navigate canvas + open detail panel"
+    parallel_group: E
+    depends_on: []
+    budget_minutes: 45
+    skeleton_commit: 32a8df8
+    checkpoint: "cd tests/e2e && uv run pytest test_content_browser_structure_tree.py::TestTreeRowUniformClick -x -q"
+    checkpoint_acceptable: "5 skipped exit 0"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_structure_tree.py
+
 parallel_groups:
   A: [S43]          # isolated — only adds to _ROUTING_CATALOG array
   B: [S45, S44, S46]  # serial within group: S45 → S44 → S46 (compound style functions)
   C: [S47]          # independent — rewrites _buildEnhancedNodeStyle + _buildEdgeStyle
   D: [S48]          # depends on C (S47 must complete first — extends style system)
+  E: [S49]          # isolated — only touches _renderStructureTree + new _selectTreeNode
 
 execution_order:
-  - parallel: [A, B, C]   # groups A, B, C can start concurrently
-  - serial: [D]           # D waits for C (S47) to be merged
+  - parallel: [A, B, C, E]  # groups A, B, C, E can start concurrently
+  - serial: [D]              # D waits for C (S47) to be merged
 
 drift_thresholds:
   time_overrun_absorb_max_pct: 120
@@ -110,7 +124,7 @@ drift_thresholds:
   test_failure_retry_max: 1
   absorbed_signals_escalate: 2
 
-total_budget_minutes: 300
+total_budget_minutes: 345
 notes:
   - "All E2E tests skip without Playwright (exit 0 acceptable per PIT-02)"
   - "Use uv run pytest — NOT direct venv — to avoid sqlite/postgresql mismatch"
