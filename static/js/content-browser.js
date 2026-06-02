@@ -1643,8 +1643,8 @@ function _buildEnhancedNodeStyle(type) {
     'font-size': 13,
     'width': _nodeSizeMode === 'auto' ? 'label' : 120,
     'height': 40,
-    'text-max-width': 108,
     'text-overflow-wrap': 'whitespace',
+    ..._buildNodeTextOverflowStyle(_nodeSizeMode),
     ..._buildFontRenderingGuards(),
   };
 }
@@ -2530,7 +2530,8 @@ function _parseCompoundLevelParam() {
  * @returns {object} Cytoscape style properties for text overflow control
  */
 function _buildNodeTextOverflowStyle(mode) {
-  // 1. If mode === 'auto': return { 'text-max-width': 999, 'text-wrap': 'none' }
-  // 2. Else (fixed): return { 'text-max-width': 96, 'text-wrap': 'ellipsis' }
-  throw new Error('NotImplementedError: _buildNodeTextOverflowStyle');
+  if (mode === 'auto') {
+    return { 'text-max-width': 999, 'text-wrap': 'none' };
+  }
+  return { 'text-max-width': 96, 'text-wrap': 'ellipsis' };
 }
