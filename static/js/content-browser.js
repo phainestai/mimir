@@ -2100,8 +2100,15 @@ function _addElkCompoundData(nodeData) {
  * @returns {object} Cytoscape style overrides for the :parent selector label
  */
 function _buildCompoundLabelStyle() {
-  // TODO: NotImplementedError — implement compound label floating style
-  throw new Error('NotImplementedError: _buildCompoundLabelStyle');
+  return {
+    'text-margin-y': -14,
+    'text-margin-x': 6,
+    'text-background-color': '#ffffff',
+    'text-background-opacity': 0.85,
+    'text-background-padding': '3px',
+    'text-border-opacity': 0,
+    'color': '#084298',
+  };
 }
 
 /**
