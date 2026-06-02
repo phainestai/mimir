@@ -8,3 +8,12 @@ entries:
     dominant_drift: none
     footprint_accuracy: met_checkpoints
     pip_candidates: []
+  - milestone: 9
+    date: "2026-06-02"
+    goal: "ITER-20260602 | Content Browser canvas controls (S35–S38, FOB-35–38)"
+    velocity_ratio: 1.0
+    dominant_drift: sqlite_postgresql_mismatch
+    footprint_accuracy: met_checkpoints
+    pip_candidates:
+      - "Consider Playwright installation in CI to run E2E tests (all 44 tests currently skip)"
+      - "SQLite concurrent write limitation — test_concurrent_creates pre-existing failure"
