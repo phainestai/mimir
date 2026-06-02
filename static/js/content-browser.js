@@ -1582,13 +1582,14 @@ window.addEventListener('popstate', _onPopState);
  * @returns {object[]} Cytoscape stylesheet array
  */
 function _cytoscapeStyleEnhanced() {
-  const edgeStyles = _cytoscapeStyle().filter(s => s.selector.startsWith('edge') || s.selector === 'node:selected');
+  const edgeStyles = _buildEdgeStyle();
   const nodeTypes = ['playbook', 'workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
   const nodeStyles = nodeTypes.map(type => ({
     selector: `node[type = "${type}"]`,
     style: _buildEnhancedNodeStyle(type),
   }));
-  return [...nodeStyles, ...edgeStyles];
+  const selectedStyle = _cytoscapeStyle().filter(s => s.selector === 'node:selected');
+  return [...nodeStyles, ...edgeStyles, ...selectedStyle];
 }
 
 /**
@@ -1599,8 +1600,10 @@ function _cytoscapeStyleEnhanced() {
  * @returns {object} Cytoscape style property map
  */
 function _buildEnhancedNodeStyle(type) {
-  const _base = {
-    'label': 'data(label)',
+  const colors = _buildNodeColor(type);
+  const icon = _buildNodeIcon(type);
+  return {
+    'label': `${icon} data(label)`,
     'text-valign': 'center',
     'text-halign': 'center',
     'font-family': 'Montserrat, system-ui',
@@ -1608,70 +1611,78 @@ function _buildEnhancedNodeStyle(type) {
     'border-width': 2,
     'border-opacity': 1,
     'background-opacity': 1,
+    'shape': 'round-rectangle',
+    'background-color': colors.bg,
+    'border-color': colors.border,
+    'color': colors.text,
+    'font-size': 13,
+    'width': 120,
+    'height': 40,
+    'text-max-width': 108,
   };
-  const _structural = { ..._base, 'font-weight': 600 };
-  const _resource    = { ..._base, 'font-weight': 400 };
+}
 
-  const definitions = {
-    playbook: {
-      ..._structural,
-      'shape': 'round-octagon',
-      'background-color': '#6f42c1', 'border-color': '#5a32a3',
-      'color': '#ffffff',
-      'font-size': 15, 'width': 80, 'height': 60, 'text-max-width': 72,
-    },
-    workflow: {
-      ..._structural,
-      'shape': 'round-rectangle',
-      'background-color': '#0d6efd', 'border-color': '#0a58ca',
-      'color': '#ffffff',
-      'font-size': 14, 'width': 120, 'height': 40, 'text-max-width': 112,
-      'label': function(ele) {
-        const abbr = ele.data('meta') && ele.data('meta').abbreviation;
-        return abbr ? `${abbr}\n${ele.data('label')}` : ele.data('label');
-      },
-    },
-    activity: {
-      ..._structural,
-      'shape': 'bottom-round-rectangle',
-      'background-color': '#198754', 'border-color': '#146c43',
-      'color': '#ffffff',
-      'font-size': 13, 'width': 110, 'height': 38, 'text-max-width': 102,
-      'label': function(ele) {
-        const code = ele.data('meta') && ele.data('meta').display_code;
-        return code ? `${code}\n${ele.data('label')}` : ele.data('label');
-      },
-    },
-    artifact: {
-      ..._resource,
-      'shape': 'round-diamond',
-      'background-color': '#ffc107', 'border-color': '#cc9a06',
-      'color': '#212529',
-      'font-size': 11, 'width': 70, 'height': 30, 'text-max-width': 62,
-    },
-    skill: {
-      ..._resource,
-      'shape': 'hexagon',
-      'background-color': '#fd7e14', 'border-color': '#ca6510',
-      'color': '#ffffff',
-      'font-size': 11, 'width': 70, 'height': 30, 'text-max-width': 62,
-    },
-    agent: {
-      ..._resource,
-      'shape': 'ellipse',
-      'background-color': '#0dcaf0', 'border-color': '#0aa2c0',
-      'color': '#212529',
-      'font-size': 11, 'width': 70, 'height': 30, 'text-max-width': 62,
-    },
-    rule: {
-      ..._resource,
-      'shape': 'cut-rectangle',
-      'background-color': '#6c757d', 'border-color': '#565e64',
-      'color': '#ffffff',
-      'font-size': 11, 'width': 70, 'height': 30, 'text-max-width': 62,
-    },
-  };
-  return definitions[type] || _base;
+/**
+ * Return pastel Bootstrap 5.3 colour tokens for a given node type.
+ *
+ * Expected palette (when implemented):
+ *   playbook  → { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' }
+ *   workflow  → { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' }
+ *   activity  → { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' }
+ *   artifact  → { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' }
+ *   skill     → { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' }
+ *   agent     → { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' }
+ *   rule      → { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' }
+ *
+ * @param {string} type — entity type string
+ * @returns {{ bg: string, border: string, text: string }}
+ */
+function _buildNodeColor(type) {
+  // TODO: NotImplementedError — implement pastel palette
+  throw new Error('NotImplementedError: _buildNodeColor');
+}
+
+/**
+ * Return the FontAwesome 6 unicode glyph string for a given node type.
+ *
+ * Expected glyphs (when implemented, using FA6 Solid):
+ *   playbook  → '\uf5da'  (fa-book-sparkles)
+ *   workflow  → '\ue598'  (fa-diagram-project)
+ *   activity  → '\ue141'  (fa-bars-progress)
+ *   artifact  → '\uf06b'  (fa-gift)
+ *   skill     → '\ue05d'  (fa-hand-holding-magic)
+ *   agent     → '\ue0c4'  (fa-brain-circuit)
+ *   rule      → '\uf24e'  (fa-scale-balanced)
+ *
+ * The icon is rendered via 'font-family': '"Font Awesome 6 Free"' on the label.
+ * Weight must be 900 for solid icons.
+ *
+ * @param {string} type — entity type string
+ * @returns {string} Unicode glyph character
+ */
+function _buildNodeIcon(type) {
+  // TODO: NotImplementedError — implement FA icon map
+  throw new Error('NotImplementedError: _buildNodeIcon');
+}
+
+/**
+ * Return edge stylesheet entries for the enhanced style.
+ * All edges must use uniform black (#212529) colour.
+ * Inherits curve-style from _currentRouting via _applyRouting().
+ *
+ * Expected output (when implemented):
+ *   [
+ *     { selector: 'edge', style: { 'line-color': '#212529', 'target-arrow-color': '#212529',
+ *         'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'width': 1.5 } },
+ *     { selector: 'edge[relationship = "predecessor"]', style: { 'line-style': 'dashed', ... } },
+ *     { selector: 'edge[relationship = "contains"]', style: { 'display': 'none' } },
+ *   ]
+ *
+ * @returns {object[]} Cytoscape stylesheet entries for edges
+ */
+function _buildEdgeStyle() {
+  // TODO: NotImplementedError — implement uniform black edge styles
+  throw new Error('NotImplementedError: _buildEdgeStyle');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
