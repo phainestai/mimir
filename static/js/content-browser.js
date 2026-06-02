@@ -1845,6 +1845,8 @@ const _ROUTING_CATALOG = [
   { key: 'haystack',         label: 'Haystack',          cyValue: 'haystack' },
   { key: 'segments',         label: 'Segments',          cyValue: 'segments' },
   { key: 'round-segments',    label: 'Round Segments',    cyValue: 'round-segments' },
+  // S59 skeleton — straight-triangle entry (FOB-59)
+  { key: 'straight-triangle', label: 'Straight Triangle', cyValue: 'straight-triangle' },
 ];
 
 /**
@@ -2218,4 +2220,212 @@ function _cytoscapeCompoundStyle() {
 function _parseCompoundParam() {
   const params = new URLSearchParams(window.location.search);
   _compoundViewOn = params.get('compound') === '1';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// S58 — Font all-caps fix skeleton (FOB-58)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Return explicit text-transform:none and min-zoomed-font-size style entry
+ * to prevent all-caps rendering at extreme zoom levels.
+ *
+ * Expected output (when implemented):
+ *   { 'text-transform': 'none' }
+ *
+ * @returns {object} Cytoscape style properties preventing all-caps rendering
+ */
+function _buildFontRenderingGuards() {
+  // 1. Return { 'text-transform': 'none' } to be merged into every node style
+  throw new Error('NotImplementedError: _buildFontRenderingGuards');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// S59 — Straight-triangle routing catalog entry skeleton (FOB-59)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// (Implementation: add { key: 'straight-triangle', label: 'Straight (Triangle)', cyValue: 'straight-triangle' }
+//  to _ROUTING_CATALOG. No new function needed — skeleton is the catalog entry itself.)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// S60 — Compound label visibility + font size + activity colour skeleton (FOB-60)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Return compound parent label style using the padding-top approach:
+ * text-valign:top positions the label in the top padding strip (not outside the box).
+ *
+ * Expected output (when implemented):
+ *   {
+ *     'padding-top': '28px',
+ *     'text-valign': 'top',
+ *     'text-halign': 'left',
+ *     'text-margin-x': 8,
+ *     'text-margin-y': 4,
+ *     'font-size': 20,
+ *     'font-family': 'Montserrat, system-ui',
+ *     'font-weight': 600,
+ *     'text-transform': 'none',
+ *     'text-background-color': '#ffffff',
+ *     'text-background-opacity': 0.85,
+ *     'text-background-padding': '4px',
+ *     'color': '#084298',
+ *   }
+ *
+ * @returns {object} Cytoscape style overrides for compound parent label
+ */
+function _buildCompoundLabelStyleV2() {
+  // 1. Return padding-top based compound label style object
+  throw new Error('NotImplementedError: _buildCompoundLabelStyleV2');
+}
+
+/**
+ * Return background colour for compound nodes by compound level and node type.
+ *
+ * Expected output (when implemented):
+ *   If nodeType === 'activity': '#d4edda'   (light mint-green)
+ *   Otherwise (workflow):       '#eef2ff'   (light periwinkle)
+ *
+ * @param {string} nodeType — 'workflow' or 'activity'
+ * @returns {string} CSS colour string
+ */
+function _compoundBackgroundForType(nodeType) {
+  // 1. Return '#d4edda' for activity compound, '#eef2ff' for workflow compound
+  throw new Error('NotImplementedError: _compoundBackgroundForType');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// S61 — 3-level compound grouping context menu skeleton (FOB-61)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Compound grouping level. One of:
+ *   'none'               — flat mode; no compound boxes
+ *   'workflow'           — workflows are compound parents for activities + resources
+ *   'workflow-activity'  — workflows AND activities are compound parents
+ * Initialised from URL param ?compound= (see _parseCompoundLevelParam).
+ *
+ * NOTE: replaces the old boolean _compoundViewOn (see FOB-61 migration).
+ */
+let _compoundLevel = 'none';  // skeleton — replaces _compoundViewOn in MIT-02
+
+/**
+ * Build Cytoscape element array for 'workflow-activity' compound level.
+ * Activities that have connected resource nodes become compound parents.
+ *
+ * Expected output (when implemented):
+ *   Same as _buildCompoundElements but additionally sets:
+ *     resource nodes → parent = activity node id (not workflow)
+ *     activity nodes with resources → become compound parents
+ *
+ * @param {Set<string>} activeTypes — set of entity type strings currently visible
+ * @returns {{ data: object }[]} Cytoscape element array with two-level parent assignments
+ */
+function _buildWorkflowActivityCompoundElements(activeTypes) {
+  // 1. Filter nodes and edges by activeTypes
+  // 2. Build workflow→activity map from 'contains' edges (same as _buildCompoundElements)
+  // 3. Additionally build activity→resource map from non-contains edges
+  // 4. Assign:
+  //    - workflow nodes: no parent (top-level compound)
+  //    - activity nodes: parent = workflowId
+  //    - resource nodes connected to an activity: parent = activityId
+  // 5. Return element array with edges filtered to finalIds
+  throw new Error('NotImplementedError: _buildWorkflowActivityCompoundElements');
+}
+
+/**
+ * Return the Cytoscape stylesheet additions for 3-level compound mode.
+ * Extends _cytoscapeCompoundStyle with activity-level compound styling.
+ *
+ * Expected output (when implemented):
+ *   Includes `:parent` base style PLUS
+ *   `node[type="activity"]:parent` style with background '#d4edda'
+ *
+ * @param {string} level — 'workflow' or 'workflow-activity'
+ * @returns {object[]} stylesheet entries for compound rendering
+ */
+function _cytoscapeCompoundStyleForLevel(level) {
+  // 1. Start with base :parent style (from _cytoscapeCompoundStyle logic)
+  // 2. If level === 'workflow-activity', add node[type="activity"]:parent override
+  //    with background-color: '#d4edda'
+  // 3. Return array of stylesheet entries
+  throw new Error('NotImplementedError: _cytoscapeCompoundStyleForLevel');
+}
+
+/**
+ * Toggle the compound grouping dropdown open/closed.
+ * Mirrors _toggleLayoutDropdown and _toggleRoutingDropdown pattern.
+ */
+function _toggleCompoundDropdown() {
+  // 1. Check for existing dropdown and remove if present (toggle off)
+  // 2. Create dropdown panel with 3 options: none / workflow / workflow-activity
+  // 3. Mark active option with ✓
+  // 4. Wire click handlers to _applyCompoundLevel(key) + close panel
+  // 5. Append to body, add Escape and outside-click handlers
+  throw new Error('NotImplementedError: _toggleCompoundDropdown');
+}
+
+/**
+ * Apply a compound grouping level.
+ * Updates _compoundLevel, button label, URL param, rebuilds graph.
+ *
+ * @param {string} level — one of: 'none', 'workflow', 'workflow-activity'
+ */
+function _applyCompoundLevel(level) {
+  // 1. Validate level ∈ {'none', 'workflow', 'workflow-activity'}; return if invalid
+  // 2. Set _compoundLevel = level
+  // 3. Call _updateCompoundBtn()
+  // 4. Update canonical URL
+  // 5. Select elements + style based on level:
+  //    'none'               → _buildFilteredElements + _cytoscapeStyleEnhanced()
+  //    'workflow'           → _buildCompoundElements + _cytoscapeStyleForLevel('workflow')
+  //    'workflow-activity'  → _buildWorkflowActivityCompoundElements + _cytoscapeStyleForLevel('workflow-activity')
+  // 6. cy.remove, cy.style, cy.add, _runLayout()
+  throw new Error('NotImplementedError: _applyCompoundLevel');
+}
+
+/**
+ * Update the compound grouping button label and active state.
+ * Button label = active option label + ' ▾'.
+ */
+function _updateCompoundBtn() {
+  // 1. Find button by data-testid='browser-compound-btn'
+  // 2. Map _compoundLevel to human-readable label
+  // 3. Update button textContent
+  throw new Error('NotImplementedError: _updateCompoundBtn');
+}
+
+/**
+ * Parse the ?compound= URL parameter and set _compoundLevel accordingly.
+ * Valid values: 'none', 'workflow', 'workflow-activity'.
+ * Unknown or absent → 'none'.
+ */
+function _parseCompoundLevelParam() {
+  // 1. Read URL param 'compound'
+  // 2. If valid level → set _compoundLevel
+  // 3. Else → _compoundLevel = 'none'
+  throw new Error('NotImplementedError: _parseCompoundLevelParam');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// S62 — Node text/icon overflow fix skeleton (FOB-62)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Return text-max-width and text-wrap properties for a node in the current size mode.
+ *
+ * Expected output (when implemented):
+ *   Fixed mode: { 'text-max-width': 96, 'text-wrap': 'ellipsis' }
+ *   Auto mode:  { 'text-max-width': 999, 'text-wrap': 'none' }
+ *
+ * The text-max-width of 96 (fixed) leaves ~24px for the icon without clipping it.
+ * The text-max-width of 999 (auto) effectively removes the constraint.
+ *
+ * @param {string} mode — 'fixed' or 'auto'
+ * @returns {object} Cytoscape style properties for text overflow control
+ */
+function _buildNodeTextOverflowStyle(mode) {
+  // 1. If mode === 'auto': return { 'text-max-width': 999, 'text-wrap': 'none' }
+  // 2. Else (fixed): return { 'text-max-width': 96, 'text-wrap': 'ellipsis' }
+  throw new Error('NotImplementedError: _buildNodeTextOverflowStyle');
 }
