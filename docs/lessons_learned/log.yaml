@@ -29,3 +29,13 @@ entries:
       - "E2E graph tests require released playbook with workflows/activities in DB; consider adding to e2e_seed.json"
       - "Seq toggle removal pattern: mark old test file with pytestmark=skip rather than deleting to preserve history"
       - "top-level const/let in browser script NOT on window; only function declarations and var are globally accessible for page.evaluate()"
+  - milestone: 12
+    date: "2026-06-04"
+    goal: "ITER-20260602d | Canvas Font/Routing/Compound/Overflow Fixes (FOB-58–62)"
+    velocity_ratio: 1.0
+    dominant_drift: none
+    footprint_accuracy: 100%
+    pip_candidates:
+      - "Compound label visibility requires padding-top approach (not text-margin-y negative)"
+      - "_parseCompoundParam (boolean) silently accepted by legacy toggle; migrate before dropping old toggle"
+      - "window._compoundLevel exposure requires Object.defineProperty — module let not accessible via page.evaluate"
