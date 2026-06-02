@@ -160,3 +160,19 @@ class TestRoutingPickerInteraction:
         graph_page.wait_for_selector('[data-testid="browser-routing-dropdown"]')
         graph_page.click('[data-testid="browser-canvas"]', position={"x": 10, "y": 10})
         expect(graph_page.locator('[data-testid="browser-routing-dropdown"]')).to_have_count(0)
+
+
+    # ── S43 skeleton: unbundled-bezier in catalog ────────────────────────────
+
+    def test_unbundled_bezier_option_present_in_dropdown(self, graph_page: Page):
+        """Dropdown must include an unbundled-bezier option (S43 — FOB-35 fix)."""
+        graph_page.click('[data-testid="browser-routing-btn"]')
+        graph_page.wait_for_selector('[data-testid="browser-routing-dropdown"]')
+        expect(graph_page.locator('[data-testid="browser-routing-option-unbundled-bezier"]')).to_be_visible()
+
+    def test_selecting_unbundled_bezier_applies_and_stores_param(self, graph_page: Page):
+        """Selecting unbundled-bezier updates button label and URL param (S43)."""
+        graph_page.click('[data-testid="browser-routing-btn"]')
+        graph_page.click('[data-testid="browser-routing-option-unbundled-bezier"]')
+        expect(graph_page.locator('[data-testid="browser-routing-btn"]')).to_contain_text('Unbundled Bezier')
+        assert 'routing=unbundled-bezier' in graph_page.url

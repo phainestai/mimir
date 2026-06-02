@@ -1688,12 +1688,13 @@ let _currentRouting = 'bezier';
  * cyValue  → the actual Cytoscape curve-style string to apply
  */
 const _ROUTING_CATALOG = [
-  { key: 'bezier',    label: 'Bezier (default)', cyValue: 'bezier' },
-  { key: 'straight',  label: 'Straight',         cyValue: 'straight' },
-  { key: 'taxi',      label: 'Orthogonal',        cyValue: 'taxi' },
-  { key: 'haystack',  label: 'Haystack',          cyValue: 'haystack' },
-  { key: 'segments',  label: 'Segments',          cyValue: 'segments' },
-  { key: 'round-seg', label: 'Round Segments',    cyValue: 'round-segments' },
+  { key: 'bezier',           label: 'Bezier (default)', cyValue: 'bezier' },
+  { key: 'unbundled-bezier', label: 'Unbundled Bezier', cyValue: 'unbundled-bezier' },
+  { key: 'straight',         label: 'Straight',         cyValue: 'straight' },
+  { key: 'taxi',             label: 'Orthogonal',        cyValue: 'taxi' },
+  { key: 'haystack',         label: 'Haystack',          cyValue: 'haystack' },
+  { key: 'segments',         label: 'Segments',          cyValue: 'segments' },
+  { key: 'round-seg',        label: 'Round Segments',    cyValue: 'round-segments' },
 ];
 
 /**
