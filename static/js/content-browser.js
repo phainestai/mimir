@@ -1520,3 +1520,207 @@ window.cy = null;
 
 document.addEventListener('DOMContentLoaded', _init);
 window.addEventListener('popstate', _onPopState);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// S38 — Enhanced node visual styling (FOB-38)
+// All functions below are skeletons — implementation fills in the bodies.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Build the Cytoscape stylesheet with enhanced node shapes and Mimir design-aligned
+ * visual style (FOB-38). Replaces _cytoscapeStyle() when implemented.
+ *
+ * Node shapes per entity type:
+ *   playbook    → round-octagon
+ *   workflow    → round-rectangle (wider, bolder)
+ *   activity    → bottom-round-rectangle
+ *   artifact    → round-diamond
+ *   skill       → hexagon
+ *   agent       → ellipse (unchanged)
+ *   rule        → cut-rectangle
+ *
+ * Typography: Montserrat font, weight 600 structural / 400 resource.
+ * Borders: 2px solid on all node types.
+ *
+ * @returns {object[]} Cytoscape stylesheet array
+ */
+function _cytoscapeStyleEnhanced() {
+  throw new Error('NOT_IMPLEMENTED — S38');
+}
+
+/**
+ * Return enhanced style properties for a single entity type node.
+ * Helper extracted from _cytoscapeStyleEnhanced() for testability.
+ *
+ * @param {string} type — one of: playbook, workflow, activity, artifact, skill, agent, rule
+ * @returns {object} Cytoscape style property map
+ */
+function _buildEnhancedNodeStyle(type) {
+  throw new Error('NOT_IMPLEMENTED — S38');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// S35 — Edge routing picker (FOB-35)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Current edge routing key. Defaults to 'bezier'. Read by _filtersToQueryString. */
+let _currentRouting = 'bezier';
+
+/**
+ * Routing catalog — all 6 selectable Cytoscape curve-style options.
+ * key      → URL param value and cy curve-style value (or mapping via _applyRouting)
+ * label    → human-readable button/dropdown label
+ * cyValue  → the actual Cytoscape curve-style string to apply
+ */
+const _ROUTING_CATALOG = [
+  { key: 'bezier',    label: 'Bezier (default)', cyValue: 'bezier' },
+  { key: 'straight',  label: 'Straight',         cyValue: 'straight' },
+  { key: 'taxi',      label: 'Orthogonal',        cyValue: 'taxi' },
+  { key: 'haystack',  label: 'Haystack',          cyValue: 'haystack' },
+  { key: 'segments',  label: 'Segments',          cyValue: 'segments' },
+  { key: 'round-seg', label: 'Round Segments',    cyValue: 'round-segments' },
+];
+
+/**
+ * Apply a routing style by key.
+ * Updates _currentRouting, button label, URL param, and applies curve-style to all cy edges.
+ * Does NOT trigger a layout re-run — style update only.
+ *
+ * @param {string} key — one of the keys in _ROUTING_CATALOG
+ */
+function _applyRouting(key) {
+  throw new Error('NOT_IMPLEMENTED — S35');
+}
+
+/**
+ * Toggle the edge routing picker dropdown open/closed.
+ * Mirrors _toggleLayoutDropdown pattern: appended to document.body, Escape closes it.
+ */
+function _toggleRoutingDropdown() {
+  throw new Error('NOT_IMPLEMENTED — S35');
+}
+
+/**
+ * Update the routing button label to reflect the current routing's human-readable name.
+ */
+function _updateRoutingBtn() {
+  throw new Error('NOT_IMPLEMENTED — S35');
+}
+
+/**
+ * Parse the ?routing= URL parameter and set _currentRouting accordingly.
+ * Unknown values silently fall back to 'bezier'.
+ * Called from _parseUrlParams (S35 implementation extends that function).
+ */
+function _parseRoutingParam() {
+  throw new Error('NOT_IMPLEMENTED — S35');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// S36 — Activity sequence edges toggle (FOB-36)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Whether predecessor (sequence) edges are shown. Default: true (ON). */
+let _seqEdgesOn = true;
+
+/**
+ * Toggle sequence edges on or off.
+ * Triggers a full graph rebuild + relayout (same as entity-type filter rebuild).
+ * Updates _seqEdgesOn, button visual state, and URL param.
+ */
+function _applySeqToggle() {
+  throw new Error('NOT_IMPLEMENTED — S36');
+}
+
+/**
+ * Update the seq toggle button visual state to match _seqEdgesOn.
+ * ON:  button appears pressed/active, label "Seq ✓"
+ * OFF: button appears inactive, label "Seq ✗"
+ */
+function _updateSeqToggleBtn() {
+  throw new Error('NOT_IMPLEMENTED — S36');
+}
+
+/**
+ * Filter edges for sequence toggle: when _seqEdgesOn is false, remove all
+ * edges whose relationship is 'predecessor' from the element set.
+ * Called inside _buildFilteredElements (S36 implementation modifies that function).
+ *
+ * @param {object[]} edges — raw edge data objects from _fullGraphData
+ * @returns {object[]} filtered edges array
+ */
+function _filterSeqEdges(edges) {
+  throw new Error('NOT_IMPLEMENTED — S36');
+}
+
+/**
+ * Parse the ?seq= URL parameter and set _seqEdgesOn accordingly.
+ * seq=0 → false; absent or any other value → true (default ON).
+ * Called from _parseUrlParams (S36 implementation extends that function).
+ */
+function _parseSeqParam() {
+  throw new Error('NOT_IMPLEMENTED — S36');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// S37 — Workflow compound view toggle (FOB-37)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Whether compound view mode is active. Default: false (flat mode). */
+let _compoundViewOn = false;
+
+/**
+ * Toggle compound view on or off.
+ * Triggers a full graph rebuild with compound parent assignments (ON)
+ * or clears all parent assignments and rebuilds flat (OFF).
+ * Updates _compoundViewOn, button visual state, and URL param.
+ */
+function _applyCompoundToggle() {
+  throw new Error('NOT_IMPLEMENTED — S37');
+}
+
+/**
+ * Update the compound toggle button visual state to match _compoundViewOn.
+ * ON:  label "Grouped ✓"
+ * OFF: label "Grouped ✗"
+ */
+function _updateCompoundToggleBtn() {
+  throw new Error('NOT_IMPLEMENTED — S37');
+}
+
+/**
+ * Build Cytoscape element array in compound mode.
+ * Sets each activity node's `parent` data field to its workflow node ID.
+ * Resource nodes connected to an activity inherit the same workflow parent.
+ * Workflow nodes become compound parents (no `parent` set on them).
+ *
+ * @param {Set<string>} activeTypes — set of entity type strings currently visible
+ * @returns {{ data: object }[]} Cytoscape element array with parent assignments
+ */
+function _buildCompoundElements(activeTypes) {
+  throw new Error('NOT_IMPLEMENTED — S37');
+}
+
+/**
+ * Return the Cytoscape stylesheet additions for compound parent (workflow) nodes.
+ * These entries augment the base stylesheet when compound view is active:
+ *   - background-color: #eef2ff (light periwinkle)
+ *   - border: 2px solid #0d6efd
+ *   - border-radius: 8px (via shape: round-rectangle)
+ *   - text-valign: top, text-halign: left
+ *   - padding: 20px
+ *
+ * @returns {object[]} additional stylesheet entries for :parent selector
+ */
+function _cytoscapeCompoundStyle() {
+  throw new Error('NOT_IMPLEMENTED — S37');
+}
+
+/**
+ * Parse the ?compound= URL parameter and set _compoundViewOn accordingly.
+ * compound=1 → true; absent or other value → false (default flat).
+ * Called from _parseUrlParams (S37 implementation extends that function).
+ */
+function _parseCompoundParam() {
+  throw new Error('NOT_IMPLEMENTED — S37');
+}
