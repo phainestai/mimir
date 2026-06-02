@@ -247,7 +247,7 @@ class TestLayoutPickerDropdown:
 
 
 # ---------------------------------------------------------------------------
-# S35 — FOB-34: Layout catalog — all 20 options present in dropdown
+# S35 — FOB-34: Layout catalog — all 24 options present in dropdown
 # ---------------------------------------------------------------------------
 
 class TestLayoutCatalog:
@@ -266,8 +266,8 @@ class TestLayoutCatalog:
             el = page.locator(f'[data-testid="browser-layout-group-{slug}"]')
             assert el.count() == 1, f"Group header '{slug}' not found in dropdown"
 
-    def test_all_twenty_layout_options_present(self, page: Page, layout_playbook, live_server, picker_user):
-        """All 20 layout options (browser-layout-option-{key}) exist in the dropdown."""
+    def test_all_twenty_four_layout_options_present(self, page: Page, layout_playbook, live_server, picker_user):
+        """All 24 layout options (browser-layout-option-{key}) exist in the dropdown."""
         _login(page, live_server.url, 'picker_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
         _wait_for_graph(page)
@@ -276,6 +276,7 @@ class TestLayoutCatalog:
 
         expected_keys = [
             'elk-layered', 'elk-mrtree', 'elk-force', 'elk-stress', 'elk-disco',
+            'elk-radial', 'elk-rectpacking', 'elk-sporeOverlap', 'elk-sporeCompaction',
             'dagre-tb', 'dagre-lr',
             'cola', 'klay', 'cise', 'euler', 'avsdf', 'cose-bilkent', 'fcose',
             'cy-grid', 'cy-circle', 'cy-concentric', 'cy-breadthfirst', 'cy-cose', 'cy-random',

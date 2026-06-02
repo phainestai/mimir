@@ -43,7 +43,11 @@ const _LAYOUT_CATALOG = [
   { key: 'elk-mrtree',    label: 'Tree',          group: 'ELK',          groupSlug: 'elk' },
   { key: 'elk-force',     label: 'Force',         group: 'ELK',          groupSlug: 'elk' },
   { key: 'elk-stress',    label: 'Stress',        group: 'ELK',          groupSlug: 'elk' },
-  { key: 'elk-disco',     label: 'Disco',         group: 'ELK',          groupSlug: 'elk' },
+  { key: 'elk-disco',         label: 'Disco',          group: 'ELK', groupSlug: 'elk' },
+  { key: 'elk-radial',        label: 'Radial',         group: 'ELK', groupSlug: 'elk' },
+  { key: 'elk-rectpacking',   label: 'Rect Packing',   group: 'ELK', groupSlug: 'elk' },
+  { key: 'elk-sporeOverlap',  label: 'SPORE Overlap',  group: 'ELK', groupSlug: 'elk' },
+  { key: 'elk-sporeCompaction', label: 'SPORE Compact', group: 'ELK', groupSlug: 'elk' },
   // Dagre (dagre + cytoscape-dagre already loaded)
   { key: 'dagre-tb',      label: 'Top-Down',      group: 'Dagre',        groupSlug: 'dagre' },
   { key: 'dagre-lr',      label: 'Left-Right',    group: 'Dagre',        groupSlug: 'dagre' },
