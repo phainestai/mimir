@@ -255,6 +255,7 @@ function _parseUrlParams() {
 
   _parseRoutingParam();
   _parseSeqParam();
+  _parseCompoundParam();
 
   return { types, phases };
 }
@@ -307,6 +308,9 @@ function _filtersToQueryString(filters) {
   }
   if (!_seqEdgesOn) {
     parts.push('seq=0');
+  }
+  if (_compoundViewOn) {
+    parts.push('compound=1');
   }
   return parts.length ? '?' + parts.join('&') : '';
 }
@@ -498,13 +502,17 @@ function _renderGraph(pk, graphData, filters) {
   // Build initial elements respecting URL type-filter params so the first render
   // is already correct — avoids a redundant remove+re-add cycle after cy creation.
   _currentFilters = filters;
-  const elements = _buildFilteredElements(new Set(filters.types));
+  const activeTypesSet = new Set(filters.types);
+  const elements = _compoundViewOn ? _buildCompoundElements(activeTypesSet) : _buildFilteredElements(activeTypesSet);
+  const initialStyle = _compoundViewOn
+    ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyle())
+    : _cytoscapeStyleEnhanced();
 
   // Create cy without an initial layout — positions will be set by the explicit _runLayout()
   // call below (after listeners are registered). This avoids double-layout for async engines
   // (ELK) and missed-layoutstop for sync engines (Dagre, native Cytoscape layouts).
   window.cy = cytoscape({
-    container, elements, style: _cytoscapeStyleEnhanced(),
+    container, elements, style: initialStyle,
     layout: { name: 'null' },
     minZoom: 0.1, maxZoom: 3,
   });
@@ -1528,6 +1536,11 @@ function _init() {
   if (seqToggle) seqToggle.addEventListener('click', _applySeqToggle);
   _updateSeqToggleBtn();
 
+  // Wire compound view toggle.
+  const compoundToggle = document.querySelector('[data-testid="browser-compound-toggle"]');
+  if (compoundToggle) compoundToggle.addEventListener('click', _applyCompoundToggle);
+  _updateCompoundToggleBtn();
+
   // Wire re-plot button.
   const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
   if (replotBtn) replotBtn.addEventListener('click', _replot);
@@ -1856,7 +1869,20 @@ let _compoundViewOn = false;
  * Updates _compoundViewOn, button visual state, and URL param.
  */
 function _applyCompoundToggle() {
-  throw new Error('NOT_IMPLEMENTED — S37');
+  _compoundViewOn = !_compoundViewOn;
+  _updateCompoundToggleBtn();
+  _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
+  const activeTypes = new Set(_currentFilters.types);
+  if (!window.cy || !_fullGraphData) return;
+  const elements = _compoundViewOn ? _buildCompoundElements(activeTypes) : _buildFilteredElements(activeTypes);
+  window.cy.remove(window.cy.elements());
+  if (_compoundViewOn) {
+    window.cy.style(_cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyle()));
+  } else {
+    window.cy.style(_cytoscapeStyleEnhanced());
+  }
+  window.cy.add(elements);
+  _runLayout();
 }
 
 /**
@@ -1865,7 +1891,15 @@ function _applyCompoundToggle() {
  * OFF: label "Grouped ✗"
  */
 function _updateCompoundToggleBtn() {
-  throw new Error('NOT_IMPLEMENTED — S37');
+  const btn = document.querySelector('[data-testid="browser-compound-toggle"]');
+  if (!btn) return;
+  if (_compoundViewOn) {
+    btn.textContent = 'Grouped ✓';
+    btn.classList.add('active');
+  } else {
+    btn.textContent = 'Grouped ✗';
+    btn.classList.remove('active');
+  }
 }
 
 /**
@@ -1878,7 +1912,65 @@ function _updateCompoundToggleBtn() {
  * @returns {{ data: object }[]} Cytoscape element array with parent assignments
  */
 function _buildCompoundElements(activeTypes) {
-  throw new Error('NOT_IMPLEMENTED — S37');
+  if (!_fullGraphData) return [];
+  const { nodes, edges } = _fullGraphData;
+  const resourceTypes = new Set(['skill', 'agent', 'rule', 'artifact']);
+
+  const typeFilteredNodes = nodes.filter(n => activeTypes.has(n.type));
+  const typeFilteredIds = new Set(typeFilteredNodes.map(n => n.id));
+
+  // Build workflow → activity map from 'contains' edges.
+  const activityToWorkflow = new Map();
+  edges.forEach(e => {
+    if (e.relationship === 'contains' && typeFilteredIds.has(e.source) && typeFilteredIds.has(e.target)) {
+      activityToWorkflow.set(e.target, e.source); // target is activity, source is workflow
+    }
+  });
+
+  // Edges excluding 'contains' (workflow→activity become compound parents instead).
+  const nonContainsEdges = edges.filter(
+    e => e.relationship !== 'contains' && typeFilteredIds.has(e.source) && typeFilteredIds.has(e.target)
+  );
+  const filteredEdges = _filterSeqEdges(nonContainsEdges);
+
+  // Build resource → workflow parent map via activity parent.
+  const resourceToWorkflow = new Map();
+  filteredEdges.forEach(e => {
+    const targetNode = typeFilteredNodes.find(n => n.id === e.target);
+    if (targetNode && resourceTypes.has(targetNode.type)) {
+      const wfId = activityToWorkflow.get(e.source);
+      if (wfId) resourceToWorkflow.set(e.target, wfId);
+    }
+    const sourceNode = typeFilteredNodes.find(n => n.id === e.source);
+    if (sourceNode && resourceTypes.has(sourceNode.type)) {
+      const wfId = activityToWorkflow.get(e.target);
+      if (wfId) resourceToWorkflow.set(e.source, wfId);
+    }
+  });
+
+  const connectedIds = new Set();
+  filteredEdges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+
+  const finalNodes = typeFilteredNodes.filter(n => !resourceTypes.has(n.type) || connectedIds.has(n.id));
+
+  const compoundNodes = finalNodes.map(n => {
+    const nodeData = { ...n };
+    if (n.type === 'activity') {
+      const wfId = activityToWorkflow.get(n.id);
+      if (wfId) nodeData.parent = wfId;
+    } else if (resourceTypes.has(n.type)) {
+      const wfId = resourceToWorkflow.get(n.id);
+      if (wfId) nodeData.parent = wfId;
+    }
+    return { data: nodeData };
+  });
+
+  const finalIds = new Set(finalNodes.map(n => n.id));
+  const compoundEdges = filteredEdges
+    .filter(e => finalIds.has(e.source) && finalIds.has(e.target))
+    .map(e => ({ data: e }));
+
+  return [...compoundNodes, ...compoundEdges];
 }
 
 /**
@@ -1893,7 +1985,23 @@ function _buildCompoundElements(activeTypes) {
  * @returns {object[]} additional stylesheet entries for :parent selector
  */
 function _cytoscapeCompoundStyle() {
-  throw new Error('NOT_IMPLEMENTED — S37');
+  return [
+    {
+      selector: ':parent',
+      style: {
+        'background-color': '#eef2ff',
+        'border-color': '#0d6efd',
+        'border-width': 2,
+        'border-style': 'solid',
+        'shape': 'round-rectangle',
+        'text-valign': 'top',
+        'text-halign': 'left',
+        'padding': '20px',
+        'font-size': '0.85rem',
+        'font-weight': 600,
+      },
+    },
+  ];
 }
 
 /**
@@ -1902,5 +2010,6 @@ function _cytoscapeCompoundStyle() {
  * Called from _parseUrlParams (S37 implementation extends that function).
  */
 function _parseCompoundParam() {
-  throw new Error('NOT_IMPLEMENTED — S37');
+  const params = new URLSearchParams(window.location.search);
+  _compoundViewOn = params.get('compound') === '1';
 }

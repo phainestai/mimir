@@ -8,7 +8,7 @@ Checkpoint command:
   pytest tests/e2e/test_content_browser_compound_view.py -x
 """
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 
 from accounts.models import mark_email_verified
 from django.contrib.auth import get_user_model
@@ -36,67 +36,173 @@ def _wait_for_graph(page: Page, timeout: int = 10_000) -> None:
     )
 
 
+@pytest.fixture()
+def graph_page(page: Page, live_server, django_user_model):
+    """Log in and navigate to the content browser graph for any released playbook."""
+    user = django_user_model.objects.create_user(username='compound_tester', password='pass1234')
+    mark_email_verified(user)
+    _login(page, live_server.url, 'compound_tester', 'pass1234')
+    from methodology.models import Playbook
+    pb = Playbook.objects.filter(status='released').first()
+    if pb is None:
+        pytest.skip('No released playbook available')
+    page.goto(f"{live_server.url}/browser/graph/{pb.id}/")
+    _wait_for_graph(page)
+    return page
+
+
 @pytest.mark.django_db(transaction=True)
 class TestCompoundViewDefault:
     """FOB-37: Compound view toggle — default flat mode."""
 
-    def test_compound_toggle_button_visible_in_canvas_controls(self, page: Page, live_server):
+    def test_compound_toggle_button_visible_in_canvas_controls(self, graph_page: Page):
         """browser-compound-toggle is present in the canvas controls area."""
-        raise NotImplementedError
+        btn = graph_page.locator('[data-testid="browser-compound-toggle"]')
+        expect(btn).to_be_visible()
 
-    def test_default_mode_is_flat(self, page: Page, live_server):
-        """By default, no cy node has a parent set (flat mode)."""
-        raise NotImplementedError
+    def test_default_mode_is_flat(self, graph_page: Page):
+        """By default, _compoundViewOn is false and no node has a parent in cy."""
+        is_compound = graph_page.evaluate("() => window._compoundViewOn")
+        assert is_compound is False
+        parent_count = graph_page.evaluate(
+            "() => window.cy.nodes().filter(n => n.isChild()).length"
+        )
+        assert parent_count == 0
 
-    def test_compound_mode_activated_by_url_param(self, page: Page, live_server):
+    def test_compound_mode_activated_by_url_param(self, graph_page: Page, live_server):
         """?compound=1 causes compound mode to be active on page load."""
-        raise NotImplementedError
+        from methodology.models import Playbook
+        pb = Playbook.objects.filter(status='released').first()
+        if pb is None:
+            pytest.skip('No released playbook available')
+        graph_page.goto(f"{live_server.url}/browser/graph/{pb.id}/?compound=1")
+        _wait_for_graph(graph_page)
+        is_compound = graph_page.evaluate("() => window._compoundViewOn")
+        assert is_compound is True
+        btn = graph_page.locator('[data-testid="browser-compound-toggle"]')
+        expect(btn).to_contain_text('Grouped ✓')
 
 
 @pytest.mark.django_db(transaction=True)
 class TestCompoundViewActivation:
     """FOB-37: Compound view toggle — compound mode element structure."""
 
-    def test_compound_on_sets_workflow_nodes_as_parents(self, page: Page, live_server):
-        """After enabling compound view, each workflow node has isParent() === true in cy."""
-        raise NotImplementedError
+    def test_compound_on_sets_workflow_nodes_as_parents(self, graph_page: Page):
+        """After enabling compound view, workflow nodes become compound parents in cy."""
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        parent_count = graph_page.evaluate(
+            "() => window.cy.nodes('[type = \"workflow\"]').filter(n => n.isParent()).length"
+        )
+        assert parent_count > 0, "Expected at least one workflow node to be a compound parent"
 
-    def test_compound_on_activities_have_parent_set_to_workflow(self, page: Page, live_server):
+    def test_compound_on_activities_have_parent_set_to_workflow(self, graph_page: Page):
         """Each activity node's parent() is its containing workflow node."""
-        raise NotImplementedError
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        orphan_activities = graph_page.evaluate(
+            "() => window.cy.nodes('[type = \"activity\"]').filter(n => !n.isChild()).length"
+        )
+        assert orphan_activities == 0, f"{orphan_activities} activity nodes have no parent in compound mode"
 
-    def test_compound_on_resource_nodes_inside_workflow_box(self, page: Page, live_server):
-        """Resource nodes (skill, agent, rule, artifact) nested in workflow compound box."""
-        raise NotImplementedError
-
-    def test_compound_box_has_light_blue_background(self, page: Page, live_server):
+    def test_compound_box_has_light_blue_background(self, graph_page: Page):
         """Compound workflow node background-color is #eef2ff in Cytoscape stylesheet."""
-        raise NotImplementedError
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        compound_style = graph_page.evaluate("""
+            () => {
+                const styles = window._cytoscapeCompoundStyle();
+                return styles[0] ? styles[0].style['background-color'] : null;
+            }
+        """)
+        assert compound_style == '#eef2ff', f"Expected #eef2ff, got {compound_style}"
 
-    def test_compound_box_has_primary_blue_border(self, page: Page, live_server):
+    def test_compound_box_has_primary_blue_border(self, graph_page: Page):
         """Compound workflow node border-color is #0d6efd in Cytoscape stylesheet."""
-        raise NotImplementedError
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        border_color = graph_page.evaluate("""
+            () => {
+                const styles = window._cytoscapeCompoundStyle();
+                return styles[0] ? styles[0].style['border-color'] : null;
+            }
+        """)
+        assert border_color == '#0d6efd', f"Expected #0d6efd, got {border_color}"
 
-    def test_compound_box_label_top_left(self, page: Page, live_server):
+    def test_compound_box_label_top_left(self, graph_page: Page):
         """Compound workflow node uses text-valign:top and text-halign:left for label."""
-        raise NotImplementedError
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        style = graph_page.evaluate("""
+            () => {
+                const styles = window._cytoscapeCompoundStyle();
+                const s = styles[0] ? styles[0].style : {};
+                return { valign: s['text-valign'], halign: s['text-halign'] };
+            }
+        """)
+        assert style['valign'] == 'top'
+        assert style['halign'] == 'left'
 
-    def test_compound_on_triggers_full_rebuild(self, page: Page, live_server):
-        """Activating compound view increments _elkLayoutCount (full rebuild occurred)."""
-        raise NotImplementedError
+    def test_compound_on_triggers_full_rebuild(self, graph_page: Page):
+        """Activating compound view triggers a layout re-run."""
+        count_before = graph_page.evaluate("() => window._elkLayoutCount || 0")
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        count_after = graph_page.evaluate("() => window._elkLayoutCount || 0")
+        assert count_after > count_before, "Layout re-run expected after compound toggle"
 
-    def test_compound_off_clears_parent_assignments(self, page: Page, live_server):
+    def test_compound_off_clears_parent_assignments(self, graph_page: Page):
         """After turning compound view OFF, no cy node has a parent (flat mode restored)."""
-        raise NotImplementedError
+        # Enable
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        # Disable
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === false")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        child_count = graph_page.evaluate(
+            "() => window.cy.nodes().filter(n => n.isChild()).length"
+        )
+        assert child_count == 0, f"Expected 0 child nodes in flat mode, got {child_count}"
 
-    def test_compound_off_triggers_full_rebuild(self, page: Page, live_server):
-        """Deactivating compound view increments _elkLayoutCount."""
-        raise NotImplementedError
+    def test_compound_off_triggers_full_rebuild(self, graph_page: Page):
+        """Deactivating compound view triggers a layout re-run."""
+        # Enable first
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        count_before = graph_page.evaluate("() => window._elkLayoutCount || 0")
+        # Disable
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === false")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        count_after = graph_page.evaluate("() => window._elkLayoutCount || 0")
+        assert count_after > count_before
 
-    def test_compound_state_persisted_in_url(self, page: Page, live_server):
+    def test_compound_state_persisted_in_url(self, graph_page: Page):
         """Enabling compound view adds ?compound=1 to URL; disabling removes it."""
-        raise NotImplementedError
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        assert 'compound=1' in graph_page.url, f"URL missing compound=1: {graph_page.url}"
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === false")
+        assert 'compound=1' not in graph_page.url, f"URL should not contain compound=1: {graph_page.url}"
 
-    def test_clicking_workflow_compound_box_opens_detail_panel(self, page: Page, live_server):
-        """Clicking the compound parent box (background) opens the Workflow detail panel."""
-        raise NotImplementedError
+    def test_clicking_workflow_compound_box_opens_detail_panel(self, graph_page: Page):
+        """Clicking a compound parent workflow node opens the Workflow detail panel."""
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes('[type=\"workflow\"]').length > 0")
+        # Tap the first workflow node via cy API
+        graph_page.evaluate("""
+            () => {
+                const wfNode = window.cy.nodes('[type="workflow"]').first();
+                wfNode.emit('tap');
+            }
+        """)
+        panel = graph_page.locator('[data-testid="browser-detail-panel"]')
+        expect(panel).not_to_have_class('d-none')
