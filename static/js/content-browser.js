@@ -1995,6 +1995,26 @@ function _buildCompoundElements(activeTypes) {
 }
 
 /**
+ * Return the label positioning overrides that float the compound parent's label
+ * gently above the top-left corner of the compound boundary.
+ *
+ * Expected output (when implemented):
+ *   {
+ *     'text-margin-y': -14,      // push label above top border
+ *     'text-margin-x': 6,        // slight left indent
+ *     'text-background-color': '#ffffff',
+ *     'text-background-opacity': 0.85,
+ *     'text-background-padding': '3px',
+ *   }
+ *
+ * @returns {object} Cytoscape style overrides for the :parent selector label
+ */
+function _buildCompoundLabelStyle() {
+  // TODO: NotImplementedError — implement compound label floating style
+  throw new Error('NotImplementedError: _buildCompoundLabelStyle');
+}
+
+/**
  * Return the Cytoscape stylesheet additions for compound parent (workflow) nodes.
  * These entries augment the base stylesheet when compound view is active:
  *   - background-color: #eef2ff (light periwinkle)
@@ -2020,6 +2040,7 @@ function _cytoscapeCompoundStyle() {
         'padding': '20px',
         'font-size': '0.85rem',
         'font-weight': 600,
+        ..._buildCompoundLabelStyle(),
       },
     },
   ];

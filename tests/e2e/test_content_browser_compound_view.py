@@ -206,3 +206,26 @@ class TestCompoundViewActivation:
         """)
         panel = graph_page.locator('[data-testid="browser-detail-panel"]')
         expect(panel).not_to_have_class('d-none')
+
+
+    # ── S45 skeleton: compound label visible above top-left corner ────────────
+
+    def test_compound_parent_label_visible(self, graph_page: Page):
+        """Compound parent nodes must display their workflow label (S45 — FOB-37 fix)."""
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true && window.cy != null")
+        graph_page.wait_for_function("() => window.cy.nodes(':parent').length > 0")
+        label = graph_page.evaluate(
+            "() => window.cy.nodes(':parent').first().data('label')"
+        )
+        assert label and len(label) > 0, "Parent node must have a non-empty label"
+
+    def test_compound_parent_label_style_uses_floating_position(self, graph_page: Page):
+        """Compound parent label style includes negative text-margin-y to float above border (S45)."""
+        graph_page.click('[data-testid="browser-compound-toggle"]')
+        graph_page.wait_for_function("() => window._compoundViewOn === true && window.cy != null")
+        graph_page.wait_for_function("() => window.cy.nodes(':parent').length > 0")
+        margin_y = graph_page.evaluate(
+            "() => window.cy.nodes(':parent').first().style('text-margin-y')"
+        )
+        assert float(margin_y) < 0, f"text-margin-y should be negative, got {margin_y}"
