@@ -1024,27 +1024,19 @@ function _renderStructureTree() {
 
   container.innerHTML = html;
 
-  // Wire clicks: pan/zoom canvas to the node (no detail panel open).
+  // Wire chevron clicks: accordion only (does NOT navigate canvas or open panel).
+  container.querySelectorAll('.browser-tree-toggle').forEach(chevron => {
+    chevron.addEventListener('click', function(e) {
+      e.stopPropagation();
+      _accordionWorkflow(this.dataset.section);
+    });
+  });
+
+  // Wire row clicks: navigate canvas + open detail panel (same as canvas tap).
   container.querySelectorAll('[data-node-id]').forEach(row => {
     row.addEventListener('click', function(e) {
       e.stopPropagation();
-      const nodeId = this.dataset.nodeId;
-
-      // Toggle collapse for workflow rows only (workflow rows contain a toggle span)
-      const toggleSpan = this.querySelector('.browser-tree-toggle');
-      if (toggleSpan) {
-        const sId = toggleSpan.dataset.section;
-        _accordionWorkflow(sId);
-        return; // collapse toggle — don't navigate
-      }
-
-      // Navigate canvas to this node.
-      if (window.cy) {
-        const node = window.cy.getElementById(nodeId);
-        if (node && node.length) {
-          window.cy.animate({ fit: { eles: node, padding: 80 }, duration: 300 });
-        }
-      }
+      _selectTreeNode(this.dataset.nodeId);
     });
   });
 }
@@ -1053,6 +1045,24 @@ function _renderStructureTree() {
  * Cycle the ELK layout between 'layered' and 'mrtree'.
  * Re-runs layout on the existing cy instance without re-fetching.
  */
+/**
+ * Handle a structural tree row click.
+ * Produces the same outcome as clicking the node directly on the Cytoscape canvas:
+ *   1. Pan + zoom canvas to centre the node (animate fit, padding 80px).
+ *   2. Open the right detail panel with the node's embed content (_openDetailPanel).
+ *   3. Apply selection ring to the node (handled inside _openDetailPanel).
+ *   4. Highlight the tree row (handled inside _openDetailPanel → _highlightTreeNode).
+ *
+ * If the node is not present in the current cy graph (e.g. filtered out),
+ * the canvas step is skipped but the panel still opens using the tree row data.
+ *
+ * @param {string} nodeId — Cytoscape node id (string matching data-node-id attribute)
+ */
+function _selectTreeNode(nodeId) {
+  // TODO: NotImplementedError — implement uniform tree-to-canvas selection
+  throw new Error('NotImplementedError: _selectTreeNode');
+}
+
 /**
  * Run the current layout algorithm on the existing cy instance without recreating it.
  * Dispatches to ELK / dagre / native-cy / extension based on _currentLayout key.

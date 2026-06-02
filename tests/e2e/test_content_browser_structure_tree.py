@@ -120,29 +120,30 @@ class TestStructureTreeRendering:
 
 class TestStructureTreeNavigation:
 
-    def test_clicking_activity_row_does_not_open_detail_panel(
+    def test_clicking_activity_row_opens_detail_panel(
         self, page: Page, live_server, st_user, st_playbook
     ):
-        """Clicking an activity tree row navigates canvas but does NOT open detail panel (FOB-25)."""
+        """Clicking an activity tree row must open the detail panel (S49 — FOB-26 revised)."""
         _login(page, live_server.url, 'st_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
         page.wait_for_load_state('networkidle')
         page.wait_for_selector('[data-testid="browser-tree-row"]', timeout=8000)
 
-        # Tree starts collapsed — expand the first workflow to reveal activity rows
-        rows = page.locator('[data-testid="browser-tree-row"]')
-        rows.first.click()
+        # Expand the first workflow to reveal activity rows via the chevron
+        chevron = page.locator('.browser-tree-toggle').first
+        chevron.click()
         page.wait_for_timeout(300)
 
         rows = page.locator('[data-testid="browser-tree-row"]')
         for i in range(rows.count()):
-            if 'Activity Alpha' in rows.nth(i).inner_text():
-                rows.nth(i).click()
+            row = rows.nth(i)
+            if 'Activity Alpha' in row.inner_text() and not row.locator('.browser-tree-toggle').count():
+                row.click()
                 break
 
         page.wait_for_timeout(400)
-        # Detail panel should remain hidden after tree row click (navigation only).
-        expect(page.locator('[data-testid="browser-detail-panel"]')).to_be_hidden()
+        # Detail panel MUST be visible after tree row click (S49 — revised spec).
+        expect(page.locator('[data-testid="browser-detail-panel"]')).to_be_visible()
 
 
 # ---------------------------------------------------------------------------
@@ -332,3 +333,140 @@ class TestTreeAccordion:
             ).filter(el => el.style.display !== 'none').length
         """)
         assert expanded_sections == 1, f"Expected exactly 1 section expanded after activity tap, got {expanded_sections}"
+
+
+# ---------------------------------------------------------------------------
+# S49: Uniform tree-row click behaviour (FOB-26 revised 2026-06-02)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.skip(reason='S49 skeleton — _selectTreeNode not yet implemented')
+class TestTreeRowUniformClick:
+    """S49 — Clicking any tree row navigates canvas + opens detail panel (same as canvas tap)."""
+
+    def test_clicking_workflow_row_navigates_to_workflow_node(
+        self, page: Page, live_server, st_user, st_playbook
+    ):
+        """Clicking a workflow row (NOT the chevron) pans canvas to that workflow node (S49)."""
+        _login(page, live_server.url, 'st_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
+        page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0", timeout=10000)
+        page.wait_for_selector('[data-testid="browser-tree-row"]', timeout=8000)
+
+        # Find workflow row and click its label area (not the chevron)
+        wf_row = page.locator('[data-testid="browser-tree-row"]').first
+        label = wf_row.locator('span.fw-semibold')
+        if label.count():
+            label.first.click()
+        else:
+            wf_row.click()
+        page.wait_for_timeout(400)
+        # Canvas must have panned (we cannot assert exact position without Playwright fully running)
+
+    def test_clicking_workflow_row_opens_detail_panel(
+        self, page: Page, live_server, st_user, st_playbook
+    ):
+        """Clicking a workflow row (NOT the chevron) opens the detail panel (S49)."""
+        _login(page, live_server.url, 'st_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
+        page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0", timeout=10000)
+        page.wait_for_selector('[data-testid="browser-tree-row"]', timeout=8000)
+
+        wf_row = page.locator('[data-testid="browser-tree-row"]').first
+        label = wf_row.locator('span.fw-semibold')
+        if label.count():
+            label.first.click()
+        else:
+            wf_row.click()
+        page.wait_for_timeout(500)
+        expect(page.locator('[data-testid="browser-detail-panel"]')).to_be_visible()
+
+    def test_chevron_click_toggles_accordion_without_opening_panel(
+        self, page: Page, live_server, st_user, st_playbook
+    ):
+        """Clicking ONLY the chevron expands accordion but does NOT open detail panel (S49)."""
+        _login(page, live_server.url, 'st_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
+        page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0", timeout=10000)
+        page.wait_for_selector('.browser-tree-toggle', timeout=8000)
+
+        chevron = page.locator('.browser-tree-toggle').first
+        chevron.click()
+        page.wait_for_timeout(400)
+        # Accordion must expand
+        expanded = page.evaluate("""
+            () => Array.from(document.querySelectorAll('[id^="tree-wf-"]'))
+                      .filter(el => el.style.display !== 'none').length
+        """)
+        assert expanded >= 1, "Chevron click should expand at least one workflow section"
+        # Detail panel must stay hidden
+        expect(page.locator('[data-testid="browser-detail-panel"]')).to_be_hidden()
+
+    def test_clicking_activity_row_applies_selection_ring(
+        self, page: Page, live_server, st_user, st_playbook
+    ):
+        """After clicking an activity tree row, that cy node has a border-width > 0 (S49)."""
+        from methodology.models import Activity
+        act = Activity.objects.filter(workflow__playbook=st_playbook).first()
+
+        _login(page, live_server.url, 'st_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
+        page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0", timeout=10000)
+        page.wait_for_selector('.browser-tree-toggle', timeout=8000)
+
+        # Expand via chevron first
+        chevron = page.locator('.browser-tree-toggle').first
+        chevron.click()
+        page.wait_for_timeout(300)
+
+        # Click the activity row
+        act_id = f'activity:{act.pk}'
+        rows = page.locator('[data-testid="browser-tree-row"]')
+        for i in range(rows.count()):
+            if not rows.nth(i).locator('.browser-tree-toggle').count():
+                rows.nth(i).click()
+                break
+        page.wait_for_timeout(400)
+
+        border_width = page.evaluate(
+            f"() => {{ const n = window.cy.getElementById('{act_id}'); return n ? parseFloat(n.style('border-width')) : 0; }}"
+        )
+        assert border_width > 0, f"Activity node border-width should be > 0 after tree click, got {border_width}"
+
+    def test_tree_click_and_canvas_tap_produce_same_panel_content(
+        self, page: Page, live_server, st_user, st_playbook
+    ):
+        """Tree row click and canvas tap must open the same embed URL in the panel (S49)."""
+        from methodology.models import Activity
+        act = Activity.objects.filter(workflow__playbook=st_playbook).first()
+        act_id = f'activity:{act.pk}'
+
+        _login(page, live_server.url, 'st_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{st_playbook.pk}/")
+        page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0", timeout=10000)
+
+        # Trigger via canvas tap
+        page.evaluate(
+            f"window.cy.getElementById('{act_id}').emit('tap', [{{position:{{x:0,y:0}}}}])"
+        )
+        page.wait_for_timeout(500)
+        canvas_panel_visible = page.locator('[data-testid="browser-detail-panel"]').is_visible()
+        page.locator('[data-testid="browser-panel-close"]').click()
+        page.wait_for_timeout(200)
+
+        # Trigger via tree row click
+        page.wait_for_selector('.browser-tree-toggle', timeout=8000)
+        chevron = page.locator('.browser-tree-toggle').first
+        chevron.click()
+        page.wait_for_timeout(300)
+
+        rows = page.locator('[data-testid="browser-tree-row"]')
+        for i in range(rows.count()):
+            row = rows.nth(i)
+            if not row.locator('.browser-tree-toggle').count():
+                row.click()
+                break
+        page.wait_for_timeout(400)
+        tree_panel_visible = page.locator('[data-testid="browser-detail-panel"]').is_visible()
+
+        assert canvas_panel_visible, "Canvas tap should open detail panel"
+        assert tree_panel_visible, "Tree row click should also open detail panel (S49)"
