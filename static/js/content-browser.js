@@ -1613,11 +1613,12 @@ function _buildEnhancedNodeStyle(type) {
   const colors = _buildNodeColor(type);
   const icon = _buildNodeIcon(type);
   return {
-    'label': `${icon} data(label)`,
+    'label': ele => `${icon} ${ele.data('label') || ''}`,
     'text-valign': 'center',
     'text-halign': 'center',
-    'font-family': 'Montserrat, system-ui',
-    'text-wrap': 'wrap',
+    'font-family': '"Font Awesome 6 Free", Montserrat, system-ui',
+    'font-weight': 900,
+    'text-wrap': 'ellipsis',
     'border-width': 2,
     'border-opacity': 1,
     'background-opacity': 1,
@@ -1629,6 +1630,7 @@ function _buildEnhancedNodeStyle(type) {
     'width': 120,
     'height': 40,
     'text-max-width': 108,
+    'text-overflow-wrap': 'whitespace',
   };
 }
 
@@ -1648,8 +1650,16 @@ function _buildEnhancedNodeStyle(type) {
  * @returns {{ bg: string, border: string, text: string }}
  */
 function _buildNodeColor(type) {
-  // TODO: NotImplementedError — implement pastel palette
-  throw new Error('NotImplementedError: _buildNodeColor');
+  const palette = {
+    playbook: { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' },
+    workflow: { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' },
+    activity: { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' },
+    artifact: { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' },
+    skill:    { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' },
+    agent:    { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' },
+    rule:     { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' },
+  };
+  return palette[type] || { bg: '#f8f9fa', border: '#dee2e6', text: '#212529' };
 }
 
 /**
@@ -1671,8 +1681,16 @@ function _buildNodeColor(type) {
  * @returns {string} Unicode glyph character
  */
 function _buildNodeIcon(type) {
-  // TODO: NotImplementedError — implement FA icon map
-  throw new Error('NotImplementedError: _buildNodeIcon');
+  const icons = {
+    playbook: '\uf5da',
+    workflow: '\ue598',
+    activity: '\ue141',
+    artifact: '\uf06b',
+    skill:    '\ue05d',
+    agent:    '\ue0c4',
+    rule:     '\uf24e',
+  };
+  return icons[type] || '\uf111';
 }
 
 /**
@@ -1691,8 +1709,32 @@ function _buildNodeIcon(type) {
  * @returns {object[]} Cytoscape stylesheet entries for edges
  */
 function _buildEdgeStyle() {
-  // TODO: NotImplementedError — implement uniform black edge styles
-  throw new Error('NotImplementedError: _buildEdgeStyle');
+  return [
+    {
+      selector: 'edge',
+      style: {
+        'line-color': '#212529',
+        'target-arrow-color': '#212529',
+        'target-arrow-shape': 'triangle',
+        'curve-style': 'bezier',
+        'width': 1.5,
+        'opacity': 0.85,
+      },
+    },
+    {
+      selector: 'edge[relationship = "predecessor"]',
+      style: {
+        'line-style': 'dashed',
+        'line-dash-pattern': [6, 3],
+      },
+    },
+    {
+      selector: 'edge[relationship = "contains"]',
+      style: {
+        'display': 'none',
+      },
+    },
+  ];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
