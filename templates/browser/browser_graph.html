@@ -34,7 +34,7 @@
     <div class="p-3">
       {# Playbook name + status badge #}
       <div class="fw-bold mb-1" data-testid="browser-playbook-title">
-        {% if playbook %}{{ playbook.name }}{% else %}No playbook selected{% endif %}
+        {% if playbook %}{{ playbook.name }}{% else %}(No playbook selected){% endif %}
       </div>
       <div class="mb-2">
         <span data-testid="browser-playbook-status"
@@ -197,6 +197,18 @@
 <script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-elk@2.2.0/dist/cytoscape-elk.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-navigator@2.0.2/cytoscape-navigator.js"></script>
+{# Extended layout libraries — Cola, Klay, CiSE, Euler, AVSDF, CoSE-Bilkent, fCoSE #}
+<script src="https://cdn.jsdelivr.net/npm/webcola@3.4.0/WebCola/cola.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-cola@2.5.1/cytoscape-cola.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/klayjs@0.4.1/klay.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-klay@3.1.4/cytoscape-klay.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-cise@2.2.2/dist/cytoscape-cise.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-euler@1.2.2/cytoscape-euler.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-avsdf@1.2.1/src/avsdf.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/layout-base@2.0.1/layout-base.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cose-base@2.2.0/cose-base.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-cose-bilkent@4.1.0/cytoscape-cose-bilkent.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
 {# CDN bootstrap guard — must come before content-browser.js #}
 <script>
   if (typeof window.cytoscape === 'undefined') {

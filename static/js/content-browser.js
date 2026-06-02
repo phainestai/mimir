@@ -39,47 +39,152 @@ let _currentLayout = 'elk-layered'; // layout key — see _LAYOUT_CATALOG
  */
 const _LAYOUT_CATALOG = [
   // ELK sub-algorithms (elkjs already loaded)
-  { key: 'elk-layered',   label: 'Layered',      group: 'ELK' },
-  { key: 'elk-mrtree',    label: 'Tree',          group: 'ELK' },
-  { key: 'elk-force',     label: 'Force',         group: 'ELK' },
-  { key: 'elk-stress',    label: 'Stress',        group: 'ELK' },
-  { key: 'elk-disco',     label: 'Disco',         group: 'ELK' },
+  { key: 'elk-layered',   label: 'Layered',      group: 'ELK',          groupSlug: 'elk' },
+  { key: 'elk-mrtree',    label: 'Tree',          group: 'ELK',          groupSlug: 'elk' },
+  { key: 'elk-force',     label: 'Force',         group: 'ELK',          groupSlug: 'elk' },
+  { key: 'elk-stress',    label: 'Stress',        group: 'ELK',          groupSlug: 'elk' },
+  { key: 'elk-disco',     label: 'Disco',         group: 'ELK',          groupSlug: 'elk' },
   // Dagre (dagre + cytoscape-dagre already loaded)
-  { key: 'dagre-tb',      label: 'Top-Down',      group: 'Dagre' },
-  { key: 'dagre-lr',      label: 'Left-Right',    group: 'Dagre' },
+  { key: 'dagre-tb',      label: 'Top-Down',      group: 'Dagre',        groupSlug: 'dagre' },
+  { key: 'dagre-lr',      label: 'Left-Right',    group: 'Dagre',        groupSlug: 'dagre' },
   // Third-party extensions (CDN — added to browser_graph.html)
-  { key: 'cola',          label: 'Cola',          group: 'Cola' },
-  { key: 'klay',          label: 'Klay',          group: 'Klay' },
-  { key: 'cise',          label: 'CiSE',          group: 'CiSE' },
-  { key: 'euler',         label: 'Euler',         group: 'Euler' },
-  { key: 'avsdf',         label: 'AVSDF',         group: 'AVSDF' },
-  { key: 'cose-bilkent',  label: 'CoSE-Bilkent',  group: 'CoSE-Bilkent' },
-  { key: 'fcose',         label: 'fCoSE',         group: 'fCoSE' },
+  { key: 'cola',          label: 'Cola',          group: 'Cola',         groupSlug: 'cola' },
+  { key: 'klay',          label: 'Klay',          group: 'Klay',         groupSlug: 'klay' },
+  { key: 'cise',          label: 'CiSE',          group: 'CiSE',         groupSlug: 'cise' },
+  { key: 'euler',         label: 'Euler',         group: 'Euler',        groupSlug: 'euler' },
+  { key: 'avsdf',         label: 'AVSDF',         group: 'AVSDF',        groupSlug: 'avsdf' },
+  { key: 'cose-bilkent',  label: 'CoSE-Bilkent',  group: 'CoSE-Bilkent', groupSlug: 'cose-bilkent' },
+  { key: 'fcose',         label: 'fCoSE',         group: 'fCoSE',        groupSlug: 'fcose' },
   // Native Cytoscape layouts (already loaded)
-  { key: 'cy-grid',         label: 'Grid',          group: 'Cytoscape' },
-  { key: 'cy-circle',       label: 'Circle',        group: 'Cytoscape' },
-  { key: 'cy-concentric',   label: 'Concentric',    group: 'Cytoscape' },
-  { key: 'cy-breadthfirst', label: 'Breadth-first', group: 'Cytoscape' },
-  { key: 'cy-cose',         label: 'CoSE',          group: 'Cytoscape' },
-  { key: 'cy-random',       label: 'Random',        group: 'Cytoscape' },
+  { key: 'cy-grid',         label: 'Grid',          group: 'Cytoscape',  groupSlug: 'cy' },
+  { key: 'cy-circle',       label: 'Circle',        group: 'Cytoscape',  groupSlug: 'cy' },
+  { key: 'cy-concentric',   label: 'Concentric',    group: 'Cytoscape',  groupSlug: 'cy' },
+  { key: 'cy-breadthfirst', label: 'Breadth-first', group: 'Cytoscape',  groupSlug: 'cy' },
+  { key: 'cy-cose',         label: 'CoSE',          group: 'Cytoscape',  groupSlug: 'cy' },
+  { key: 'cy-random',       label: 'Random',        group: 'Cytoscape',  groupSlug: 'cy' },
 ];
 
 /**
- * Apply a layout by key and re-run graph layout.
- * TODO S34: implement dispatch to ELK / dagre / cola / klay / cise / euler /
- *           avsdf / cose-bilkent / fcose / native-cy based on layout key.
+ * Return Cytoscape layout options object for the given layout key.
+ * Used both for initial cy creation and for re-run via _runLayout().
+ *
+ * @param {string} key  — one of the keys in _LAYOUT_CATALOG
+ * @returns {object} Cytoscape layout config
+ */
+function _buildLayoutOptions(key) {
+  if (key.startsWith('elk-')) {
+    return {
+      name: 'elk',
+      elk: {
+        algorithm: key.slice(4),
+        'elk.direction': 'DOWN',
+        'elk.edgeRouting': 'ORTHOGONAL',
+        'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+        'elk.spacing.nodeNode': 50,
+        'elk.layered.spacing.nodeNodeBetweenLayers': 70,
+        'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+      },
+      padding: 30,
+    };
+  }
+  if (key === 'dagre-tb') {
+    return { name: 'dagre', rankDir: 'TB', nodeSep: 50, rankSep: 70, edgeSep: 10, ranker: 'network-simplex', padding: 30 };
+  }
+  if (key === 'dagre-lr') {
+    return { name: 'dagre', rankDir: 'LR', nodeSep: 50, rankSep: 70, edgeSep: 10, ranker: 'network-simplex', padding: 30 };
+  }
+  if (key.startsWith('cy-')) {
+    return { name: key.slice(3), padding: 30, animate: false };
+  }
+  // Extension layouts: cola, klay, cise, euler, avsdf, cose-bilkent, fcose
+  return { name: key, padding: 30 };
+}
+
+/**
+ * Apply a layout by key: update _currentLayout, update button, update URL, re-run layout.
+ * Ignores unknown keys.
  * @param {string} key  — one of the keys in _LAYOUT_CATALOG
  */
 function _applyLayout(key) {
-  throw new Error('_applyLayout: not yet implemented (S34)');
+  if (!_LAYOUT_CATALOG.some(e => e.key === key)) return;
+  _currentLayout = key;
+  _updateLayoutBtn();
+  _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
+  _runLayout();
 }
 
 /**
  * Toggle the layout picker dropdown open/closed.
- * TODO S34: build dropdown DOM from _LAYOUT_CATALOG and wire click handlers.
+ * Appended to document.body (fixed position) to avoid overflow clipping from canvas wrapper.
  */
 function _toggleLayoutDropdown() {
-  throw new Error('_toggleLayoutDropdown: not yet implemented (S34)');
+  const existing = document.querySelector('[data-testid="browser-layout-dropdown"]');
+  if (existing) { existing.remove(); return; }
+
+  const btn = document.querySelector('[data-testid="browser-layout-btn"]');
+  if (!btn) return;
+
+  const panel = document.createElement('div');
+  panel.setAttribute('data-testid', 'browser-layout-dropdown');
+  const rect = btn.getBoundingClientRect();
+  panel.style.cssText =
+    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
+    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
+    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:180px;max-height:60vh;overflow-y:auto;';
+
+  // Build grouped content from _LAYOUT_CATALOG.
+  const seenGroups = [];
+  _LAYOUT_CATALOG.forEach(e => {
+    if (!seenGroups.some(g => g.slug === e.groupSlug)) {
+      seenGroups.push({ slug: e.groupSlug, name: e.group });
+    }
+  });
+
+  seenGroups.forEach(g => {
+    const header = document.createElement('div');
+    header.setAttribute('data-testid', `browser-layout-group-${g.slug}`);
+    header.style.cssText = 'padding:4px 12px 2px;font-size:0.7rem;font-weight:600;color:#6c757d;text-transform:uppercase;letter-spacing:0.05em;';
+    header.textContent = g.name;
+    panel.appendChild(header);
+
+    _LAYOUT_CATALOG.filter(e => e.groupSlug === g.slug).forEach(entry => {
+      const item = document.createElement('button');
+      item.setAttribute('data-testid', `browser-layout-option-${entry.key}`);
+      item.type = 'button';
+      const isActive = _currentLayout === entry.key;
+      item.style.cssText =
+        'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
+        (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
+      item.textContent = entry.label + (isActive ? ' ✓' : '');
+      item.addEventListener('click', () => {
+        panel.remove();
+        document.removeEventListener('keydown', escHandler);
+        document.removeEventListener('click', outsideHandler);
+        _applyLayout(entry.key);
+      });
+      panel.appendChild(item);
+    });
+  });
+
+  document.body.appendChild(panel);
+
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      panel.remove();
+      document.removeEventListener('keydown', escHandler);
+      document.removeEventListener('click', outsideHandler);
+    }
+  };
+  const outsideHandler = (e) => {
+    if (!panel.contains(e.target) && e.target !== btn) {
+      panel.remove();
+      document.removeEventListener('keydown', escHandler);
+      document.removeEventListener('click', outsideHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+  // Defer outside-click handler to avoid immediately closing on the triggering click.
+  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
 }
 
 /**
@@ -138,8 +243,10 @@ function _parseUrlParams() {
         .filter(n => Number.isFinite(n) && n >= 0)
     : [];
 
-  if (layoutRaw === 'mrtree' || layoutRaw === 'layered') {
-    _currentLayout = layoutRaw;
+  const legacyMap = { layered: 'elk-layered', mrtree: 'elk-mrtree' };
+  const resolvedLayout = (layoutRaw && legacyMap[layoutRaw]) || layoutRaw;
+  if (resolvedLayout && _LAYOUT_CATALOG.some(e => e.key === resolvedLayout)) {
+    _currentLayout = resolvedLayout;
   }
 
   return { types, phases };
@@ -185,7 +292,7 @@ function _filtersToQueryString(filters) {
   if (filters.phases.length > 0) {
     parts.push('phases=' + filters.phases.join(','));
   }
-  if (_currentLayout !== 'layered') {
+  if (_currentLayout !== 'elk-layered') {
     parts.push('layout=' + _currentLayout);
   }
   return parts.length ? '?' + parts.join('&') : '';
@@ -292,10 +399,13 @@ let _currentAbortController = null;
 /**
  * Fetch graph data from the API, show loading state first, render on success.
  * Handles: 401 (session expired → redirect to login), 404, network errors.
+ * On a transient JSON 401 (DRF auth failure, e.g. brief session lock), retries
+ * once after 400 ms before giving up and redirecting to login.
  *
  * @param {number} pk
+ * @param {boolean} [_retry=false] - internal flag; true on the single retry attempt
  */
-async function _fetchGraph(pk) {
+async function _fetchGraph(pk, _retryCount = 0) {
   if (_currentAbortController) {
     _currentAbortController.abort();
   }
@@ -311,7 +421,16 @@ async function _fetchGraph(pk) {
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
       // Non-JSON response usually means Django returned a login redirect page.
-      window.location.href = '/auth/login/?next=' + encodeURIComponent('/browser/' + pk + '/');
+      window.location.href = '/auth/user/login/?next=' + encodeURIComponent('/browser/' + pk + '/');
+      return;
+    }
+    if (response.status === 401) {
+      if (_retryCount < 3) {
+        // Transient session miss (e.g. concurrent DB write on page load) — retry with backoff.
+        await new Promise((r) => setTimeout(r, 600 * (_retryCount + 1)));
+        return _fetchGraph(pk, _retryCount + 1);
+      }
+      window.location.href = '/auth/user/login/?next=' + encodeURIComponent('/browser/' + pk + '/');
       return;
     }
     if (response.status === 404) {
@@ -368,36 +487,14 @@ function _renderGraph(pk, graphData, filters) {
   _currentFilters = filters;
   const elements = _buildFilteredElements(new Set(filters.types));
 
-  const elkLayout = {
-    name: 'elk',
-    elk: {
-      algorithm: _currentLayout,
-      'elk.direction': 'DOWN',
-      'elk.edgeRouting': 'ORTHOGONAL',
-      'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
-      'elk.spacing.nodeNode': 50,
-      'elk.layered.spacing.nodeNodeBetweenLayers': 70,
-      'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
-    },
-    padding: 30,
-  };
-  const dagreLayout = {
-    name: 'dagre', rankDir: 'TB', nodeSep: 50, rankSep: 70,
-    edgeSep: 10, ranker: 'network-simplex', padding: 30,
-  };
-  const breadthfirstLayout = { name: 'breadthfirst', directed: true, padding: 20, spacingFactor: 1.5 };
-
-  const tryLayout = (layout) => cytoscape({ container, elements, style: _cytoscapeStyle(), layout, minZoom: 0.1, maxZoom: 3 });
-
-  try {
-    window.cy = tryLayout(elkLayout);
-  } catch (_elkErr) {
-    try {
-      window.cy = tryLayout(dagreLayout);
-    } catch (_dagreErr) {
-      window.cy = tryLayout(breadthfirstLayout);
-    }
-  }
+  // Create cy without an initial layout — positions will be set by the explicit _runLayout()
+  // call below (after listeners are registered). This avoids double-layout for async engines
+  // (ELK) and missed-layoutstop for sync engines (Dagre, native Cytoscape layouts).
+  window.cy = cytoscape({
+    container, elements, style: _cytoscapeStyle(),
+    layout: { name: 'null' },
+    minZoom: 0.1, maxZoom: 3,
+  });
 
   // Hide overlay states, make canvas visible.
   const loading = document.querySelector('[data-testid="browser-loading"]');
@@ -415,10 +512,15 @@ function _renderGraph(pk, graphData, filters) {
   window.cy.on('tap', function(evt) {
     if (evt.target === window.cy) { _closeDetailPanel(); }
   });
-  // Track layout completion count (used by E2E tests to wait for ELK to finish).
+  // Track layout completion count (used by E2E tests to wait for any layout to finish).
   window.cy.on('layoutstop', function() {
     window._elkLayoutCount = (window._elkLayoutCount || 0) + 1;
   });
+
+  // Re-run layout explicitly so the layoutstop listener above always fires at least once.
+  // Sync layouts (e.g. Dagre) fire layoutstop during the cytoscape() constructor, before
+  // the listener above is registered — this call ensures they are also tracked.
+  _runLayout();
 
   // Apply phase/search dim (no type rebuild — cy was created with correct elements).
   _refreshVisualState();
@@ -544,7 +646,7 @@ function _applyTypeRebuild(activeTypes) {
   const elements = _buildFilteredElements(activeTypes);
   window.cy.remove(window.cy.elements());
   window.cy.add(elements);
-  _runElkLayout();
+  _runLayout();
 }
 
 /**
@@ -929,43 +1031,43 @@ function _renderStructureTree() {
  * Cycle the ELK layout between 'layered' and 'mrtree'.
  * Re-runs layout on the existing cy instance without re-fetching.
  */
-function _cycleLayout() {
-  _currentLayout = _currentLayout === 'layered' ? 'mrtree' : 'layered';
-  _updateLayoutBtn();
-  _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
-  _runElkLayout();
-}
-
 /**
- * Run ELK layout on the current cy instance using _currentLayout algorithm.
+ * Run the current layout algorithm on the existing cy instance without recreating it.
+ * Dispatches to ELK / dagre / native-cy / extension based on _currentLayout key.
  * Fits the graph to screen after layout completes.
  */
-function _runElkLayout() {
+function _runLayout() {
   if (!window.cy) return;
-  const layout = window.cy.layout({
-    name: 'elk',
-    elk: { algorithm: _currentLayout, 'elk.direction': 'DOWN' },
-    padding: 30,
-  });
-  layout.one('layoutstop', () => { window.cy.fit(undefined, 40); });
-  layout.run();
+  const fallbacks = [_currentLayout, 'dagre-tb', 'cy-breadthfirst'];
+  for (const key of fallbacks) {
+    const opts = _buildLayoutOptions(key);
+    try {
+      const layout = window.cy.layout(opts);
+      layout.one('layoutstop', () => { window.cy && window.cy.fit(undefined, 40); });
+      layout.run();
+      return;
+    } catch (err) {
+      console.warn(`Layout "${key}" failed (plugin may not be loaded):`, err);
+    }
+  }
 }
 
 /**
- * Re-run ELK layout on the current cy instance using visible nodes only.
+ * Re-run current layout on the existing cy instance.
  * Useful after hiding node types or filtering, so freed space is reclaimed.
  */
 function _replot() {
-  _runElkLayout();
+  _runLayout();
 }
 
 /**
- * Update the layout button label to reflect current mode.
+ * Update the layout button label to reflect the current layout's human-readable name.
  */
 function _updateLayoutBtn() {
   const btn = document.querySelector('[data-testid="browser-layout-btn"]');
   if (!btn) return;
-  btn.textContent = _currentLayout === 'layered' ? 'Layered' : 'MTree';
+  const entry = _LAYOUT_CATALOG.find(e => e.key === _currentLayout);
+  btn.textContent = (entry ? entry.label : _currentLayout) + ' ▾';
 }
 
 /**
@@ -1399,7 +1501,7 @@ function _init() {
 
   // Wire layout switcher.
   const layoutBtn = document.querySelector('[data-testid="browser-layout-btn"]');
-  if (layoutBtn) layoutBtn.addEventListener('click', _cycleLayout);
+  if (layoutBtn) layoutBtn.addEventListener('click', _toggleLayoutDropdown);
   _updateLayoutBtn();
 
   // Wire re-plot button.

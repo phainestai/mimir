@@ -201,72 +201,91 @@ class TestLayoutSwitcher:
     def test_layout_button_present_and_shows_layered(
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
-        """Layout switcher button is present and defaults to 'Layered' (FOB-19)."""
+        """Layout button is present and defaults to 'Layered ▾' (FOB-19)."""
         _login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
         _wait_for_graph(page)
 
         btn = page.locator('[data-testid="browser-layout-btn"]')
         expect(btn).to_be_visible()
-        expect(btn).to_contain_text('Layered')
+        btn_text = btn.text_content()
+        assert 'Layered' in btn_text, f"Button should contain 'Layered', got: {btn_text!r}"
+        assert '▾' in btn_text, f"Button should contain '▾' chevron, got: {btn_text!r}"
 
-    def test_clicking_layout_button_switches_to_mrtree(
+    def test_clicking_layout_button_opens_dropdown(
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
-        """Clicking layout button switches label to 'MTree' (FOB-19)."""
+        """Clicking layout button opens the 2-level dropdown panel (FOB-19)."""
         _login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
         _wait_for_graph(page)
 
         page.locator('[data-testid="browser-layout-btn"]').click()
+        dropdown = page.wait_for_selector('[data-testid="browser-layout-dropdown"]', timeout=3_000)
+        assert dropdown is not None, "Dropdown should open after clicking layout button"
+
+    def test_selecting_mrtree_switches_button_label(
+        self, page: Page, live_server, layout_user, layout_playbook,
+    ):
+        """Selecting elk-mrtree from dropdown switches button label to 'Tree ▾' (FOB-19)."""
+        _login(page, live_server.url, 'layout_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        _wait_for_graph(page)
+        _wait_for_elk_complete(page)
+
+        page.locator('[data-testid="browser-layout-btn"]').click()
+        page.wait_for_selector('[data-testid="browser-layout-dropdown"]', timeout=3_000)
+        page.locator('[data-testid="browser-layout-option-elk-mrtree"]').click()
         page.wait_for_timeout(500)
 
-        expect(page.locator('[data-testid="browser-layout-btn"]')).to_contain_text('MTree')
+        expect(page.locator('[data-testid="browser-layout-btn"]')).to_contain_text('Tree')
 
     def test_layout_persists_in_url(
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
-        """After switching to MTree, URL contains ?layout=mrtree (FOB-19)."""
+        """After selecting elk-mrtree, URL contains ?layout=elk-mrtree (FOB-19)."""
         _login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
         _wait_for_graph(page)
+        _wait_for_elk_complete(page)
 
         page.locator('[data-testid="browser-layout-btn"]').click()
+        page.wait_for_selector('[data-testid="browser-layout-dropdown"]', timeout=3_000)
+        page.locator('[data-testid="browser-layout-option-elk-mrtree"]').click()
         page.wait_for_timeout(500)
 
-        assert 'layout=mrtree' in page.url
+        assert 'layout=elk-mrtree' in page.url
 
-    def test_clicking_again_switches_back_to_layered(
+    def test_selecting_elk_layered_restores_default_label(
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
-        """Clicking layout button twice returns to 'Layered' and removes URL param (FOB-19)."""
+        """Selecting elk-layered from dropdown restores 'Layered ▾' button label (FOB-19)."""
         _login(page, live_server.url, 'layout_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/?layout=elk-mrtree")
         _wait_for_graph(page)
+        _wait_for_elk_complete(page)
 
-        btn = page.locator('[data-testid="browser-layout-btn"]')
-        btn.click()
-        page.wait_for_timeout(500)
-        btn.click()
+        page.locator('[data-testid="browser-layout-btn"]').click()
+        page.wait_for_selector('[data-testid="browser-layout-dropdown"]', timeout=3_000)
+        page.locator('[data-testid="browser-layout-option-elk-layered"]').click()
         page.wait_for_timeout(500)
 
-        expect(btn).to_contain_text('Layered')
-        assert 'layout=' not in page.url
+        expect(page.locator('[data-testid="browser-layout-btn"]')).to_contain_text('Layered')
 
     def test_layout_url_param_applied_on_page_load(
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
-        """Loading URL with ?layout=mrtree applies MTree layout (FOB-19)."""
+        """Loading URL with ?layout=elk-mrtree applies Tree layout (FOB-19)."""
         _login(page, live_server.url, 'layout_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/?layout=mrtree")
+        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/?layout=elk-mrtree")
         _wait_for_graph(page)
 
-        expect(page.locator('[data-testid="browser-layout-btn"]')).to_contain_text('MTree')
+        expect(page.locator('[data-testid="browser-layout-btn"]')).to_contain_text('Tree')
 
     def test_clicking_layout_button_repositions_nodes(
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
-        """Clicking layout button actually repositions nodes on canvas (FOB-19 bug fix S27)."""
+        """Selecting a different layout actually repositions nodes on canvas (FOB-19 bug fix S27)."""
         _login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
         _wait_for_graph(page)
@@ -280,9 +299,24 @@ class TestLayoutSwitcher:
         assert positions_before and len(positions_before) > 0
 
         count_before = page.evaluate("() => window._elkLayoutCount || 0")
+        # Switch to dagre-tb via dropdown
         page.locator('[data-testid="browser-layout-btn"]').click()
-        # Wait for ELK layoutstop event (counter increments on each layout completion)
+        page.wait_for_selector('[data-testid="browser-layout-dropdown"]', timeout=3_000)
+        page.locator('[data-testid="browser-layout-option-dagre-tb"]').click()
+        # Wait for layout run to complete
         page.wait_for_function(f"window._elkLayoutCount > {count_before}", timeout=10000)
+
+        positions_after = page.evaluate("""() => {
+            if (!window.cy) return null;
+            return window.cy.nodes().map(n => ({ id: n.id(), x: n.position('x'), y: n.position('y') }));
+        }""")
+        assert positions_after and len(positions_after) == len(positions_before)
+        # At least one node must have moved
+        changed = any(
+            abs(b['x'] - a['x']) > 1 or abs(b['y'] - a['y']) > 1
+            for b, a in zip(positions_before, positions_after)
+        )
+        assert changed, "No nodes repositioned after layout switch — layout did not run"
 
         positions_after = page.evaluate("""() => {
             if (!window.cy) return null;
@@ -328,9 +362,11 @@ class TestReplotButton:
         _wait_for_graph(page)
         _wait_for_elk_complete(page)  # ensure initial ELK is done before counting
 
-        # Switch to mrtree so re-plot produces a different layout than initial layered
+        # Switch to dagre-tb so re-plot produces a different layout than initial ELK
         count1 = page.evaluate("() => window._elkLayoutCount || 0")
         page.locator('[data-testid="browser-layout-btn"]').click()
+        page.wait_for_selector('[data-testid="browser-layout-dropdown"]', timeout=3_000)
+        page.locator('[data-testid="browser-layout-option-dagre-tb"]').click()
         page.wait_for_function(f"window._elkLayoutCount > {count1}", timeout=10000)
 
         positions_before = page.evaluate("""() => {
@@ -339,9 +375,11 @@ class TestReplotButton:
         }""")
         assert positions_before and len(positions_before) > 0
 
-        # Switch back to layered, then click re-plot — positions should change
+        # Switch back to elk-layered, then click re-plot — positions should change
         count2 = page.evaluate("() => window._elkLayoutCount || 0")
         page.locator('[data-testid="browser-layout-btn"]').click()
+        page.wait_for_selector('[data-testid="browser-layout-dropdown"]', timeout=3_000)
+        page.locator('[data-testid="browser-layout-option-elk-layered"]').click()
         page.wait_for_function(f"window._elkLayoutCount > {count2}", timeout=10000)
         count3 = page.evaluate("() => window._elkLayoutCount || 0")
         page.locator('[data-testid="browser-replot-btn"]').click()
