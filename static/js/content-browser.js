@@ -256,6 +256,7 @@ function _parseUrlParams() {
   _parseRoutingParam();
   _parseSeqParam();
   _parseCompoundParam();
+  _parseNodeSizeParam();
 
   return { types, phases };
 }
@@ -1059,8 +1060,28 @@ function _renderStructureTree() {
  * @param {string} nodeId — Cytoscape node id (string matching data-node-id attribute)
  */
 function _selectTreeNode(nodeId) {
-  // TODO: NotImplementedError — implement uniform tree-to-canvas selection
-  throw new Error('NotImplementedError: _selectTreeNode');
+  if (window.cy) {
+    const node = window.cy.getElementById(nodeId);
+    if (node && node.length) {
+      window.cy.animate({ fit: { eles: node, padding: 80 } }, { duration: 400 });
+      _openDetailPanel(node);
+      return;
+    }
+  }
+  // Node is filtered out — open panel from tree row data without canvas interaction.
+  const row = document.querySelector(`[data-testid="browser-tree-row"][data-node-id="${nodeId}"]`);
+  if (!row) return;
+  const embedUrl = row.dataset.embedUrl || '';
+  const detailUrl = row.dataset.detailUrl || '';
+  const nodeType = row.dataset.nodeType || '';
+  // Build a minimal Cytoscape-compatible proxy.
+  const proxy = {
+    id: () => nodeId,
+    data: key => ({ embed_url: embedUrl, detail_url: detailUrl, type: nodeType }[key]),
+    style: () => 'hidden',
+    length: 1,
+  };
+  _openDetailPanel(proxy);
 }
 
 /**
@@ -1551,6 +1572,11 @@ function _init() {
   if (compoundToggle) compoundToggle.addEventListener('click', _applyCompoundToggle);
   _updateCompoundToggleBtn();
 
+  // Wire node size mode toggle.
+  const nodeSizeToggle = document.querySelector('[data-testid="browser-node-size-toggle"]');
+  if (nodeSizeToggle) nodeSizeToggle.addEventListener('click', _applyNodeSizeToggle);
+  _updateNodeSizeModeBtn();
+
   // Wire re-plot button.
   const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
   if (replotBtn) replotBtn.addEventListener('click', _replot);
@@ -1564,6 +1590,7 @@ window.cy = null;
 Object.defineProperty(window, '_seqEdgesOn', { get: () => _seqEdgesOn });
 Object.defineProperty(window, '_currentRouting', { get: () => _currentRouting });
 Object.defineProperty(window, '_compoundViewOn', { get: () => _compoundViewOn });
+Object.defineProperty(window, '_nodeSizeMode', { get: () => _nodeSizeMode });
 
 document.addEventListener('DOMContentLoaded', _init);
 window.addEventListener('popstate', _onPopState);
@@ -1627,7 +1654,7 @@ function _buildEnhancedNodeStyle(type) {
     'border-color': colors.border,
     'color': colors.text,
     'font-size': 13,
-    'width': 120,
+    'width': _nodeSizeMode === 'auto' ? 'label' : 120,
     'height': 40,
     'text-max-width': 108,
     'text-overflow-wrap': 'whitespace',
@@ -1978,8 +2005,14 @@ let _nodeSizeMode = 'fixed';
  *   4. Reapply stylesheet: window.cy.style(_cytoscapeStyleEnhanced() + compound if active)
  */
 function _applyNodeSizeToggle() {
-  // TODO: NotImplementedError — implement node size mode toggle
-  throw new Error('NotImplementedError: _applyNodeSizeToggle');
+  _nodeSizeMode = _nodeSizeMode === 'fixed' ? 'auto' : 'fixed';
+  _updateNodeSizeModeBtn();
+  _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
+  if (!window.cy) return;
+  const style = _compoundViewOn
+    ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyle())
+    : _cytoscapeStyleEnhanced();
+  window.cy.style(style);
 }
 
 /**
@@ -1988,8 +2021,15 @@ function _applyNodeSizeToggle() {
  *   'auto'  → button text "Auto-width ✓",  adds class 'active'
  */
 function _updateNodeSizeModeBtn() {
-  // TODO: NotImplementedError — implement node size button update
-  throw new Error('NotImplementedError: _updateNodeSizeModeBtn');
+  const btn = document.querySelector('[data-testid="browser-node-size-toggle"]');
+  if (!btn) return;
+  if (_nodeSizeMode === 'fixed') {
+    btn.textContent = 'Fixed size ✓';
+    btn.classList.add('active');
+  } else {
+    btn.textContent = 'Auto-width ✓';
+    btn.classList.remove('active');
+  }
 }
 
 /**
@@ -1998,8 +2038,9 @@ function _updateNodeSizeModeBtn() {
  * Called once on page load before cy is initialised.
  */
 function _parseNodeSizeParam() {
-  // TODO: NotImplementedError — implement URL param parsing for nodesize
-  throw new Error('NotImplementedError: _parseNodeSizeParam');
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get('nodesize');
+  _nodeSizeMode = (raw === 'auto') ? 'auto' : 'fixed';
 }
 
 /**

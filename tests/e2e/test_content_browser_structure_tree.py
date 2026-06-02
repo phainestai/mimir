@@ -339,7 +339,6 @@ class TestTreeAccordion:
 # S49: Uniform tree-row click behaviour (FOB-26 revised 2026-06-02)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skip(reason='S49 skeleton — _selectTreeNode not yet implemented')
 class TestTreeRowUniformClick:
     """S49 — Clicking any tree row navigates canvas + opens detail panel (same as canvas tap)."""
 
