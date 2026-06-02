@@ -2130,8 +2130,9 @@ function _buildCompoundElements(activeTypes) {
  * @param {object} nodeData — mutable nodeData object for a workflow node
  */
 function _addElkCompoundData(nodeData) {
-  // TODO: NotImplementedError — add ELK compound layout data
-  throw new Error('NotImplementedError: _addElkCompoundData');
+  nodeData['elk:algorithm'] = 'layered';
+  nodeData['elk:direction'] = 'DOWN';
+  nodeData['elk:padding'] = '[top=30,left=10,bottom=10,right=10]';
 }
 
 /**
