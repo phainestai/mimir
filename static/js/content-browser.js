@@ -254,6 +254,7 @@ function _parseUrlParams() {
   }
 
   _parseRoutingParam();
+  _parseSeqParam();
 
   return { types, phases };
 }
@@ -303,6 +304,9 @@ function _filtersToQueryString(filters) {
   }
   if (_currentRouting !== 'bezier') {
     parts.push('routing=' + _currentRouting);
+  }
+  if (!_seqEdgesOn) {
+    parts.push('seq=0');
   }
   return parts.length ? '?' + parts.join('&') : '';
 }
@@ -676,7 +680,8 @@ function _buildFilteredElements(activeTypes) {
   const typeFilteredIds = new Set(typeFilteredNodes.map(n => n.id));
 
   // Step 2: Filter edges — both endpoints must remain.
-  const filteredEdges = edges.filter(e => typeFilteredIds.has(e.source) && typeFilteredIds.has(e.target));
+  const typeEdges = edges.filter(e => typeFilteredIds.has(e.source) && typeFilteredIds.has(e.target));
+  const filteredEdges = _filterSeqEdges(typeEdges);
 
   // Step 3: Find all node IDs that have at least one edge.
   const connectedIds = new Set();
@@ -1518,6 +1523,11 @@ function _init() {
   if (routingBtn) routingBtn.addEventListener('click', _toggleRoutingDropdown);
   _updateRoutingBtn();
 
+  // Wire seq edges toggle.
+  const seqToggle = document.querySelector('[data-testid="browser-seq-toggle"]');
+  if (seqToggle) seqToggle.addEventListener('click', _applySeqToggle);
+  _updateSeqToggleBtn();
+
   // Wire re-plot button.
   const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
   if (replotBtn) replotBtn.addEventListener('click', _replot);
@@ -1527,6 +1537,10 @@ function _init() {
 
 // Expose instance globally for Playwright E2E tests.
 window.cy = null;
+// Expose module state for Playwright E2E tests.
+Object.defineProperty(window, '_seqEdgesOn', { get: () => _seqEdgesOn });
+Object.defineProperty(window, '_currentRouting', { get: () => _currentRouting });
+Object.defineProperty(window, '_compoundViewOn', { get: () => _compoundViewOn });
 
 document.addEventListener('DOMContentLoaded', _init);
 window.addEventListener('popstate', _onPopState);
@@ -1782,7 +1796,10 @@ let _seqEdgesOn = true;
  * Updates _seqEdgesOn, button visual state, and URL param.
  */
 function _applySeqToggle() {
-  throw new Error('NOT_IMPLEMENTED — S36');
+  _seqEdgesOn = !_seqEdgesOn;
+  _updateSeqToggleBtn();
+  _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
+  _applyTypeRebuild(new Set(_currentFilters.types));
 }
 
 /**
@@ -1791,7 +1808,15 @@ function _applySeqToggle() {
  * OFF: button appears inactive, label "Seq ✗"
  */
 function _updateSeqToggleBtn() {
-  throw new Error('NOT_IMPLEMENTED — S36');
+  const btn = document.querySelector('[data-testid="browser-seq-toggle"]');
+  if (!btn) return;
+  if (_seqEdgesOn) {
+    btn.textContent = 'Seq ✓';
+    btn.classList.add('active');
+  } else {
+    btn.textContent = 'Seq ✗';
+    btn.classList.remove('active');
+  }
 }
 
 /**
@@ -1803,7 +1828,8 @@ function _updateSeqToggleBtn() {
  * @returns {object[]} filtered edges array
  */
 function _filterSeqEdges(edges) {
-  throw new Error('NOT_IMPLEMENTED — S36');
+  if (_seqEdgesOn) return edges;
+  return edges.filter(e => e.relationship !== 'predecessor');
 }
 
 /**
@@ -1812,7 +1838,8 @@ function _filterSeqEdges(edges) {
  * Called from _parseUrlParams (S36 implementation extends that function).
  */
 function _parseSeqParam() {
-  throw new Error('NOT_IMPLEMENTED — S36');
+  const params = new URLSearchParams(window.location.search);
+  _seqEdgesOn = params.get('seq') !== '0';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

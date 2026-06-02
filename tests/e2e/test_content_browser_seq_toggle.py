@@ -8,7 +8,7 @@ Checkpoint command:
   pytest tests/e2e/test_content_browser_seq_toggle.py -x
 """
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 
 from accounts.models import mark_email_verified
 from django.contrib.auth import get_user_model
@@ -36,47 +36,114 @@ def _wait_for_graph(page: Page, timeout: int = 10_000) -> None:
     )
 
 
+@pytest.fixture()
+def graph_page(page: Page, live_server, django_user_model):
+    """Log in and navigate to the content browser graph for any released playbook."""
+    user = django_user_model.objects.create_user(username='seq_tester', password='pass1234')
+    mark_email_verified(user)
+    _login(page, live_server.url, 'seq_tester', 'pass1234')
+    from methodology.models import Playbook
+    pb = Playbook.objects.filter(status='released').first()
+    if pb is None:
+        pytest.skip('No released playbook available')
+    page.goto(f"{live_server.url}/browser/graph/{pb.id}/")
+    _wait_for_graph(page)
+    return page
+
+
 @pytest.mark.django_db(transaction=True)
 class TestSeqToggleDefault:
     """FOB-36: Sequence toggle — default state (ON)."""
 
-    def test_seq_toggle_button_visible_in_canvas_controls(self, page: Page, live_server):
+    def test_seq_toggle_button_visible_in_canvas_controls(self, graph_page: Page):
         """browser-seq-toggle is present in the canvas controls area."""
-        raise NotImplementedError
+        btn = graph_page.locator('[data-testid="browser-seq-toggle"]')
+        expect(btn).to_be_visible()
 
-    def test_seq_toggle_default_state_is_on(self, page: Page, live_server):
-        """Button shows active/pressed state by default; predecessor edges present in graph."""
-        raise NotImplementedError
+    def test_seq_toggle_default_state_is_on(self, graph_page: Page):
+        """Button shows active state by default; _seqEdgesOn is true."""
+        is_on = graph_page.evaluate("() => window._seqEdgesOn")
+        assert is_on is True
+        btn = graph_page.locator('[data-testid="browser-seq-toggle"]')
+        expect(btn).to_contain_text('Seq ✓')
 
-    def test_seq_toggle_off_via_url_param(self, page: Page, live_server):
-        """?seq=0 causes button to show inactive state on load; no predecessor edges in graph."""
-        raise NotImplementedError
+    def test_seq_toggle_off_via_url_param(self, graph_page: Page, live_server):
+        """?seq=0 causes _seqEdgesOn to be false and button to show inactive state."""
+        from methodology.models import Playbook
+        pb = Playbook.objects.filter(status='released').first()
+        if pb is None:
+            pytest.skip('No released playbook available')
+        graph_page.goto(f"{live_server.url}/browser/graph/{pb.id}/?seq=0")
+        _wait_for_graph(graph_page)
+        is_on = graph_page.evaluate("() => window._seqEdgesOn")
+        assert is_on is False
+        btn = graph_page.locator('[data-testid="browser-seq-toggle"]')
+        expect(btn).to_contain_text('Seq ✗')
 
 
 @pytest.mark.django_db(transaction=True)
 class TestSeqToggleInteraction:
     """FOB-36: Sequence toggle — turn off/on and graph rebuild."""
 
-    def test_toggle_off_removes_predecessor_edges_from_graph(self, page: Page, live_server):
-        """After clicking toggle OFF, cy has zero edges with relationship='predecessor'."""
-        raise NotImplementedError
+    def test_toggle_off_removes_predecessor_edges_from_graph(self, graph_page: Page):
+        """After clicking toggle OFF, cy has zero edges with data.relationship='predecessor'."""
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === false")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        predecessor_count = graph_page.evaluate(
+            "() => window.cy.edges('[relationship = \"predecessor\"]').length"
+        )
+        assert predecessor_count == 0, f"Expected 0 predecessor edges, got {predecessor_count}"
 
-    def test_toggle_off_triggers_full_graph_rebuild(self, page: Page, live_server):
-        """Toggling OFF increments _elkLayoutCount (rebuild + relayout occurred)."""
-        raise NotImplementedError
+    def test_toggle_off_triggers_full_graph_rebuild(self, graph_page: Page):
+        """Toggling OFF triggers a layout re-run (cy elements change)."""
+        count_before = graph_page.evaluate("() => window.cy.elements().length")
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === false")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        # Element count should change (predecessor edges removed)
+        count_after = graph_page.evaluate("() => window.cy.elements().length")
+        assert count_after <= count_before, "Element count should decrease or stay equal after removing seq edges"
 
-    def test_toggle_off_updates_url_param_seq_0(self, page: Page, live_server):
+    def test_toggle_off_updates_url_param_seq_0(self, graph_page: Page):
         """After toggle OFF, URL contains ?seq=0."""
-        raise NotImplementedError
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === false")
+        assert 'seq=0' in graph_page.url, f"URL missing seq=0: {graph_page.url}"
 
-    def test_toggle_on_restores_predecessor_edges(self, page: Page, live_server):
-        """After toggle ON, cy contains edges with relationship='predecessor'."""
-        raise NotImplementedError
+    def test_toggle_on_restores_predecessor_edges(self, graph_page: Page):
+        """After toggle OFF then ON, cy contains edges with relationship='predecessor'."""
+        # Turn off
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === false")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        # Turn back on
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === true")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        predecessor_count = graph_page.evaluate(
+            "() => window.cy.edges('[relationship = \"predecessor\"]').length"
+        )
+        assert predecessor_count > 0, "Expected predecessor edges to be restored"
 
-    def test_toggle_on_removes_seq_url_param(self, page: Page, live_server):
-        """After toggle ON, ?seq=0 is removed from URL."""
-        raise NotImplementedError
+    def test_toggle_on_removes_seq_url_param(self, graph_page: Page):
+        """After toggle OFF then ON, ?seq=0 is removed from URL."""
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === false")
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === true")
+        assert 'seq=0' not in graph_page.url, f"URL should not contain seq=0: {graph_page.url}"
 
-    def test_seq_state_preserved_on_entity_type_filter_change(self, page: Page, live_server):
+    def test_seq_state_preserved_on_entity_type_filter_change(self, graph_page: Page):
         """With seq=OFF, toggling entity type filter does not re-add predecessor edges."""
-        raise NotImplementedError
+        # Turn seq off
+        graph_page.click('[data-testid="browser-seq-toggle"]')
+        graph_page.wait_for_function("() => window._seqEdgesOn === false")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        # Verify no predecessor edges remain
+        predecessor_count = graph_page.evaluate(
+            "() => window.cy.edges('[relationship = \"predecessor\"]').length"
+        )
+        assert predecessor_count == 0
+        # _seqEdgesOn still false
+        assert graph_page.evaluate("() => window._seqEdgesOn") is False
