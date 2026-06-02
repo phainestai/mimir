@@ -92,34 +92,40 @@ Feature: FOB-CONTENT-BROWSER-GRAPH Content Browser Graph Rendering
 
   Scenario: FOB-CONTENT-BROWSER-34 Layout picker catalog — all available layout algorithms
     Given Maria opens the layout picker dropdown
-    Then the following layout algorithms are available, grouped as shown:
-      | group        | layout-key       | label              | library CDN                              |
-      | ELK          | elk-layered      | Layered (default)  | elkjs + cytoscape-elk (already loaded)   |
-      | ELK          | elk-mrtree       | Tree               | elkjs + cytoscape-elk (already loaded)   |
-      | ELK          | elk-force        | Force              | elkjs + cytoscape-elk (already loaded)   |
-      | ELK          | elk-stress       | Stress             | elkjs + cytoscape-elk (already loaded)   |
-      | ELK          | elk-disco        | Disco              | elkjs + cytoscape-elk (already loaded)   |
-      | Dagre        | dagre-tb         | Top-Down           | dagre + cytoscape-dagre (already loaded) |
-      | Dagre        | dagre-lr         | Left-Right         | dagre + cytoscape-dagre (already loaded) |
-      | Cola         | cola             | Cola               | cytoscape-cola (CDN)                     |
-      | Klay         | klay             | Klay               | klayjs + cytoscape-klay (CDN)            |
-      | CiSE         | cise             | CiSE               | cytoscape-cise (CDN)                     |
-      | Euler        | euler            | Euler              | cytoscape-euler (CDN)                    |
-      | AVSDF        | avsdf            | AVSDF              | cytoscape-avsdf (CDN)                    |
-      | CoSE-Bilkent | cose-bilkent     | CoSE-Bilkent       | cytoscape-cose-bilkent (CDN)             |
-      | fCoSE        | fcose            | fCoSE              | cytoscape-fcose (CDN)                    |
-      | Cytoscape    | cy-grid          | Grid               | native cytoscape (already loaded)        |
-      | Cytoscape    | cy-circle        | Circle             | native cytoscape (already loaded)        |
-      | Cytoscape    | cy-concentric    | Concentric         | native cytoscape (already loaded)        |
-      | Cytoscape    | cy-breadthfirst  | Breadth-first      | native cytoscape (already loaded)        |
-      | Cytoscape    | cy-cose          | CoSE               | native cytoscape (already loaded)        |
-      | Cytoscape    | cy-random        | Random             | native cytoscape (already loaded)        |
+    Then the following 24 layout algorithms are available, grouped as shown:
+      | group        | layout-key           | label              | library CDN                              |
+      | ELK          | elk-layered          | Layered (default)  | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-mrtree           | Tree               | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-force            | Force              | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-stress           | Stress             | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-disco            | Disco              | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-radial           | Radial             | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-rectpacking      | Rect Packing       | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-sporeOverlap     | Spore Overlap      | elkjs + cytoscape-elk (already loaded)   |
+      | ELK          | elk-sporeCompaction  | Spore Compact      | elkjs + cytoscape-elk (already loaded)   |
+      | Dagre        | dagre-tb             | Top-Down           | dagre + cytoscape-dagre (already loaded) |
+      | Dagre        | dagre-lr             | Left-Right         | dagre + cytoscape-dagre (already loaded) |
+      | Cola         | cola                 | Cola               | cytoscape-cola (CDN)                     |
+      | Klay         | klay                 | Klay               | klayjs + cytoscape-klay (CDN)            |
+      | CiSE         | cise                 | CiSE               | cytoscape-cise (CDN)                     |
+      | Euler        | euler                | Euler              | cytoscape-euler (CDN)                    |
+      | AVSDF        | avsdf                | AVSDF              | cytoscape-avsdf (CDN)                    |
+      | CoSE-Bilkent | cose-bilkent         | CoSE-Bilkent       | cytoscape-cose-bilkent (CDN)             |
+      | fCoSE        | fcose                | fCoSE              | cytoscape-fcose (CDN)                    |
+      | Cytoscape    | cy-grid              | Grid               | native cytoscape (already loaded)        |
+      | Cytoscape    | cy-circle            | Circle             | native cytoscape (already loaded)        |
+      | Cytoscape    | cy-concentric        | Concentric         | native cytoscape (already loaded)        |
+      | Cytoscape    | cy-breadthfirst      | Breadth-first      | native cytoscape (already loaded)        |
+      | Cytoscape    | cy-cose              | CoSE               | native cytoscape (already loaded)        |
+      | Cytoscape    | cy-random            | Random             | native cytoscape (already loaded)        |
     And "elk-layered" is the default layout when no "layout" URL param is present
     And legacy URL values "layered" and "mrtree" are mapped to "elk-layered" and "elk-mrtree"
       for backward compatibility with existing bookmarks/shared URLs
     And each layout library required but not yet loaded is fetched from CDN at page load
       (all scripts listed in browser_graph.html <head> — not lazy-loaded at selection time)
-    Note: ELK sub-algorithms are driven by the elk.algorithm property — no additional CDN needed
+    Note: all 9 ELK sub-algorithms (layered, stress, mrtree, radial, force, disco,
+      sporeOverlap, sporeCompaction, rectpacking) are driven by the elk.algorithm property —
+      no additional CDN needed; the single elkjs bundle includes all algorithms
     Note: layout-key values are used verbatim as the URL "layout" query param value
 
 
