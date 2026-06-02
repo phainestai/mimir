@@ -512,6 +512,7 @@ function _renderGraph(pk, graphData, filters) {
     container, elements, style: initialStyle,
     layout: { name: 'null' },
     minZoom: 0.1, maxZoom: 3,
+    minZoomedFontSize: 8,
   });
 
   // Hide overlay states, make canvas visible.
@@ -1635,6 +1636,7 @@ function _buildEnhancedNodeStyle(type) {
     'height': 40,
     'text-max-width': 108,
     'text-overflow-wrap': 'whitespace',
+    ..._buildFontRenderingGuards(),
   };
 }
 
@@ -2204,8 +2206,10 @@ function _cytoscapeCompoundStyle() {
         'text-valign': 'top',
         'text-halign': 'left',
         'padding': '20px',
+        'font-family': 'Montserrat, system-ui',
         'font-size': '0.85rem',
         'font-weight': 600,
+        'text-transform': 'none',
         ..._buildCompoundLabelStyle(),
       },
     },
@@ -2236,8 +2240,7 @@ function _parseCompoundParam() {
  * @returns {object} Cytoscape style properties preventing all-caps rendering
  */
 function _buildFontRenderingGuards() {
-  // 1. Return { 'text-transform': 'none' } to be merged into every node style
-  throw new Error('NotImplementedError: _buildFontRenderingGuards');
+  return { 'text-transform': 'none' };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
