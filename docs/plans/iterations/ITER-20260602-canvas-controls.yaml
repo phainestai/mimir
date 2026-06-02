@@ -28,8 +28,9 @@ drift_thresholds:
 
 scenarios:
   S38:
+    github_issue: 39
     title: "Enhanced node visual styling"
-    github_issue: TBD
+
     parallel_group: A
     skeleton_commit: "52d6a40"
     codebase_footprint:
@@ -61,8 +62,9 @@ scenarios:
     rollback_point: "git checkout static/js/content-browser.js"
 
   S35:
+    github_issue: 40
     title: "Edge routing picker"
-    github_issue: TBD
+
     parallel_group: B
     skeleton_commit: "db10892"
     codebase_footprint:
@@ -98,8 +100,9 @@ scenarios:
     rollback_point: "git checkout static/js/content-browser.js templates/browser/browser_graph.html"
 
   S36:
+    github_issue: 41
     title: "Activity sequence edges toggle"
-    github_issue: TBD
+
     parallel_group: C
     skeleton_commit: "4f82652"
     codebase_footprint:
@@ -135,8 +138,9 @@ scenarios:
     rollback_point: "git checkout static/js/content-browser.js templates/browser/browser_graph.html"
 
   S37:
+    github_issue: 42
     title: "Workflow compound view toggle"
-    github_issue: TBD
+
     parallel_group: D
     skeleton_commit: "dee918d"
     codebase_footprint:
