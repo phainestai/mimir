@@ -977,9 +977,13 @@ function _renderStructureTree() {
     const wfLabel = wfNode.data('label') || wfId;
     const sectionId = 'tree-wf-' + wfNode.data('entity_pk');
 
-    // All activities ordered, then filtered by active phases
-    let actNodes = wfNode.outgoers('edge[relationship="contains"]').targets()
-      .sort((a, b) => ((a.data('meta') || {}).order || 0) - ((b.data('meta') || {}).order || 0));
+    // All activities ordered, then filtered by active phases.
+    // In compound mode, "contains" edges are absent from window.cy; use compound
+    // children instead (activities are direct children of workflow compound nodes).
+    let actNodes = (_compoundLevel !== 'none'
+      ? wfNode.children().filter(n => n.data('type') === 'activity')
+      : wfNode.outgoers('edge[relationship="contains"]').targets()
+    ).sort((a, b) => ((a.data('meta') || {}).order || 0) - ((b.data('meta') || {}).order || 0));
 
     if (activePhases) {
       actNodes = actNodes.filter(actNode => {
@@ -1630,7 +1634,7 @@ function _buildEnhancedNodeStyle(type) {
     'label': ele => `${icon} ${ele.data('label') || ''}`,
     'text-valign': 'center',
     'text-halign': 'center',
-    'font-family': '"Font Awesome 6 Pro", "Font Awesome 6 Free", Montserrat, system-ui',
+    'font-family': '"Font Awesome 6 Free", "Font Awesome 6 Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     'font-weight': 900,
     'text-wrap': 'ellipsis',
     'border-width': 2,
@@ -2272,9 +2276,11 @@ function _buildCompoundLabelStyleV2() {
     'text-margin-x': 8,
     'text-margin-y': 4,
     'font-size': 20,
-    'font-family': 'Montserrat, system-ui',
+    'font-family': 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     'font-weight': 600,
     'text-transform': 'none',
+    'text-max-width': 200,
+    'text-wrap': 'ellipsis',
     'text-background-color': '#ffffff',
     'text-background-opacity': 0.85,
     'text-background-padding': '4px',
@@ -2385,6 +2391,13 @@ function _buildWorkflowActivityCompoundElements(activeTypes) {
   const finalIds = new Set(finalNodes.map(n => n.id));
   const compoundEdges = nonContainsEdges
     .filter(e => finalIds.has(e.source) && finalIds.has(e.target))
+    .filter(e => {
+      // In workflow-activity mode, resource nodes are compound children of activity nodes.
+      // Suppress edges between an activity and its own compound children — containment is implied.
+      if (resourceToActivity.get(e.target) === e.source) return false;
+      if (resourceToActivity.get(e.source) === e.target) return false;
+      return true;
+    })
     .map(e => ({ data: e }));
 
   return [...compoundNodes, ...compoundEdges];
@@ -2483,6 +2496,7 @@ function _applyCompoundLevel(level) {
   window.cy.remove(window.cy.elements());
   window.cy.style(style);
   window.cy.add(elements);
+  _renderStructureTree();
   _runLayout();
 }
 
