@@ -254,7 +254,6 @@ function _parseUrlParams() {
   }
 
   _parseRoutingParam();
-  _parseSeqParam();
   _parseCompoundParam();
   _parseNodeSizeParam();
 
@@ -306,9 +305,6 @@ function _filtersToQueryString(filters) {
   }
   if (_currentRouting !== 'bezier') {
     parts.push('routing=' + _currentRouting);
-  }
-  if (!_seqEdgesOn) {
-    parts.push('seq=0');
   }
   if (_compoundViewOn) {
     parts.push('compound=1');
@@ -690,7 +686,7 @@ function _buildFilteredElements(activeTypes) {
 
   // Step 2: Filter edges — both endpoints must remain.
   const typeEdges = edges.filter(e => typeFilteredIds.has(e.source) && typeFilteredIds.has(e.target));
-  const filteredEdges = _filterSeqEdges(typeEdges);
+  const filteredEdges = typeEdges;
 
   // Step 3: Find all node IDs that have at least one edge.
   const connectedIds = new Set();
@@ -1153,20 +1149,7 @@ function _highlightTreeNode(nodeId) {
       row.classList.remove('fw-bold', 'text-primary', 'bg-primary-subtle');
     }
   });
-
-  // Accordion: find the section this node belongs to and expand only it.
-  const targetRow = document.querySelector(`[data-testid="browser-tree-row"][data-node-id="${nodeId}"]`);
-  if (targetRow) {
-    // Walk up to find the nearest parent section div (id starts with "tree-wf-")
-    let el = targetRow.parentElement;
-    while (el) {
-      if (el.id && el.id.startsWith('tree-wf-')) {
-        _accordionWorkflow(el.id);
-        break;
-      }
-      el = el.parentElement;
-    }
-  }
+  _expandTreeNodeAccordion(nodeId);
 }
 
 /**
@@ -1562,11 +1545,6 @@ function _init() {
   if (routingBtn) routingBtn.addEventListener('click', _toggleRoutingDropdown);
   _updateRoutingBtn();
 
-  // Wire seq edges toggle.
-  const seqToggle = document.querySelector('[data-testid="browser-seq-toggle"]');
-  if (seqToggle) seqToggle.addEventListener('click', _applySeqToggle);
-  _updateSeqToggleBtn();
-
   // Wire compound view toggle.
   const compoundToggle = document.querySelector('[data-testid="browser-compound-toggle"]');
   if (compoundToggle) compoundToggle.addEventListener('click', _applyCompoundToggle);
@@ -1587,7 +1565,6 @@ function _init() {
 // Expose instance globally for Playwright E2E tests.
 window.cy = null;
 // Expose module state for Playwright E2E tests.
-Object.defineProperty(window, '_seqEdgesOn', { get: () => _seqEdgesOn });
 Object.defineProperty(window, '_currentRouting', { get: () => _currentRouting });
 Object.defineProperty(window, '_compoundViewOn', { get: () => _compoundViewOn });
 Object.defineProperty(window, '_nodeSizeMode', { get: () => _nodeSizeMode });
@@ -1619,7 +1596,7 @@ window.addEventListener('popstate', _onPopState);
  * @returns {object[]} Cytoscape stylesheet array
  */
 function _cytoscapeStyleEnhanced() {
-  const edgeStyles = _buildEdgeStyle();
+  const edgeStyles = _buildEdgeStyleForMode(_compoundViewOn);
   const nodeTypes = ['playbook', 'workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
   const nodeStyles = nodeTypes.map(type => ({
     selector: `node[type = "${type}"]`,
@@ -1643,7 +1620,7 @@ function _buildEnhancedNodeStyle(type) {
     'label': ele => `${icon} ${ele.data('label') || ''}`,
     'text-valign': 'center',
     'text-halign': 'center',
-    'font-family': '"Font Awesome 6 Free", Montserrat, system-ui',
+    'font-family': '"Font Awesome 6 Pro", "Font Awesome 6 Free", Montserrat, system-ui',
     'font-weight': 900,
     'text-wrap': 'ellipsis',
     'border-width': 2,
@@ -1708,14 +1685,17 @@ function _buildNodeColor(type) {
  * @returns {string} Unicode glyph character
  */
 function _buildNodeIcon(type) {
+  // All codepoints verified against FA6 Free solid (font-weight 900).
+  // \uf542 = diagram-project, \uf0ae = list-check, \uf06b = gift
+  // \ue05d = hand-sparkles, \uf5dc = brain, \uf24e = scale-balanced
   const icons = {
-    playbook: '\uf5da',
-    workflow: '\ue598',
-    activity: '\ue141',
-    artifact: '\uf06b',
-    skill:    '\ue05d',
-    agent:    '\ue0c4',
-    rule:     '\uf24e',
+    playbook: '\uf5da',   // book-open-reader
+    workflow: '\uf542',   // diagram-project
+    activity: '\uf0ae',   // list-check
+    artifact: '\uf06b',   // gift
+    skill:    '\ue05d',   // hand-sparkles
+    agent:    '\uf5dc',   // brain
+    rule:     '\uf24e',   // scale-balanced
   };
   return icons[type] || '\uf111';
 }
@@ -1778,7 +1758,33 @@ function _buildEdgeStyle() {
  * @throws {Error} Not yet implemented
  */
 function _buildEdgeStyleForMode(compoundOn) {
-  throw new Error('_buildEdgeStyleForMode not yet implemented (FOB-52)');
+  const base = [
+    {
+      selector: 'edge',
+      style: {
+        'line-color': '#212529',
+        'target-arrow-color': '#212529',
+        'target-arrow-shape': 'triangle',
+        'curve-style': 'bezier',
+        'width': 1.5,
+        'opacity': 0.85,
+      },
+    },
+    {
+      selector: 'edge[relationship = "predecessor"]',
+      style: {
+        'line-style': 'dashed',
+        'line-dash-pattern': [6, 3],
+      },
+    },
+    {
+      selector: 'edge[relationship = "contains"]',
+      style: {
+        'display': compoundOn ? 'none' : 'element',
+      },
+    },
+  ];
+  return base;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1796,7 +1802,26 @@ function _buildEdgeStyleForMode(compoundOn) {
  * @throws {Error} Not yet implemented
  */
 function _expandTreeNodeAccordion(nodeId) {
-  throw new Error('_expandTreeNodeAccordion not yet implemented (FOB-58)');
+  const targetRow = document.querySelector(`[data-testid="browser-tree-row"][data-node-id="${nodeId}"]`);
+  if (!targetRow) return;
+
+  // Workflow row: has a browser-tree-toggle span whose data-section is the accordion id.
+  const toggle = targetRow.querySelector('.browser-tree-toggle');
+  if (toggle && toggle.dataset.section) {
+    _accordionWorkflow(toggle.dataset.section);
+    return;
+  }
+
+  // Activity row: the section div is a SIBLING of the parent workflow row,
+  // found by walking up to the containing <div class="mb-1"> then finding the section.
+  let el = targetRow.parentElement;
+  while (el) {
+    if (el.id && el.id.startsWith('tree-wf-')) {
+      _accordionWorkflow(el.id);
+      return;
+    }
+    el = el.parentElement;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1819,7 +1844,7 @@ const _ROUTING_CATALOG = [
   { key: 'taxi',             label: 'Orthogonal',        cyValue: 'taxi' },
   { key: 'haystack',         label: 'Haystack',          cyValue: 'haystack' },
   { key: 'segments',         label: 'Segments',          cyValue: 'segments' },
-  { key: 'round-seg',        label: 'Round Segments',    cyValue: 'round-segments' },
+  { key: 'round-segments',    label: 'Round Segments',    cyValue: 'round-segments' },
 ];
 
 /**
@@ -1923,93 +1948,6 @@ function _parseRoutingParam() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// S36 — Activity sequence edges toggle (FOB-36)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Whether predecessor (sequence) edges are shown. Default: true (ON). */
-let _seqEdgesOn = true;
-
-/**
- * Toggle sequence edges on or off.
- * Triggers a full graph rebuild + relayout (same as entity-type filter rebuild).
- * Updates _seqEdgesOn, button visual state, and URL param.
- */
-function _applySeqToggle() {
-  _seqEdgesOn = !_seqEdgesOn;
-  _updateSeqToggleBtn();
-  _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
-  _rebuildRespectingMode(new Set(_currentFilters.types));
-}
-
-/**
- * Rebuild the graph using either flat or compound layout depending on the
- * current value of _compoundViewOn. Called by _applySeqToggle so that toggling
- * sequence edges does not inadvertently reset compound/flat state.
- *
- * When _compoundViewOn === true:
- *   1. Build compound elements via _buildCompoundElements(activeTypes).
- *   2. Apply compound + base stylesheet.
- *   3. Re-run the current layout with _buildLayoutOptions(_currentLayout).
- *   4. Fit the viewport.
- * When _compoundViewOn === false:
- *   delegate to _applyTypeRebuild(activeTypes) (existing flat path).
- *
- * @param {Set<string>} activeTypes — currently active entity-type filter set
- */
-function _rebuildRespectingMode(activeTypes) {
-  if (!window.cy || !_fullGraphData) return;
-  if (_compoundViewOn) {
-    const elements = _buildCompoundElements(activeTypes);
-    window.cy.remove(window.cy.elements());
-    window.cy.style(_cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyle()));
-    window.cy.add(elements);
-    _runLayout();
-  } else {
-    _applyTypeRebuild(activeTypes);
-  }
-}
-
-/**
- * Update the seq toggle button visual state to match _seqEdgesOn.
- * ON:  button appears pressed/active, label "Seq ✓"
- * OFF: button appears inactive, label "Seq ✗"
- */
-function _updateSeqToggleBtn() {
-  const btn = document.querySelector('[data-testid="browser-seq-toggle"]');
-  if (!btn) return;
-  if (_seqEdgesOn) {
-    btn.textContent = 'Seq ✓';
-    btn.classList.add('active');
-  } else {
-    btn.textContent = 'Seq ✗';
-    btn.classList.remove('active');
-  }
-}
-
-/**
- * Filter edges for sequence toggle: when _seqEdgesOn is false, remove all
- * edges whose relationship is 'predecessor' from the element set.
- * Called inside _buildFilteredElements (S36 implementation modifies that function).
- *
- * @param {object[]} edges — raw edge data objects from _fullGraphData
- * @returns {object[]} filtered edges array
- */
-function _filterSeqEdges(edges) {
-  if (_seqEdgesOn) return edges;
-  return edges.filter(e => e.relationship !== 'predecessor');
-}
-
-/**
- * Parse the ?seq= URL parameter and set _seqEdgesOn accordingly.
- * seq=0 → false; absent or any other value → true (default ON).
- * Called from _parseUrlParams (S36 implementation extends that function).
- */
-function _parseSeqParam() {
-  const params = new URLSearchParams(window.location.search);
-  _seqEdgesOn = params.get('seq') !== '0';
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // S37 — Workflow compound view toggle (FOB-37)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2048,6 +1986,7 @@ function _applyNodeSizeToggle() {
     ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyle())
     : _cytoscapeStyleEnhanced();
   window.cy.style(style);
+  _runLayout();
 }
 
 /**
@@ -2147,7 +2086,7 @@ function _buildCompoundElements(activeTypes) {
   const nonContainsEdges = edges.filter(
     e => e.relationship !== 'contains' && typeFilteredIds.has(e.source) && typeFilteredIds.has(e.target)
   );
-  const filteredEdges = _filterSeqEdges(nonContainsEdges);
+  const filteredEdges = nonContainsEdges;
 
   // Build resource → workflow parent map via activity parent.
   const resourceToWorkflow = new Map();
@@ -2254,6 +2193,7 @@ function _cytoscapeCompoundStyle() {
     {
       selector: ':parent',
       style: {
+        'label': ele => ele.data('label') || '',
         'background-color': '#eef2ff',
         'border-color': '#0d6efd',
         'border-width': 2,

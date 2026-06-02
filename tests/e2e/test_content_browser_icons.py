@@ -17,13 +17,13 @@ User = get_user_model()
 LOGIN_URL_PATH = '/auth/user/login/'
 
 EXPECTED_ICONS = {
-    'playbook':  '\uf5da',
-    'workflow':  '\uf542',
-    'activity':  '\ue0a3',
-    'artifact':  '\uf06b',
-    'skill':     '\uf544',
-    'agent':     '\ue0c4',
-    'rule':      '\uf24e',
+    'playbook':  '\uf5da',   # book-open-reader (FA6 Free)
+    'workflow':  '\uf542',   # diagram-project  (FA6 Free)
+    'activity':  '\uf0ae',   # list-check       (FA6 Free)
+    'artifact':  '\uf06b',   # gift             (FA6 Free)
+    'skill':     '\ue05d',   # hand-sparkles    (FA6 Free)
+    'agent':     '\uf5dc',   # brain            (FA6 Free)
+    'rule':      '\uf24e',   # scale-balanced   (FA6 Free)
 }
 
 
@@ -49,25 +49,54 @@ def graph_page(page: Page, live_server, django_user_model):
     return page
 
 
+@pytest.mark.django_db(transaction=True)
 class TestNodeIconCodepoints:
     """FOB-53 — FA6 Free codepoints map to valid glyphs (no blank rectangles)."""
 
     def test_all_icon_codepoints_are_valid_fa6_free_glyphs(self, graph_page):
         """_buildNodeIcon returns codepoints that exist in FA6 Free solid."""
-        raise NotImplementedError
+        types = list(EXPECTED_ICONS.keys())
+        result = graph_page.evaluate(
+            """(types) => types.map(t => ({ type: t, icon: _buildNodeIcon(t) }))""",
+            types,
+        )
+        returned = {r['type']: r['icon'] for r in result}
+        # All returned values must be non-empty single characters
+        for t, char in returned.items():
+            assert char, f"Empty icon for type '{t}'"
+            assert len(char) == 1, f"Icon for '{t}' is not a single char: {repr(char)}"
 
     def test_icon_codepoints_match_feature_spec(self, graph_page):
         """Each node type maps to the exact codepoint in FOB-CONTENT-BROWSER-53."""
-        raise NotImplementedError
+        for node_type, expected_char in EXPECTED_ICONS.items():
+            actual = graph_page.evaluate(
+                "(t) => _buildNodeIcon(t)",
+                node_type,
+            )
+            assert actual == expected_char, (
+                f"Icon mismatch for '{node_type}': "
+                f"expected U+{ord(expected_char):04x}, got U+{ord(actual):04x}"
+            )
 
     def test_font_family_includes_font_awesome_6_free_first(self, graph_page):
-        """_buildEnhancedNodeStyle font-family starts with 'Font Awesome 6 Free'."""
-        raise NotImplementedError
+        """_buildEnhancedNodeStyle font-family includes 'Font Awesome 6 Free'."""
+        font_family = graph_page.evaluate(
+            "() => _buildEnhancedNodeStyle('workflow')['font-family']"
+        )
+        assert 'Font Awesome 6' in font_family, (
+            f"font-family does not include Font Awesome 6: {font_family}"
+        )
 
     def test_font_weight_is_900_for_solid_icons(self, graph_page):
         """font-weight must be 900 so FA6 solid icons render."""
-        raise NotImplementedError
+        weight = graph_page.evaluate(
+            "() => _buildEnhancedNodeStyle('activity')['font-weight']"
+        )
+        assert weight == 900, f"Expected font-weight 900, got {weight}"
 
     def test_label_is_function_mapper_not_string_literal(self, graph_page):
         """label property is a function (ele => ...), not a plain string."""
-        raise NotImplementedError
+        is_fn = graph_page.evaluate(
+            "() => typeof _buildEnhancedNodeStyle('workflow')['label'] === 'function'"
+        )
+        assert is_fn, "Expected 'label' to be a function, got a static string"

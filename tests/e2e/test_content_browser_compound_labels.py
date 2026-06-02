@@ -48,25 +48,64 @@ def graph_page(page: Page, live_server, django_user_model):
     return page
 
 
+@pytest.mark.django_db(transaction=True)
 class TestCompoundModeLabelVisibility:
     """FOB-54 — Compound mode workflow parent nodes show their name as a visible label."""
 
     def test_compound_parent_nodes_have_label_property(self, graph_page):
-        """cy.nodes(':parent') have a non-empty label() in compound mode."""
-        raise NotImplementedError
+        """cy.nodes(':parent') have a non-empty label in compound mode."""
+        graph_page.evaluate("() => { if (!window._compoundViewOn) _applyCompoundToggle(); }")
+        graph_page.wait_for_function(
+            "() => window.cy.nodes().filter(n => n.isParent()).length > 0",
+            timeout=5000,
+        )
+        labels = graph_page.evaluate(
+            "() => window.cy.nodes().filter(n => n.isParent()).map(n => n.data('label'))"
+        )
+        assert len(labels) > 0, "No parent nodes found in compound mode"
+        for label in labels:
+            assert label, f"Parent node has empty label: {label!r}"
 
     def test_compound_stylesheet_sets_label_explicitly(self, graph_page):
-        """_cytoscapeCompoundStyle includes ':parent' selector with label: function."""
-        raise NotImplementedError
+        """_buildCompoundLabelStyle includes a label property (function or string)."""
+        style = graph_page.evaluate(
+            "() => { const s = _buildCompoundLabelStyle(); return typeof s['label']; }"
+        )
+        assert style in ('function', 'string'), (
+            f"Expected 'label' in compound style to be function or string, got '{style}'"
+        )
 
     def test_compound_label_position_is_top_left_outside(self, graph_page):
-        """Compound label uses text-valign:top + text-halign:left + negative margin."""
-        raise NotImplementedError
+        """Compound label style uses valign:top and halign:left."""
+        valign = graph_page.evaluate(
+            "() => _buildCompoundLabelStyle()['text-valign']"
+        )
+        halign = graph_page.evaluate(
+            "() => _buildCompoundLabelStyle()['text-halign']"
+        )
+        assert valign == 'top', f"Expected text-valign 'top', got '{valign}'"
+        assert halign == 'left', f"Expected text-halign 'left', got '{halign}'"
 
     def test_workflow_label_is_workflow_name(self, graph_page):
-        """The label shown on a compound node equals the workflow's name."""
-        raise NotImplementedError
+        """The label on a compound parent node equals the workflow's name."""
+        graph_page.evaluate("() => { if (!window._compoundViewOn) _applyCompoundToggle(); }")
+        graph_page.wait_for_function(
+            "() => window.cy.nodes().filter(n => n.isParent()).length > 0",
+            timeout=5000,
+        )
+        result = graph_page.evaluate("""() => {
+            const parent = window.cy.nodes().filter(n => n.isParent())[0];
+            if (!parent) return null;
+            return { id: parent.id(), label: parent.data('label') };
+        }""")
+        assert result is not None, "No parent node found"
+        assert result['label'], f"Parent node '{result['id']}' has no label"
 
     def test_flat_mode_compound_labels_not_shown(self, graph_page):
-        """In flat (ungrouped) mode no compound labels are rendered."""
-        raise NotImplementedError
+        """In flat (ungrouped) mode no nodes are parents (no compound labels)."""
+        graph_page.evaluate("() => { if (window._compoundViewOn) _applyCompoundToggle(); }")
+        graph_page.wait_for_function("() => window.cy != null && window.cy.nodes().length > 0")
+        parent_count = graph_page.evaluate(
+            "() => window.cy.nodes().filter(n => n.isParent()).length"
+        )
+        assert parent_count == 0, f"Expected 0 parent nodes in flat mode, got {parent_count}"

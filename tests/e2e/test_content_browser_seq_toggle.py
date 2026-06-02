@@ -1,11 +1,12 @@
 """
 E2E tests for Content Browser sequence edges toggle (FOB-36).
 
-Covers:
-  - FOB-CONTENT-BROWSER-36: Sequence edges toggle — show/hide predecessor links
+NOTE: The seq toggle feature was removed in S56 (ITER-20260602c).
+All tests in this file are skipped. See test_content_browser_no_seq_toggle.py
+for the replacement tests verifying removal.
 
-Checkpoint command:
-  pytest tests/e2e/test_content_browser_seq_toggle.py -x
+Covers:
+  - FOB-CONTENT-BROWSER-36: Sequence edges toggle — REMOVED (S56)
 """
 import pytest
 from playwright.sync_api import Page, expect
@@ -13,6 +14,8 @@ from playwright.sync_api import Page, expect
 from accounts.models import mark_email_verified
 from django.contrib.auth import get_user_model
 
+
+pytestmark = pytest.mark.skip(reason="FOB-36 seq toggle was removed in S56 (ITER-20260602c)")
 
 User = get_user_model()
 LOGIN_URL_PATH = '/auth/user/login/'

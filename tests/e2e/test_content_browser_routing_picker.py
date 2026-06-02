@@ -64,7 +64,7 @@ class TestRoutingCatalog:
         """Dropdown contains all 6 routing options with correct data-testid values."""
         graph_page.click('[data-testid="browser-routing-btn"]')
         graph_page.wait_for_selector('[data-testid="browser-routing-dropdown"]')
-        expected_keys = ['bezier', 'straight', 'taxi', 'haystack', 'segments', 'round-seg']
+        expected_keys = ['bezier', 'straight', 'taxi', 'haystack', 'segments', 'round-segments']
         for key in expected_keys:
             opt = graph_page.locator(f'[data-testid="browser-routing-option-{key}"]')
             expect(opt).to_be_visible()
