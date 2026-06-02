@@ -2198,19 +2198,12 @@ function _cytoscapeCompoundStyle() {
       selector: ':parent',
       style: {
         'label': ele => ele.data('label') || '',
-        'background-color': '#eef2ff',
+        'background-color': _compoundBackgroundForType('workflow'),
         'border-color': '#0d6efd',
         'border-width': 2,
         'border-style': 'solid',
         'shape': 'round-rectangle',
-        'text-valign': 'top',
-        'text-halign': 'left',
-        'padding': '20px',
-        'font-family': 'Montserrat, system-ui',
-        'font-size': '0.85rem',
-        'font-weight': 600,
-        'text-transform': 'none',
-        ..._buildCompoundLabelStyle(),
+        ..._buildCompoundLabelStyleV2(),
       },
     },
   ];
@@ -2278,8 +2271,21 @@ function _buildFontRenderingGuards() {
  * @returns {object} Cytoscape style overrides for compound parent label
  */
 function _buildCompoundLabelStyleV2() {
-  // 1. Return padding-top based compound label style object
-  throw new Error('NotImplementedError: _buildCompoundLabelStyleV2');
+  return {
+    'padding-top': '28px',
+    'text-valign': 'top',
+    'text-halign': 'left',
+    'text-margin-x': 8,
+    'text-margin-y': 4,
+    'font-size': 20,
+    'font-family': 'Montserrat, system-ui',
+    'font-weight': 600,
+    'text-transform': 'none',
+    'text-background-color': '#ffffff',
+    'text-background-opacity': 0.85,
+    'text-background-padding': '4px',
+    'color': '#084298',
+  };
 }
 
 /**
@@ -2293,8 +2299,7 @@ function _buildCompoundLabelStyleV2() {
  * @returns {string} CSS colour string
  */
 function _compoundBackgroundForType(nodeType) {
-  // 1. Return '#d4edda' for activity compound, '#eef2ff' for workflow compound
-  throw new Error('NotImplementedError: _compoundBackgroundForType');
+  return nodeType === 'activity' ? '#d4edda' : '#eef2ff';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
