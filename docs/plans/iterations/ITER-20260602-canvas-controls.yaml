@@ -1,0 +1,171 @@
+iteration:
+  goal: "Content Browser canvas controls — edge routing picker, sequence toggle, compound view, enhanced node styles"
+  doctrine_version: "2.0"
+  created_at: "2026-06-02T19:11:34+02:00"
+
+conflict_map:
+  # All 4 scenarios must modify content-browser.js at runtime — they are serialized.
+  static/js/content-browser.js: [S38, S35, S36, S37]
+  templates/browser/browser_graph.html: [S35, S36, S37]
+
+parallel_groups:
+  # All scenarios are serialized due to shared content-browser.js.
+  # Ordering chosen for minimal coupling: style-only first, then additive controls,
+  # then rebuild-affecting toggles, then most complex compound view last.
+  A: [S38]   # pure style — no logic entanglement, establishes node shape vocabulary
+  B: [S35]   # routing picker — additive, well-contained pattern (mirrors layout picker)
+  C: [S36]   # seq toggle — modifies graph rebuild path; builds on URL param pattern from S35
+  D: [S37]   # compound view — most complex; builds on rebuild infrastructure from S36
+
+drift_thresholds:
+  absorbed:
+    checkpoint_fail_retry: 1       # retry once before escalating
+  escalated:
+    footprint_violation: true      # any file outside codebase_footprint[]
+    method_explosion: true         # unplanned public method vs skeleton
+    sao_violation: true            # SAO.md compliance check finds architectural breach
+    checkpoint_fail_after_retry: true
+
+scenarios:
+  S38:
+    title: "Enhanced node visual styling"
+    github_issue: TBD
+    parallel_group: A
+    skeleton_commit: "52d6a40"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_node_styles.py
+    checkpoint:
+      command: "pytest tests/e2e/test_content_browser_node_styles.py -x"
+      expected_exit_code: 0
+    dependencies: []
+    sao_sections:
+      - "§Frontend Architecture: plain browser JS, no build step"
+      - "§Design System: Bootstrap 5.3 + Montserrat, component-level styling only"
+    context_map:
+      - file: "static/js/content-browser.js"
+        lines: "542-616"
+        note: "Replace _cytoscapeStyle() with _cytoscapeStyleEnhanced(); follow exact same return structure"
+      - file: "docs/features/act-16-content-browser/07-canvas-controls.feature"
+        lines: "127-230"
+        note: "FOB-38 spec — exact shapes, colors, font-family, weights, sizes table"
+      - file: "static/css/design-system.css"
+        lines: "1-50"
+        note: "Bootstrap color tokens to confirm hex values"
+    do_not_do:
+      - "Do NOT add a build step, bundler, or CSS preprocessor"
+      - "Do NOT add new Django views or models"
+      - "Do NOT change the edge style entries in the stylesheet"
+      - "Do NOT change the _nodeBase defaults — override per selector instead"
+      - "Do NOT introduce new CDN dependencies"
+    rollback_point: "git checkout static/js/content-browser.js"
+
+  S35:
+    title: "Edge routing picker"
+    github_issue: TBD
+    parallel_group: B
+    skeleton_commit: "db10892"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - templates/browser/browser_graph.html
+      - tests/e2e/test_content_browser_routing_picker.py
+    checkpoint:
+      command: "pytest tests/e2e/test_content_browser_routing_picker.py -x"
+      expected_exit_code: 0
+    dependencies: [S38]
+    sao_sections:
+      - "§Frontend Architecture: plain browser JS, no build step"
+      - "§URL State: all filter/display state serialized to URL query params"
+    context_map:
+      - file: "static/js/content-browser.js"
+        lines: "112-192"
+        note: "_applyLayout() and _toggleLayoutDropdown() — mirror this pattern exactly for routing"
+      - file: "static/js/content-browser.js"
+        lines: "230-303"
+        note: "_parseUrlParams() and _filtersToQueryString() — extend these to handle ?routing= param"
+      - file: "static/js/content-browser.js"
+        lines: "1506-1514"
+        note: "_init() — wire browser-routing-btn click here, same pattern as layout btn"
+      - file: "docs/features/act-16-content-browser/07-canvas-controls.feature"
+        lines: "21-67"
+        note: "FOB-35 spec — full routing catalog, URL param, Escape behaviour"
+    do_not_do:
+      - "Do NOT trigger a layout re-run on routing change — style update only (cy.edges().style(...))"
+      - "Do NOT rebuild cy elements on routing change"
+      - "Do NOT add a new Django view or URL"
+      - "Do NOT modify the layout picker code"
+      - "Do NOT persist edge routing in any server-side model"
+    rollback_point: "git checkout static/js/content-browser.js templates/browser/browser_graph.html"
+
+  S36:
+    title: "Activity sequence edges toggle"
+    github_issue: TBD
+    parallel_group: C
+    skeleton_commit: "4f82652"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - templates/browser/browser_graph.html
+      - tests/e2e/test_content_browser_seq_toggle.py
+    checkpoint:
+      command: "pytest tests/e2e/test_content_browser_seq_toggle.py -x"
+      expected_exit_code: 0
+    dependencies: [S35]
+    sao_sections:
+      - "§Frontend Architecture: plain browser JS, no build step"
+      - "§URL State: all filter/display state serialized to URL query params"
+    context_map:
+      - file: "static/js/content-browser.js"
+        lines: "638-695"
+        note: "_applyTypeRebuild() and _buildFilteredElements() — seq toggle calls same rebuild path"
+      - file: "static/js/content-browser.js"
+        lines: "230-303"
+        note: "_parseUrlParams() / _filtersToQueryString() — extend with ?seq=0 param"
+      - file: "docs/features/act-16-content-browser/06-filters-and-search.feature"
+        lines: "1-40"
+        note: "FOB-11 entity-type filter rebuild pattern — seq toggle uses identical rebuild mechanics"
+      - file: "docs/features/act-16-content-browser/07-canvas-controls.feature"
+        lines: "69-113"
+        note: "FOB-36 spec — edge relationship type to filter, URL param, state persistence rules"
+    do_not_do:
+      - "Do NOT modify the entity-type filter logic"
+      - "Do NOT filter edges at the API level — filter in _filterSeqEdges() from _fullGraphData"
+      - "Do NOT add a new Django view or model"
+      - "Do NOT affect 'contains', 'produces', 'consumes', 'uses_skill', 'assigned_agent', or 'governed_by_rule' edges"
+      - "Do NOT reset seq state when entity-type filter changes"
+    rollback_point: "git checkout static/js/content-browser.js templates/browser/browser_graph.html"
+
+  S37:
+    title: "Workflow compound view toggle"
+    github_issue: TBD
+    parallel_group: D
+    skeleton_commit: "dee918d"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - templates/browser/browser_graph.html
+      - tests/e2e/test_content_browser_compound_view.py
+    checkpoint:
+      command: "pytest tests/e2e/test_content_browser_compound_view.py -x"
+      expected_exit_code: 0
+    dependencies: [S36]
+    sao_sections:
+      - "§Frontend Architecture: plain browser JS, no build step"
+      - "§URL State: all filter/display state serialized to URL query params"
+      - "§Graph Rendering: Cytoscape.js 3.x compound node semantics"
+    context_map:
+      - file: "static/js/content-browser.js"
+        lines: "638-695"
+        note: "_applyTypeRebuild() + _buildFilteredElements() — compound toggle calls same rebuild; _buildCompoundElements() is an augmented variant"
+      - file: "static/js/content-browser.js"
+        lines: "230-303"
+        note: "_parseUrlParams() / _filtersToQueryString() — extend with ?compound=1 param"
+      - file: "docs/features/act-16-content-browser/07-canvas-controls.feature"
+        lines: "115-226"
+        note: "FOB-37 spec — compound semantics, style (#eef2ff bg, #0d6efd border), label position, composability with seq toggle"
+    do_not_do:
+      - "Do NOT add algorithm-specific special-casing — graceful degradation is acceptable for non-ELK layouts"
+      - "Do NOT modify the server-side graph API — parent assignment is client-side only"
+      - "Do NOT persist compound state in a Django model or session"
+      - "Do NOT remove workflow nodes from the graph in compound mode — they become parent nodes"
+      - "Do NOT break flat mode — parent assignments must be fully cleared on toggle OFF"
+      - "Do NOT add a new Django view or URL"
+    rollback_point: "git checkout static/js/content-browser.js templates/browser/browser_graph.html"
