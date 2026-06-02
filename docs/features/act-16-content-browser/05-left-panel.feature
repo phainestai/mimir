@@ -96,18 +96,41 @@ Feature: FOB-CONTENT-BROWSER-LEFT-PANEL Content Browser Left Panel
     Then that Workflow's Activities collapse / expand
 
 
-  Scenario: FOB-CONTENT-BROWSER-26 Clicking a structural tree node navigates the canvas and focuses the tree
+  Scenario: FOB-CONTENT-BROWSER-26 Clicking a structural tree node navigates and opens the detail panel
     Given Maria sees the structural tree
-    When she clicks "Build Feature" (a Workflow node) in the tree
-    Then the Cytoscape canvas pans and zooms to centre that node in the viewport
-    And the corresponding canvas node is highlighted with a selection ring
-    And the detail panel does NOT open automatically (tree navigation ≠ detail open)
-    And all other Workflow rows collapse
-    And "Build Feature" expands to reveal its Activity rows (accordion behaviour)
-    And the same behaviour applies when she clicks an Activity row in the tree:
-      the canvas pans to centre the Activity node; panel does NOT open automatically;
-      all Workflow rows collapse except the parent Workflow of that Activity,
-      which expands to show its Activities with the clicked row highlighted
+
+    # ── Clicking a Workflow row ───────────────────────────────────────────────
+    When she clicks the text/icon area of a Workflow row (NOT the chevron ▸/▾)
+    Then the Cytoscape canvas pans and zooms to centre that Workflow node in the viewport
+    And the Workflow canvas node receives a selection ring (same red highlight as canvas tap)
+    And the right detail panel opens with the Workflow's embed content
+    And the structural tree row is highlighted (bold + accent background)
+    And the accordion expands that Workflow's Activities (same as clicking the chevron would)
+
+    # ── Clicking the chevron only ─────────────────────────────────────────────
+    When she clicks ONLY the chevron ▸/▾ on a Workflow row
+    Then the accordion toggles (expand / collapse) WITHOUT navigating the canvas
+    And the detail panel does NOT open or change
+
+    # ── Clicking an Activity row ─────────────────────────────────────────────
+    When she clicks an Activity row in the tree
+    Then the canvas pans and zooms to centre the Activity node
+    And the Activity canvas node receives a selection ring
+    And the right detail panel opens with the Activity's embed content
+    And the structural tree row is highlighted
+
+    # ── Uniform: both directions trigger same behaviour ───────────────────────
+    Note: treeview click and canvas tap must produce identical visual outcome —
+    same selection ring, same detail panel content, same tree row highlight.
+
+    # IMPLEMENTATION NOTE (FOB-26 revised 2026-06-02):
+    # Previous spec had "detail panel does NOT open automatically (tree navigation ≠ detail open)".
+    # This is changed: tree row click DOES open detail panel, identical to canvas tap.
+    # Accordion expand/collapse moves to the CHEVRON click only (not the full row).
+    # Root cause of bug: _buildStructureTree click handler returns early when
+    #   .browser-tree-toggle span is found (workflow rows), never navigating.
+    #   Activity rows navigate but don't call _openDetailPanel.
+    # Fix: wire chevron span click separately; wire row click to navigate + _openDetailPanel.
 
 
   Scenario: FOB-CONTENT-BROWSER-27 Active node in structural tree is highlighted
