@@ -1894,6 +1894,54 @@ function _parseSeqParam() {
 /** Whether compound view mode is active. Default: false (flat mode). */
 let _compoundViewOn = false;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// S48 — Node size mode toggle (FOB-39)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Node size mode. One of:
+ *   'fixed'  — all nodes are a uniform fixed size; long labels truncate with ellipsis.
+ *   'auto'   — node width expands to fit label text; font size stays constant.
+ * Initialised from URL param ?nodesize= (see _parseNodeSizeParam).
+ */
+let _nodeSizeMode = 'fixed';
+
+/**
+ * Toggle node size mode between 'fixed' and 'auto', update the button,
+ * write the URL param, then re-apply the stylesheet so the change is visible
+ * immediately without a full graph rebuild.
+ *
+ * Steps (when implemented):
+ *   1. Toggle _nodeSizeMode: 'fixed' ↔ 'auto'
+ *   2. Call _updateNodeSizeModeBtn() to update button label/class
+ *   3. Call _replaceCanonicalUrl(_getPkFromPath(), _currentFilters)
+ *   4. Reapply stylesheet: window.cy.style(_cytoscapeStyleEnhanced() + compound if active)
+ */
+function _applyNodeSizeToggle() {
+  // TODO: NotImplementedError — implement node size mode toggle
+  throw new Error('NotImplementedError: _applyNodeSizeToggle');
+}
+
+/**
+ * Update the node size mode button to reflect the current _nodeSizeMode.
+ *   'fixed' → button text "Fixed size ✓",  adds class 'active'
+ *   'auto'  → button text "Auto-width ✓",  adds class 'active'
+ */
+function _updateNodeSizeModeBtn() {
+  // TODO: NotImplementedError — implement node size button update
+  throw new Error('NotImplementedError: _updateNodeSizeModeBtn');
+}
+
+/**
+ * Read ?nodesize= URL parameter and set _nodeSizeMode accordingly.
+ * Valid values: 'fixed' (default), 'auto'.
+ * Called once on page load before cy is initialised.
+ */
+function _parseNodeSizeParam() {
+  // TODO: NotImplementedError — implement URL param parsing for nodesize
+  throw new Error('NotImplementedError: _parseNodeSizeParam');
+}
+
 /**
  * Toggle compound view on or off.
  * Triggers a full graph rebuild with compound parent assignments (ON)
