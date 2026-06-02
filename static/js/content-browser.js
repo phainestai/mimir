@@ -306,8 +306,8 @@ function _filtersToQueryString(filters) {
   if (_currentRouting !== 'bezier') {
     parts.push('routing=' + _currentRouting);
   }
-  if (_compoundViewOn) {
-    parts.push('compound=1');
+  if (_compoundLevel !== 'none') {
+    parts.push('compound=' + _compoundLevel);
   }
   return parts.length ? '?' + parts.join('&') : '';
 }
@@ -500,9 +500,13 @@ function _renderGraph(pk, graphData, filters) {
   // is already correct — avoids a redundant remove+re-add cycle after cy creation.
   _currentFilters = filters;
   const activeTypesSet = new Set(filters.types);
-  const elements = _compoundViewOn ? _buildCompoundElements(activeTypesSet) : _buildFilteredElements(activeTypesSet);
-  const initialStyle = _compoundViewOn
-    ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyle())
+  const elements = _compoundLevel !== 'none'
+    ? (_compoundLevel === 'workflow-activity'
+        ? _buildWorkflowActivityCompoundElements(activeTypesSet)
+        : _buildCompoundElements(activeTypesSet))
+    : _buildFilteredElements(activeTypesSet);
+  const initialStyle = _compoundLevel !== 'none'
+    ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyleForLevel(_compoundLevel))
     : _cytoscapeStyleEnhanced();
 
   // Create cy without an initial layout — positions will be set by the explicit _runLayout()
@@ -1546,9 +1550,13 @@ function _init() {
   if (routingBtn) routingBtn.addEventListener('click', _toggleRoutingDropdown);
   _updateRoutingBtn();
 
-  // Wire compound view toggle.
+  // Wire compound grouping dropdown.
+  const compoundBtn = document.querySelector('[data-testid="browser-compound-btn"]');
+  if (compoundBtn) compoundBtn.addEventListener('click', _toggleCompoundDropdown);
+  // Legacy toggle button (kept for backward compat in older templates).
   const compoundToggle = document.querySelector('[data-testid="browser-compound-toggle"]');
   if (compoundToggle) compoundToggle.addEventListener('click', _applyCompoundToggle);
+  _updateCompoundBtn();
   _updateCompoundToggleBtn();
 
   // Wire node size mode toggle.
@@ -1567,7 +1575,8 @@ function _init() {
 window.cy = null;
 // Expose module state for Playwright E2E tests.
 Object.defineProperty(window, '_currentRouting', { get: () => _currentRouting });
-Object.defineProperty(window, '_compoundViewOn', { get: () => _compoundViewOn });
+Object.defineProperty(window, '_compoundViewOn', { get: () => _compoundLevel !== 'none' });
+Object.defineProperty(window, '_compoundLevel', { get: () => _compoundLevel });
 Object.defineProperty(window, '_nodeSizeMode', { get: () => _nodeSizeMode });
 
 document.addEventListener('DOMContentLoaded', _init);
@@ -1597,7 +1606,7 @@ window.addEventListener('popstate', _onPopState);
  * @returns {object[]} Cytoscape stylesheet array
  */
 function _cytoscapeStyleEnhanced() {
-  const edgeStyles = _buildEdgeStyleForMode(_compoundViewOn);
+  const edgeStyles = _buildEdgeStyleForMode(_compoundLevel !== 'none');
   const nodeTypes = ['playbook', 'workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
   const nodeStyles = nodeTypes.map(type => ({
     selector: `node[type = "${type}"]`,
@@ -1955,8 +1964,8 @@ function _parseRoutingParam() {
 // S37 — Workflow compound view toggle (FOB-37)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Whether compound view mode is active. Default: false (flat mode). */
-let _compoundViewOn = false;
+/** Whether compound view mode is active. Derived alias kept for backward compat. */
+let _compoundViewOn = false; // maintained as alias only — use _compoundLevel instead
 
 // ─────────────────────────────────────────────────────────────────────────────
 // S48 — Node size mode toggle (FOB-39)
@@ -1986,8 +1995,8 @@ function _applyNodeSizeToggle() {
   _updateNodeSizeModeBtn();
   _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
   if (!window.cy) return;
-  const style = _compoundViewOn
-    ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyle())
+  const style = _compoundLevel !== 'none'
+    ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyleForLevel(_compoundLevel))
     : _cytoscapeStyleEnhanced();
   window.cy.style(style);
   _runLayout();
@@ -2022,37 +2031,23 @@ function _parseNodeSizeParam() {
 }
 
 /**
- * Toggle compound view on or off.
- * Triggers a full graph rebuild with compound parent assignments (ON)
- * or clears all parent assignments and rebuilds flat (OFF).
- * Updates _compoundViewOn, button visual state, and URL param.
+ * Legacy compound toggle — kept for backward compat; delegates to _applyCompoundLevel.
+ * Toggles between 'none' and 'workflow'.
  */
 function _applyCompoundToggle() {
-  _compoundViewOn = !_compoundViewOn;
+  _applyCompoundLevel(_compoundLevel === 'none' ? 'workflow' : 'none');
   _updateCompoundToggleBtn();
-  _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
-  const activeTypes = new Set(_currentFilters.types);
-  if (!window.cy || !_fullGraphData) return;
-  const elements = _compoundViewOn ? _buildCompoundElements(activeTypes) : _buildFilteredElements(activeTypes);
-  window.cy.remove(window.cy.elements());
-  if (_compoundViewOn) {
-    window.cy.style(_cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyle()));
-  } else {
-    window.cy.style(_cytoscapeStyleEnhanced());
-  }
-  window.cy.add(elements);
-  _runLayout();
 }
 
 /**
- * Update the compound toggle button visual state to match _compoundViewOn.
+ * Update the legacy compound toggle button visual state.
  * ON:  label "Grouped ✓"
  * OFF: label "Grouped ✗"
  */
 function _updateCompoundToggleBtn() {
   const btn = document.querySelector('[data-testid="browser-compound-toggle"]');
   if (!btn) return;
-  if (_compoundViewOn) {
+  if (_compoundLevel !== 'none') {
     btn.textContent = 'Grouped ✓';
     btn.classList.add('active');
   } else {
@@ -2210,13 +2205,12 @@ function _cytoscapeCompoundStyle() {
 }
 
 /**
- * Parse the ?compound= URL parameter and set _compoundViewOn accordingly.
- * compound=1 → true; absent or other value → false (default flat).
- * Called from _parseUrlParams (S37 implementation extends that function).
+ * Parse the ?compound= URL parameter and set _compoundLevel accordingly.
+ * Delegates to _parseCompoundLevelParam (S61).
+ * Kept for backward compat with existing call sites.
  */
 function _parseCompoundParam() {
-  const params = new URLSearchParams(window.location.search);
-  _compoundViewOn = params.get('compound') === '1';
+  _parseCompoundLevelParam();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2315,104 +2309,207 @@ function _compoundBackgroundForType(nodeType) {
  *
  * NOTE: replaces the old boolean _compoundViewOn (see FOB-61 migration).
  */
-let _compoundLevel = 'none';  // skeleton — replaces _compoundViewOn in MIT-02
+let _compoundLevel = 'none';
 
-/**
- * Build Cytoscape element array for 'workflow-activity' compound level.
- * Activities that have connected resource nodes become compound parents.
- *
- * Expected output (when implemented):
- *   Same as _buildCompoundElements but additionally sets:
- *     resource nodes → parent = activity node id (not workflow)
- *     activity nodes with resources → become compound parents
- *
- * @param {Set<string>} activeTypes — set of entity type strings currently visible
- * @returns {{ data: object }[]} Cytoscape element array with two-level parent assignments
- */
+const _COMPOUND_OPTIONS = [
+  { key: 'none',               label: 'No grouping' },
+  { key: 'workflow',           label: 'Group by workflow' },
+  { key: 'workflow-activity',  label: 'Group by workflow + activity' },
+];
+
 function _buildWorkflowActivityCompoundElements(activeTypes) {
-  // 1. Filter nodes and edges by activeTypes
-  // 2. Build workflow→activity map from 'contains' edges (same as _buildCompoundElements)
-  // 3. Additionally build activity→resource map from non-contains edges
-  // 4. Assign:
-  //    - workflow nodes: no parent (top-level compound)
-  //    - activity nodes: parent = workflowId
-  //    - resource nodes connected to an activity: parent = activityId
-  // 5. Return element array with edges filtered to finalIds
-  throw new Error('NotImplementedError: _buildWorkflowActivityCompoundElements');
+  if (!_fullGraphData) return [];
+  const { nodes, edges } = _fullGraphData;
+  const resourceTypes = new Set(['skill', 'agent', 'rule', 'artifact']);
+
+  const typeFilteredNodes = nodes.filter(n => activeTypes.has(n.type));
+  const typeFilteredIds = new Set(typeFilteredNodes.map(n => n.id));
+
+  const activityToWorkflow = new Map();
+  edges.forEach(e => {
+    if (e.relationship === 'contains' && typeFilteredIds.has(e.source) && typeFilteredIds.has(e.target)) {
+      activityToWorkflow.set(e.target, e.source);
+    }
+  });
+
+  const nonContainsEdges = edges.filter(
+    e => e.relationship !== 'contains' && typeFilteredIds.has(e.source) && typeFilteredIds.has(e.target)
+  );
+
+  const activityResourceMap = new Map();
+  nonContainsEdges.forEach(e => {
+    const targetNode = typeFilteredNodes.find(n => n.id === e.target);
+    if (targetNode && resourceTypes.has(targetNode.type) && activityToWorkflow.has(e.source)) {
+      if (!activityResourceMap.has(e.source)) activityResourceMap.set(e.source, new Set());
+      activityResourceMap.get(e.source).add(e.target);
+    }
+    const sourceNode = typeFilteredNodes.find(n => n.id === e.source);
+    if (sourceNode && resourceTypes.has(sourceNode.type) && activityToWorkflow.has(e.target)) {
+      if (!activityResourceMap.has(e.target)) activityResourceMap.set(e.target, new Set());
+      activityResourceMap.get(e.target).add(e.source);
+    }
+  });
+
+  const resourceToActivity = new Map();
+  activityResourceMap.forEach((resources, actId) => {
+    resources.forEach(rId => resourceToActivity.set(rId, actId));
+  });
+
+  const connectedIds = new Set();
+  nonContainsEdges.forEach(e => { connectedIds.add(e.source); connectedIds.add(e.target); });
+
+  const finalNodes = typeFilteredNodes.filter(n => !resourceTypes.has(n.type) || connectedIds.has(n.id));
+
+  const compoundNodes = finalNodes.map(n => {
+    const nodeData = { ...n };
+    if (n.type === 'workflow') {
+      _addElkCompoundData(nodeData);
+    } else if (n.type === 'activity') {
+      const wfId = activityToWorkflow.get(n.id);
+      if (wfId) nodeData.parent = wfId;
+      if (activityResourceMap.has(n.id)) nodeData['elk:algorithm'] = 'layered';
+    } else if (resourceTypes.has(n.type)) {
+      const actId = resourceToActivity.get(n.id);
+      if (actId) {
+        nodeData.parent = actId;
+      } else {
+        const wfId = Array.from(activityToWorkflow.values()).find(
+          wf => nonContainsEdges.some(e => (e.source === n.id || e.target === n.id))
+        );
+        if (wfId) nodeData.parent = wfId;
+      }
+    }
+    return { data: nodeData };
+  });
+
+  const finalIds = new Set(finalNodes.map(n => n.id));
+  const compoundEdges = nonContainsEdges
+    .filter(e => finalIds.has(e.source) && finalIds.has(e.target))
+    .map(e => ({ data: e }));
+
+  return [...compoundNodes, ...compoundEdges];
 }
 
-/**
- * Return the Cytoscape stylesheet additions for 3-level compound mode.
- * Extends _cytoscapeCompoundStyle with activity-level compound styling.
- *
- * Expected output (when implemented):
- *   Includes `:parent` base style PLUS
- *   `node[type="activity"]:parent` style with background '#d4edda'
- *
- * @param {string} level — 'workflow' or 'workflow-activity'
- * @returns {object[]} stylesheet entries for compound rendering
- */
 function _cytoscapeCompoundStyleForLevel(level) {
-  // 1. Start with base :parent style (from _cytoscapeCompoundStyle logic)
-  // 2. If level === 'workflow-activity', add node[type="activity"]:parent override
-  //    with background-color: '#d4edda'
-  // 3. Return array of stylesheet entries
-  throw new Error('NotImplementedError: _cytoscapeCompoundStyleForLevel');
+  const base = _cytoscapeCompoundStyle();
+  if (level !== 'workflow-activity') return base;
+  return [
+    ...base,
+    {
+      selector: 'node[type = "activity"]:parent',
+      style: {
+        'background-color': _compoundBackgroundForType('activity'),
+        'border-color': '#198754',
+        'border-width': 2,
+        ..._buildCompoundLabelStyleV2(),
+      },
+    },
+  ];
 }
 
-/**
- * Toggle the compound grouping dropdown open/closed.
- * Mirrors _toggleLayoutDropdown and _toggleRoutingDropdown pattern.
- */
 function _toggleCompoundDropdown() {
-  // 1. Check for existing dropdown and remove if present (toggle off)
-  // 2. Create dropdown panel with 3 options: none / workflow / workflow-activity
-  // 3. Mark active option with ✓
-  // 4. Wire click handlers to _applyCompoundLevel(key) + close panel
-  // 5. Append to body, add Escape and outside-click handlers
-  throw new Error('NotImplementedError: _toggleCompoundDropdown');
+  const existing = document.querySelector('[data-testid="browser-compound-dropdown"]');
+  if (existing) { existing.remove(); return; }
+
+  const btn = document.querySelector('[data-testid="browser-compound-btn"]');
+  if (!btn) return;
+
+  const panel = document.createElement('div');
+  panel.setAttribute('data-testid', 'browser-compound-dropdown');
+  const rect = btn.getBoundingClientRect();
+  panel.style.cssText =
+    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
+    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
+    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:200px;';
+
+  _COMPOUND_OPTIONS.forEach(opt => {
+    const item = document.createElement('button');
+    item.setAttribute('data-testid', `browser-compound-option-${opt.key}`);
+    item.type = 'button';
+    const isActive = _compoundLevel === opt.key;
+    item.style.cssText =
+      'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
+      (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
+    item.textContent = opt.label + (isActive ? ' ✓' : '');
+    item.addEventListener('click', () => {
+      panel.remove();
+      document.removeEventListener('keydown', escHandler);
+      document.removeEventListener('click', outsideHandler);
+      _applyCompoundLevel(opt.key);
+    });
+    panel.appendChild(item);
+  });
+
+  document.body.appendChild(panel);
+
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      panel.remove();
+      document.removeEventListener('keydown', escHandler);
+      document.removeEventListener('click', outsideHandler);
+    }
+  };
+  const outsideHandler = (e) => {
+    if (!panel.contains(e.target) && e.target !== btn) {
+      panel.remove();
+      document.removeEventListener('keydown', escHandler);
+      document.removeEventListener('click', outsideHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
 }
 
-/**
- * Apply a compound grouping level.
- * Updates _compoundLevel, button label, URL param, rebuilds graph.
- *
- * @param {string} level — one of: 'none', 'workflow', 'workflow-activity'
- */
 function _applyCompoundLevel(level) {
-  // 1. Validate level ∈ {'none', 'workflow', 'workflow-activity'}; return if invalid
-  // 2. Set _compoundLevel = level
-  // 3. Call _updateCompoundBtn()
-  // 4. Update canonical URL
-  // 5. Select elements + style based on level:
-  //    'none'               → _buildFilteredElements + _cytoscapeStyleEnhanced()
-  //    'workflow'           → _buildCompoundElements + _cytoscapeStyleForLevel('workflow')
-  //    'workflow-activity'  → _buildWorkflowActivityCompoundElements + _cytoscapeStyleForLevel('workflow-activity')
-  // 6. cy.remove, cy.style, cy.add, _runLayout()
-  throw new Error('NotImplementedError: _applyCompoundLevel');
+  const valid = new Set(['none', 'workflow', 'workflow-activity']);
+  if (!valid.has(level)) return;
+  _compoundLevel = level;
+  _updateCompoundBtn();
+  _updateCompoundToggleBtn();
+  _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
+  if (!window.cy || !_fullGraphData) return;
+  const activeTypes = new Set(_currentFilters.types);
+  let elements;
+  if (level === 'none') {
+    elements = _buildFilteredElements(activeTypes);
+  } else if (level === 'workflow-activity') {
+    elements = _buildWorkflowActivityCompoundElements(activeTypes);
+  } else {
+    elements = _buildCompoundElements(activeTypes);
+  }
+  const style = level !== 'none'
+    ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyleForLevel(level))
+    : _cytoscapeStyleEnhanced();
+  window.cy.remove(window.cy.elements());
+  window.cy.style(style);
+  window.cy.add(elements);
+  _runLayout();
 }
 
-/**
- * Update the compound grouping button label and active state.
- * Button label = active option label + ' ▾'.
- */
 function _updateCompoundBtn() {
-  // 1. Find button by data-testid='browser-compound-btn'
-  // 2. Map _compoundLevel to human-readable label
-  // 3. Update button textContent
-  throw new Error('NotImplementedError: _updateCompoundBtn');
+  const btn = document.querySelector('[data-testid="browser-compound-btn"]');
+  if (!btn) return;
+  const opt = _COMPOUND_OPTIONS.find(o => o.key === _compoundLevel) || _COMPOUND_OPTIONS[0];
+  btn.textContent = opt.label + ' ▾';
+  if (_compoundLevel !== 'none') {
+    btn.classList.add('active');
+  } else {
+    btn.classList.remove('active');
+  }
 }
 
-/**
- * Parse the ?compound= URL parameter and set _compoundLevel accordingly.
- * Valid values: 'none', 'workflow', 'workflow-activity'.
- * Unknown or absent → 'none'.
- */
 function _parseCompoundLevelParam() {
-  // 1. Read URL param 'compound'
-  // 2. If valid level → set _compoundLevel
-  // 3. Else → _compoundLevel = 'none'
-  throw new Error('NotImplementedError: _parseCompoundLevelParam');
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get('compound');
+  const valid = new Set(['none', 'workflow', 'workflow-activity']);
+  // Backward compat: '1' from old URLs means 'workflow'.
+  if (raw === '1') {
+    _compoundLevel = 'workflow';
+  } else if (raw && valid.has(raw)) {
+    _compoundLevel = raw;
+  } else {
+    _compoundLevel = 'none';
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
