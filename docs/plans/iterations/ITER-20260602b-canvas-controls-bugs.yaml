@@ -1,0 +1,118 @@
+# ITER-20260602b — Canvas Controls Bugs & Node Visual Overhaul
+# Generated: 2026-06-02T18:39:43Z
+# Branch: iteration/20260531-content-browser-access
+# PR: #27 (strek/mimir)
+
+iteration_id: ITER-20260602b
+goal: "Fix canvas control bugs and complete node visual overhaul"
+created_at: "2026-06-02T18:39:43Z"
+branch: "iteration/20260531-content-browser-access"
+pr: 27
+playbook: FeatureFactory v3.8
+workflow: BPE (Build Feature)
+
+velocity_baseline:
+  prior_iterations: 2
+  avg_v_ratio: 1.0
+  dominant_drift: sqlite_postgresql_mismatch  # use uv + sqlite in tests
+
+scenarios:
+  - id: S43
+    github_issue: 43
+    title: "FOB-35 — Add unbundled-bezier to edge routing catalog"
+    parallel_group: A
+    budget_minutes: 30
+    skeleton_commit: bc50a58
+    checkpoint: "cd tests/e2e && uv run pytest test_content_browser_routing_picker.py -x -q"
+    checkpoint_acceptable: "N skipped exit 0"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_routing_picker.py
+
+  - id: S44
+    github_issue: 44
+    title: "FOB-36+37 — Sequence toggle broken in compound mode"
+    parallel_group: B
+    group_serial_after: S45
+    budget_minutes: 45
+    skeleton_commit: 98b327f
+    checkpoint: "cd tests/e2e && uv run pytest test_content_browser_seq_toggle.py -x -q"
+    checkpoint_acceptable: "N skipped exit 0"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_seq_toggle.py
+
+  - id: S45
+    github_issue: 45
+    title: "FOB-37 — Workflow label not visible in compound mode"
+    parallel_group: B
+    group_serial_order: 1
+    budget_minutes: 30
+    skeleton_commit: f7025b8
+    checkpoint: "cd tests/e2e && uv run pytest test_content_browser_compound_view.py -x -q"
+    checkpoint_acceptable: "N skipped exit 0"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_compound_view.py
+
+  - id: S46
+    github_issue: 46
+    title: "FOB-37 — Compound layout does not reflow activity nodes inside boxes"
+    parallel_group: B
+    group_serial_after: S44
+    budget_minutes: 45
+    skeleton_commit: e7d6a54
+    checkpoint: "cd tests/e2e && uv run pytest test_content_browser_compound_view.py -x -q"
+    checkpoint_acceptable: "N skipped exit 0"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_compound_view.py
+
+  - id: S47
+    github_issue: 47
+    title: "FOB-38 — Node visual overhaul (uniform shape, pastel palette, FA icons, black edges)"
+    parallel_group: C
+    budget_minutes: 90
+    skeleton_commit: 3edde2c
+    checkpoint: "cd tests/e2e && uv run pytest test_content_browser_node_styles.py -x -q"
+    checkpoint_acceptable: "N skipped exit 0"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_node_styles.py
+
+  - id: S48
+    github_issue: 48
+    title: "FOB-39 — Node size mode toggle (fixed-size vs auto-width)"
+    parallel_group: D
+    depends_on: S47
+    budget_minutes: 60
+    skeleton_commit: 9075d2e
+    checkpoint: "cd tests/e2e && uv run pytest test_content_browser_node_size_toggle.py -x -q"
+    checkpoint_acceptable: "N skipped exit 0"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - templates/browser/browser_graph.html
+      - tests/e2e/test_content_browser_node_size_toggle.py
+
+parallel_groups:
+  A: [S43]          # isolated — only adds to _ROUTING_CATALOG array
+  B: [S45, S44, S46]  # serial within group: S45 → S44 → S46 (compound style functions)
+  C: [S47]          # independent — rewrites _buildEnhancedNodeStyle + _buildEdgeStyle
+  D: [S48]          # depends on C (S47 must complete first — extends style system)
+
+execution_order:
+  - parallel: [A, B, C]   # groups A, B, C can start concurrently
+  - serial: [D]           # D waits for C (S47) to be merged
+
+drift_thresholds:
+  time_overrun_absorb_max_pct: 120
+  time_overrun_escalate_pct: 200
+  test_failure_retry_max: 1
+  absorbed_signals_escalate: 2
+
+total_budget_minutes: 300
+notes:
+  - "All E2E tests skip without Playwright (exit 0 acceptable per PIT-02)"
+  - "Use uv run pytest — NOT direct venv — to avoid sqlite/postgresql mismatch"
+  - "S44 and S46 both touch _buildCompoundElements / seq toggle area — must serialize"
+  - "S47 replaces _buildEnhancedNodeStyle completely; S48 extends its style object"
