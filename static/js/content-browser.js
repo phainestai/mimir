@@ -495,7 +495,7 @@ function _renderGraph(pk, graphData, filters) {
   // call below (after listeners are registered). This avoids double-layout for async engines
   // (ELK) and missed-layoutstop for sync engines (Dagre, native Cytoscape layouts).
   window.cy = cytoscape({
-    container, elements, style: _cytoscapeStyle(),
+    container, elements, style: _cytoscapeStyleEnhanced(),
     layout: { name: 'null' },
     minZoom: 0.1, maxZoom: 3,
   });
@@ -1545,7 +1545,13 @@ window.addEventListener('popstate', _onPopState);
  * @returns {object[]} Cytoscape stylesheet array
  */
 function _cytoscapeStyleEnhanced() {
-  throw new Error('NOT_IMPLEMENTED — S38');
+  const edgeStyles = _cytoscapeStyle().filter(s => s.selector.startsWith('edge') || s.selector === 'node:selected');
+  const nodeTypes = ['playbook', 'workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
+  const nodeStyles = nodeTypes.map(type => ({
+    selector: `node[type = "${type}"]`,
+    style: _buildEnhancedNodeStyle(type),
+  }));
+  return [...nodeStyles, ...edgeStyles];
 }
 
 /**
@@ -1556,7 +1562,79 @@ function _cytoscapeStyleEnhanced() {
  * @returns {object} Cytoscape style property map
  */
 function _buildEnhancedNodeStyle(type) {
-  throw new Error('NOT_IMPLEMENTED — S38');
+  const _base = {
+    'label': 'data(label)',
+    'text-valign': 'center',
+    'text-halign': 'center',
+    'font-family': 'Montserrat, system-ui',
+    'text-wrap': 'wrap',
+    'border-width': 2,
+    'border-opacity': 1,
+    'background-opacity': 1,
+  };
+  const _structural = { ..._base, 'font-weight': 600 };
+  const _resource    = { ..._base, 'font-weight': 400 };
+
+  const definitions = {
+    playbook: {
+      ..._structural,
+      'shape': 'round-octagon',
+      'background-color': '#6f42c1', 'border-color': '#5a32a3',
+      'color': '#ffffff',
+      'font-size': 15, 'width': 80, 'height': 60, 'text-max-width': 72,
+    },
+    workflow: {
+      ..._structural,
+      'shape': 'round-rectangle',
+      'background-color': '#0d6efd', 'border-color': '#0a58ca',
+      'color': '#ffffff',
+      'font-size': 14, 'width': 120, 'height': 40, 'text-max-width': 112,
+      'label': function(ele) {
+        const abbr = ele.data('meta') && ele.data('meta').abbreviation;
+        return abbr ? `${abbr}\n${ele.data('label')}` : ele.data('label');
+      },
+    },
+    activity: {
+      ..._structural,
+      'shape': 'bottom-round-rectangle',
+      'background-color': '#198754', 'border-color': '#146c43',
+      'color': '#ffffff',
+      'font-size': 13, 'width': 110, 'height': 38, 'text-max-width': 102,
+      'label': function(ele) {
+        const code = ele.data('meta') && ele.data('meta').display_code;
+        return code ? `${code}\n${ele.data('label')}` : ele.data('label');
+      },
+    },
+    artifact: {
+      ..._resource,
+      'shape': 'round-diamond',
+      'background-color': '#ffc107', 'border-color': '#cc9a06',
+      'color': '#212529',
+      'font-size': 11, 'width': 70, 'height': 30, 'text-max-width': 62,
+    },
+    skill: {
+      ..._resource,
+      'shape': 'hexagon',
+      'background-color': '#fd7e14', 'border-color': '#ca6510',
+      'color': '#ffffff',
+      'font-size': 11, 'width': 70, 'height': 30, 'text-max-width': 62,
+    },
+    agent: {
+      ..._resource,
+      'shape': 'ellipse',
+      'background-color': '#0dcaf0', 'border-color': '#0aa2c0',
+      'color': '#212529',
+      'font-size': 11, 'width': 70, 'height': 30, 'text-max-width': 62,
+    },
+    rule: {
+      ..._resource,
+      'shape': 'cut-rectangle',
+      'background-color': '#6c757d', 'border-color': '#565e64',
+      'color': '#ffffff',
+      'font-size': 11, 'width': 70, 'height': 30, 'text-max-width': 62,
+    },
+  };
+  return definitions[type] || _base;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
