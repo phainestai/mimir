@@ -1523,7 +1523,7 @@ const _DEFAULT_NODE_SIZE_MODE = 'fixed';
 
 function _showCustomControls(visible) {
   document.querySelectorAll('.browser-custom-controls').forEach(el => {
-    el.style.display = visible ? '' : 'none';
+    el.classList.toggle('d-none', !visible);
   });
 }
 
