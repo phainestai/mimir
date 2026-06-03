@@ -31,6 +31,7 @@ let _fullGraphData = null;
 let _currentSearchTerm = '';
 let _searchDebounceTimer = null;
 let _currentLayout = 'elk-layered'; // layout key — see _LAYOUT_CATALOG
+let _customLayoutMode = false; // false = default mode (FOB-63)
 
 /**
  * Full layout catalog used by the layout picker dropdown (FOB-19, FOB-34).
@@ -1509,6 +1510,49 @@ function _toggleLeftPanel() {
   if (window.cy) window.cy.resize();
 }
 
+// ---------------------------------------------------------------------------
+// Default/Custom layout mode (FOB-63)
+// Default mode: klay + straight + workflow-activity compound; hides advanced buttons.
+// Custom mode:  all buttons visible; user controls freely.
+// ---------------------------------------------------------------------------
+
+const _DEFAULT_LAYOUT_MODE_KEY = 'klay';
+const _DEFAULT_ROUTING_MODE_KEY = 'straight';
+const _DEFAULT_COMPOUND_MODE_KEY = 'workflow-activity';
+
+function _showCustomControls(visible) {
+  const row1 = document.querySelector('.browser-custom-controls');
+  const compoundBtn = document.querySelector('[data-testid="browser-compound-btn"]');
+  if (row1) row1.style.display = visible ? '' : 'none';
+  if (compoundBtn) compoundBtn.style.display = visible ? '' : 'none';
+}
+
+function _applyDefaultLayoutMode() {
+  _customLayoutMode = false;
+  _showCustomControls(false);
+  _applyLayout(_DEFAULT_LAYOUT_MODE_KEY);
+  _applyRouting(_DEFAULT_ROUTING_MODE_KEY);
+  _applyCompoundLevel(_DEFAULT_COMPOUND_MODE_KEY);
+}
+
+function _applyCustomLayoutMode() {
+  _customLayoutMode = true;
+  _showCustomControls(true);
+}
+
+function _initCustomLayoutToggle() {
+  const toggle = document.querySelector('[data-testid="browser-custom-layout-toggle"]');
+  if (!toggle) return;
+  toggle.checked = false;
+  toggle.addEventListener('change', () => {
+    if (toggle.checked) {
+      _applyCustomLayoutMode();
+    } else {
+      _applyDefaultLayoutMode();
+    }
+  });
+}
+
 /**
  * Main entry point — called on DOMContentLoaded.
  * Reads PK, normalises URL params, fetches graph if PK present.
@@ -1525,6 +1569,9 @@ function _init() {
 
   // Wire panel entity-name navigation links.
   _initPanelNavigation();
+
+  // Wire custom layout toggle (FOB-63) — must run before pk check so toggle is always wired.
+  _initCustomLayoutToggle();
 
   // Wire collapse toggle.
   const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
@@ -1584,6 +1631,9 @@ function _init() {
   const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
   if (replotBtn) replotBtn.addEventListener('click', _replot);
 
+  // Apply default layout mode — sets klay+straight+workflow-activity and hides advanced buttons.
+  _applyDefaultLayoutMode();
+
   _fetchGraph(pk);
 }
 
@@ -1594,6 +1644,8 @@ Object.defineProperty(window, '_currentRouting', { get: () => _currentRouting })
 Object.defineProperty(window, '_compoundViewOn', { get: () => _compoundLevel !== 'none' });
 Object.defineProperty(window, '_compoundLevel', { get: () => _compoundLevel });
 Object.defineProperty(window, '_nodeSizeMode', { get: () => _nodeSizeMode });
+Object.defineProperty(window, '_customLayoutMode', { get: () => _customLayoutMode });
+Object.defineProperty(window, '_currentLayout', { get: () => _currentLayout });
 
 document.addEventListener('DOMContentLoaded', _init);
 window.addEventListener('popstate', _onPopState);

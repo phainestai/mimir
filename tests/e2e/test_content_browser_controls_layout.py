@@ -62,17 +62,18 @@ class TestControlButtonLayout:
         assert fit.count() > 0, "Fit button not found"
 
     def test_layout_controls_grouped_in_row(self, graph_page):
-        """Layout picker and routing picker buttons are present."""
+        """Layout picker and routing picker buttons are present in DOM (hidden in default mode per FOB-63)."""
         layout_btn = graph_page.locator('[data-testid="browser-layout-btn"]')
         routing_btn = graph_page.locator('[data-testid="browser-routing-btn"]')
-        assert layout_btn.count() > 0, "Layout picker button not found"
-        assert routing_btn.count() > 0, "Routing picker button not found"
+        assert layout_btn.count() > 0, "Layout picker button not found in DOM"
+        assert routing_btn.count() > 0, "Routing picker button not found in DOM"
 
     def test_view_toggle_buttons_grouped_in_row(self, graph_page):
-        """Compound-view and node-size toggle buttons are present."""
-        compound = graph_page.locator('[data-testid="browser-compound-toggle"]')
+        """Compound-view and node-size toggle buttons are present in DOM."""
+        # browser-compound-btn is in DOM but hidden in default mode (FOB-63)
+        compound = graph_page.locator('[data-testid="browser-compound-btn"]')
         node_size = graph_page.locator('[data-testid="browser-node-size-toggle"]')
-        assert compound.count() > 0, "Compound toggle button not found"
+        assert compound.count() > 0, "Compound btn not found in DOM"
         assert node_size.count() > 0, "Node-size toggle button not found"
 
     def test_control_buttons_remain_at_bottom_right_of_canvas(self, graph_page):

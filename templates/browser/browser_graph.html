@@ -153,8 +153,19 @@
         <span data-testid="browser-node-count" class="badge bg-secondary"></span>
       </div>
 
-      {# Row 1: Layout pickers #}
-      <div class="d-flex gap-1 mb-1">
+      {# Row 0: Custom layout toggle — always visible #}
+      <div class="d-flex justify-content-end mb-1">
+        <label class="d-flex align-items-center gap-1 text-secondary"
+               style="font-size: 0.65rem; cursor: pointer; user-select: none;">
+          <input type="checkbox"
+                 data-testid="browser-custom-layout-toggle"
+                 style="cursor: pointer;">
+          Custom layout
+        </label>
+      </div>
+
+      {# Row 1: Layout pickers — hidden in default layout mode #}
+      <div class="d-flex gap-1 mb-1 browser-custom-controls" style="display: none !important;">
         <button data-testid="browser-layout-btn"
                 class="btn btn-outline-secondary"
                 style="font-size: 0.65rem; padding: 2px 6px;"
@@ -165,11 +176,11 @@
                 title="Switch edge routing style">Bezier ▾</button>
       </div>
 
-      {# Row 2: View toggles #}
+      {# Row 2: View toggles — grouping hidden in default layout mode #}
       <div class="d-flex gap-1 mb-1">
         <button data-testid="browser-compound-btn"
-                class="btn btn-outline-secondary"
-                style="font-size: 0.65rem; padding: 2px 6px;"
+                class="btn btn-outline-secondary browser-custom-control-item"
+                style="font-size: 0.65rem; padding: 2px 6px; display: none;"
                 title="Select workflow grouping mode">No grouping ▾</button>
         <button data-testid="browser-node-size-toggle"
                 class="btn btn-outline-secondary active"
@@ -177,7 +188,7 @@
                 title="Toggle node size mode: Fixed size vs Auto-width">Fixed ✓</button>
       </div>
 
-      {# Row 3: Navigation #}
+      {# Row 3: Navigation — always visible #}
       <div class="d-flex gap-1">
         <button data-testid="browser-replot-btn"
                 class="btn btn-outline-secondary"
