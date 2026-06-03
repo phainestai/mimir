@@ -539,6 +539,8 @@ function _renderGraph(pk, graphData, filters) {
   window.cy.on('layoutstop', function() {
     window._elkLayoutCount = (window._elkLayoutCount || 0) + 1;
   });
+  // Hover tooltips — show full node label on mouseover.
+  _initNodeTooltip(window.cy);
 
   // Re-run layout explicitly so the layoutstop listener above always fires at least once.
   // Sync layouts (e.g. Dagre) fire layoutstop during the cytoscape() constructor, before
@@ -1642,8 +1644,8 @@ function _buildEnhancedNodeStyle(type) {
     'border-color': colors.border,
     'color': colors.text,
     'font-size': 13,
-    'width': _nodeSizeMode === 'auto' ? 'label' : 120,
-    'height': 40,
+    'width': _nodeSizeMode === 'auto' ? 'label' : 180,
+    'height': 60,
     'text-overflow-wrap': 'whitespace',
     ..._buildNodeTextOverflowStyle(_nodeSizeMode),
     ..._buildFontRenderingGuards(),
@@ -2544,5 +2546,77 @@ function _buildNodeTextOverflowStyle(mode) {
   if (mode === 'auto') {
     return { 'text-max-width': 999, 'text-wrap': 'none' };
   }
-  return { 'text-max-width': 96, 'text-wrap': 'ellipsis' };
+  // Fixed mode: wrap text within node width leaving room for the icon (~24px).
+  // Node width is 180px; max-text-width 150 keeps text inside with padding.
+  return { 'text-max-width': 150, 'text-wrap': 'wrap' };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Node hover tooltip
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Create (or return existing) the floating tooltip DOM element used to display
+ * the full node label on hover.  The element is appended to document.body so it
+ * is unclipped by the canvas container's overflow:hidden.
+ *
+ * @returns {HTMLElement}
+ */
+function _createTooltipEl() {
+  let el = document.getElementById('cy-node-tooltip');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'cy-node-tooltip';
+    el.setAttribute('data-testid', 'cy-node-tooltip');
+    el.style.cssText = [
+      'position:fixed',
+      'background:rgba(33,37,41,0.92)',
+      'color:#fff',
+      'font-size:0.75rem',
+      'font-family:Montserrat,system-ui,sans-serif',
+      'padding:4px 10px',
+      'border-radius:4px',
+      'pointer-events:none',
+      'z-index:10000',
+      'max-width:320px',
+      'white-space:pre-wrap',
+      'line-height:1.5',
+      'display:none',
+    ].join(';');
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+/**
+ * Attach mouseover/mousemove/mouseout listeners to the given Cytoscape instance
+ * so that a tooltip showing the full node label is displayed on hover.
+ *
+ * @param {cytoscape.Core} cy — Cytoscape instance
+ */
+function _initNodeTooltip(cy) {
+  const tip = _createTooltipEl();
+
+  cy.on('mouseover', 'node', function(evt) {
+    const label = evt.target.data('label') || '';
+    const type  = evt.target.data('type')  || '';
+    tip.textContent = type ? `[${type}]  ${label}` : label;
+    tip.style.display = 'block';
+  });
+
+  cy.on('mousemove', 'node', function(evt) {
+    const oe = evt.originalEvent;
+    if (!oe) return;
+    tip.style.left = `${oe.clientX + 14}px`;
+    tip.style.top  = `${oe.clientY - 10}px`;
+  });
+
+  cy.on('mouseout', 'node', function() {
+    tip.style.display = 'none';
+  });
+
+  // Hide tooltip while the user pans or zooms so it never sticks.
+  cy.on('pan zoom', function() {
+    tip.style.display = 'none';
+  });
 }
