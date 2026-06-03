@@ -137,8 +137,8 @@ class TestSeqToggleInteraction:
         graph_page.wait_for_function("() => window._seqEdgesOn === true")
         assert 'seq=0' not in graph_page.url, f"URL should not contain seq=0: {graph_page.url}"
 
-    def test_seq_state_preserved_on_entity_type_filter_change(self, graph_page: Page):
-        """With seq=OFF, toggling entity type filter does not re-add predecessor edges."""
+    def test_seq_state_preserved_on_graph_rebuild(self, graph_page: Page):
+        """With seq=OFF, rebuilding the graph does not re-add predecessor edges."""
         # Turn seq off
         graph_page.click('[data-testid="browser-seq-toggle"]')
         graph_page.wait_for_function("() => window._seqEdgesOn === false")

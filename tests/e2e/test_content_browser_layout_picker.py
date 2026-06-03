@@ -218,33 +218,6 @@ class TestLayoutPickerDropdown:
         btn_text = page.locator('[data-testid="browser-layout-btn"]').text_content()
         assert 'Tree' in btn_text, f"Legacy 'mrtree' should map to elk-mrtree (shows 'Tree'), got: {btn_text!r}"
 
-    def test_layout_switch_does_not_reset_filters(self, page: Page, layout_playbook, live_server, picker_user):
-        """Switching layout does not reset any active entity-type or phase filters."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
-        _wait_for_layout_complete(page)
-
-        # Disable the 'workflow' filter (click its toggle button)
-        wf_filter_btn = page.locator('[data-filter-type="workflow"]')
-        if wf_filter_btn.count() > 0:
-            wf_filter_btn.first.click()
-            page.wait_for_timeout(300)
-
-        # Switch layout
-        _select_layout(page, 'dagre-tb')
-        _wait_for_layout_complete(page, min_count=2)
-
-        # Filter should still be toggled off (button should have inactive styling)
-        # The filter state is preserved in _currentFilters — check URL still lacks 'workflow'
-        # or that the filter button reflects the same state (not necessarily URL-based)
-        # Simplest check: workflow nodes absent from canvas after layout switch
-        workflow_node_count = page.evaluate(
-            "() => window.cy ? window.cy.nodes('[type=\"workflow\"]').length : -1"
-        )
-        assert workflow_node_count == 0, \
-            f"Workflow nodes should remain filtered out after layout switch; got {workflow_node_count}"
-
 
 # ---------------------------------------------------------------------------
 # S35 — FOB-34: Layout catalog — all 24 options present in dropdown

@@ -157,33 +157,3 @@ class TestNodeSearch:
         act_no_match_id = f"activity:{search_playbook['act_no_match'].pk}"
         opacity = page.evaluate(f"window.cy.getElementById('{act_no_match_id}').style('opacity')")
         assert float(opacity) > 0.9, f"After clearing search, node should be bright, got {opacity}"
-
-    def test_search_and_phase_filter_combined(
-        self, page: Page, live_server, search_playbook,
-    ):
-        """A node must satisfy BOTH search AND phase filter to appear bright (FOB-12)."""
-        _login(page, live_server.url, search_playbook['username'], search_playbook['password'])
-        page.goto(f"{live_server.url}/browser/{search_playbook['pb'].pk}/")
-        _wait_for_graph(page)
-
-        # Activate phase Alpha (both activities are in Alpha — neither gets phase-dimmed)
-        # Then search for 'Plan' — only act_match is bright; act_no_match is search-dimmed
-        page.wait_for_selector('[data-testid="browser-phase-pill"]', timeout=5000)
-        page.locator('[data-testid="browser-phase-pill"]', has_text='Alpha').click()
-        page.wait_for_timeout(400)
-
-        page.locator('[data-testid="browser-search-input"]').fill('Plan')
-        page.wait_for_timeout(400)
-
-        act_match_id = f"activity:{search_playbook['act_match'].pk}"
-        act_no_match_id = f"activity:{search_playbook['act_no_match'].pk}"
-
-        op_match = float(page.evaluate(
-            f"window.cy.getElementById('{act_match_id}').style('opacity')"
-        ))
-        op_no_match = float(page.evaluate(
-            f"window.cy.getElementById('{act_no_match_id}').style('opacity')"
-        ))
-
-        assert op_match > 0.9, f"Matching + correct phase: should be bright, got {op_match}"
-        assert op_no_match < 0.5, f"Non-matching: should be dimmed, got {op_no_match}"

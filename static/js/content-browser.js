@@ -550,9 +550,6 @@ function _renderGraph(pk, graphData, filters) {
 
   // Apply phase/search dim (no type rebuild — cy was created with correct elements).
   _refreshVisualState();
-
-  // Render entity-type filter toolbar after graph loads (counts won't change).
-  _renderFilterToolbar(filters);
 }
 
 /**
@@ -807,9 +804,8 @@ function _refreshVisualState() {
     }
   });
 
-  // Keep structural tree and phase filter controls in sync.
+  // Keep structural tree in sync.
   _renderStructureTree();
-  _renderPhaseFilter();
 }
 
 /**
