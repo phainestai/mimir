@@ -69,3 +69,19 @@ Feature: FOB-CONTENT-BROWSER-DETAIL-PANEL Content Browser Detail Panel
     When Maria clicks [Open full]
     Then the browser navigates the current tab to the entity's standard detail URL
     And she sees the full detail page with navbar, breadcrumbs, and all actions
+
+
+  Scenario: FOB-CONTENT-BROWSER-10 Entity name links in detail panel navigate to graph node
+    Given Maria is on the graph view canvas with a playbook loaded
+    And the detail panel is open showing an Activity
+    When she clicks a linked entity name inside the panel
+      (e.g. the Workflow name, Predecessor activity, Agent, or an Artifact)
+    Then the canvas pans and zooms to centre on that entity's graph node (same animation as treeview click)
+    And the detail panel replaces its content with the clicked entity's embed view
+    And the clicked node receives the selection ring (red border)
+    When the entity's node is currently hidden by a type filter
+    Then the canvas does not animate
+    And the detail panel still opens with the entity's embed content
+    And all entity names that have a corresponding graph node are rendered as links
+      in the detail panel (workflows, activities, agents, skills, rules, artifacts)
+    And clicking a link does not navigate the browser page (preventDefault)

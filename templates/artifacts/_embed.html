@@ -18,7 +18,10 @@
 
     <dl class="row mb-0 small">
       <dt class="col-5">Producer</dt>
-      <dd class="col-7">{{ producer.name }} <small class="text-muted">({{ producer.workflow.name }})</small></dd>
+      <dd class="col-7">
+        <a href="#" data-navigate-canvas="activity:{{ producer.pk }}" class="text-decoration-none">{{ producer.name }}</a>
+        <small class="text-muted">({{ producer.workflow.name }})</small>
+      </dd>
     </dl>
 
     {% if consumers %}
@@ -28,7 +31,10 @@
     </h6>
     <ul class="list-unstyled small mb-0">
       {% for inp in consumers %}
-      <li><i class="fa-solid fa-list-check text-primary me-1"></i>{{ inp.activity.name }}</li>
+      <li>
+        <i class="fa-solid fa-list-check text-primary me-1"></i>
+        <a href="#" data-navigate-canvas="activity:{{ inp.activity.pk }}" class="text-decoration-none">{{ inp.activity.name }}</a>
+      </li>
       {% endfor %}
     </ul>
     {% endif %}

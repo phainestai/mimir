@@ -1075,20 +1075,30 @@ function _selectTreeNode(nodeId) {
       return;
     }
   }
-  // Node is filtered out — open panel from tree row data without canvas interaction.
+  // Node is filtered out — try tree row first (structural nodes), then full graph data
+  // (resource nodes: agent/skill/rule/artifact have no tree rows).
   const row = document.querySelector(`[data-testid="browser-tree-row"][data-node-id="${nodeId}"]`);
-  if (!row) return;
-  const embedUrl = row.dataset.embedUrl || '';
-  const detailUrl = row.dataset.detailUrl || '';
-  const nodeType = row.dataset.nodeType || '';
-  // Build a minimal Cytoscape-compatible proxy.
-  const proxy = {
-    id: () => nodeId,
-    data: key => ({ embed_url: embedUrl, detail_url: detailUrl, type: nodeType }[key]),
-    style: () => 'hidden',
-    length: 1,
-  };
-  _openDetailPanel(proxy);
+  if (row) {
+    const proxy = {
+      id: () => nodeId,
+      data: key => ({ embed_url: row.dataset.embedUrl || '', detail_url: row.dataset.detailUrl || '', type: row.dataset.nodeType || '' }[key]),
+      style: () => 'hidden',
+      length: 1,
+    };
+    _openDetailPanel(proxy);
+    return;
+  }
+  // Fall back to full graph data cache (covers resource nodes not in tree).
+  const nodeData = _fullGraphData ? (_fullGraphData.nodes || []).find(n => n.id === nodeId) : null;
+  if (nodeData) {
+    const proxy = {
+      id: () => nodeId,
+      data: key => ({ embed_url: nodeData.embed_url || '', detail_url: nodeData.detail_url || '', type: nodeData.type || '' }[key]),
+      style: () => 'hidden',
+      length: 1,
+    };
+    _openDetailPanel(proxy);
+  }
 }
 
 /**
@@ -1512,6 +1522,9 @@ function _init() {
   // Wire panel close button.
   const panelClose = document.querySelector('[data-testid="browser-panel-close"]');
   if (panelClose) panelClose.addEventListener('click', _closeDetailPanel);
+
+  // Wire panel entity-name navigation links.
+  _initPanelNavigation();
 
   // Wire collapse toggle.
   const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
@@ -2618,5 +2631,25 @@ function _initNodeTooltip(cy) {
   // Hide tooltip while the user pans or zooms so it never sticks.
   cy.on('pan zoom', function() {
     tip.style.display = 'none';
+  });
+}
+
+/**
+ * Wire event delegation on the detail panel content area so that
+ * [data-navigate-canvas] links in embed templates navigate the canvas.
+ *
+ * Called once from _init(). Uses a single delegated listener on the
+ * persistent panel container — works correctly when innerHTML is replaced
+ * on every panel open.
+ */
+function _initPanelNavigation() {
+  const panelContent = document.querySelector('[data-testid="browser-panel-content"]');
+  if (!panelContent) return;
+  panelContent.addEventListener('click', function(e) {
+    const link = e.target.closest('[data-navigate-canvas]');
+    if (!link) return;
+    e.preventDefault();
+    const nodeId = link.dataset.navigateCanvas;
+    if (nodeId) _selectTreeNode(nodeId);
   });
 }

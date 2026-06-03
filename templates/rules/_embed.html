@@ -25,7 +25,10 @@
     </h6>
     <ul class="list-unstyled small mb-0">
       {% for act in activities %}
-      <li><i class="fa-solid fa-list-check text-primary me-1"></i>{{ act.name }}</li>
+      <li>
+        <i class="fa-solid fa-list-check text-primary me-1"></i>
+        <a href="#" data-navigate-canvas="activity:{{ act.pk }}" class="text-decoration-none">{{ act.name }}</a>
+      </li>
       {% endfor %}
     </ul>
     {% endif %}

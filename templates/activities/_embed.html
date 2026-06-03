@@ -23,14 +23,20 @@
 
     <dl class="row mb-0 small">
       <dt class="col-5">Workflow</dt>
-      <dd class="col-7">{{ workflow.name }}</dd>
+      <dd class="col-7">
+        <a href="#" data-navigate-canvas="workflow:{{ workflow.pk }}" class="text-decoration-none">{{ workflow.name }}</a>
+      </dd>
       {% if activity.predecessor %}
       <dt class="col-5">Predecessor</dt>
-      <dd class="col-7">{{ activity.predecessor.name }}</dd>
+      <dd class="col-7">
+        <a href="#" data-navigate-canvas="activity:{{ activity.predecessor.pk }}" class="text-decoration-none">{{ activity.predecessor.name }}</a>
+      </dd>
       {% endif %}
       {% if activity.agent %}
       <dt class="col-5">Agent</dt>
-      <dd class="col-7">{{ activity.agent.name }}</dd>
+      <dd class="col-7">
+        <a href="#" data-navigate-canvas="agent:{{ activity.agent_id }}:activity:{{ activity.pk }}" class="text-decoration-none">{{ activity.agent.name }}</a>
+      </dd>
       {% endif %}
     </dl>
 
@@ -39,7 +45,10 @@
     <h6 class="text-muted small text-uppercase mb-1">Input Artifacts</h6>
     <ul class="list-unstyled small mb-0">
       {% for inp in artifact_inputs %}
-      <li><i class="fa-solid fa-gift text-warning me-1"></i>{{ inp.artifact.name }}</li>
+      <li>
+        <i class="fa-solid fa-gift text-warning me-1"></i>
+        <a href="#" data-navigate-canvas="artifact:{{ inp.artifact.pk }}:activity:{{ activity.pk }}" class="text-decoration-none">{{ inp.artifact.name }}</a>
+      </li>
       {% endfor %}
     </ul>
     {% endif %}
@@ -51,7 +60,7 @@
       {% for art in artifact_outputs %}
       <li>
         <i class="fa-solid fa-box-open text-success me-1"></i>
-        {{ art.name }}
+        <a href="#" data-navigate-canvas="artifact:{{ art.pk }}:activity:{{ activity.pk }}" class="text-decoration-none">{{ art.name }}</a>
         {% if art.is_required %}<span class="badge bg-danger ms-1" style="font-size:0.65rem">required</span>{% endif %}
       </li>
       {% endfor %}

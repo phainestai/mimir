@@ -23,7 +23,7 @@
       {% for act in activities %}
       <li class="list-group-item px-0 py-1">
         <span class="badge bg-secondary me-1">{{ act.order }}</span>
-        {{ act.name }}
+        <a href="#" data-navigate-canvas="activity:{{ act.pk }}" class="text-decoration-none">{{ act.name }}</a>
         {% if act.phase %}<span class="badge bg-info ms-1">{{ act.phase.name }}</span>{% endif %}
       </li>
       {% endfor %}
