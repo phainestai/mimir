@@ -1631,7 +1631,7 @@ function _buildEnhancedNodeStyle(type) {
     'label': ele => `${icon} ${ele.data('label') || ''}`,
     'text-valign': 'center',
     'text-halign': 'center',
-    'font-family': '"Font Awesome 6 Free", "Font Awesome 6 Pro", Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'font-family': 'Montserrat, "Font Awesome 6 Free", "Font Awesome 6 Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     'font-weight': 600,
     'text-wrap': 'ellipsis',
     'border-width': 2,
