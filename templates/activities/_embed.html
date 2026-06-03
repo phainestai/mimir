@@ -43,6 +43,20 @@
       {% endfor %}
     </ul>
     {% endif %}
+
+    {% if artifact_outputs %}
+    <hr class="my-2">
+    <h6 class="text-muted small text-uppercase mb-1">Output Artifacts</h6>
+    <ul class="list-unstyled small mb-0">
+      {% for art in artifact_outputs %}
+      <li>
+        <i class="fa-solid fa-box-open text-success me-1"></i>
+        {{ art.name }}
+        {% if art.is_required %}<span class="badge bg-danger ms-1" style="font-size:0.65rem">required</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
   </div>
 </div>
 <style>
