@@ -1280,11 +1280,8 @@ function _openDetailPanel(node) {
   if (window.cy) {
     const nodeIsVisible = node.style('visibility') !== 'hidden';
     if (nodeIsVisible) {
-      window.cy.nodes().forEach(n => {
-        n.style('border-width', 0);
-        if (n.style('visibility') !== 'hidden') n.style('opacity', 0.4);
-      });
-      node.style({ 'border-width': 3, 'border-color': '#dc3545', 'opacity': 1 });
+      window.cy.nodes().forEach(n => { n.style('border-width', 0); });
+      node.style({ 'border-width': 3, 'border-color': '#dc3545' });
     }
   }
   _currentPanelNode = node;
