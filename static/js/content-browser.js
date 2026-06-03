@@ -2269,8 +2269,8 @@ function _buildCompoundLabelStyleV2() {
   return {
     'padding-top': '28px',
     'text-valign': 'top',
-    'text-halign': 'left',
-    'text-margin-x': 8,
+    'text-halign': 'center',
+    'text-margin-x': 0,
     'text-margin-y': 4,
     'font-size': 20,
     'font-family': 'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
