@@ -1,7 +1,7 @@
 """
 E2E tests for Content Browser graph rendering.
 
-Covers: FOB-CONTENT-BROWSER-04, 06, 07, 10, 14, 14b (CDN guard), 15
+Covers: FOB-CONTENT-BROWSER-04, 06, 07, 07c, 14, 14b (CDN guard), 15
 
 Requires: Playwright, live server, seeded DB.
 Run: DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_graph.py -x
@@ -166,7 +166,7 @@ def test_zoom_controls_are_visible(page: Page, live_server_url: str, graph_playb
 
 
 # ---------------------------------------------------------------------------
-# FOB-CONTENT-BROWSER-10: Fit graph to screen
+# FOB-CONTENT-BROWSER-07c: Fit graph to screen
 # ---------------------------------------------------------------------------
 
 def test_fit_button_executes_cy_fit(page: Page, live_server_url: str, graph_playbook):

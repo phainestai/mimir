@@ -15,6 +15,18 @@ Feature: FOB-CONTENT-BROWSER-API Content Browser Graph API and Data
     And the response respects the same visibility/access rules as the playbook detail page
 
 
+  Scenario: FOB-CONTENT-BROWSER-13b Activity phase metadata is included in graph API response
+    Given a playbook has an activity "Design Form" assigned to a Phase "Construction" (colour #3B82F6)
+    When the graph API is called for that playbook
+    Then the activity node in the response includes phase metadata in its meta object:
+      | field         | value               |
+      | phase_id      | the Phase's pk      |
+      | phase_name    | "Construction"      |
+      | phase_colour  | "#3B82F6"           |
+    And the phase_colour value is a valid hex colour string starting with "#"
+    And an activity NOT assigned to a phase has no phase_id in its meta object
+
+
   Scenario: FOB-CONTENT-BROWSER-13e Resource nodes are scoped per-activity (no cross-referencing dedup)
     Given a playbook has two activities "Build Login" and "Build Register"
     And both activities use the same Rule "Validate Input"

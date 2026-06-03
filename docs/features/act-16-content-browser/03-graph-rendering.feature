@@ -163,7 +163,7 @@ Feature: FOB-CONTENT-BROWSER-GRAPH Content Browser Graph Rendering
       (e.g. after window resize, after phase dimming, or on user preference)
 
 
-  Scenario: FOB-CONTENT-BROWSER-10 Fit graph to screen
+  Scenario: FOB-CONTENT-BROWSER-07c Fit graph to screen
     Given Maria has panned or zoomed the canvas
     When she clicks the [Fit] button
     Then the graph zooms and pans to fit all nodes in the viewport

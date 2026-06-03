@@ -1,8 +1,9 @@
 """
 Integration tests for Content Browser Graph API endpoint.
 
-Covers: FOB-CONTENT-BROWSER-13, 13b (error state), 13c (session expiry redirect),
-        13d (404 on deleted playbook), plus structural/access tests.
+Covers: FOB-CONTENT-BROWSER-13, 13b (activity phase metadata), 13c (session expiry redirect),
+        13d (404 on deleted playbook), 13e (per-activity resource scoping),
+        13f (display_code on activity nodes), 13g (sequence edges).
 """
 
 import pytest
@@ -247,8 +248,7 @@ class TestGraphAPIResponseShape:
 
 
 # ---------------------------------------------------------------------------
-# FOB-CONTENT-BROWSER-13b: Activity phase metadata
-# ---------------------------------------------------------------------------
+# FOB-CONTENT-BROWSER-13b: Activity phase metadata# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 class TestGraphAPIPhaseMetadata:
