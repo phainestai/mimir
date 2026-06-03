@@ -1,7 +1,7 @@
 """
 Integration tests for embed mode (?embed=1) on 7 entity detail views.
 
-Covers: FOB-CONTENT-BROWSER-08b
+Covers: FOB-CONTENT-BROWSER-08b, FOB-CONTENT-BROWSER-10
 """
 
 import pytest
@@ -290,3 +290,112 @@ class TestEmbedAnonymousRedirects:
     def test_artifact_embed_anonymous(self, client, artifact):
         url = _embed_url(reverse('artifact_detail', kwargs={'pk': artifact.pk}))
         assert client.get(url).status_code == 302
+
+
+# ---------------------------------------------------------------------------
+# FOB-CONTENT-BROWSER-10: data-navigate-canvas links in embed templates
+# ---------------------------------------------------------------------------
+
+class TestEmbedNavigationLinks:
+    """
+    Embed templates must include data-navigate-canvas attributes so the
+    content-browser JS can navigate the canvas to the linked entity.
+    """
+
+    def _get_embed(self, client_auth, url):
+        return client_auth.get(_embed_url(url)).content.decode()
+
+    # --- Activity embed ---
+
+    def test_activity_embed_workflow_link(self, client_auth, playbook, workflow, activity):
+        url = reverse('activity_detail', kwargs={
+            'playbook_pk': playbook.pk, 'workflow_pk': workflow.pk, 'activity_pk': activity.pk,
+        })
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="workflow:{workflow.pk}"' in content
+
+    def test_activity_embed_predecessor_link(self, client_auth, playbook, workflow, activity):
+        pred = Activity.objects.create(workflow=workflow, name='PredActivity', order=0)
+        activity.predecessor = pred
+        activity.save()
+        url = reverse('activity_detail', kwargs={
+            'playbook_pk': playbook.pk, 'workflow_pk': workflow.pk, 'activity_pk': activity.pk,
+        })
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="activity:{pred.pk}"' in content
+
+    def test_activity_embed_agent_link(self, client_auth, playbook, workflow, activity, agent):
+        activity.agent = agent
+        activity.save()
+        url = reverse('activity_detail', kwargs={
+            'playbook_pk': playbook.pk, 'workflow_pk': workflow.pk, 'activity_pk': activity.pk,
+        })
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="agent:{agent.pk}:activity:{activity.pk}"' in content
+
+    def test_activity_embed_input_artifact_link(self, client_auth, playbook, workflow, activity):
+        # Use a separate activity as producer to avoid circular dependency
+        producer_act = Activity.objects.create(workflow=workflow, name='ProducerAct', order=0)
+        input_art = Artifact.objects.create(
+            playbook=playbook, name='InputArt', type='Document', produced_by=producer_act,
+        )
+        ArtifactInput.objects.create(artifact=input_art, activity=activity)
+        url = reverse('activity_detail', kwargs={
+            'playbook_pk': playbook.pk, 'workflow_pk': workflow.pk, 'activity_pk': activity.pk,
+        })
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="artifact:{input_art.pk}:activity:{activity.pk}"' in content
+
+    def test_activity_embed_output_artifact_link(self, client_auth, playbook, workflow, activity, artifact):
+        # artifact fixture already has produced_by=activity
+        url = reverse('activity_detail', kwargs={
+            'playbook_pk': playbook.pk, 'workflow_pk': workflow.pk, 'activity_pk': activity.pk,
+        })
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="artifact:{artifact.pk}:activity:{activity.pk}"' in content
+
+    # --- Workflow embed ---
+
+    def test_workflow_embed_activity_links(self, client_auth, playbook, workflow, activity):
+        url = reverse('workflow_detail', kwargs={'playbook_pk': playbook.pk, 'pk': workflow.pk})
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="activity:{activity.pk}"' in content
+
+    # --- Agent embed ---
+
+    def test_agent_embed_activity_links(self, client_auth, playbook, workflow, activity, agent):
+        activity.agent = agent
+        activity.save()
+        url = reverse('agent_detail', kwargs={'pk': agent.pk})
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="activity:{activity.pk}"' in content
+
+    # --- Skill embed ---
+
+    def test_skill_embed_activity_links(self, client_auth, playbook, workflow, activity, skill):
+        activity.skills.add(skill)
+        url = reverse('skill_detail', kwargs={'playbook_pk': playbook.pk, 'skill_pk': skill.pk})
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="activity:{activity.pk}"' in content
+
+    # --- Rule embed ---
+
+    def test_rule_embed_activity_links(self, client_auth, playbook, workflow, activity, rule):
+        activity.rules.add(rule)
+        url = reverse('rule_detail', kwargs={'playbook_pk': playbook.pk, 'rule_pk': rule.pk})
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="activity:{activity.pk}"' in content
+
+    # --- Artifact embed ---
+
+    def test_artifact_embed_producer_link(self, client_auth, playbook, workflow, activity, artifact):
+        url = reverse('artifact_detail', kwargs={'pk': artifact.pk})
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="activity:{activity.pk}"' in content
+
+    def test_artifact_embed_consumer_link(self, client_auth, playbook, workflow, activity, artifact):
+        consumer_act = Activity.objects.create(workflow=workflow, name='ConsumerAct', order=2)
+        ArtifactInput.objects.create(artifact=artifact, activity=consumer_act)
+        url = reverse('artifact_detail', kwargs={'pk': artifact.pk})
+        content = self._get_embed(client_auth, url)
+        assert f'data-navigate-canvas="activity:{consumer_act.pk}"' in content

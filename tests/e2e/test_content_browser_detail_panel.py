@@ -1,7 +1,7 @@
 """
 E2E tests for Content Browser detail panel.
 
-Covers: FOB-CONTENT-BROWSER-08, 08c, 09, 09b, 09c
+Covers: FOB-CONTENT-BROWSER-08, 08c, 09, 09b, 09c, 10
 
 Run: DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_detail_panel.py -x
 """
@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
 from accounts.models import mark_email_verified
-from methodology.models import Activity, Agent, Playbook, Skill, Workflow
+from methodology.models import Activity, Agent, Artifact, Playbook, Skill, Workflow
 
 User = get_user_model()
 
@@ -280,3 +280,107 @@ class TestSessionExpiry:
         assert '/auth/login/' in page.url, (
             f"Expected redirect to /auth/login/ after session expiry, got {page.url}"
         )
+
+
+# ---------------------------------------------------------------------------
+# FOB-10: Entity name links in detail panel navigate to canvas node
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def nav_link_playbook(transactional_db):
+    user = User.objects.create_user(
+        username='navlink_user', email='navlink@test.com', password='testpass123',
+    )
+    mark_email_verified(user)
+    pb = Playbook.objects.create(
+        name='NavLinkPlaybook', description='Panel nav link tests',
+        category='development', status='released', version='1.0',
+        source='owned', author=user, visibility='public',
+    )
+    wf = Workflow.objects.create(name='NavWorkflow', playbook=pb, order=1)
+    act = Activity.objects.create(name='NavActivity', workflow=wf, order=1)
+    art = Artifact.objects.create(
+        playbook=pb, name='NavArtifact', type='Document', produced_by=act,
+    )
+    return {
+        'username': 'navlink_user', 'password': 'testpass123',
+        'pb': pb, 'wf': wf, 'act': act, 'art': art,
+    }
+
+
+class TestPanelNavigationLinks:
+    """FOB-CONTENT-BROWSER-10: clicking entity name links in the panel navigates canvas."""
+
+    def test_workflow_panel_activity_link_opens_activity_panel(
+        self, page: Page, live_server, nav_link_playbook,
+    ):
+        """Click an activity name link in the workflow panel → panel shows activity embed."""
+        data = nav_link_playbook
+        _login(page, live_server.url, data['username'], data['password'])
+
+        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        _wait_for_graph(page)
+
+        # Open workflow panel
+        _tap_node(page, f"workflow:{data['wf'].pk}")
+        expect(page.locator('[data-testid="browser-detail-panel"]')).to_be_visible()
+        page.wait_for_timeout(800)
+
+        # Click the activity name link inside the panel
+        panel = page.locator('[data-testid="browser-panel-content"]')
+        act_link = panel.locator(f'[data-navigate-canvas="activity:{data["act"].pk}"]')
+        expect(act_link).to_be_visible()
+        act_link.click()
+        page.wait_for_timeout(800)
+
+        # Panel content should now show the activity embed
+        panel_content = panel.inner_text()
+        assert 'NavActivity' in panel_content
+
+    def test_panel_navigation_link_does_not_navigate_browser(
+        self, page: Page, live_server, nav_link_playbook,
+    ):
+        """Clicking a data-navigate-canvas link must not navigate the browser tab."""
+        data = nav_link_playbook
+        _login(page, live_server.url, data['username'], data['password'])
+
+        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        _wait_for_graph(page)
+
+        _tap_node(page, f"workflow:{data['wf'].pk}")
+        page.wait_for_timeout(800)
+
+        browser_url_before = page.url
+        panel = page.locator('[data-testid="browser-panel-content"]')
+        act_link = panel.locator(f'[data-navigate-canvas="activity:{data["act"].pk}"]')
+        expect(act_link).to_be_visible()
+        act_link.click()
+        page.wait_for_timeout(500)
+
+        # URL must not have changed (preventDefault worked)
+        assert page.url == browser_url_before, (
+            f"Browser navigated away: {browser_url_before} → {page.url}"
+        )
+
+    def test_activity_panel_workflow_link_opens_workflow_panel(
+        self, page: Page, live_server, nav_link_playbook,
+    ):
+        """Click the workflow name link in an activity panel → panel shows workflow embed."""
+        data = nav_link_playbook
+        _login(page, live_server.url, data['username'], data['password'])
+
+        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        _wait_for_graph(page)
+
+        # Open activity panel
+        _tap_node(page, f"activity:{data['act'].pk}")
+        page.wait_for_timeout(800)
+
+        panel = page.locator('[data-testid="browser-panel-content"]')
+        wf_link = panel.locator(f'[data-navigate-canvas="workflow:{data["wf"].pk}"]')
+        expect(wf_link).to_be_visible()
+        wf_link.click()
+        page.wait_for_timeout(800)
+
+        panel_content = panel.inner_text()
+        assert 'NavWorkflow' in panel_content
