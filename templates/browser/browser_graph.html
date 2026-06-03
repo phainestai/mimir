@@ -164,7 +164,7 @@
         </label>
       </div>
 
-      {# Row 1: Layout pickers — hidden in default layout mode #}
+      {# Row 1: Layout + routing — hidden in default layout mode #}
       <div class="d-flex gap-1 mb-1 browser-custom-controls" style="display: none !important;">
         <button data-testid="browser-layout-btn"
                 class="btn btn-outline-secondary"
@@ -176,11 +176,11 @@
                 title="Switch edge routing style">Bezier ▾</button>
       </div>
 
-      {# Row 2: View toggles — grouping hidden in default layout mode #}
-      <div class="d-flex gap-1 mb-1">
+      {# Row 2: Grouping + node size — hidden in default layout mode #}
+      <div class="d-flex gap-1 mb-1 browser-custom-controls" style="display: none !important;">
         <button data-testid="browser-compound-btn"
-                class="btn btn-outline-secondary browser-custom-control-item"
-                style="font-size: 0.65rem; padding: 2px 6px; display: none;"
+                class="btn btn-outline-secondary"
+                style="font-size: 0.65rem; padding: 2px 6px;"
                 title="Select workflow grouping mode">No grouping ▾</button>
         <button data-testid="browser-node-size-toggle"
                 class="btn btn-outline-secondary active"

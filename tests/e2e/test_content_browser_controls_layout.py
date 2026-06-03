@@ -69,12 +69,11 @@ class TestControlButtonLayout:
         assert routing_btn.count() > 0, "Routing picker button not found in DOM"
 
     def test_view_toggle_buttons_grouped_in_row(self, graph_page):
-        """Compound-view and node-size toggle buttons are present in DOM."""
-        # browser-compound-btn is in DOM but hidden in default mode (FOB-63)
+        """Compound-view and node-size toggle buttons are present in DOM (hidden in default mode per FOB-63)."""
         compound = graph_page.locator('[data-testid="browser-compound-btn"]')
         node_size = graph_page.locator('[data-testid="browser-node-size-toggle"]')
         assert compound.count() > 0, "Compound btn not found in DOM"
-        assert node_size.count() > 0, "Node-size toggle button not found"
+        assert node_size.count() > 0, "Node-size toggle button not found in DOM"
 
     def test_control_buttons_remain_at_bottom_right_of_canvas(self, graph_page):
         """The controls panel is positioned at the bottom-right corner of the canvas."""

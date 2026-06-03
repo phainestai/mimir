@@ -1519,12 +1519,31 @@ function _toggleLeftPanel() {
 const _DEFAULT_LAYOUT_MODE_KEY = 'klay';
 const _DEFAULT_ROUTING_MODE_KEY = 'straight';
 const _DEFAULT_COMPOUND_MODE_KEY = 'workflow-activity';
+const _DEFAULT_NODE_SIZE_MODE = 'fixed';
 
 function _showCustomControls(visible) {
-  const row1 = document.querySelector('.browser-custom-controls');
-  const compoundBtn = document.querySelector('[data-testid="browser-compound-btn"]');
-  if (row1) row1.style.display = visible ? '' : 'none';
-  if (compoundBtn) compoundBtn.style.display = visible ? '' : 'none';
+  document.querySelectorAll('.browser-custom-controls').forEach(el => {
+    el.style.display = visible ? '' : 'none';
+  });
+}
+
+function _applyDefaultLayoutMode() {
+  _customLayoutMode = false;
+  _showCustomControls(false);
+  _applyLayout(_DEFAULT_LAYOUT_MODE_KEY);
+  _applyRouting(_DEFAULT_ROUTING_MODE_KEY);
+  _applyCompoundLevel(_DEFAULT_COMPOUND_MODE_KEY);
+  if (_nodeSizeMode !== _DEFAULT_NODE_SIZE_MODE) {
+    _nodeSizeMode = _DEFAULT_NODE_SIZE_MODE;
+    _updateNodeSizeModeBtn();
+    if (window.cy) {
+      const style = _compoundLevel !== 'none'
+        ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyleForLevel(_compoundLevel))
+        : _cytoscapeStyleEnhanced();
+      window.cy.style(style);
+      _runLayout();
+    }
+  }
 }
 
 function _applyDefaultLayoutMode() {

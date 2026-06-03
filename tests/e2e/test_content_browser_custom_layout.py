@@ -84,6 +84,12 @@ class TestCustomLayoutToggle:
         assert compound_btn.count() > 0, "Compound btn must be in DOM"
         assert not compound_btn.is_visible(), "Compound btn should be hidden in default mode"
 
+    def test_default_mode_hides_node_size_toggle(self, graph_page):
+        """In default mode, the node-size toggle button is hidden."""
+        node_size = graph_page.locator('[data-testid="browser-node-size-toggle"]')
+        assert node_size.count() > 0, "Node-size toggle must be in DOM"
+        assert not node_size.is_visible(), "Node-size toggle should be hidden in default mode"
+
     def test_default_mode_applies_klay_layout(self, graph_page):
         """In default mode, klay layout is applied."""
         layout = graph_page.evaluate("() => window._currentLayout")
@@ -116,7 +122,7 @@ class TestCustomLayoutToggle:
             assert btn.is_visible(), f"{testid} should be visible in default mode"
 
     def test_toggle_on_shows_advanced_buttons(self, graph_page):
-        """Ticking the checkbox shows layout, routing, and compound buttons."""
+        """Ticking the checkbox shows layout, routing, compound, and node-size buttons."""
         toggle = graph_page.locator('[data-testid="browser-custom-layout-toggle"]')
         toggle.check()
         graph_page.wait_for_timeout(200)
@@ -124,10 +130,12 @@ class TestCustomLayoutToggle:
         layout_btn = graph_page.locator('[data-testid="browser-layout-btn"]')
         routing_btn = graph_page.locator('[data-testid="browser-routing-btn"]')
         compound_btn = graph_page.locator('[data-testid="browser-compound-btn"]')
+        node_size = graph_page.locator('[data-testid="browser-node-size-toggle"]')
 
         assert layout_btn.is_visible(), "Layout btn should be visible in custom mode"
         assert routing_btn.is_visible(), "Routing btn should be visible in custom mode"
         assert compound_btn.is_visible(), "Compound btn should be visible in custom mode"
+        assert node_size.is_visible(), "Node-size toggle should be visible in custom mode"
 
     def test_toggle_on_sets_custom_layout_mode_flag(self, graph_page):
         """Ticking the checkbox sets _customLayoutMode to True."""
@@ -152,6 +160,9 @@ class TestCustomLayoutToggle:
         assert not layout_btn.is_visible(), "Layout btn should be hidden after disabling custom mode"
         assert not routing_btn.is_visible(), "Routing btn should be hidden after disabling custom mode"
         assert not compound_btn.is_visible(), "Compound btn should be hidden after disabling custom mode"
+
+        node_size = graph_page.locator('[data-testid="browser-node-size-toggle"]')
+        assert not node_size.is_visible(), "Node-size toggle should be hidden after disabling custom mode"
 
         layout = graph_page.evaluate("() => window._currentLayout")
         routing = graph_page.evaluate("() => window._currentRouting")
