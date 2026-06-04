@@ -161,7 +161,7 @@ def workflow_detail(request, playbook_pk, pk):
         can_submit_pip,
     )
 
-    return render(request, 'workflows/detail.html', {
+    context = {
         'playbook': playbook,
         'workflow': workflow,
         'can_edit': workflow.can_edit(request.user),
@@ -169,7 +169,11 @@ def workflow_detail(request, playbook_pk, pk):
         'activities_svg': activities_svg,
         'activity_count': activity_count,
         'has_activities': activity_count > 0,
-    })
+        'activities': activities,
+    }
+    if request.GET.get('embed') == '1':
+        return render(request, 'workflows/_embed.html', context)
+    return render(request, 'workflows/detail.html', context)
 
 
 @login_required

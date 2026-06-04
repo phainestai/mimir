@@ -1,0 +1,110 @@
+id: ITER-20260601d
+title: "Content Browser: filters, search, layout validation"
+milestone: 5
+description: >
+  Final iteration for act-16 (Content Browser). Completes all remaining spec
+  scenarios: entity type filter toolbar (FOB-11), phase filter (FOB-11b), node
+  name search (FOB-12), layout position guard, and two spec-compliance fixes
+  (FOB-27 tree highlight scoping, FOB-28 activity → parent workflow resources).
+branch: iteration/20260531-content-browser-access
+feature_spec: docs/features/act-16-content-browser/
+
+gap_analysis:
+  - fob: FOB-11
+    status: partial
+    note: "_applyFilters() exists and is URL-connected, but there is no rendered
+      filter toolbar UI in the template. Nodes are dimmed via opacity but not
+      properly hidden (Cytoscape visibility). Count badges missing."
+  - fob: FOB-11b
+    status: missing
+    note: "Phase filter control not rendered. Phase dim logic not wired.
+      Structural tree not filtered by phase."
+  - fob: FOB-12
+    status: missing
+    note: "No search input in template; no _applySearch() function."
+  - fob: FOB-27
+    status: partial
+    note: "_highlightTreeNode() called for all node types; spec says resource
+      nodes (skill/agent/rule/artifact) must clear tree highlight, not set it."
+  - fob: FOB-28
+    status: partial
+    note: "Activity node selection shows only that activity's resources.
+      Spec says show parent workflow's full aggregated resources."
+  - layout_position:
+    status: missing
+    note: "No positional E2E assertions. Multiline-comment bug proved these
+      are needed — existing tests passed despite the panel being on the right."
+
+scenarios:
+  - id: S14
+    issue: 15
+    title: "Entity type filter toolbar (FOB-11)"
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 90
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_filters.py::TestEntityTypeFilter -x"
+      pass_criteria: "all entity type filter E2E tests pass"
+    codebase_footprint:
+      - templates/browser/browser_graph.html
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_filters.py
+
+  - id: S15
+    issue: 16
+    title: "Phase filter shared between canvas and structural tree (FOB-11b)"
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 90
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_filters.py::TestPhaseFilter -x"
+      pass_criteria: "all phase filter E2E tests pass"
+    codebase_footprint:
+      - templates/browser/browser_graph.html
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_filters.py
+
+  - id: S16
+    issue: 17
+    title: "Node name search: highlight matching nodes (FOB-12)"
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 60
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_filters.py::TestNodeSearch -x"
+      pass_criteria: "all node search E2E tests pass"
+    codebase_footprint:
+      - templates/browser/browser_graph.html
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_filters.py
+
+  - id: S17
+    issue: 18
+    title: "Layout position guard E2E tests"
+    parallel_group: B
+    depends_on: []
+    time_budget_minutes: 45
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_layout_position.py -x"
+      pass_criteria: "all layout position tests pass"
+    codebase_footprint:
+      - tests/e2e/test_content_browser_layout_position.py
+
+  - id: S18
+    issue: 19
+    title: "Fix structural tree highlight + resource tree parent-workflow scope (FOB-27/28)"
+    parallel_group: B
+    depends_on: []
+    time_budget_minutes: 45
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_structure_tree.py tests/e2e/test_content_browser_resource_tree.py -x"
+      pass_criteria: "all structure tree and resource tree E2E tests pass"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_structure_tree.py
+      - tests/e2e/test_content_browser_resource_tree.py
+
+execution_order:
+  - parallel: [S14, S15, S16, S17, S18]   # all are independent
+
+total_budget_minutes: 330   # if sequential; parallel groups can run concurrently

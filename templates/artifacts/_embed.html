@@ -1,0 +1,42 @@
+<div class="card" data-testid="artifact-embed">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">
+      <i class="fa-solid fa-gift me-1"></i>
+      <span data-testid="embed-entity-name">{{ artifact.name }}</span>
+    </h5>
+    <div>
+      <span class="badge bg-secondary">{{ artifact.type }}</span>
+      {% if artifact.is_required %}
+      <span class="badge bg-danger ms-1">Required</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    {% if artifact.description %}
+    <p class="card-text text-muted mb-3" data-testid="embed-description">{{ artifact.description }}</p>
+    {% endif %}
+
+    <dl class="row mb-0 small">
+      <dt class="col-5">Producer</dt>
+      <dd class="col-7">
+        <a href="#" data-navigate-canvas="activity:{{ producer.pk }}" class="text-decoration-none">{{ producer.name }}</a>
+        <small class="text-muted">({{ producer.workflow.name }})</small>
+      </dd>
+    </dl>
+
+    {% if consumers %}
+    <hr class="my-2">
+    <h6 class="text-muted small text-uppercase mb-1">Consumed By
+      <span class="badge bg-secondary ms-1">{{ consumers|length }}</span>
+    </h6>
+    <ul class="list-unstyled small mb-0">
+      {% for inp in consumers %}
+      <li>
+        <i class="fa-solid fa-list-check text-primary me-1"></i>
+        <a href="#" data-navigate-canvas="activity:{{ inp.activity.pk }}" class="text-decoration-none">{{ inp.activity.name }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>

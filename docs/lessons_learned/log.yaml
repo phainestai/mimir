@@ -8,3 +8,34 @@ entries:
     dominant_drift: none
     footprint_accuracy: met_checkpoints
     pip_candidates: []
+  - milestone: 9
+    date: "2026-06-02"
+    goal: "ITER-20260602 | Content Browser canvas controls (S35–S38, FOB-35–38)"
+    velocity_ratio: 1.0
+    dominant_drift: sqlite_postgresql_mismatch
+    footprint_accuracy: met_checkpoints
+    pip_candidates:
+      - "Consider Playwright installation in CI to run E2E tests (all 44 tests currently skip)"
+      - "SQLite concurrent write limitation — test_concurrent_creates pre-existing failure"
+  - milestone: 11
+    date: "2026-06-04"
+    goal: "ITER-20260602c | Canvas Bug-Fix Batch (FOB-50–58, S50–S58)"
+    velocity_ratio: 1.1
+    dominant_drift: implementation_complexity
+    footprint_accuracy: met_checkpoints
+    pip_candidates:
+      - "FA6 icon codepoints must be verified against Free vs Pro tier — Pro-only glyphs silently fail in Free kits"
+      - "Cytoscape curve-style 'round-segments' (not 'round-seg') — always validate keys against Cytoscape docs"
+      - "E2E graph tests require released playbook with workflows/activities in DB; consider adding to e2e_seed.json"
+      - "Seq toggle removal pattern: mark old test file with pytestmark=skip rather than deleting to preserve history"
+      - "top-level const/let in browser script NOT on window; only function declarations and var are globally accessible for page.evaluate()"
+  - milestone: 12
+    date: "2026-06-04"
+    goal: "ITER-20260602d | Canvas Font/Routing/Compound/Overflow Fixes (FOB-58–62)"
+    velocity_ratio: 1.0
+    dominant_drift: none
+    footprint_accuracy: 100%
+    pip_candidates:
+      - "Compound label visibility requires padding-top approach (not text-margin-y negative)"
+      - "_parseCompoundParam (boolean) silently accepted by legacy toggle; migrate before dropping old toggle"
+      - "window._compoundLevel exposure requires Object.defineProperty — module let not accessible via page.evaluate"

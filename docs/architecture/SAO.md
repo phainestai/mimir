@@ -907,6 +907,35 @@ The FOB web UI needs to display complex graph structures (workflows, activity de
 - ✅ Progressive enhancement
 - ✅ 14KB library (HTMX), very stable
 
+### Interactive Graph Views — Cytoscape.js
+
+**Decision**: For pages requiring fully interactive client-side graph exploration (pan, zoom, drag, click-to-inspect, multi-entity layout), **Cytoscape.js** is the approved library. It is loaded via CDN, requires no build step, and is authored in plain browser JavaScript — consistent with the existing HTMX + Graphviz architecture. Graphviz remains the choice for static, server-rendered diagrams embedded within standard Django template pages.
+
+**Rationale**: The **Content Browser** feature requires a fully interactive node-based graph of an entire playbook's entity graph. Cytoscape.js covers 100% of those requirements (pan/zoom/drag, click events, CSS-selector-style node styling, hierarchical layout via the `cytoscape-dagre` plugin, 300+ node performance via Canvas rendering) with a single CDN script and no framework or build toolchain.
+
+**Rules for Cytoscape.js views**:
+
+1. **Dedicated route family only** — Cytoscape.js is restricted to dedicated full-page route families (e.g., `/browser/`, `/browser/<pk>/`). It must NOT be embedded in existing Django template pages or HTMX-driven partial responses.
+
+2. **CDN delivery, no build step** — Cytoscape.js and layout plugins load via CDN `<script>` tags, pinned to specific versions with [SRI integrity hashes](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity). No `package.json` at repo root; no webpack/vite/babel. View JS files (`static/js/<view>.js`) are plain browser JavaScript using the Cytoscape imperative API. Each view template must include a bootstrap guard (inline `<script>` checking `window.cytoscape`) that renders a static "scripts failed to load" fallback if any CDN resource is unavailable.
+
+3. **Data via Django-owned JSON endpoints** — the view script fetches data exclusively from Django-managed endpoints under `/api/`. Feature-specific endpoints are permitted and must go through Django's auth/serialization layer. Scripts must not access the database, bypass DRF serializers, or construct requests outside the `/api/` prefix.
+
+4. **No coupling to HTMX globals** — view scripts must not read or write HTMX client-side globals (`htmx.*`). Standard Django auth via HTTP session cookies is expected and relied upon. Write-capable views must read the CSRF token from a `data-csrftoken` attribute bootstrapped by the Django view — never fetched client-side.
+
+5. **URL as source of truth for shareable state** — any state that affects what the user sees and should survive a page reload, share, or back/forward navigation must live in the URL (path or query params). Ephemeral UI state (hover, open panel) may live in JS module scope.
+
+6. **Prefer HTMX over iframes for embedded content** — when a Cytoscape.js view needs to display first-party Django content inline (e.g., a detail panel), load it via `htmx.ajax()` into a `<div>` rather than an `<iframe>`. This avoids `X-Frame-Options` configuration, handles session expiry natively via Django's redirect, and follows the existing codebase pattern (see `#activity-detail-panel`). If an `<iframe>` is genuinely required, the feature spec must list which views override `X-Frame-Options` to `SAMEORIGIN` and include an integration test asserting the header value.
+
+7. **Testable contract** — the Django view rendering the page and all `/api/` endpoints feeding it are tested with standard Django integration tests. User interactions are tested via Playwright E2E tests in `tests/e2e/`.
+
+8. **Declared performance envelope** — each feature spec must state its supported node/edge count and expected load-time budget. This is the implementer's trigger for pagination or node virtualisation.
+
+**Current Cytoscape.js views**:
+| Feature | Route family | CDN libraries | API endpoint | Performance envelope |
+|---------|-------------|--------------|-------------|---------------------|
+| Content Browser | `/browser/`, `/browser/<pk>/` | cytoscape, cytoscape-dagre, cytoscape-navigator | `/api/playbooks/<pk>/graph/` | Declared in `docs/features/act-16-content-browser/content-browser.feature` |
+
 ### Architecture Pattern
 
 ```
