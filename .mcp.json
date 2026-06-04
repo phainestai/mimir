@@ -1,26 +1,23 @@
 {
   "mcpServers": {
     "mimir": {
-      "command": "/Users/strek/MimirTestEvn/latestMimir/mimir/.venv/bin/python3",
+      "command": "/Users/denispetelin/GitHub/mimir/.venv/bin/python",
       "args": [
-        "/Users/strek/MimirTestEvn/latestMimir/mimir/manage.py",
+        "/Users/denispetelin/GitHub/mimir/manage.py",
         "mcp_server",
         "--user=admin"
-      ],
-      "env": {
-        "PYTHONPATH": "/Users/strek/MimirTestEvn/latestMimir/mimir"
-      }
+      ]
     },
     "mimir-facade": {
-      "command": "/Users/strek/MimirTestEvn/latestMimir/mimir/.venv/bin/python3",
+      "command": "/Users/denispetelin/GitHub/mimir/.venv/bin/python",
       "args": [
         "-m",
         "mcp_integration.facade.server",
-        "--server=http://localhost:8000",
-        "--token=a8d73ad9a2cfde096c80cbc16b8ccc0607fe26c9"
+        "--server=http://localhost:8000"
       ],
       "env": {
-        "PYTHONPATH": "/Users/strek/MimirTestEvn/latestMimir/mimir"
+        "MIMIR_TOKEN": "${MIMIR_TOKEN}",
+        "PYTHONPATH": "/Users/denispetelin/GitHub/mimir"
       }
     }
   }
