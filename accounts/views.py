@@ -858,22 +858,10 @@ def password_reset_request(request):
             'timestamp': str(__import__('datetime').datetime.now())
         }
         
-        # Send email (console backend - will print to console)
-        from django.core.mail import send_mail
-        from django.urls import reverse
-        
         reset_url = request.build_absolute_uri(
-            reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+            reverse("password_reset_confirm", kwargs={"uidb64": uid, "token": token})
         )
-        
-        send_mail(
-            subject='Password Reset - Mimir',
-            message=f'Click the link to reset your password:\n\n{reset_url}\n\nIf you did not request this, please ignore this email.',
-            from_email='noreply@mimir.local',
-            recipient_list=[email],
-            fail_silently=False,
-        )
-        
+        EmailService.send_password_reset_email(user, reset_url)
         logger.info(f"Password reset email sent to {email}")
     except User.DoesNotExist:
         # Security: Don't reveal if email exists

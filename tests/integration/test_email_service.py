@@ -73,10 +73,18 @@ def test_send_welcome_email_uses_email_backend(mail_user):
 @pytest.mark.django_db
 @override_settings(EMAIL_BACKEND=_LOCMEM)
 def test_send_password_reset_email_uses_email_backend(mail_user):
-    EmailService.send_password_reset_email(mail_user, "reset-token")
+    reset_url = "http://localhost:8000/auth/user/password-reset-confirm/abc/token/"
+    EmailService.send_password_reset_email(mail_user, reset_url)
     assert len(mail.outbox) == 1
     assert "Password Reset" in mail.outbox[0].subject
-    assert "reset-token" in mail.outbox[0].body
+    assert reset_url in mail.outbox[0].body
+
+
+@pytest.mark.django_db
+@override_settings(EMAIL_BACKEND=_LOCMEM, DEFAULT_FROM_EMAIL="noreply@test.local")
+def test_send_password_reset_email_uses_default_from_email(mail_user):
+    EmailService.send_password_reset_email(mail_user, "http://localhost/reset/")
+    assert mail.outbox[0].from_email == "noreply@test.local"
 
 
 @pytest.mark.django_db
