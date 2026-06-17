@@ -141,8 +141,12 @@ Maintainers publishing from CI configure GitHub Actions secrets **`DOCKERHUB_USE
 ### Prerequisites
 
 - Python 3.11 or higher
+- **Graphviz** (system `dot` binary — required for workflow activity diagrams; the `graphviz` pip package alone is not enough)
+  - macOS: `brew install graphviz`
+  - Debian/Ubuntu: `sudo apt-get install graphviz`
 - IDE with MCP support (Claude Desktop, Cursor, Windsurf, etc.)
 - Access credentials for HOMEBASE (optional, for syncing)
+- **Playwright browsers** (optional — only for E2E tests): after `pip install`, run `playwright install`
 
 ### Setup Steps
 
@@ -152,25 +156,32 @@ Maintainers publishing from CI configure GitHub Actions secrets **`DOCKERHUB_USE
    cd mimir
    ```
 
-2. **Create virtual environment**
+2. **Configure environment**
+   ```bash
+   cp .env.example .env   # edit values as needed (email, API keys, etc.)
+   ```
+
+   Without a local `.env`, dev defaults may differ from `.env.example` (e.g. email via AWS SES instead of the console backend).
+
+3. **Create virtual environment**
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
-3. **Install dependencies**
+4. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Initialize database**
+5. **Initialize database**
    ```bash
    python manage.py migrate
    ```
    
    **Note:** The default database (`mimir.db`) includes the **FeatureFactory** playbook, which was used to build Mimir itself. This playbook provides a complete feature development workflow with 8 activities covering planning, implementation, testing, and finalization.
 
-5. **Ensure local superuser**
+6. **Ensure local superuser**
 
    Create or restore the conventional dev superuser used by MCP/facade tests:
 
@@ -191,11 +202,17 @@ Maintainers publishing from CI configure GitHub Actions secrets **`DOCKERHUB_USE
    - Email (optional, for password reset)
    - Password (minimum 8 characters)
 
-6. **Run tests**
+7. **Run tests**
    
    Run unit and integration tests:
    ```bash
    pytest tests/
+   ```
+
+   E2E tests (optional) require Playwright browsers installed first:
+   ```bash
+   playwright install
+   pytest tests/e2e/ -v
    ```
    
    > **Note**: BDD feature files in `docs/features/act-*/` serve as comprehensive UI specifications (46 files covering Acts 0-15). Step definitions will be implemented during development.

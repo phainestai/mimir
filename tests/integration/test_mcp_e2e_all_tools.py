@@ -4,9 +4,8 @@ E2E acceptance test: all 53 MCP tools via JSON-RPC subprocess.
 Starts the real MCP server as a subprocess and exercises every registered
 tool via raw JSON-RPC ``tools/call`` messages in a single coherent scenario.
 
-Prerequisites:
-    - ``admin`` user must exist in the configured database (mimir.db)
-    - Run: python manage.py createsuperuser --username admin (if not exists)
+Uses a module-scoped temporary SQLite database (``MIMIR_DB_PATH``) so this
+suite never reads or writes committed ``mimir.db``.
 
 Coverage (53 tools):
     Playbooks   (5): create, list, get, update, delete
@@ -35,14 +34,79 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Isolated DB helpers (MCP subprocess + cleanup share MIMIR_DB_PATH)
+# ---------------------------------------------------------------------------
+
+def _mcp_dev_env(project_root: Path, db_path: Path) -> dict:
+    """Build subprocess env for dev settings against a specific SQLite file."""
+    return {
+        "DJANGO_SETTINGS_MODULE": "mimir.settings",
+        "PYTHONPATH": str(project_root),
+        "MIMIR_MCP_MODE": "1",
+        "MIMIR_DB_PATH": str(db_path),
+        "PATH": os.environ.get("PATH", ""),
+    }
+
+
+def _run_manage_command(project_root: Path, db_path: Path, *args: str) -> None:
+    """Run a Django management command against the isolated E2E database."""
+    result = subprocess.run(
+        [
+            str(project_root / ".venv" / "bin" / "python"),
+            str(project_root / "manage.py"),
+            *args,
+        ],
+        env=_mcp_dev_env(project_root, db_path),
+        cwd=str(project_root),
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"manage.py {' '.join(args)} failed (exit {result.returncode}): "
+            f"{result.stderr or result.stdout}"
+        )
+
+
+def _provision_e2e_database(project_root: Path, db_path: Path) -> None:
+    """Migrate and seed admin user on a fresh temp SQLite file."""
+    logger.info("Provisioning isolated E2E MCP database at %s", db_path)
+    _run_manage_command(project_root, db_path, "migrate", "--noinput")
+    _run_manage_command(project_root, db_path, "create_default_admin")
+
+
+def _delete_playbook_via_subprocess(
+    project_root: Path, db_path: Path, playbook_id: int
+) -> None:
+    """Test cleanup only — bypasses MCP released-playbook delete restriction."""
+    logger.info("Teardown: deleting playbook id=%s via PlaybookService subprocess", playbook_id)
+    _run_manage_command(
+        project_root,
+        db_path,
+        "shell",
+        "-c",
+        (
+            "from methodology.services.playbook_service import PlaybookService; "
+            f"PlaybookService.delete_playbook({playbook_id})"
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Subprocess MCP server helper (self-contained so no import from other tests)
 # ---------------------------------------------------------------------------
 
 class MCPServer:
     """Manage an MCP server subprocess for JSON-RPC testing."""
 
-    def __init__(self, project_root: Path, username: str = "admin"):
+    def __init__(
+        self,
+        project_root: Path,
+        db_path: Path,
+        username: str = "admin",
+    ):
         self.project_root = project_root
+        self.db_path = db_path
         self.username = username
         self.process = None
         self._msg_id = 0
@@ -58,11 +122,7 @@ class MCPServer:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=str(self.project_root),
-            env={
-                "DJANGO_SETTINGS_MODULE": "mimir.settings",
-                "PYTHONPATH": str(self.project_root),
-                "PATH": os.environ.get("PATH", ""),
-            },
+            env=_mcp_dev_env(self.project_root, self.db_path),
             text=True,
             bufsize=0,
         )
@@ -152,14 +212,34 @@ def project_root():
     return Path(__file__).parent.parent.parent
 
 
+@pytest.fixture(autouse=True)
+def enable_db_access_for_all_tests():
+    """Override tests/conftest autouse db — this module uses isolated SQLite via MCP only."""
+    yield
+
+
 @pytest.fixture(scope="module")
-def mcp(project_root):
+def e2e_isolated_db(project_root, tmp_path_factory):
+    """Fresh SQLite file for this module — never touches committed mimir.db."""
+    db_dir = tmp_path_factory.mktemp("mimir_e2e")
+    db_path = db_dir / "mimir_e2e.db"
+    _provision_e2e_database(project_root, db_path)
+    yield db_path
+    if db_path.exists():
+        db_path.unlink()
+
+
+@pytest.fixture(scope="module")
+def mcp(project_root, e2e_isolated_db):
     """Module-scoped MCP server: start once, share across all tests."""
-    server = MCPServer(project_root)
+    server = MCPServer(project_root, e2e_isolated_db)
     server.start()
     server.initialize()
     yield server
     server.stop()
+    pip_pb_id = TestMCPAllTools.pip_pb_id
+    if pip_pb_id:
+        _delete_playbook_via_subprocess(project_root, e2e_isolated_db, pip_pb_id)
 
 
 @pytest.fixture(scope="module")
@@ -655,9 +735,9 @@ class TestMCPAllTools:
         """
         Test create_pip_from_protocol.
 
-        Requires a released playbook. We create one, release it,
-        export/import its workflow to get a protocol file, then create the PIP.
-        Note: released playbook cannot be deleted via MCP (by design).
+        Creates a separate playbook/workflow, exports/imports to build a
+        protocol file, then calls create_pip_from_protocol. pip_pb_id is
+        removed in the mcp fixture finalizer via PlaybookService subprocess.
         """
         # Create and configure a small playbook for PIP testing
         pb = mcp.call("create_playbook", {
