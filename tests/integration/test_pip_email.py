@@ -292,6 +292,7 @@ _skip_live = pytest.mark.skipif(
 
 
 @_skip_live
+@pytest.mark.live_ses
 @pytest.mark.django_db(transaction=True)
 def test_live_ses_pip_decision_email_sends(
     submitter, admin_user, playbook_with_activity, settings

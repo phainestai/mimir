@@ -3,8 +3,10 @@
 Tests from docs/features/act-0-auth/authentication.feature
 
 NO MOCKING per .windsurf/rules/do-not-mock-in-integration-tests.md
+Uses locmem email backend only — never sends via SES.
 """
 import pytest
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client
 from django.urls import reverse
@@ -17,12 +19,12 @@ class TestPasswordReset:
     
     def test_password_reset_request_sends_email(self):
         """
-        Test password reset request sends email to console.
+        Test password reset request captures email in locmem outbox.
         
         Scenario: AUTH-04 Password reset
         Given: Maria has an account
         When: she requests password reset
-        Then: email is sent (to console per plan)
+        Then: email is captured in locmem outbox (no SES)
         """
         # Arrange
         client = Client()
@@ -43,9 +45,11 @@ class TestPasswordReset:
         content = response.content.decode('utf-8')
         assert 'sent' in content.lower() or 'email' in content.lower()
         
-        # Assert - Email should be sent (console backend)
+        # Assert - Email captured in locmem (never SES)
+        assert "django_ses" not in settings.EMAIL_BACKEND
         assert len(mail.outbox) == 1
         assert mail.outbox[0].to == ['maria@example.com']
+        assert mail.outbox[0].from_email == settings.DEFAULT_FROM_EMAIL
         assert 'Password Reset' in mail.outbox[0].subject
         assert 'password-reset-confirm' in mail.outbox[0].body
     

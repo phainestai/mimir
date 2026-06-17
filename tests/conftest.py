@@ -25,6 +25,17 @@ def enable_db_access_for_all_tests(db):
     pass
 
 
+@pytest.fixture(autouse=True)
+def block_real_email_sends(request, settings):
+    """Force locmem mail backend for every test except @pytest.mark.live_ses.
+
+    Prevents accidental SES sends when pytest runs with prod-like env vars.
+    """
+    if request.node.get_closest_marker("live_ses"):
+        return
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+
 @pytest.fixture
 def create_test_phases(db):
     """

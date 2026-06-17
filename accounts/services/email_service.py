@@ -90,17 +90,15 @@ The Mimir Team
         EmailService.send_text_email(subject, body, [user.email])
 
     @staticmethod
-    def send_password_reset_email(user: AbstractBaseUser, reset_token: str) -> None:
-        """Send password reset email with token link.
+    def send_password_reset_email(user: AbstractBaseUser, reset_url: str) -> None:
+        """Send password reset email with confirm link.
 
         :param user: Django user.
-        :param reset_token: Opaque reset token from Django's auth framework.
+        :param reset_url: Absolute URL to ``password_reset_confirm`` view.
         :raises Exception: If delivery fails.
         """
-        base_url = EmailService.get_site_base_url()
-        reset_url = f"{base_url}/reset-password?token={reset_token}"
         name = user.first_name or user.username
-        subject = "Password Reset Request"
+        subject = "Password Reset - Mimir"
         body = f"""Hello {name},
 
 You requested a password reset for your Mimir account.
@@ -108,9 +106,7 @@ You requested a password reset for your Mimir account.
 Reset your password at:
 {reset_url}
 
-This link will expire in 24 hours.
-
-If you didn't request this, please ignore this email.
+If you did not request this, please ignore this email.
 
 Best regards,
 The Mimir Team
