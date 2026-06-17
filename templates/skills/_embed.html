@@ -1,0 +1,47 @@
+{% load markdown_filters %}
+<div class="card" data-testid="skill-embed">
+  <div class="card-header">
+    <h5 class="mb-0">
+      <i class="fa-solid fa-hand-holding-magic me-1"></i>
+      <span data-testid="embed-entity-name">{{ skill.title }}</span>
+    </h5>
+    <div class="mt-1">
+      {% if skill.capability_domain %}
+      <span class="badge bg-info text-dark me-1">{{ skill.capability_domain }}</span>
+      {% endif %}
+      {% if skill.technology_stack %}
+      <span class="badge bg-success me-1">{{ skill.technology_stack }}</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    {% if skill.content %}
+    <div class="markdown-content mb-3" data-testid="embed-content">
+      {{ skill.content|markdown }}
+    </div>
+    {% else %}
+    <p class="text-muted mb-3">No content yet.</p>
+    {% endif %}
+
+    {% if activities %}
+    <hr class="my-2">
+    <h6 class="text-muted small text-uppercase mb-1">Used in Activities
+      <span class="badge bg-secondary ms-1">{{ activities|length }}</span>
+    </h6>
+    <ul class="list-unstyled small mb-0">
+      {% for act in activities %}
+      <li>
+        <i class="fa-solid fa-list-check text-primary me-1"></i>
+        <a href="#" data-navigate-canvas="activity:{{ act.pk }}" class="text-decoration-none">{{ act.name }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+<style>
+.markdown-content { line-height: 1.6; font-size: 0.9rem; }
+.markdown-content pre { background: #f8f9fa; padding: 0.75rem; border-radius: 4px; }
+.markdown-content code { background: #f8f9fa; padding: 0.1em 0.3em; border-radius: 3px; }
+.markdown-content pre code { background: none; padding: 0; }
+</style>

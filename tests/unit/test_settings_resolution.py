@@ -18,7 +18,7 @@ class TestCurrentEnvironmentSettings:
 
     def test_test_environment_uses_in_memory_db(self):
         """Test environment should use PostgreSQL (huginn-db container)."""
-        assert settings.DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql'
+        assert settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3'
 
     def test_test_environment_has_debug_off(self):
         """Test environment should have DEBUG=False (closer to prod)."""

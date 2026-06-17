@@ -1,0 +1,28 @@
+<div class="card" data-testid="playbook-embed">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">
+      <i class="fa-solid fa-book-sparkles me-1"></i>
+      <span data-testid="embed-entity-name">{{ playbook.name }}</span>
+    </h5>
+    <span class="badge bg-{{ playbook.get_status_badge_color }}" data-testid="status-badge">
+      {{ playbook.get_status_display }}
+    </span>
+  </div>
+  <div class="card-body">
+    {% if playbook.description %}
+    <p class="card-text text-muted mb-3">{{ playbook.description }}</p>
+    {% endif %}
+    <dl class="row mb-0 small">
+      <dt class="col-5">Category</dt>
+      <dd class="col-7">{{ playbook.category|default:"—" }}</dd>
+      <dt class="col-5">Author</dt>
+      <dd class="col-7">{{ playbook.author.username }}</dd>
+      <dt class="col-5">Version</dt>
+      <dd class="col-7">v{{ playbook.version }}</dd>
+      <dt class="col-5">Workflows</dt>
+      <dd class="col-7">{{ quick_stats.workflow_count|default:"0" }}</dd>
+      <dt class="col-5">Activities</dt>
+      <dd class="col-7">{{ quick_stats.activity_count|default:"0" }}</dd>
+    </dl>
+  </div>
+</div>

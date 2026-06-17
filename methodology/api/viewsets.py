@@ -249,6 +249,214 @@ class PlaybookViewSet(viewsets.ModelViewSet):
             'count': len(groups)
         })
 
+    @action(detail=True, methods=['get'], url_path='graph')
+    def graph(self, request, pk=None):
+        """
+        Return Cytoscape-ready graph data for a playbook.
+
+        Emits all entities (workflows, activities, skills, agents, artifacts, rules)
+        as typed nodes with namespaced IDs, plus typed edges and a phases array.
+
+        Access rules mirror playbook detail: same permission check via get_object().
+
+        Returns:
+            JSON: {
+                nodes: [{id, type, label, entity_pk, detail_url, embed_url, meta}],
+                edges: [{source, target, relationship}],
+                phases: [{id, name, colour}]
+            }
+        """
+        logger.info(f'API: graph called - playbook_id={pk}')
+        playbook = self.get_object()
+        data = _build_playbook_graph(playbook, request.user)
+        logger.info(
+            f'API: graph built - playbook_id={pk} nodes={len(data["nodes"])} edges={len(data["edges"])}'
+        )
+        return Response(data)
+
+
+# ---------------------------------------------------------------------------
+# Graph builder helper
+# ---------------------------------------------------------------------------
+
+_PHASE_PALETTE = ['#0d6efd', '#198754', '#ffc107', '#fd7e14', '#0dcaf0', '#6f42c1', '#dc3545', '#6c757d']
+
+
+def _phase_colour(phase_pk: int) -> str:
+    """Return a deterministic colour from the palette for the given phase PK."""
+    return _PHASE_PALETTE[(phase_pk - 1) % len(_PHASE_PALETTE)]
+
+
+def _build_playbook_graph(playbook, user) -> dict:
+    """
+    Build Cytoscape-ready graph data for a playbook.
+
+    Args:
+        playbook: Playbook instance
+        user: requesting User (for permission-aware service calls)
+
+    Returns:
+        dict with keys: nodes, edges, phases
+
+    Example return:
+        {
+            'nodes': [{'id': 'workflow:3', 'type': 'workflow', ...}],
+            'edges': [{'source': 'workflow:3', 'target': 'activity:7', 'relationship': 'contains'}],
+            'phases': [{'id': 2, 'name': 'Construction', 'colour': '#0d6efd'}]
+        }
+    """
+    from django.urls import reverse
+    from django.db.models import Prefetch
+    from methodology.models import Activity as ActivityModel, Skill, Rule, ArtifactInput, Artifact
+    from methodology.services.workflow_service import WorkflowService
+    from methodology.services.phase_service import PhaseService
+
+    nodes = []
+    emitted_ids = set()
+    pending_edges = []
+
+    def _emit_node(node_id, node_type, label, entity_pk, detail_url, embed_url, meta=None):
+        if node_id in emitted_ids:
+            return
+        emitted_ids.add(node_id)
+        nodes.append({
+            'id': node_id,
+            'type': node_type,
+            'label': label,
+            'entity_pk': entity_pk,
+            'detail_url': detail_url,
+            'embed_url': embed_url,
+            'meta': meta or {},
+        })
+
+    # --- Phases ---
+    try:
+        phase_qs = PhaseService.list_phases(playbook.pk, user)
+    except Exception:
+        phase_qs = []
+
+    phases_data = []
+    phase_colour_map = {}
+    for phase in phase_qs:
+        colour = _phase_colour(phase.pk)
+        phase_colour_map[phase.pk] = colour
+        phases_data.append({'id': phase.pk, 'name': phase.name, 'colour': colour})
+
+    # --- Workflows ---
+    workflows = WorkflowService.get_workflows_for_playbook(playbook.pk)
+    for wf in workflows:
+        wf_id = f'workflow:{wf.pk}'
+        detail_url = reverse('workflow_detail', kwargs={'playbook_pk': playbook.pk, 'pk': wf.pk})
+        _emit_node(wf_id, 'workflow', wf.name, wf.pk, detail_url, detail_url + '?embed=1',
+                   {'abbreviation': wf.abbreviation or ''})
+
+    # --- Activities (single efficient query for all workflows) ---
+    activities_qs = ActivityModel.objects.filter(
+        workflow__playbook=playbook
+    ).select_related(
+        'workflow', 'agent', 'phase', 'predecessor'
+    ).prefetch_related(
+        Prefetch('skills', queryset=Skill.objects.filter(playbook=playbook)),
+        Prefetch('rules', queryset=Rule.objects.filter(playbook=playbook)),
+        Prefetch(
+            'input_artifacts',
+            queryset=ArtifactInput.objects.select_related('artifact').filter(
+                artifact__playbook=playbook
+            ),
+        ),
+    ).order_by('workflow__order', 'order', 'name')
+
+    for act in activities_qs:
+        act_id = f'activity:{act.pk}'
+        wf_id = f'workflow:{act.workflow_id}'
+        detail_url = reverse('activity_detail', kwargs={
+            'playbook_pk': playbook.pk,
+            'workflow_pk': act.workflow_id,
+            'activity_pk': act.pk,
+        })
+        meta = {}
+        if act.phase_id:
+            meta['phase_id'] = act.phase_id
+            meta['phase_name'] = act.phase.name if act.phase else ''
+            meta['phase_colour'] = phase_colour_map.get(act.phase_id, '#6c757d')
+        meta['display_code'] = act.reference_label or ''
+        meta['order'] = act.order
+        _emit_node(act_id, 'activity', act.name, act.pk, detail_url, detail_url + '?embed=1', meta)
+        pending_edges.append((wf_id, act_id, 'contains'))
+
+        if act.predecessor_id:
+            pending_edges.append((f'activity:{act.predecessor_id}', act_id, 'predecessor'))
+
+        if act.agent_id and act.agent and act.agent.playbook_id == playbook.pk:
+            ag_id = f'agent:{act.agent_id}:activity:{act.pk}'
+            ag_detail = reverse('agent_detail', kwargs={'pk': act.agent_id})
+            _emit_node(ag_id, 'agent', act.agent.name, act.agent_id, ag_detail, ag_detail + '?embed=1')
+            pending_edges.append((act_id, ag_id, 'assigned_agent'))
+
+        for skill in act.skills.all():
+            sk_id = f'skill:{skill.pk}:activity:{act.pk}'
+            sk_detail = reverse('skill_detail', kwargs={'playbook_pk': playbook.pk, 'skill_pk': skill.pk})
+            _emit_node(sk_id, 'skill', skill.title, skill.pk, sk_detail, sk_detail + '?embed=1')
+            pending_edges.append((act_id, sk_id, 'uses_skill'))
+
+        for rule in act.rules.all():
+            r_id = f'rule:{rule.pk}:activity:{act.pk}'
+            r_detail = reverse('rule_detail', kwargs={'playbook_pk': playbook.pk, 'rule_pk': rule.pk})
+            _emit_node(r_id, 'rule', rule.title, rule.pk, r_detail, r_detail + '?embed=1')
+            pending_edges.append((act_id, r_id, 'governed_by_rule'))
+
+        for ai in act.input_artifacts.all():
+            art = ai.artifact
+            art_id = f'artifact:{art.pk}:activity:{act.pk}'
+            art_detail = reverse('artifact_detail', kwargs={'pk': art.pk})
+            _emit_node(art_id, 'artifact', art.name, art.pk, art_detail, art_detail + '?embed=1')
+            pending_edges.append((art_id, act_id, 'consumes'))
+
+    # --- Sequence edges: consecutive activities per workflow, ordered by `order` ---
+    from collections import defaultdict
+    workflow_act_map = defaultdict(list)
+    for act in activities_qs:
+        workflow_act_map[act.workflow_id].append(act)
+    for wf_acts in workflow_act_map.values():
+        sorted_acts = sorted(wf_acts, key=lambda a: (a.order, a.pk))
+        for i in range(len(sorted_acts) - 1):
+            pending_edges.append((
+                f'activity:{sorted_acts[i].pk}',
+                f'activity:{sorted_acts[i + 1].pk}',
+                'sequence',
+            ))
+
+    # --- Artifacts (produced_by — catch artifacts not yet added via input_artifacts) ---
+    artifacts_qs = Artifact.objects.filter(playbook=playbook).select_related('produced_by')
+    for art in artifacts_qs:
+        if art.produced_by_id:
+            art_id = f'artifact:{art.pk}:activity:{art.produced_by_id}'
+            art_detail = reverse('artifact_detail', kwargs={'pk': art.pk})
+            _emit_node(art_id, 'artifact', art.name, art.pk, art_detail, art_detail + '?embed=1')
+            pending_edges.append((f'activity:{art.produced_by_id}', art_id, 'produces'))
+
+    # --- Emit edges (all nodes now known; skip dangling endpoints) ---
+    seen_edge_keys = set()
+    edges = []
+    for source_id, target_id, relationship in pending_edges:
+        if source_id not in emitted_ids or target_id not in emitted_ids:
+            logger.debug(f'Graph: skipping dangling edge {source_id} → {target_id} ({relationship})')
+            continue
+        edge_key = (source_id, target_id, relationship)
+        if edge_key in seen_edge_keys:
+            logger.warning(f'Graph: duplicate edge {source_id} → {target_id} ({relationship}); skipping')
+            continue
+        seen_edge_keys.add(edge_key)
+        edges.append({'source': source_id, 'target': target_id, 'relationship': relationship})
+
+    return {
+        'nodes': nodes,
+        'edges': edges,
+        'phases': phases_data,
+        'playbook_name': playbook.name,
+        'playbook_status': playbook.status,
+    }
+
 
 class WorkflowViewSet(viewsets.ModelViewSet):
     """

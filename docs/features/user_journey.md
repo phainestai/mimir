@@ -2820,9 +2820,44 @@ Maria searches for non-existent team:
 
 ---
 
+### Act 15: Content Browser — Visual Playbook Graph Explorer
+
+**Goal**: Maria wants to comprehend an entire playbook's structure at a glance — all entities and their relationships rendered as an interactive node-based graph.
+
+**Entry Point**: "Content Browser" — second item in the top navigation bar (after Home) → `/browser/`
+
+**Empty State (`/browser/`)**:
+- Canvas prompts: "Select a playbook to explore" with a [Select Playbook] button
+- Left panel shows playbook picker on demand
+
+**Graph View (`/browser/<pk>/`)**:
+- Cytoscape.js canvas (CDN-loaded, data from `/api/playbooks/<pk>/graph/`)
+- Nodes for all entity types: Workflows (blue), Activities (green), Artifacts (amber), Skills (orange), Agents (teal), Rules (grey)
+- Edges for all relationships: contains, produces/consumes, uses skill, assigned to agent, governed by rule, predecessor dependency
+- Default layout: hierarchical top-down (Workflows → Activities → Resources) via cytoscape-dagre
+- Pan/zoom/fit controls
+- Phase filter (activity colour chips; filter pills)
+- Entity type filter toggles (show/hide by type)
+- Name search (highlight matching, dim others)
+
+**Left Panel (collapsible)**:
+- Active playbook name + status badge + [Change Playbook] button
+- Structural tree: Workflows → Activities (clicks pan canvas to node)
+- Resource tree: Artifacts / Skills / Agents / Rules grouped by type for selected Workflow
+
+**Detail Panel (click any node or resource tree item)**:
+- Slides in from the right; loads entity embed view (`?embed=1`) via HTMX into panel div
+- [Open in new tab] and [Open full] buttons; [×] to close
+
+**Access control**: same visibility rules as playbook detail page (`_playbook_readable_or_404`); public non-draft = any authenticated user
+
+**Feature file**: `docs/features/act-16-content-browser/content-browser.feature`
+
+---
+
 ## Journey Complete
 
-Maria's journey through Acts 0-14 demonstrates the complete Mimir MVP experience:
+Maria's journey through Acts 0-15 demonstrates the complete Mimir MVP experience:
 
 **Core CRUDLF Entities (Acts 2-8):**
 - ✅ **Playbooks**: Top-level methodologies with versioning and team publishing
@@ -2840,6 +2875,8 @@ Maria's journey through Acts 0-14 demonstrates the complete Mimir MVP experience
 - ✅ **MCP Integration**: AI-assisted methodology execution via FastMCP → REST API (BASE_URL + TOKEN)
 - ✅ **Settings**: Account, token management, FastMCP config, notifications
 - ✅ **Error Recovery**: Graceful handling of failure scenarios
+
+- ✅ **Content Browser**: Interactive node-based graph explorer (Cytoscape.js, CDN) for visualizing the full entity graph of any playbook
 
 **Key Achievements:**
 - All 7 core entities have complete CRUDLF with LIST+FIND entry points

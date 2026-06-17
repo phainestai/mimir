@@ -1,0 +1,33 @@
+<div class="card" data-testid="workflow-embed">
+  <div class="card-header">
+    <h5 class="mb-0">
+      <i class="fa-solid fa-diagram-project me-1"></i>
+      <span data-testid="embed-entity-name">{{ workflow.name }}</span>
+    </h5>
+    <small class="text-muted">
+      <a href="{% url 'playbook_detail' pk=playbook.pk %}">{{ playbook.name }}</a>
+    </small>
+  </div>
+  <div class="card-body">
+    {% if workflow.description %}
+    <p class="card-text text-muted mb-3">{{ workflow.description }}</p>
+    {% endif %}
+    <dl class="row mb-0 small">
+      <dt class="col-5">Activities</dt>
+      <dd class="col-7">{{ activity_count }}</dd>
+    </dl>
+    {% if has_activities %}
+    <hr class="my-3">
+    <h6 class="text-muted small text-uppercase mb-2">Activities</h6>
+    <ul class="list-group list-group-flush small">
+      {% for act in activities %}
+      <li class="list-group-item px-0 py-1">
+        <span class="badge bg-secondary me-1">{{ act.order }}</span>
+        <a href="#" data-navigate-canvas="activity:{{ act.pk }}" class="text-decoration-none">{{ act.name }}</a>
+        {% if act.phase %}<span class="badge bg-info ms-1">{{ act.phase.name }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>

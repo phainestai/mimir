@@ -1,0 +1,167 @@
+# ITER-20260601c — Content Browser: per-activity nodes + left panel trees
+# Iteration 4 of act-16 Content Browser
+# Branch: iteration/20260531-content-browser-access (same branch, all work is additive)
+# GitHub Milestone: #4
+
+milestone: 4
+milestone_title: "ITER-20260601c | Content Browser: per-activity nodes + left panel trees"
+branch: iteration/20260531-content-browser-access
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PREREQUISITE STATE
+# ─────────────────────────────────────────────────────────────────────────────
+prerequisites:
+  completed_iterations:
+    - ITER-20260531:  "S1 scaffold, S2 access control, S3 URL/history management"
+    - ITER-20260601:  "S4 graph API, S5 Cytoscape.js rendering"
+    - ITER-20260601b: "S6a left panel chrome/picker, S6b embed mode, S7 detail panel"
+  key_facts:
+    - "Resource node IDs currently global: skill:7, agent:5, rule:9, artifact:4 (S4)"
+    - "window.cy exposed globally; node tap opens detail panel via fetch() (S7)"
+    - "_currentPanelNode state stored on open; cleared on close (S7)"
+    - "browser-structure-tree and browser-resource-tree containers already in template (S6a)"
+    - "Per-activity node format specced in FOB-13e and _implementation_notes.md"
+    - "Left panel collapse toggle already works (S6a); expand icon visible at x≈10px (S6a)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIOS
+# ─────────────────────────────────────────────────────────────────────────────
+scenarios:
+
+  - id: S8
+    issue: 9
+    title: "Per-activity resource nodes: refactor graph API node IDs (FOB-13e)"
+    feature_refs: [FOB-13e]
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 60
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/integration/test_graph_api.py -x"
+      pass_criteria: "all integration tests pass with new per-activity resource node IDs"
+    scope:
+      server_side:
+        - file: methodology/api/viewsets.py
+          changes:
+            - "_build_playbook_graph: pass act.pk to _emit_node calls for skill/agent/rule/artifact"
+            - "_emit_node: accept optional activity_pk; when provided, id = '<type>:<entity_pk>:activity:<act_pk>'"
+            - "Structural nodes (workflow, activity, playbook) remain unchanged: '<type>:<pk>'"
+            - "Resource nodes must NOT be deduped globally — each activity gets its own copy"
+            - "Artifacts: scoped by producer activity (produced_by); consumer edges via ArtifactInput"
+        - file: tests/integration/test_graph_api.py
+          changes:
+            - "test_no_duplicate_node_ids: update — structural nodes still unique; resource nodes duplicate by design"
+            - "test_*_node_id assertions: update format from 'skill:<pk>' to 'skill:<pk>:activity:<pk>'"
+            - "Add test: same skill linked to two activities → two distinct resource nodes, two edges"
+            - "Keep .startswith('skill:') style checks where exact pk isn't the point"
+
+  - id: S9
+    issue: 10
+    title: "Structural tree: Workflow→Activity collapsible tree in left panel (FOB-24/25/26/27)"
+    feature_refs: [FOB-24, FOB-25, FOB-26, FOB-27]
+    parallel_group: B
+    depends_on: [S8]
+    time_budget_minutes: 90
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_structure_tree.py -x"
+      pass_criteria: "all E2E tests pass"
+    scope:
+      client_side:
+        - file: static/js/content-browser.js
+          changes:
+            - "_renderStructureTree(): called after _renderGraph; reads cy.nodes('[type=\"workflow\"],[type=\"activity\"]')"
+            - "Builds collapsible Workflow → Activity HTML into [data-testid='browser-structure-tree']"
+            - "Activity rows: phase colour chip (from node data.phase_colour) if phase set"
+            - "_highlightTreeNode(nodeId): adds active class; called from _openDetailPanel"
+            - "_clearTreeHighlight(): removes active class; called from _closeDetailPanel"
+            - "Tree row click: cy.animate pan+zoom to node; does NOT open detail panel (navigation only)"
+      test_file: tests/e2e/test_content_browser_structure_tree.py
+      test_cases:
+        - "tree renders Workflow and Activity rows after graph loads"
+        - "Activities are nested under their parent Workflow"
+        - "clicking workflow tree row pans canvas to that workflow node"
+        - "clicking activity tree row pans canvas to that activity node"
+        - "selecting a canvas node (via tap) highlights the matching tree row"
+        - "closing the detail panel clears the tree highlight"
+        - "activity with a phase shows a coloured chip in the tree row"
+
+  - id: S11
+    issue: 12
+    title: "Fix left panel expand button clipped when collapsed (FOB-20)"
+    feature_refs: [FOB-20]
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 30
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_left_panel.py -x"
+      pass_criteria: "all E2E tests pass; test_collapse_toggle_re_expands uses real button click (no page.evaluate workaround)"
+    scope:
+      server_side:
+        - file: templates/browser/browser_graph.html
+          changes:
+            - "Change #browser-left-panel to overflow: visible (button never clipped)"
+            - "Wrap panel contents in #browser-left-panel-content with overflow-y: auto; overflow-x: hidden; height: 100%"
+            - "Toggle button stays in panel but above the scrollable wrapper — visible at 0 width"
+      test_file: tests/e2e/test_content_browser_left_panel.py
+      test_cases:
+        - "test_collapse_toggle_re_expands: replace page.evaluate('_toggleLeftPanel()') with actual button click"
+
+  - id: S10
+    issue: 11
+    title: "Resource tree: grouped resources for selected Workflow in left panel (FOB-28/32)"
+    feature_refs: [FOB-28, FOB-32]
+    parallel_group: B
+    depends_on: [S8]
+    time_budget_minutes: 90
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_resource_tree.py -x"
+      pass_criteria: "all E2E tests pass"
+    scope:
+      client_side:
+        - file: static/js/content-browser.js
+          changes:
+            - "_renderResourceTree(nodeId): called from _openDetailPanel when node is workflow or activity"
+            - "Collects resource nodes from cy neighbourhood (activity node) or all activities in workflow"
+            - "Deduplicates by data.entity_pk; groups by type: Artifacts, Skills, Agents, Rules"
+            - "Renders grouped list into [data-testid='browser-resource-tree']"
+            - "Resource row click: calls _openDetailPanel with resource node data (uses embed_url)"
+            - "_clearResourceTree(): clears the tree; called from _closeDetailPanel"
+            - "FOB-32: clicking a resource in tree opens detail panel even if canvas node is filtered out"
+      test_file: tests/e2e/test_content_browser_resource_tree.py
+      test_cases:
+        - "resource tree hidden when no node selected"
+        - "selecting an activity shows its resources grouped by type"
+        - "selecting a workflow shows all resources from all its activities (deduplicated)"
+        - "clicking a resource row opens the detail panel with correct embed content"
+        - "resource tree clears when detail panel is closed"
+        - "resource row click opens panel even if that canvas node type is not visible (FOB-32)"
+
+  - id: S12
+    issue: 13
+    title: "ELK hierarchical layout with orthogonal edge routing"
+    feature_refs: []
+    parallel_group: A
+    depends_on: [S8]
+    time_budget_minutes: 45
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_graph.py -x"
+      pass_criteria: "all graph E2E tests pass with ELK layout"
+    scope:
+      server_side:
+        - file: templates/browser/browser_graph.html
+          changes:
+            - "Add cytoscape-elk@2.2.0 CDN script tag (bundles its own ELK worker)"
+        - file: static/js/content-browser.js
+          changes:
+            - "Replace dagre layout with ELK: algorithm=layered, direction=DOWN, edgeRouting=ORTHOGONAL"
+            - "Update fallback chain: ELK → dagre → breadthfirst"
+            - "Keep taxi curve-style on edges (ELK orthogonal routing acts at layout level; taxi handles visual rendering)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NEXT ITERATION PREVIEW
+# ─────────────────────────────────────────────────────────────────────────────
+next_iteration_preview:
+  title: "ITER-20260601d — Content Browser: filters and search"
+  scenarios:
+    - "S11: Entity type filter toolbar (FOB-11, FOB-03g)"
+    - "S12: Phase filter — canvas dim + structural tree filter (FOB-11b)"
+    - "S13: Node search — name match highlight (FOB-12)"

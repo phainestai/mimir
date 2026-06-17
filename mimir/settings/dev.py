@@ -79,6 +79,9 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": database_path,
+            "OPTIONS": {
+                "timeout": 20,  # busy-wait up to 20s on lock (helps concurrent live-server threads)
+            },
         }
     }
 

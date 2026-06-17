@@ -208,7 +208,8 @@ def artifact_detail(request, pk):
         "consumers": consumers,
         "can_edit": artifact.playbook.is_owned_by(request.user),
     }
-
+    if request.GET.get('embed') == '1':
+        return render(request, 'artifacts/_embed.html', context)
     logger.info(f"Artifact detail rendered for user {request.user.username}")
     return render(request, "artifacts/detail.html", context)
 

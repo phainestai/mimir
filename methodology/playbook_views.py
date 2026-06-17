@@ -333,6 +333,8 @@ def playbook_detail(request, pk):
         'phases': phases,
         'version_history': list_playbook_version_rows(playbook),
     }
+    if request.GET.get('embed') == '1':
+        return render(request, 'playbooks/_embed.html', context)
     return render(request, 'playbooks/detail.html', context)
 
 

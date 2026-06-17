@@ -378,9 +378,13 @@ def activity_detail(request, playbook_pk, workflow_pk, activity_pk):
         raise Http404()
 
     
-    # Get artifact inputs for this activity
+    # Get artifact inputs and outputs for this activity
     artifact_inputs = ArtifactService.get_activity_inputs(activity)
-    logger.info(f"Activity {activity_pk} has {artifact_inputs.count()} artifact inputs")
+    artifact_outputs = ArtifactService.get_artifacts_for_activity(activity)
+    logger.info(
+        f"Activity {activity_pk} has {artifact_inputs.count()} artifact inputs "
+        f"and {artifact_outputs.count()} artifact outputs"
+    )
 
     context = {
         'playbook': playbook,
@@ -393,9 +397,10 @@ def activity_detail(request, playbook_pk, workflow_pk, activity_pk):
             and playbook.is_released
         ),
         'artifact_inputs': artifact_inputs,
-
+        'artifact_outputs': artifact_outputs,
     }
-    
+    if request.GET.get('embed') == '1':
+        return render(request, 'activities/_embed.html', context)
     logger.info(
         "Activity detail rendered user=%s activity=%s can_edit=%s can_submit_pip=%s",
         request.user.username,

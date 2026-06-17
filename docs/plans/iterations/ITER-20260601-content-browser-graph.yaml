@@ -1,0 +1,176 @@
+iteration:
+  goal: "Implement Content Browser graph data layer and Cytoscape.js rendering —
+    REST API endpoint, serializer, graph fetch in JS, node/edge render with entity
+    colours and dagre layout, loading/error/empty states, mini-map, zoom controls"
+  doctrine_version: "2.0"
+  created_at: "2026-06-01T00:00:00+02:00"
+  feature_specs:
+    - "docs/features/act-16-content-browser/02-graph-api.feature"
+    - "docs/features/act-16-content-browser/03-graph-rendering.feature"
+  implementation_notes: "docs/features/act-16-content-browser/_implementation_notes.md"
+
+conflict_map:
+  methodology/api/viewsets.py: [S4]
+  methodology/api/serializers.py: [S4]
+  tests/integration/test_graph_api.py: [S4]
+  static/js/content-browser.js: [S5]
+  templates/browser/browser_graph.html: [S5]
+  tests/e2e/test_content_browser_graph.py: [S5]
+
+parallel_groups:
+  A: [S4]
+  B: [S5]   # strictly after A; no file overlap
+
+drift_thresholds:
+  absorbed:
+    checkpoint_fail_retry: 1
+  escalated:
+    footprint_violation: true
+    method_explosion: true
+    sao_violation: true
+    checkpoint_fail_after_retry: true
+
+scenarios:
+  S4:
+    title: "Content Browser graph API endpoint (FOB-CONTENT-BROWSER-13, 13b, 13c, 13d)"
+    github_issue: 4
+    scenarios_covered:
+      - FOB-CONTENT-BROWSER-13
+      - FOB-CONTENT-BROWSER-13b
+      - FOB-CONTENT-BROWSER-13c
+      - FOB-CONTENT-BROWSER-13d
+    parallel_group: A
+    codebase_footprint:
+      - methodology/api/viewsets.py
+      - methodology/api/serializers.py
+      - tests/integration/test_graph_api.py
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/integration/test_graph_api.py -x"
+      expected_exit_code: 0
+    dependencies: []
+    sao_sections:
+      - "§REST API — DRF @action pattern on PlaybookViewSet"
+      - "§Authentication — access rules identical to playbook detail"
+      - "§Services Layer — all entity queries through services, no ORM in viewset"
+    context_map:
+      - file: "methodology/api/viewsets.py"
+        lines: "53-120"
+        note: "PlaybookViewSet structure — add @action(detail=True, methods=['get'], url_path='graph') method following same get_queryset permission pattern"
+      - file: "methodology/api/serializers.py"
+        lines: "1-50"
+        note: "Serializer style — add GraphNodeSerializer and GraphEdgeSerializer; fields: id(namespaced), type, label, entity_pk, detail_url, embed_url, meta"
+      - file: "methodology/services/activity_graph_service.py"
+        lines: "138-165"
+        note: "_get_activity_detail_url() shows the exact reverse() kwargs pattern for each entity; reuse this pattern for detail_url and embed_url (append ?embed=1 for embed_url)"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Embed mode — Entity embed URLs table"
+        note: "7 entity embed URL formats; embed_url = detail_url + '?embed=1'; Phase has NO embed_url (not a graph node)"
+      - file: "methodology/services/workflow_service.py"
+        lines: "49-54"
+        note: "get_workflows_for_playbook(playbook_id) — primary entry point for graph traversal"
+      - file: "methodology/services/activity_service.py"
+        lines: "195-210"
+        note: "get_activities_for_workflow(workflow) — use select_related('agent', 'phase', 'predecessor') and prefetch_related('skills', 'rules', 'artifactinput_set') to avoid N+1"
+      - file: "methodology/services/artifact_service.py"
+        lines: "113-130"
+        note: "Artifact.objects.filter(playbook=playbook) — artifacts have playbook FK; always filter by playbook to avoid cross-playbook leaks"
+      - file: "methodology/services/skill_service.py"
+        lines: "110-130"
+        note: "list_skills_for_playbook(playbook_id, user) — use this NOT activity.skills.all() to stay scoped to current playbook"
+      - file: "methodology/services/agent_service.py"
+        lines: "89-100"
+        note: "list_agents_for_playbook(playbook_id) — use this NOT activity.agent directly to stay scoped"
+      - file: "methodology/services/rule_service.py"
+        lines: "62-80"
+        note: "list_rules_for_playbook(playbook_id) — use this NOT activity.rules.all() for playbook scoping"
+      - file: "methodology/services/phase_service.py"
+        note: "list_phases(playbook_id, user) — returns phases; include in response as top-level phases array"
+    phase_colour_decision:
+      note: "Phase model has NO colour field. Use auto-assigned deterministic palette in the serializer:
+        PHASE_PALETTE = ['#0d6efd','#198754','#ffc107','#fd7e14','#0dcaf0','#6f42c1','#dc3545','#6c757d']
+        colour = PHASE_PALETTE[(phase.pk - 1) % len(PHASE_PALETTE)]
+        This is consistent per phase.pk, requires no migration, and can be upgraded to a stored field later."
+    do_not_do:
+      - "Do NOT add Phase.colour migration in this iteration — use deterministic palette in serializer"
+      - "Do NOT build a new service — graph serialization belongs in the API layer (viewset action + serializer)"
+      - "Do NOT emit Phase as a graph node — Phase is metadata on Activity nodes only (meta.phase_id, meta.phase_name, meta.phase_colour)"
+      - "Do NOT add a new URL pattern — DRF router generates /api/playbooks/<pk>/graph/ automatically via @action"
+      - "Do NOT emit edges whose source or target is NOT in the emitted node ID set — track emitted_ids set and filter all edges against it"
+      - "Do NOT skip the circular predecessor guard — walk activity.predecessor chain; detect cycle if you revisit an already-seen activity.pk"
+      - "Do NOT use activity.skills.all() directly — always filter skills/agents/rules through playbook-scoped service methods to prevent cross-playbook FK leaks"
+      - "Do NOT skip select_related/prefetch_related — N+1 queries on even a 50-activity playbook will exceed the 500ms target"
+    rollback_point: "git stash"
+
+  S5:
+    title: "Content Browser Cytoscape.js graph rendering (FOB-CONTENT-BROWSER-04, 06, 07, 10, 14, 14b, 15)"
+    github_issue: 5
+    scenarios_covered:
+      - FOB-CONTENT-BROWSER-04
+      - FOB-CONTENT-BROWSER-06
+      - FOB-CONTENT-BROWSER-07
+      - FOB-CONTENT-BROWSER-10
+      - FOB-CONTENT-BROWSER-14
+      - FOB-CONTENT-BROWSER-14b
+      - FOB-CONTENT-BROWSER-15
+    parallel_group: B
+    codebase_footprint:
+      - static/js/content-browser.js
+      - templates/browser/browser_graph.html
+      - tests/e2e/test_content_browser_graph.py
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_graph.py -x"
+      expected_exit_code: 0
+    dependencies: [S4]
+    sao_sections:
+      - "§Interactive Graph Views — CDN only, plain browser JS, no build step"
+      - "§Interactive Graph Views rule 4 — window.cy exposed globally for Playwright"
+      - "§Interactive Graph Views rule 2 — AbortController on fetch"
+    context_map:
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Entity colour and shape table"
+        note: "Node colours from Bootstrap CSS vars; shapes: diamond(Playbook), round-rect(Workflow/Activity), ellipse(others)"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Edge visual style table"
+        note: "8 relationship types: solid/dashed/dotted; colours match entity type"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Defensive implementation — Client JS items 1-3"
+        note: "AbortController: cancel in-flight fetch on playbook switch; JSON check: verify response.ok AND content-type header contains 'application/json' before JSON.parse; loading state must appear BEFORE await fetch (show spinner synchronously)"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Defensive implementation — Client JS item 8"
+        note: "CRITICAL: cy.destroy() before re-init: if (window.cy) { window.cy.destroy(); window.cy = null; } — must run at start of _renderGraph() before constructing new Cytoscape instance"
+      - file: "static/js/content-browser.js"
+        note: "_init() already implemented — extend it to call _fetchGraph(pk) when pk is present; _normaliseFilters already in place; window.cy is currently null — assign to new Cytoscape instance"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Phase chip on Activity node"
+        note: "Small filled circle in phase.colour, bottom-right of Activity node — use Cytoscape pie-slice background or compound node; fallback: skip chip if phase unset"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Performance envelope"
+        note: "If graph API returns nodes.length > 300: show warning banner 'Graph is large (N nodes). [Collapse to Workflows only]' and render in degraded mode. NOT a Playwright E2E test (too complex); implement banner and basic logic but accept visual-only validation"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Responsive layout"
+        note: "On viewport < 768px, canvas full-width with a sticky banner 'Switch to desktop for full graph'. No Playwright tests for mobile breakpoint — use CSS media query only"
+      - file: "docs/features/act-16-content-browser/_implementation_notes.md"
+        lines: "§Playwright graph interaction pattern"
+        note: "Tap a node from Playwright: window.cy.getElementById('workflow:3').emit('tap', [{position:{x:0,y:0}}]) — do NOT rely on pixel coordinates; always use cy.getElementById().emit()"
+    playwright_testid_addendum:
+      note: "S5 requires these additional data-testid attributes NOT in the S3 HTML (add them in S5):
+        browser-zoom-in     → zoom in button
+        browser-zoom-out    → zoom out button
+        browser-zoom-fit    → fit/reset button
+        browser-node-count  → node counter badge (shows N nodes)
+        browser-degraded-banner → warning banner when >300 nodes"
+    empty_playbook_fixture_note:
+      note: "Scenario 15 (empty playbook shows empty-state) MUST use a separate dedicated fixture with a newly created playbook that has NO workflows/activities/etc.
+        Do NOT use the Background fixture (seeded_playbook) — it already has content.
+        Create an empty_playbook fixture: a released playbook with zero workflows."
+    do_not_do:
+      - "Do NOT implement left-panel tree or detail panel — those are Iteration 3 (S6, S7)"
+      - "Do NOT implement filter toolbar or search — those are Iteration 4 (S8)"
+      - "Do NOT add any server-side changes — S5 is purely static/js/ and templates/"
+      - "Do NOT use setTimeout hacks for layout — cytoscape-dagre handles positioning synchronously"
+      - "Do NOT remove window.cy = null initialisation — reassign after Cytoscape init then guard with cy.destroy() on next call"
+      - "Do NOT block on phase chip implementation if it causes test failures — ship without chip and log a TODO"
+      - "Do NOT write Playwright tests that click graph nodes by pixel coordinate — use cy.getElementById().emit('tap', ...) pattern only"
+      - "Do NOT set node labels via innerHTML or DOM manipulation — use Cytoscape stylesheet 'content' property (plain text only)"
+      - "Do NOT write mobile/responsive Playwright tests — CSS media query is sufficient; skip E2E coverage for <768px"
+    rollback_point: "git stash"

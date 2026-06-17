@@ -1,0 +1,19 @@
+[project]
+name = "mimir"
+version = "0.1.0"
+description = "Self-evolving engineering playbook platform"
+requires-python = ">=3.14"
+# Dependencies are managed via requirements.txt (canonical source).
+# Install with: pip install -r requirements.txt  OR  uv pip install -r requirements.txt
+dependencies = []
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "mimir.settings"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

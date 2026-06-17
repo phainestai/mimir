@@ -1,0 +1,71 @@
+id: ITER-20260601e
+title: "Content Browser: canvas interaction bug fixes + re-plot button"
+milestone: 7
+status: complete
+description: >
+  Iteration 7 for act-16 (Content Browser). Fixes four canvas interaction
+  regressions/gaps discovered post-Iteration-6: full-page navigation on picker
+  selection (FOB-23b), layout switcher actually repositioning nodes (FOB-19),
+  zoom control buttons responding to clicks (FOB-07b), and a new Re-plot button
+  that re-runs layout on visible nodes only (FOB-29).
+branch: iteration/20260531-content-browser-access
+feature_spec: docs/features/act-16-content-browser/
+
+scenarios:
+  - id: S26
+    issue: 28
+    title: "Bug: picker selection navigates via full page load (FOB-23b)"
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 30
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_left_panel.py::TestPlaybookTitleTransition -x"
+      pass_criteria: "all playbook title transition E2E tests pass"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_left_panel.py
+
+  - id: S27
+    issue: 29
+    title: "Bug: layout switcher actually re-runs ELK layout (FOB-19)"
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 45
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_layout_position.py::TestLayoutSwitcher -x"
+      pass_criteria: "all layout switcher E2E tests pass including node reposition assertion"
+    codebase_footprint:
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_layout_position.py
+
+  - id: S28
+    issue: 30
+    title: "Feature: Re-plot button re-runs layout on visible nodes (FOB-29)"
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 60
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_layout_position.py::TestReplotButton -x"
+      pass_criteria: "re-plot button present and triggers layout on visible nodes only"
+    codebase_footprint:
+      - templates/browser/browser_graph.html
+      - static/js/content-browser.js
+      - tests/e2e/test_content_browser_layout_position.py
+
+  - id: S29
+    issue: 31
+    title: "Bug: zoom control buttons (+/-/fit) respond to clicks (FOB-07b)"
+    parallel_group: A
+    depends_on: []
+    time_budget_minutes: 45
+    checkpoint:
+      command: "DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_layout_position.py::TestZoomControls -x"
+      pass_criteria: "all zoom control button E2E tests pass"
+    codebase_footprint:
+      - templates/browser/browser_graph.html
+      - tests/e2e/test_content_browser_layout_position.py
+
+execution_order:
+  - parallel: [S26, S27, S28, S29]   # all independent
+
+total_budget_minutes: 180   # if sequential; all can run concurrently
