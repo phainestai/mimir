@@ -13,13 +13,28 @@ help: ## Show this help
 ##@ Provision
 
 .PHONY: provision
-provision: ## Create .venv, install deps, copy .env.example → .env
+provision: ## Python venv + deps, migrations, dark-factory CLI tools, verify
 	python3 -m venv .venv
 	$(PIP) install --upgrade pip -q
 	$(PIP) install -r requirements.txt -q
 	@cp -n .env.example .env 2>/dev/null && echo "Created .env from .env.example — fill in your values" || echo ".env already exists"
 	$(PYTHON) manage.py migrate --noinput
-	@echo "Provision complete. Run 'make run' to start the web server."
+	@bash scripts/provision-factory-deps.sh
+	@bash scripts/check-factory-prereqs.sh
+	@echo ""
+	@echo "Provision complete."
+	@echo "  App:  make run"
+	@echo "  MCP:  make mcp"
+	@echo "  Factory: scripts/preflight.sh '<milestone>' then scripts/factory.sh '<slug>'"
+
+.PHONY: factory-check
+factory-check: ## Re-verify all factory prereqs (includes gh auth + cursor-agent)
+	@bash scripts/check-factory-prereqs.sh --strict
+
+.PHONY: provision-factory
+provision-factory: ## Alias: re-install factory CLI deps only (full setup: make provision)
+	@bash scripts/provision-factory-deps.sh
+	@bash scripts/check-factory-prereqs.sh
 
 ##@ Development
 

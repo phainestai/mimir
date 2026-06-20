@@ -9,38 +9,71 @@
         </ol>
     </nav>
 
-    <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-4" data-testid="pip-detail-header">
         <div>
-            <h1 class="h3 mb-1" data-testid="pip-detail-title">PIP-{{ pip.pk }}: {{ pip.title }}</h1>
-            <p class="text-muted mb-1">Target playbook: <strong>{{ pip.playbook.name }}</strong> · v{{ pip.playbook.version }}</p>
-            <p class="mb-0"><span class="badge rounded-pill {{ pip.status_bootstrap_class }}">{{ pip.get_status_display }}</span></p>
+            <h1 class="h3 mb-2" data-testid="pip-detail-title">
+                <i class="fa-solid fa-lightbulb me-2"></i>PIP-{{ pip.pk }}: {{ pip.title }}
+            </h1>
+            <p class="text-muted small mb-0">
+                <span class="badge rounded-pill {{ pip.status_bootstrap_class }}" data-testid="pip-status-badge">{{ pip.get_status_display }}</span>
+                &middot;
+                Target playbook: <strong>{{ pip.playbook.name }}</strong>
+                <span class="badge bg-light text-dark border">v{{ pip.playbook.version }}</span>
+            </p>
         </div>
-        <div class="d-flex flex-wrap gap-2 justify-content-end flex-shrink-0" data-testid="pip-detail-actions">
-            {% if can_preview %}
-            <a class="btn btn-sm btn-outline-secondary" href="{% url 'pip_preview' pip.pk %}"><i class="fas fa-eye me-1"></i>Preview</a>
+        <div class="d-flex flex-wrap gap-2 justify-content-end flex-shrink-0 align-items-center"
+             data-testid="pip-detail-actions"
+             role="group"
+             aria-label="PIP actions">
+            {% if can_withdraw %}
+            <button type="button" class="btn btn-outline-danger"
+                    data-bs-toggle="modal" data-bs-target="#withdrawPipModal"
+                    data-testid="pip-detail-withdraw-open"
+                    title="Withdraw and delete this proposal">
+                <i class="fa-solid fa-ban me-1"></i>Withdraw / cancel
+            </button>
             {% endif %}
-            {% if admin_review_url %}
-            <a class="btn btn-sm btn-warning" href="{{ admin_review_url }}" data-testid="pip-admin-review"><i class="fas fa-user-shield me-1"></i>Review PIP</a>
+            {% if can_preview %}
+            <a class="btn btn-outline-secondary" href="{% url 'pip_preview' pip.pk %}"
+               data-bs-toggle="tooltip"
+               title="Preview proposed changes">
+                <i class="fa-solid fa-eye me-1"></i>Preview
+            </a>
             {% endif %}
             {% if can_edit %}
-            <a class="btn btn-sm btn-outline-primary" href="{% url 'pip_edit' pip.pk %}"><i class="fas fa-pen-to-square me-1"></i>Edit draft</a>
+            <a class="btn btn-outline-secondary" href="{% url 'pip_edit' pip.pk %}"
+               data-bs-toggle="tooltip"
+               title="Edit this draft PIP">
+                <i class="fa-solid fa-pen-to-square me-1"></i>Edit draft
+            </a>
             {% endif %}
-            {% if can_withdraw %}
-            <button type="button" class="btn btn-sm btn-outline-danger"
-                    data-bs-toggle="modal" data-bs-target="#withdrawPipModal"
-                    data-testid="pip-detail-withdraw-open"><i class="fas fa-ban me-1"></i>Withdraw / cancel</button>
+            {% if admin_review_url %}
+            <a class="btn btn-primary" href="{{ admin_review_url }}"
+               data-testid="pip-admin-review"
+               data-bs-toggle="tooltip"
+               title="Review Galdr recommendations and finalize decisions">
+                <i class="fa-solid fa-user-shield me-1"></i>Review PIP
+            </a>
             {% endif %}
             {% if can_submit %}
             <form method="post" action="{% url 'pip_submit_review' pip.pk %}" class="m-0 d-inline">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-success" data-testid="pip-detail-submit"><i class="fas fa-paper-plane me-1"></i>{{ submit_label }}</button>
+                <button type="submit" class="btn btn-primary"
+                        data-testid="pip-detail-submit"
+                        data-bs-toggle="tooltip"
+                        title="Submit this PIP for Galdr review">
+                    <i class="fa-solid fa-paper-plane me-1"></i>{{ submit_label }}
+                </button>
             </form>
             {% endif %}
         </div>
     </div>
 
     {% if status_banner %}
-    <div class="alert alert-info mt-3" role="status" data-testid="pip-status-banner">{{ status_banner }}</div>
+    <div class="alert alert-info d-flex align-items-center mb-4" role="status" data-testid="pip-status-banner">
+        <i class="fa-solid fa-circle-info me-3 fa-lg"></i>
+        <div>{{ status_banner }}</div>
+    </div>
     {% endif %}
 
     {% if pip.summary %}

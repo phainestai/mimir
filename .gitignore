@@ -1,4 +1,6 @@
-# Byte-compiled / optimized / DLL files
+# Dark factory worktrees (scripts/factory.sh)
+.worktrees/
+
 __pycache__/
 *.py[codz]
 *$py.class
