@@ -4,7 +4,7 @@ E2E tests for Content Browser graph rendering.
 Covers: FOB-CONTENT-BROWSER-04, 06, 07, 07c, 14, 14b (CDN guard), 15
 
 Requires: Playwright, live server, seeded DB.
-Run: DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_graph.py -x
+Run: pytest tests/e2e/test_content_browser_graph.py -q --durations=10
 """
 
 import pytest
@@ -12,20 +12,10 @@ from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
 from accounts.models import mark_email_verified
+from e2e_helpers import login, open_content_browser, wait_for_cy_edges, wait_for_cy_graph
 from methodology.models import Playbook, Workflow, Activity, Phase, Skill, Agent, Rule
 
 User = get_user_model()
-
-LOGIN_URL_PATH = '/auth/user/login/'
-
-
-def _login(page, live_server_url, username, password):
-    page.goto(f"{live_server_url}{LOGIN_URL_PATH}")
-    page.fill('input[name="username"]', username)
-    page.fill('input[name="password"]', password)
-    page.click('button[type="submit"]')
-    page.wait_for_load_state('networkidle')
-    assert LOGIN_URL_PATH not in page.url, f"Login failed; still on login page. URL: {page.url}"
 
 
 # ---------------------------------------------------------------------------
@@ -78,16 +68,12 @@ def empty_graph_playbook(transactional_db):
 def test_graph_renders_nodes_for_playbook_entities(page: Page, live_server_url: str, graph_playbook):
     """Graph renders node for each entity in the playbook."""
     data = graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
-    page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-
-    # Wait for Cytoscape to finish rendering.
-    page.wait_for_function("() => window.cy !== null && window.cy.nodes().length > 0", timeout=10000)
+    login(page, live_server_url, data['username'], data['password'])
+    open_content_browser(page, live_server_url, data['pb'].pk)
 
     node_count = page.evaluate("() => window.cy.nodes().length")
     assert node_count >= 5, f"Expected at least 5 nodes, got {node_count}"
 
-    # Verify specific node types are present.
     has_workflow = page.evaluate("() => window.cy.nodes('[type = \"workflow\"]').length > 0")
     has_activity = page.evaluate("() => window.cy.nodes('[type = \"activity\"]').length > 0")
     has_skill = page.evaluate("() => window.cy.nodes('[type = \"skill\"]').length > 0")
@@ -103,9 +89,8 @@ def test_graph_renders_nodes_for_playbook_entities(page: Page, live_server_url: 
 def test_graph_nodes_are_visually_differentiated(page: Page, live_server_url: str, graph_playbook):
     """Workflow and activity nodes have different background colours."""
     data = graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
-    page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-    page.wait_for_function("() => window.cy !== null && window.cy.nodes().length > 0", timeout=10000)
+    login(page, live_server_url, data['username'], data['password'])
+    open_content_browser(page, live_server_url, data['pb'].pk)
 
     wf_colour = page.evaluate(
         "() => window.cy.nodes('[type = \"workflow\"]').first().style('background-color')"
@@ -119,9 +104,9 @@ def test_graph_nodes_are_visually_differentiated(page: Page, live_server_url: st
 def test_contains_edge_connects_workflow_to_activity(page: Page, live_server_url: str, graph_playbook):
     """A 'contains' edge exists from the workflow node to each activity node."""
     data = graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
+    login(page, live_server_url, data['username'], data['password'])
     page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-    page.wait_for_function("() => window.cy !== null && window.cy.edges().length > 0", timeout=10000)
+    wait_for_cy_edges(page)
 
     contains_count = page.evaluate(
         "() => window.cy.edges('[relationship = \"contains\"]').length"
@@ -136,9 +121,8 @@ def test_contains_edge_connects_workflow_to_activity(page: Page, live_server_url
 def test_layout_workflow_above_activity(page: Page, live_server_url: str, graph_playbook):
     """Workflow nodes appear above (lower Y) than activity nodes in dagre TB layout."""
     data = graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
-    page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-    page.wait_for_function("() => window.cy !== null && window.cy.nodes().length > 0", timeout=10000)
+    login(page, live_server_url, data['username'], data['password'])
+    open_content_browser(page, live_server_url, data['pb'].pk)
 
     wf_y = page.evaluate(
         "() => window.cy.nodes('[type = \"workflow\"]').first().position().y"
@@ -156,9 +140,9 @@ def test_layout_workflow_above_activity(page: Page, live_server_url: str, graph_
 def test_zoom_controls_are_visible(page: Page, live_server_url: str, graph_playbook):
     """Zoom in, zoom out, and fit buttons are present in the DOM."""
     data = graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
+    login(page, live_server_url, data['username'], data['password'])
     page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-    page.wait_for_load_state('networkidle')
+    page.wait_for_load_state('domcontentloaded')
 
     expect(page.get_by_test_id('browser-zoom-in')).to_be_visible()
     expect(page.get_by_test_id('browser-zoom-out')).to_be_visible()
@@ -172,17 +156,14 @@ def test_zoom_controls_are_visible(page: Page, live_server_url: str, graph_playb
 def test_fit_button_executes_cy_fit(page: Page, live_server_url: str, graph_playbook):
     """Clicking [Fit] calls cy.fit() without errors."""
     data = graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
-    page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-    page.wait_for_function("() => window.cy !== null && window.cy.nodes().length > 0", timeout=10000)
+    login(page, live_server_url, data['username'], data['password'])
+    open_content_browser(page, live_server_url, data['pb'].pk)
 
-    # Pan away first so fit has something to do.
     page.evaluate("() => window.cy.panBy({ x: 200, y: 200 })")
 
     fit_btn = page.get_by_test_id('browser-zoom-fit')
     fit_btn.click()
 
-    # After fit, graph should still be rendered (no errors).
     node_count = page.evaluate("() => window.cy.nodes().length")
     assert node_count > 0, "Graph lost nodes after fit"
 
@@ -194,18 +175,12 @@ def test_fit_button_executes_cy_fit(page: Page, live_server_url: str, graph_play
 def test_loading_spinner_visible_during_fetch(page: Page, live_server_url: str, graph_playbook):
     """Loading spinner is shown while API request is in flight, then hidden after render."""
     data = graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
+    login(page, live_server_url, data['username'], data['password'])
 
-    # Intercept and delay the graph API to keep the spinner visible long enough.
     with page.expect_request("**/api/playbooks/*/graph/"):
         page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-        # Spinner should be visible immediately after page loads.
-        spinner = page.get_by_test_id('browser-loading')
-        # The spinner may already be gone if the API was very fast.
-        # Accept either: visible (fast enough to catch) or not visible (render completed).
-        # At minimum, no error state should be visible.
 
-    page.wait_for_function("() => window.cy !== null && window.cy.nodes().length > 0", timeout=10000)
+    wait_for_cy_graph(page)
     expect(page.get_by_test_id('browser-loading')).not_to_be_visible()
     expect(page.get_by_test_id('browser-error-state')).not_to_be_visible()
 
@@ -213,9 +188,8 @@ def test_loading_spinner_visible_during_fetch(page: Page, live_server_url: str, 
 def test_spinner_hidden_after_graph_renders(page: Page, live_server_url: str, graph_playbook):
     """After graph renders successfully, the loading spinner is hidden."""
     data = graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
-    page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-    page.wait_for_function("() => window.cy !== null && window.cy.nodes().length > 0", timeout=10000)
+    login(page, live_server_url, data['username'], data['password'])
+    open_content_browser(page, live_server_url, data['pb'].pk)
 
     expect(page.get_by_test_id('browser-loading')).not_to_be_visible()
     expect(page.get_by_test_id('browser-error-state')).not_to_be_visible()
@@ -228,9 +202,9 @@ def test_spinner_hidden_after_graph_renders(page: Page, live_server_url: str, gr
 def test_empty_playbook_shows_no_content_state(page: Page, live_server_url: str, empty_graph_playbook):
     """Empty playbook shows 'This playbook has no content yet.' message."""
     data = empty_graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
+    login(page, live_server_url, data['username'], data['password'])
     page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-    page.wait_for_load_state('networkidle')
+    page.wait_for_load_state('domcontentloaded')
 
     expect(page.get_by_test_id('browser-no-content-state')).to_be_visible()
     assert 'no content' in page.get_by_test_id('browser-no-content-state').inner_text().lower()
@@ -239,9 +213,9 @@ def test_empty_playbook_shows_no_content_state(page: Page, live_server_url: str,
 def test_empty_playbook_go_to_playbook_link(page: Page, live_server_url: str, empty_graph_playbook):
     """[Go to Playbook] button links to the playbook detail page."""
     data = empty_graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
+    login(page, live_server_url, data['username'], data['password'])
     page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-    page.wait_for_load_state('networkidle')
+    page.wait_for_load_state('domcontentloaded')
 
     link = page.get_by_test_id('browser-go-to-playbook')
     expect(link).to_be_visible()
@@ -252,9 +226,9 @@ def test_empty_playbook_go_to_playbook_link(page: Page, live_server_url: str, em
 def test_empty_playbook_does_not_render_cytoscape(page: Page, live_server_url: str, empty_graph_playbook):
     """Empty playbook: window.cy stays null (no Cytoscape instance created)."""
     data = empty_graph_playbook
-    _login(page, live_server_url, data['username'], data['password'])
+    login(page, live_server_url, data['username'], data['password'])
     page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
-    page.wait_for_load_state('networkidle')
+    page.wait_for_load_state('domcontentloaded')
 
     cy_is_null = page.evaluate("() => window.cy === null")
     assert cy_is_null, "window.cy should be null for an empty playbook"
@@ -264,9 +238,8 @@ def test_cdn_guard_shows_error_state_when_cytoscape_missing(
     page: Page, live_server_url: str, graph_playbook,
 ):
     """FOB-14b: If cytoscape CDN fails, the inline guard shows the error state."""
-    _login(page, live_server_url, graph_playbook['username'], graph_playbook['password'])
+    login(page, live_server_url, graph_playbook['username'], graph_playbook['password'])
 
-    # Block the cytoscape CDN request so window.cytoscape is undefined
     page.route('**cytoscape*.min.js*', lambda r: r.abort())
     page.route('**cytoscape*.js*', lambda r: r.abort())
 
@@ -321,12 +294,12 @@ class TestNodeInsertionOrder:
         )
 
     def test_workflow_nodes_precede_activity_nodes(
-        self, page: Page, live_server, order_playbook,
+        self, page: Page, live_server_url: str, order_playbook,
     ):
         """All workflow nodes appear before any activity node in _lastElementOrder."""
         data = order_playbook
-        _login(page, live_server.url, data['username'], data['password'])
-        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        login(page, live_server_url, data['username'], data['password'])
+        page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
         self._wait_for_order(page)
 
         order = page.evaluate("() => window._lastElementOrder.map(n => n.type)")
@@ -340,12 +313,12 @@ class TestNodeInsertionOrder:
         )
 
     def test_activity_nodes_precede_resource_nodes(
-        self, page: Page, live_server, order_playbook,
+        self, page: Page, live_server_url: str, order_playbook,
     ):
         """All activity nodes appear before any resource (skill/rule/agent/artifact) node."""
         data = order_playbook
-        _login(page, live_server.url, data['username'], data['password'])
-        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        login(page, live_server_url, data['username'], data['password'])
+        page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
         self._wait_for_order(page)
 
         order = page.evaluate("() => window._lastElementOrder.map(n => n.type)")
@@ -360,12 +333,12 @@ class TestNodeInsertionOrder:
         )
 
     def test_resource_nodes_grouped_after_parent_activity(
-        self, page: Page, live_server, order_playbook,
+        self, page: Page, live_server_url: str, order_playbook,
     ):
         """Resource nodes for act1 appear before resource nodes for act2."""
         data = order_playbook
-        _login(page, live_server.url, data['username'], data['password'])
-        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        login(page, live_server_url, data['username'], data['password'])
+        page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
         self._wait_for_order(page)
 
         act1_pk = str(data['act1'].pk)
@@ -389,15 +362,14 @@ class TestNodeInsertionOrder:
         )
 
     def test_order_preserved_after_filter_rebuild(
-        self, page: Page, live_server, order_playbook,
+        self, page: Page, live_server_url: str, order_playbook,
     ):
         """After deactivating and reactivating a type, insertion order is still correct."""
         data = order_playbook
-        _login(page, live_server.url, data['username'], data['password'])
-        page.goto(f"{live_server.url}/browser/{data['pb'].pk}/")
+        login(page, live_server_url, data['username'], data['password'])
+        page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
         self._wait_for_order(page)
 
-        # Toggle a filter type off then back on to trigger a rebuild.
         skill_btn = page.locator('[data-filter-type="skill"]')
         skill_btn.click()
         page.wait_for_timeout(500)

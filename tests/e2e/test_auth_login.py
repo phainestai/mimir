@@ -63,7 +63,11 @@ class TestLoginE2E:
         page.click('button[type="submit"]')
         
         # Wait for navigation to complete
-        page.wait_for_load_state('networkidle')
+        page.wait_for_load_state('domcontentloaded')
+        page.wait_for_function(
+            "() => !window.location.pathname.includes('/auth/user/login')",
+            timeout=10_000,
+        )
         
         # Verify successful login - should be on dashboard or redirected
         assert page.url.startswith(live_server_url)
@@ -89,7 +93,7 @@ class TestLoginE2E:
         page.click('button[type="submit"]')
         
         # Wait for page to reload/respond
-        page.wait_for_load_state('networkidle')
+        page.wait_for_load_state('domcontentloaded')
         
         # Verify we're still on the login page
         assert '/auth/user/login/' in page.url

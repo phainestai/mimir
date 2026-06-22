@@ -167,7 +167,7 @@ Record results in [A0 baseline timings](#a0-baseline-timings) below.
 
 #### A0.2 — Shared helpers in `tests/e2e/conftest.py`
 
-Add and use from all touched e2e files (migrate incrementally during A2/B2):
+Add and use from all touched e2e files (migrate incrementally during A2/B2). Implemented in [`tests/e2e/e2e_helpers.py`](../../tests/e2e/e2e_helpers.py) (importable from e2e tests via `pythonpath = .` in `tests/e2e/pytest.ini`):
 
 | Helper | Replaces |
 |--------|----------|
@@ -214,8 +214,8 @@ Failure clusters align with Phase A/B scope: layout picker/position (FOB-63 defa
 
 | Module | Tests | Wall time | Slowest setup | Slowest call | Notes |
 |--------|-------|-----------|---------------|--------------|-------|
-| `test_auth_login.py` | | | | | |
-| `test_content_browser_graph.py` | | | | | |
+| `test_auth_login.py` + `test_content_browser_graph.py` (combined) | 22 | **100.3s** | (per-test, not reported) | 16.2s | Pre-A0, function-scoped `live_server` + `networkidle` |
+| `test_auth_login.py` + `test_content_browser_graph.py` (combined) | 22 | **58.8s** | 1.28s (session setup, once) | 10.7s | Post-A0, session `live_server` + `e2e_helpers` |
 
 **Deferred (process backlog unless Commander opts in at Q10–Q11):** `pytest-xdist`, `@pytest.mark.slow` smoke subset for CI, SAO/README doc updates (fold doc updates into Phase C if deferred).
 
@@ -630,8 +630,8 @@ rg '<style>' templates/*/_embed.html
 |------|-------|--------|
 | BPE-08 plan presented | Agent | ✅ This document |
 | Commander reviews plan | Commander | ⏳ **Pending** |
-| Phase A0 execution (e2e speedup) | Agent | Blocked |
-| Phase A1–A4 execution | Agent | Blocked |
+| Phase A0 execution (e2e speedup) | Agent | ✅ Done (session server + helpers; graph migrated) |
+| Phase A1–A4 execution | Agent | A1–A3 ✅ committed; A4 partial (await A0 re-run) |
 | Phase B execution | Agent | Blocked |
 | Phase C execution | Agent | Blocked |
 | BPE-06 sign-off (A–C) | Commander | Blocked |

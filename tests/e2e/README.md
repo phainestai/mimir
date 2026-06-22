@@ -122,20 +122,48 @@ pytest tests/
 
 ## Writing New E2E Tests
 
-1. **Use sync API only** - no `async def` or `await`
-2. **Mark tests** - use `@pytest.mark.e2e` and `@pytest.mark.django_db(transaction=True)`
-3. **Use fixtures** - `page`, `live_server_url` are available
-4. **Follow pattern** - see existing tests in `tests/e2e/test_auth_login.py`
+1. **Use sync API only** — no `async def` or `await`
+2. **Mark tests** — use `@pytest.mark.e2e` and `@pytest.mark.django_db(transaction=True)` where DB isolation is required
+3. **Use fixtures** — `page`, `live_server_url` are available
+4. **Use shared helpers** — import from `e2e_helpers` (`login`, `wait_for_cy_graph`, `open_content_browser`); do not copy `_login()` per file
+5. **Follow pattern** — see `tests/e2e/test_content_browser_graph.py` (migrated) and `tests/e2e/test_auth_login.py`
+
+### Fixture scopes (Act-16 A0)
+
+| Fixture | Default scope | Override |
+|---------|---------------|----------|
+| `live_server` | **session** (one WSGI thread per e2e run) | `E2E_LIVE_SERVER_SCOPE=function` when mixing `pytest tests/` + `tests/e2e/` |
+| `browser` | module | — |
+| `page` / `context` | function (isolated cookies) | — |
+
+Signed-cookie sessions (`mimir.settings.e2e`) avoid SQLite session races that motivated per-test servers.
+
+### Commands
+
+```bash
+# Representative checkpoint (fast)
+pytest tests/e2e/test_auth_login.py tests/e2e/test_content_browser_graph.py -q --durations=10
+
+# Full content-browser batch (phase gates only)
+pytest tests/e2e/test_content_browser*.py -q --durations=20 2>&1 | tee tests.log
+
+# Mixing unit/integration + e2e in one run
+E2E_LIVE_SERVER_SCOPE=function pytest tests/ tests/e2e/
+```
+
+### Wait strategy
+
+Prefer `domcontentloaded` + `wait_for_cy_graph()` / Playwright `expect()` — **not** `networkidle`. Avoid `wait_for_timeout` except documented animation settles.
 
 Example:
 
 ```python
-@pytest.mark.e2e
-@pytest.mark.django_db(transaction=True)
-class TestMyFeatureE2E:
-    def test_something(self, page: Page, live_server_url: str):
-        page.goto(f"{live_server_url}/my-page/")
-        assert page.locator('h1').text_content() == 'Expected Title'
+from e2e_helpers import login, open_content_browser
+
+def test_something(page, live_server_url, my_playbook):
+    login(page, live_server_url, user, password)
+    open_content_browser(page, live_server_url, my_playbook.pk)
+    assert page.get_by_test_id('browser-canvas').is_visible()
 ```
 
 ## Key Principles
