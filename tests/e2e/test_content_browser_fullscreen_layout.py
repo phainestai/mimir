@@ -7,14 +7,13 @@ Covers:
 Checkpoint command:
   pytest tests/e2e/test_content_browser_fullscreen_layout.py -x
 """
-import pytest
-from playwright.sync_api import Page
 
-from accounts.models import mark_email_verified
+import pytest
+
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-LOGIN_URL_PATH = '/auth/user/login/'
+LOGIN_URL_PATH = "/auth/user/login/"
 
 
 def _login(page, live_server_url, username, password):
@@ -22,9 +21,8 @@ def _login(page, live_server_url, username, password):
     page.fill('input[name="username"]', username)
     page.fill('input[name="password"]', password)
     page.click('button[type="submit"]')
-    page.wait_for_load_state('networkidle')
+    page.wait_for_load_state("networkidle")
     assert LOGIN_URL_PATH not in page.url
-
 
 
 @pytest.mark.django_db(transaction=True)
@@ -50,7 +48,7 @@ class TestFullscreenLayout:
 
     def test_canvas_top_edge_touches_navbar_bottom(self, cb_graph_page):
         """Canvas container top edge is near the navbar bottom (no gap > 10px)."""
-        canvas = cb_graph_page.locator('#cy')
+        canvas = cb_graph_page.locator("#cy")
         assert canvas.count() > 0, "Canvas element #cy not found"
         canvas_top = canvas.evaluate("el => el.getBoundingClientRect().top")
         # Navbar height varies by viewport; allow generous tolerance for stacked chrome.
@@ -60,7 +58,7 @@ class TestFullscreenLayout:
 
     def test_canvas_has_100_percent_height(self, cb_graph_page):
         """The #cy canvas element has substantial height (fills the viewport)."""
-        canvas = cb_graph_page.locator('#cy')
+        canvas = cb_graph_page.locator("#cy")
         assert canvas.count() > 0, "Canvas element #cy not found"
         canvas_height = canvas.evaluate("el => el.getBoundingClientRect().height")
         viewport_height = cb_graph_page.evaluate("() => window.innerHeight")

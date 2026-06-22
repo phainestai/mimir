@@ -13,32 +13,38 @@ import os
 from collections.abc import Generator
 
 import pytest
-from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
+from playwright.sync_api import Browser, BrowserContext, sync_playwright
 from pytest_django import live_server_helper
 from pytest_django.lazy_django import skip_if_no_django
 
-from e2e_helpers import LOGIN_URL_PATH, login, open_content_browser, wait_for_cy_edges, wait_for_cy_graph
+from e2e_helpers import (
+    LOGIN_URL_PATH,
+    login,
+    open_content_browser,
+    wait_for_cy_edges,
+    wait_for_cy_graph,
+)
 
 logger = logging.getLogger(__name__)
 
 # Allow Django to run in async context for E2E tests only
-os.environ['DJANGO_ALLOW_ASYNC_UNSAFE'] = 'true'
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
-pytest_plugins = ['content_browser_fixtures']
+pytest_plugins = ["content_browser_fixtures"]
 
 # Re-export helpers for tests: from e2e_helpers import login, ...
 __all__ = [
-    'LOGIN_URL_PATH',
-    'login',
-    'open_content_browser',
-    'wait_for_cy_graph',
-    'wait_for_cy_edges',
+    "LOGIN_URL_PATH",
+    "login",
+    "open_content_browser",
+    "wait_for_cy_graph",
+    "wait_for_cy_edges",
 ]
 
 
 def e2e_live_server_scope() -> str:
     """Return live_server fixture scope: session (default) or function."""
-    return os.getenv('E2E_LIVE_SERVER_SCOPE', 'session').lower()
+    return os.getenv("E2E_LIVE_SERVER_SCOPE", "session").lower()
 
 
 @pytest.fixture(scope="session")
@@ -52,11 +58,11 @@ def django_db_setup(django_db_setup, django_db_blocker):
     from django.core.management import call_command
 
     fixture_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '../fixtures/e2e_seed.json')
+        os.path.join(os.path.dirname(__file__), "../fixtures/e2e_seed.json")
     )
 
     with django_db_blocker.unblock():
-        call_command('loaddata', fixture_path)
+        call_command("loaddata", fixture_path)
 
 
 class LazyPlaywright:
@@ -126,7 +132,7 @@ def _live_server_session(
     """One Django live server for the entire e2e session (signed-cookie sessions)."""
     skip_if_no_django()
     addr = _live_server_addr(request)
-    logger.info('E2E starting session-scoped live_server at %s', addr)
+    logger.info("E2E starting session-scoped live_server at %s", addr)
     server = live_server_helper.LiveServer(addr)
     yield server
     server.stop()
@@ -139,7 +145,7 @@ def _live_server_function(
     """Per-test live server — use when mixing e2e with integration tests."""
     skip_if_no_django()
     addr = _live_server_addr(request)
-    logger.info('E2E starting function-scoped live_server at %s', addr)
+    logger.info("E2E starting function-scoped live_server at %s", addr)
     server = live_server_helper.LiveServer(addr)
     yield server
     server.stop()
@@ -150,10 +156,10 @@ def live_server(
     request: pytest.FixtureRequest,
 ) -> Generator[live_server_helper.LiveServer, None, None]:
     """Django live server — session-scoped by default; set E2E_LIVE_SERVER_SCOPE=function to override."""
-    if e2e_live_server_scope() == 'function':
-        yield from request.getfixturevalue('_live_server_function')
+    if e2e_live_server_scope() == "function":
+        yield from request.getfixturevalue("_live_server_function")
     else:
-        yield request.getfixturevalue('_live_server_session')
+        yield request.getfixturevalue("_live_server_session")
 
 
 @pytest.fixture(scope="function")

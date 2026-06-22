@@ -7,23 +7,22 @@ Covers:
 Checkpoint command:
   pytest tests/e2e/test_content_browser_icons.py -x
 """
-import pytest
-from playwright.sync_api import Page
 
-from accounts.models import mark_email_verified
+import pytest
+
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-LOGIN_URL_PATH = '/auth/user/login/'
+LOGIN_URL_PATH = "/auth/user/login/"
 
 EXPECTED_ICONS = {
-    'playbook':  '\uf5da',   # book-open-reader (FA6 Free)
-    'workflow':  '\uf542',   # diagram-project  (FA6 Free)
-    'activity':  '\uf0ae',   # list-check       (FA6 Free)
-    'artifact':  '\uf06b',   # gift             (FA6 Free)
-    'skill':     '\ue05d',   # hand-sparkles    (FA6 Free)
-    'agent':     '\uf5dc',   # brain            (FA6 Free)
-    'rule':      '\uf24e',   # scale-balanced   (FA6 Free)
+    "playbook": "\uf5da",  # book-open-reader (FA6 Free)
+    "workflow": "\uf542",  # diagram-project  (FA6 Free)
+    "activity": "\uf0ae",  # list-check       (FA6 Free)
+    "artifact": "\uf06b",  # gift             (FA6 Free)
+    "skill": "\ue05d",  # hand-sparkles    (FA6 Free)
+    "agent": "\uf5dc",  # brain            (FA6 Free)
+    "rule": "\uf24e",  # scale-balanced   (FA6 Free)
 }
 
 
@@ -32,9 +31,8 @@ def _login(page, live_server_url, username, password):
     page.fill('input[name="username"]', username)
     page.fill('input[name="password"]', password)
     page.click('button[type="submit"]')
-    page.wait_for_load_state('networkidle')
+    page.wait_for_load_state("networkidle")
     assert LOGIN_URL_PATH not in page.url
-
 
 
 @pytest.mark.django_db(transaction=True)
@@ -48,7 +46,7 @@ class TestNodeIconCodepoints:
             """(types) => types.map(t => ({ type: t, icon: _buildNodeIcon(t) }))""",
             types,
         )
-        returned = {r['type']: r['icon'] for r in result}
+        returned = {r["type"]: r["icon"] for r in result}
         # All returned values must be non-empty single characters
         for t, char in returned.items():
             assert char, f"Empty icon for type '{t}'"
@@ -71,7 +69,7 @@ class TestNodeIconCodepoints:
         font_family = cb_graph_page.evaluate(
             "() => _buildEnhancedNodeStyle('workflow')['font-family']"
         )
-        assert 'Font Awesome 6' in font_family, (
+        assert "Font Awesome 6" in font_family, (
             f"font-family does not include Font Awesome 6: {font_family}"
         )
 

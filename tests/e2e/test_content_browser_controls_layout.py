@@ -7,14 +7,13 @@ Covers:
 Checkpoint command:
   pytest tests/e2e/test_content_browser_controls_layout.py -x
 """
-import pytest
-from playwright.sync_api import Page
 
-from accounts.models import mark_email_verified
+import pytest
+
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-LOGIN_URL_PATH = '/auth/user/login/'
+LOGIN_URL_PATH = "/auth/user/login/"
 
 
 def _login(page, live_server_url, username, password):
@@ -22,9 +21,8 @@ def _login(page, live_server_url, username, password):
     page.fill('input[name="username"]', username)
     page.fill('input[name="password"]', password)
     page.click('button[type="submit"]')
-    page.wait_for_load_state('networkidle')
+    page.wait_for_load_state("networkidle")
     assert LOGIN_URL_PATH not in page.url
-
 
 
 @pytest.mark.django_db(transaction=True)
@@ -66,14 +64,18 @@ class TestControlButtonLayout:
         box = panel.bounding_box()
         assert box is not None, "Controls panel has no bounding box"
         # Panel should be in the right half of the viewport
-        assert box['x'] > 640, f"Controls panel x={box['x']} not in right half of 1280px viewport"
+        assert box["x"] > 640, (
+            f"Controls panel x={box['x']} not in right half of 1280px viewport"
+        )
 
     def test_button_size_is_compact(self, cb_graph_page):
         """Control buttons use compact inline styling (font-size: 0.65rem)."""
         replot = cb_graph_page.locator('[data-testid="browser-replot-btn"]')
         assert replot.count() > 0, "Re-plot button not found"
-        font_size = replot.evaluate("el => el.style.fontSize || getComputedStyle(el).fontSize")
+        font_size = replot.evaluate(
+            "el => el.style.fontSize || getComputedStyle(el).fontSize"
+        )
         # Compact = small font-size; check it's not the default 16px/1rem
-        assert '0.65' in font_size or 'rem' in font_size or 'px' in font_size, (
+        assert "0.65" in font_size or "rem" in font_size or "px" in font_size, (
             f"Unexpected font-size on replot button: {font_size}"
         )

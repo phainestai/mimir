@@ -4,6 +4,7 @@ Canvas node labels never render in all-caps regardless of zoom level.
 
 Checkpoint command: uv run pytest tests/e2e/test_content_browser_font_rendering.py -x
 """
+
 import pytest
 from playwright.sync_api import Page
 
@@ -22,7 +23,9 @@ class TestFontRenderingGuards:
         }""")
         assert has_guard, "Expected text-transform:none on all enhanced node styles"
 
-    def test_compound_label_text_transform_none_in_stylesheet(self, cb_graph_page: Page):
+    def test_compound_label_text_transform_none_in_stylesheet(
+        self, cb_graph_page: Page
+    ):
         """Compound label builder includes text-transform:none."""
         has_guard = cb_graph_page.evaluate(
             "() => _buildCompoundLabelStyle()['text-transform'] === 'none'"
@@ -49,5 +52,6 @@ class TestFontRenderingGuards:
             }
             return window.cy._private?.options?.minZoomedFontSize;
         }""")
-        assert min_font is not None and min_font >= 1, \
+        assert min_font is not None and min_font >= 1, (
             f"Expected minZoomedFontSize >= 1, got {min_font}"
+        )

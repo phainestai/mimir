@@ -7,6 +7,7 @@ Covers:
 Checkpoint command:
   pytest tests/e2e/test_content_browser_no_seq_toggle.py -x
 """
+
 import pytest
 from playwright.sync_api import Page
 
@@ -20,7 +21,9 @@ class TestSeqToggleRemoved:
     def test_seq_toggle_button_absent(self, cb_graph_page: Page):
         """[data-testid='browser-seq-toggle'] does not exist in the DOM."""
         seq_btn = cb_graph_page.locator('[data-testid="browser-seq-toggle"]')
-        assert seq_btn.count() == 0, "Seq toggle button should have been removed but is still present"
+        assert seq_btn.count() == 0, (
+            "Seq toggle button should have been removed but is still present"
+        )
 
     def test_predecessor_edges_always_visible(self, cb_graph_page: Page):
         """Predecessor edges are always present with dashed styling."""
@@ -34,7 +37,9 @@ class TestSeqToggleRemoved:
             const e = window.cy.edges('[relationship = "predecessor"]').first();
             return e ? e.style('line-style') : '';
         }""")
-        assert dashed == 'dashed', f"Expected dashed predecessor edges, got line-style={dashed!r}"
+        assert dashed == "dashed", (
+            f"Expected dashed predecessor edges, got line-style={dashed!r}"
+        )
 
     def test_seq_url_param_ignored(self, cb_graph_page: Page, live_server, cb_playbook):
         """Navigating with ?seq=0 loads graph normally (seq param does not cause errors)."""
@@ -46,4 +51,6 @@ class TestSeqToggleRemoved:
     def test_no_seq_state_exposed_on_window(self, cb_graph_page: Page):
         """window._seqEdgesOn is undefined (removed from window exposure)."""
         val = cb_graph_page.evaluate("() => typeof window._seqEdgesOn")
-        assert val == 'undefined', f"Expected _seqEdgesOn to be undefined, got type '{val}'"
+        assert val == "undefined", (
+            f"Expected _seqEdgesOn to be undefined, got type '{val}'"
+        )

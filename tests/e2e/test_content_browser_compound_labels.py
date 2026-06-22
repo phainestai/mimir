@@ -8,6 +8,7 @@ Covers:
 Checkpoint command:
   pytest tests/e2e/test_content_browser_compound_labels.py -x
 """
+
 import pytest
 from playwright.sync_api import Page
 
@@ -36,7 +37,7 @@ class TestCompoundModeLabelVisibility:
         style = cb_graph_page.evaluate(
             "() => { const s = _buildCompoundLabelStyle(); return typeof s['label']; }"
         )
-        assert style in ('function', 'string'), (
+        assert style in ("function", "string"), (
             f"Expected 'label' in compound style to be function or string, got '{style}'"
         )
 
@@ -48,8 +49,8 @@ class TestCompoundModeLabelVisibility:
         halign = cb_graph_page.evaluate(
             "() => _buildCompoundLabelStyle()['text-halign']"
         )
-        assert valign == 'top', f"Expected text-valign 'top', got '{valign}'"
-        assert halign == 'center', f"Expected text-halign 'center', got '{halign}'"
+        assert valign == "top", f"Expected text-valign 'top', got '{valign}'"
+        assert halign == "center", f"Expected text-halign 'center', got '{halign}'"
 
     def test_workflow_label_is_workflow_name(self, cb_graph_page: Page):
         """The label on a compound parent node equals the workflow's name."""
@@ -63,13 +64,15 @@ class TestCompoundModeLabelVisibility:
             return { id: parent.id(), label: parent.data('label') };
         }""")
         assert result is not None, "No parent node found"
-        assert result['label'], f"Parent node '{result['id']}' has no label"
+        assert result["label"], f"Parent node '{result['id']}' has no label"
 
     def test_flat_mode_compound_labels_not_shown(self, cb_graph_page: Page):
         """In flat (ungrouped) mode no nodes are parents (no compound labels)."""
-        set_compound_level(cb_graph_page, 'none')
+        set_compound_level(cb_graph_page, "none")
         wait_for_cy_graph(cb_graph_page)
         parent_count = cb_graph_page.evaluate(
             "() => window.cy.nodes().filter(n => n.isParent()).length"
         )
-        assert parent_count == 0, f"Expected 0 parent nodes in flat mode, got {parent_count}"
+        assert parent_count == 0, (
+            f"Expected 0 parent nodes in flat mode, got {parent_count}"
+        )

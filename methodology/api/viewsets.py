@@ -14,14 +14,21 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 
 from methodology.models import (
-    Playbook, Workflow, Activity, Skill, Agent, Artifact,
-    ArtifactInput, Phase, Rule
+    Playbook,
+    Workflow,
+    Activity,
+    Skill,
+    Agent,
+    Artifact,
+    ArtifactInput,
+    Rule,
 )
 from methodology.api.serializers import (
-    PlaybookSerializer, PlaybookListSerializer, WorkflowSerializer,
-    ActivitySerializer, ActivityListSerializer, SkillSerializer, AgentSerializer,
-    ArtifactSerializer, ArtifactInputSerializer, PhaseSerializer,
-    RuleSerializer
+    PlaybookSerializer,
+    PlaybookListSerializer,
+    WorkflowSerializer,
+    ActivitySerializer,
+    ActivityListSerializer,
 )
 from methodology.api.permissions import IsOwnerOrReadOnly, IsDraftPlaybook
 from methodology.services.playbook_service import PlaybookService
@@ -49,20 +56,20 @@ def _accessible_playbook_ids(user):
 class PlaybookViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Playbook resource.
-    
+
     Maps to MCP tools: create_playbook, list_playbooks, get_playbook,
     update_playbook, delete_playbook.
     """
 
     resource_name = "Playbook"
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly, IsDraftPlaybook]
-    
+
     def get_serializer_class(self):
         """Use lightweight serializer for list, full for detail."""
-        if self.action == 'list':
+        if self.action == "list":
             return PlaybookListSerializer
         return PlaybookSerializer
-    
+
     def get_queryset(self):
         """
         Playbooks the user may access: owned, team-shared, or public (others, non-draft).
@@ -71,12 +78,12 @@ class PlaybookViewSet(viewsets.ModelViewSet):
         all_ids = PlaybookService.get_accessible_playbook_ids(user)
         queryset = Playbook.objects.filter(pk__in=all_ids).distinct()
 
-        status_filter = self.request.query_params.get('status')
-        if status_filter and status_filter != 'all':
+        status_filter = self.request.query_params.get("status")
+        if status_filter and status_filter != "all":
             queryset = queryset.filter(status=status_filter)
 
-        return queryset.order_by('-updated_at')
-    
+        return queryset.order_by("-updated_at")
+
     def retrieve(self, request, pk=None):
         """
         Get playbook details with workflows and optional version history.
@@ -159,36 +166,38 @@ class PlaybookViewSet(viewsets.ModelViewSet):
     def create(self, request):
         """
         Create new draft playbook (v0.1).
-        
+
         Maps to: create_playbook MCP tool
         """
-        logger.info(f'API: create_playbook called by user={request.user.id}')
-        
+        logger.info(f"API: create_playbook called by user={request.user.id}")
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         playbook = PlaybookService.create_playbook(
-            name=serializer.validated_data['name'],
-            description=serializer.validated_data['description'],
-            category=serializer.validated_data.get('category', 'general'),
+            name=serializer.validated_data["name"],
+            description=serializer.validated_data["description"],
+            category=serializer.validated_data.get("category", "general"),
             author=request.user,
-            status='draft',
-            visibility=serializer.validated_data.get('visibility', 'private'),
+            status="draft",
+            visibility=serializer.validated_data.get("visibility", "private"),
         )
 
-        logger.info(f'API: Created playbook id={playbook.id}, version={playbook.version}')
+        logger.info(
+            f"API: Created playbook id={playbook.id}, version={playbook.version}"
+        )
 
         response_serializer = self.get_serializer(playbook)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-    
+
     def update(self, request, pk=None, partial=False):
         """
         Update draft playbook (increments version).
-        
+
         Maps to: update_playbook MCP tool
         """
-        logger.info(f'API: update_playbook called - id={pk}')
-        
+        logger.info(f"API: update_playbook called - id={pk}")
+
         from django.core.exceptions import ValidationError as DjangoValidationError
 
         playbook = self.get_object()
@@ -198,7 +207,7 @@ class PlaybookViewSet(viewsets.ModelViewSet):
 
         old_version = playbook.version
         update_payload = {}
-        for field in ('name', 'description', 'category', 'visibility'):
+        for field in ("name", "description", "category", "visibility"):
             if field in serializer.validated_data:
                 update_payload[field] = serializer.validated_data[field]
 
@@ -207,112 +216,126 @@ class PlaybookViewSet(viewsets.ModelViewSet):
             try:
                 playbook = PlaybookService.update_playbook(pk, **update_payload)
             except DjangoValidationError as e:
-                from rest_framework.exceptions import ValidationError as DRFValidationError
-                raise DRFValidationError(detail=getattr(e, 'message_dict', str(e)))
+                from rest_framework.exceptions import (
+                    ValidationError as DRFValidationError,
+                )
 
-            playbook.version += Decimal('0.1')
+                raise DRFValidationError(detail=getattr(e, "message_dict", str(e)))
+
+            playbook.version += Decimal("0.1")
             playbook.save()
-            logger.info(f'API: Updated playbook, version {old_version} → {playbook.version}')
+            logger.info(
+                f"API: Updated playbook, version {old_version} → {playbook.version}"
+            )
 
         response_serializer = self.get_serializer(playbook)
         return Response(response_serializer.data)
-    
+
     def destroy(self, request, pk=None):
         """
         Delete draft playbook (cascades to workflows/activities).
-        
+
         Maps to: delete_playbook MCP tool
         """
-        logger.info(f'API: delete_playbook called - id={pk}')
-        
+        logger.info(f"API: delete_playbook called - id={pk}")
+
         playbook = self.get_object()
         playbook_name = playbook.name
         workflow_count = playbook.workflows.count()
-        
+
         # Use service layer for cascade delete
         PlaybookService.delete_playbook(pk)
-        
-        logger.info(f'API: Deleted playbook "{playbook_name}" with {workflow_count} workflows')
-        return Response({'deleted': True, 'playbook_id': pk})
-    
-    @action(detail=True, methods=['put'], url_path='phases/reorder')
+
+        logger.info(
+            f'API: Deleted playbook "{playbook_name}" with {workflow_count} workflows'
+        )
+        return Response({"deleted": True, "playbook_id": pk})
+
+    @action(detail=True, methods=["put"], url_path="phases/reorder")
     def reorder_phases(self, request, pk=None):
         """
         Reorder phases in draft playbook.
-        
+
         Maps to: reorder_phases MCP tool
         """
-        logger.info(f'API: reorder_phases called - playbook_id={pk}')
-        
+        logger.info(f"API: reorder_phases called - playbook_id={pk}")
+
         playbook = self.get_object()
-        phase_order = request.data.get('phase_order', [])
-        
+        phase_order = request.data.get("phase_order", [])
+
         if not phase_order:
             return Response(
-                {'error': 'phase_order is required', 'code': 'VALIDATION_ERROR'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "phase_order is required", "code": "VALIDATION_ERROR"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Import service here to avoid circular imports
         from methodology.services.phase_service import PhaseService
-        
-        result = PhaseService.reorder_phases(pk, phase_order)
-        
+
+        PhaseService.reorder_phases(pk, phase_order)
+
         # Increment playbook version
         old_version = playbook.version
-        playbook.version += Decimal('0.1')
+        playbook.version += Decimal("0.1")
         playbook.save()
-        
-        logger.info(f'API: Reordered {len(phase_order)} phases, version {old_version} → {playbook.version}')
-        
-        return Response({
-            'reordered': True,
-            'count': len(phase_order)
-        })
-    
-    @action(detail=True, methods=['put'], url_path='share')
+
+        logger.info(
+            f"API: Reordered {len(phase_order)} phases, version {old_version} → {playbook.version}"
+        )
+
+        return Response({"reordered": True, "count": len(phase_order)})
+
+    @action(detail=True, methods=["put"], url_path="share")
     def share_with_groups(self, request, pk=None):
         """
         Share playbook with groups.
-        
+
         Only owner can share. Replaces existing group sharing.
         """
-        logger.info(f'API: share_with_groups called - playbook_id={pk}')
-        
+        logger.info(f"API: share_with_groups called - playbook_id={pk}")
+
         playbook = self.get_object()
-        
+
         # Only owner can share
         if playbook.author != request.user:
             return Response(
-                {'error': 'Only the owner can share this playbook', 'code': 'PERMISSION_DENIED'},
-                status=status.HTTP_403_FORBIDDEN
+                {
+                    "error": "Only the owner can share this playbook",
+                    "code": "PERMISSION_DENIED",
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
-        group_ids = request.data.get('group_ids', [])
-        
+
+        group_ids = request.data.get("group_ids", [])
+
         # Import Group model
         from django.contrib.auth.models import Group
-        
+
         # Validate all groups exist
         groups = Group.objects.filter(id__in=group_ids)
         if len(groups) != len(group_ids):
             return Response(
-                {'error': 'One or more group IDs are invalid', 'code': 'VALIDATION_ERROR'},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "error": "One or more group IDs are invalid",
+                    "code": "VALIDATION_ERROR",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Replace shared groups
         playbook.shared_with_groups.set(groups)
-        
-        logger.info(f'API: Playbook {pk} shared with {len(group_ids)} groups')
-        
-        return Response({
-            'playbook_id': pk,
-            'shared_with_groups': [{'id': g.id, 'name': g.name} for g in groups],
-            'count': len(groups)
-        })
 
-    @action(detail=True, methods=['get'], url_path='graph')
+        logger.info(f"API: Playbook {pk} shared with {len(group_ids)} groups")
+
+        return Response(
+            {
+                "playbook_id": pk,
+                "shared_with_groups": [{"id": g.id, "name": g.name} for g in groups],
+                "count": len(groups),
+            }
+        )
+
+    @action(detail=True, methods=["get"], url_path="graph")
     def graph(self, request, pk=None):
         """
         Return Cytoscape-ready graph data for a playbook.
@@ -329,11 +352,11 @@ class PlaybookViewSet(viewsets.ModelViewSet):
                 phases: [{id, name, colour}]
             }
         """
-        logger.info(f'API: graph called - playbook_id={pk}')
+        logger.info(f"API: graph called - playbook_id={pk}")
         playbook = self.get_object()
         data = _build_playbook_graph(playbook, request.user)
         logger.info(
-            f'API: graph built - playbook_id={pk} nodes={len(data["nodes"])} edges={len(data["edges"])}'
+            f"API: graph built - playbook_id={pk} nodes={len(data['nodes'])} edges={len(data['edges'])}"
         )
         return Response(data)
 
@@ -342,7 +365,16 @@ class PlaybookViewSet(viewsets.ModelViewSet):
 # Graph builder helper
 # ---------------------------------------------------------------------------
 
-_PHASE_PALETTE = ['#0d6efd', '#198754', '#ffc107', '#fd7e14', '#0dcaf0', '#6f42c1', '#dc3545', '#6c757d']
+_PHASE_PALETTE = [
+    "#0d6efd",
+    "#198754",
+    "#ffc107",
+    "#fd7e14",
+    "#0dcaf0",
+    "#6f42c1",
+    "#dc3545",
+    "#6c757d",
+]
 
 
 def _phase_colour(phase_pk: int) -> str:
@@ -370,7 +402,7 @@ def _build_playbook_graph(playbook, user) -> dict:
     """
     from django.urls import reverse
     from django.db.models import Prefetch
-    from methodology.models import Activity as ActivityModel, Skill, Rule, ArtifactInput, Artifact
+    from methodology.models import Activity as ActivityModel, Skill, Rule
     from methodology.services.workflow_service import WorkflowService
     from methodology.services.phase_service import PhaseService
 
@@ -378,19 +410,23 @@ def _build_playbook_graph(playbook, user) -> dict:
     emitted_ids = set()
     pending_edges = []
 
-    def _emit_node(node_id, node_type, label, entity_pk, detail_url, embed_url, meta=None):
+    def _emit_node(
+        node_id, node_type, label, entity_pk, detail_url, embed_url, meta=None
+    ):
         if node_id in emitted_ids:
             return
         emitted_ids.add(node_id)
-        nodes.append({
-            'id': node_id,
-            'type': node_type,
-            'label': label,
-            'entity_pk': entity_pk,
-            'detail_url': detail_url,
-            'embed_url': embed_url,
-            'meta': meta or {},
-        })
+        nodes.append(
+            {
+                "id": node_id,
+                "type": node_type,
+                "label": label,
+                "entity_pk": entity_pk,
+                "detail_url": detail_url,
+                "embed_url": embed_url,
+                "meta": meta or {},
+            }
+        )
 
     # --- Phases ---
     try:
@@ -403,128 +439,192 @@ def _build_playbook_graph(playbook, user) -> dict:
     for phase in phase_qs:
         colour = _phase_colour(phase.pk)
         phase_colour_map[phase.pk] = colour
-        phases_data.append({'id': phase.pk, 'name': phase.name, 'colour': colour})
+        phases_data.append({"id": phase.pk, "name": phase.name, "colour": colour})
 
     # --- Workflows ---
     workflows = WorkflowService.get_workflows_for_playbook(playbook.pk)
     for wf in workflows:
-        wf_id = f'workflow:{wf.pk}'
-        detail_url = reverse('workflow_detail', kwargs={'playbook_pk': playbook.pk, 'pk': wf.pk})
-        _emit_node(wf_id, 'workflow', wf.name, wf.pk, detail_url, detail_url + '?embed=1',
-                   {'abbreviation': wf.abbreviation or ''})
+        wf_id = f"workflow:{wf.pk}"
+        detail_url = reverse(
+            "workflow_detail", kwargs={"playbook_pk": playbook.pk, "pk": wf.pk}
+        )
+        _emit_node(
+            wf_id,
+            "workflow",
+            wf.name,
+            wf.pk,
+            detail_url,
+            detail_url + "?embed=1",
+            {"abbreviation": wf.abbreviation or ""},
+        )
 
     # --- Activities (single efficient query for all workflows) ---
-    activities_qs = ActivityModel.objects.filter(
-        workflow__playbook=playbook
-    ).select_related(
-        'workflow', 'agent', 'phase', 'predecessor'
-    ).prefetch_related(
-        Prefetch('skills', queryset=Skill.objects.filter(playbook=playbook)),
-        Prefetch('rules', queryset=Rule.objects.filter(playbook=playbook)),
-        Prefetch(
-            'input_artifacts',
-            queryset=ArtifactInput.objects.select_related('artifact').filter(
-                artifact__playbook=playbook
+    activities_qs = (
+        ActivityModel.objects.filter(workflow__playbook=playbook)
+        .select_related("workflow", "agent", "phase", "predecessor")
+        .prefetch_related(
+            Prefetch("skills", queryset=Skill.objects.filter(playbook=playbook)),
+            Prefetch("rules", queryset=Rule.objects.filter(playbook=playbook)),
+            Prefetch(
+                "input_artifacts",
+                queryset=ArtifactInput.objects.select_related("artifact").filter(
+                    artifact__playbook=playbook
+                ),
             ),
-        ),
-    ).order_by('workflow__order', 'order', 'name')
+        )
+        .order_by("workflow__order", "order", "name")
+    )
 
     for act in activities_qs:
-        act_id = f'activity:{act.pk}'
-        wf_id = f'workflow:{act.workflow_id}'
-        detail_url = reverse('activity_detail', kwargs={
-            'playbook_pk': playbook.pk,
-            'workflow_pk': act.workflow_id,
-            'activity_pk': act.pk,
-        })
+        act_id = f"activity:{act.pk}"
+        wf_id = f"workflow:{act.workflow_id}"
+        detail_url = reverse(
+            "activity_detail",
+            kwargs={
+                "playbook_pk": playbook.pk,
+                "workflow_pk": act.workflow_id,
+                "activity_pk": act.pk,
+            },
+        )
         meta = {}
         if act.phase_id:
-            meta['phase_id'] = act.phase_id
-            meta['phase_name'] = act.phase.name if act.phase else ''
-            meta['phase_colour'] = phase_colour_map.get(act.phase_id, '#6c757d')
-        meta['display_code'] = act.reference_label or ''
-        meta['order'] = act.order
-        _emit_node(act_id, 'activity', act.name, act.pk, detail_url, detail_url + '?embed=1', meta)
-        pending_edges.append((wf_id, act_id, 'contains'))
+            meta["phase_id"] = act.phase_id
+            meta["phase_name"] = act.phase.name if act.phase else ""
+            meta["phase_colour"] = phase_colour_map.get(act.phase_id, "#6c757d")
+        meta["display_code"] = act.reference_label or ""
+        meta["order"] = act.order
+        _emit_node(
+            act_id,
+            "activity",
+            act.name,
+            act.pk,
+            detail_url,
+            detail_url + "?embed=1",
+            meta,
+        )
+        pending_edges.append((wf_id, act_id, "contains"))
 
         if act.predecessor_id:
-            pending_edges.append((f'activity:{act.predecessor_id}', act_id, 'predecessor'))
+            pending_edges.append(
+                (f"activity:{act.predecessor_id}", act_id, "predecessor")
+            )
 
         if act.agent_id and act.agent and act.agent.playbook_id == playbook.pk:
-            ag_id = f'agent:{act.agent_id}:activity:{act.pk}'
-            ag_detail = reverse('agent_detail', kwargs={'pk': act.agent_id})
-            _emit_node(ag_id, 'agent', act.agent.name, act.agent_id, ag_detail, ag_detail + '?embed=1')
-            pending_edges.append((act_id, ag_id, 'assigned_agent'))
+            ag_id = f"agent:{act.agent_id}:activity:{act.pk}"
+            ag_detail = reverse("agent_detail", kwargs={"pk": act.agent_id})
+            _emit_node(
+                ag_id,
+                "agent",
+                act.agent.name,
+                act.agent_id,
+                ag_detail,
+                ag_detail + "?embed=1",
+            )
+            pending_edges.append((act_id, ag_id, "assigned_agent"))
 
         for skill in act.skills.all():
-            sk_id = f'skill:{skill.pk}:activity:{act.pk}'
-            sk_detail = reverse('skill_detail', kwargs={'playbook_pk': playbook.pk, 'skill_pk': skill.pk})
-            _emit_node(sk_id, 'skill', skill.title, skill.pk, sk_detail, sk_detail + '?embed=1')
-            pending_edges.append((act_id, sk_id, 'uses_skill'))
+            sk_id = f"skill:{skill.pk}:activity:{act.pk}"
+            sk_detail = reverse(
+                "skill_detail",
+                kwargs={"playbook_pk": playbook.pk, "skill_pk": skill.pk},
+            )
+            _emit_node(
+                sk_id, "skill", skill.title, skill.pk, sk_detail, sk_detail + "?embed=1"
+            )
+            pending_edges.append((act_id, sk_id, "uses_skill"))
 
         for rule in act.rules.all():
-            r_id = f'rule:{rule.pk}:activity:{act.pk}'
-            r_detail = reverse('rule_detail', kwargs={'playbook_pk': playbook.pk, 'rule_pk': rule.pk})
-            _emit_node(r_id, 'rule', rule.title, rule.pk, r_detail, r_detail + '?embed=1')
-            pending_edges.append((act_id, r_id, 'governed_by_rule'))
+            r_id = f"rule:{rule.pk}:activity:{act.pk}"
+            r_detail = reverse(
+                "rule_detail", kwargs={"playbook_pk": playbook.pk, "rule_pk": rule.pk}
+            )
+            _emit_node(
+                r_id, "rule", rule.title, rule.pk, r_detail, r_detail + "?embed=1"
+            )
+            pending_edges.append((act_id, r_id, "governed_by_rule"))
 
         for ai in act.input_artifacts.all():
             art = ai.artifact
-            art_id = f'artifact:{art.pk}:activity:{act.pk}'
-            art_detail = reverse('artifact_detail', kwargs={'pk': art.pk})
-            _emit_node(art_id, 'artifact', art.name, art.pk, art_detail, art_detail + '?embed=1')
-            pending_edges.append((art_id, act_id, 'consumes'))
+            art_id = f"artifact:{art.pk}:activity:{act.pk}"
+            art_detail = reverse("artifact_detail", kwargs={"pk": art.pk})
+            _emit_node(
+                art_id,
+                "artifact",
+                art.name,
+                art.pk,
+                art_detail,
+                art_detail + "?embed=1",
+            )
+            pending_edges.append((art_id, act_id, "consumes"))
 
     # --- Sequence edges: consecutive activities per workflow, ordered by `order` ---
     from collections import defaultdict
+
     workflow_act_map = defaultdict(list)
     for act in activities_qs:
         workflow_act_map[act.workflow_id].append(act)
     for wf_acts in workflow_act_map.values():
         sorted_acts = sorted(wf_acts, key=lambda a: (a.order, a.pk))
         for i in range(len(sorted_acts) - 1):
-            pending_edges.append((
-                f'activity:{sorted_acts[i].pk}',
-                f'activity:{sorted_acts[i + 1].pk}',
-                'sequence',
-            ))
+            pending_edges.append(
+                (
+                    f"activity:{sorted_acts[i].pk}",
+                    f"activity:{sorted_acts[i + 1].pk}",
+                    "sequence",
+                )
+            )
 
     # --- Artifacts (produced_by — catch artifacts not yet added via input_artifacts) ---
-    artifacts_qs = Artifact.objects.filter(playbook=playbook).select_related('produced_by')
+    artifacts_qs = Artifact.objects.filter(playbook=playbook).select_related(
+        "produced_by"
+    )
     for art in artifacts_qs:
         if art.produced_by_id:
-            art_id = f'artifact:{art.pk}:activity:{art.produced_by_id}'
-            art_detail = reverse('artifact_detail', kwargs={'pk': art.pk})
-            _emit_node(art_id, 'artifact', art.name, art.pk, art_detail, art_detail + '?embed=1')
-            pending_edges.append((f'activity:{art.produced_by_id}', art_id, 'produces'))
+            art_id = f"artifact:{art.pk}:activity:{art.produced_by_id}"
+            art_detail = reverse("artifact_detail", kwargs={"pk": art.pk})
+            _emit_node(
+                art_id,
+                "artifact",
+                art.name,
+                art.pk,
+                art_detail,
+                art_detail + "?embed=1",
+            )
+            pending_edges.append((f"activity:{art.produced_by_id}", art_id, "produces"))
 
     # --- Emit edges (all nodes now known; skip dangling endpoints) ---
     seen_edge_keys = set()
     edges = []
     for source_id, target_id, relationship in pending_edges:
         if source_id not in emitted_ids or target_id not in emitted_ids:
-            logger.debug(f'Graph: skipping dangling edge {source_id} → {target_id} ({relationship})')
+            logger.debug(
+                f"Graph: skipping dangling edge {source_id} → {target_id} ({relationship})"
+            )
             continue
         edge_key = (source_id, target_id, relationship)
         if edge_key in seen_edge_keys:
-            logger.warning(f'Graph: duplicate edge {source_id} → {target_id} ({relationship}); skipping')
+            logger.warning(
+                f"Graph: duplicate edge {source_id} → {target_id} ({relationship}); skipping"
+            )
             continue
         seen_edge_keys.add(edge_key)
-        edges.append({'source': source_id, 'target': target_id, 'relationship': relationship})
+        edges.append(
+            {"source": source_id, "target": target_id, "relationship": relationship}
+        )
 
     return {
-        'nodes': nodes,
-        'edges': edges,
-        'phases': phases_data,
-        'playbook_name': playbook.name,
-        'playbook_status': playbook.status,
+        "nodes": nodes,
+        "edges": edges,
+        "phases": phases_data,
+        "playbook_name": playbook.name,
+        "playbook_status": playbook.status,
     }
 
 
 class WorkflowViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Workflow resource.
-    
+
     Maps to MCP tools: create_workflow, list_workflows, get_workflow,
     update_workflow, delete_workflow, export_workflow_to_local,
     import_workflow_from_local, apply_upload_protocol, create_pip_from_protocol.
@@ -533,77 +633,77 @@ class WorkflowViewSet(viewsets.ModelViewSet):
     resource_name = "Workflow"
     serializer_class = WorkflowSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly, IsDraftPlaybook]
-    
+
     def get_queryset(self):
         """Workflows for playbooks accessible to the current user (owned or public non-draft)."""
         accessible = _accessible_playbook_ids(self.request.user)
         queryset = Workflow.objects.filter(playbook_id__in=accessible)
 
-        playbook_id = self.request.query_params.get('playbook_id')
+        playbook_id = self.request.query_params.get("playbook_id")
         if playbook_id:
             queryset = queryset.filter(playbook_id=playbook_id)
 
-        return queryset.order_by('order')
-    
+        return queryset.order_by("order")
+
     def create(self, request):
         """
         Create workflow in draft playbook.
-        
+
         Maps to: create_workflow MCP tool
         """
-        logger.info(f'API: create_workflow called by user={request.user.id}')
-        
+        logger.info(f"API: create_workflow called by user={request.user.id}")
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         # Get playbook and verify ownership
         # DRF stores FK relation as source key ('playbook'), fall back to raw request data
-        if hasattr(serializer.validated_data.get('playbook'), 'id'):
-            playbook_id = serializer.validated_data['playbook'].id
+        if hasattr(serializer.validated_data.get("playbook"), "id"):
+            playbook_id = serializer.validated_data["playbook"].id
         else:
-            playbook_id = request.data.get('playbook_id')
-        playbook = get_object_or_404(
-            Playbook,
-            id=playbook_id,
-            author=request.user
-        )
-        
+            playbook_id = request.data.get("playbook_id")
+        playbook = get_object_or_404(Playbook, id=playbook_id, author=request.user)
+
         # Check draft status
-        if playbook.status != 'draft':
+        if playbook.status != "draft":
             return Response(
-                {'error': f'Cannot modify released playbook "{playbook.name}". Use create_pip instead.',
-                 'code': 'PERMISSION_DENIED'},
-                status=status.HTTP_403_FORBIDDEN
+                {
+                    "error": f'Cannot modify released playbook "{playbook.name}". Use create_pip instead.',
+                    "code": "PERMISSION_DENIED",
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         # Create workflow using service (takes playbook object, not playbook_id)
         workflow = WorkflowService.create_workflow(
             playbook=playbook,
-            name=serializer.validated_data['name'],
-            description=serializer.validated_data.get('description', ''),
+            name=serializer.validated_data["name"],
+            description=serializer.validated_data.get("description", ""),
         )
-        
+
         # Increment parent version
         old_version = playbook.version
-        playbook.version += Decimal('0.1')
+        playbook.version += Decimal("0.1")
         playbook.save()
-        
-        logger.info(f'API: Created workflow id={workflow.id}, parent version {old_version} → {playbook.version}')
-        
+
+        logger.info(
+            f"API: Created workflow id={workflow.id}, parent version {old_version} → {playbook.version}"
+        )
+
         response_serializer = self.get_serializer(workflow)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-    
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def export(self, request, pk=None):
         """
         Export workflow to markdown files. Read-only — allowed on released playbooks too.
 
         Maps to: export_workflow_to_local MCP tool
         """
-        logger.info(f'API: export_workflow_to_local called - workflow_id={pk}')
+        logger.info(f"API: export_workflow_to_local called - workflow_id={pk}")
 
         self.get_object()
-        folder_name = request.data.get('folder_name')
+        folder_name = request.data.get("folder_name")
 
         from methodology.services.workflow_export_service import WorkflowExportService
 
@@ -612,37 +712,36 @@ class WorkflowViewSet(viewsets.ModelViewSet):
             folder_name=folder_name,
         )
         return Response(result)
-    
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
     def import_workflow(self, request, pk=None):
         """
         Import workflow from markdown files (diff-only; no writes on released playbooks).
 
         Maps to: import_workflow_from_local MCP tool
         """
-        logger.info(f'API: import_workflow_from_local called - workflow_id={pk}')
-        
-        workflow = self.get_object()
-        source_directory = request.data.get('source_directory')
-        auto_apply = request.data.get('auto_apply', False)
-        
+        logger.info(f"API: import_workflow_from_local called - workflow_id={pk}")
+
+        self.get_object()
+        source_directory = request.data.get("source_directory")
+
         if not source_directory:
             return Response(
-                {'error': 'source_directory is required', 'code': 'VALIDATION_ERROR'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "source_directory is required", "code": "VALIDATION_ERROR"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Import service here to avoid circular imports
         from methodology.services.workflow_import_service import WorkflowImportService
-        
+
         result = WorkflowImportService.import_workflow_from_markdown(
             workflow_id=pk,
             source_directory=source_directory,
         )
-        
+
         return Response(result)
-    
-    @action(detail=True, methods=['post'], url_path='apply-protocol')
+
+    @action(detail=True, methods=["post"], url_path="apply-protocol")
     def apply_protocol(self, request, pk=None):
         """
         Apply upload protocol to draft workflow (workflow_id parsed from the protocol file).
@@ -651,39 +750,50 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         The facade calls POST /api/workflows/0/apply-protocol/ where pk=0 is a placeholder;
         the actual workflow is resolved from the protocol file by the service.
         """
-        logger.info('API: apply_upload_protocol called (pk=%s — resolved from protocol file)', pk)
+        logger.info(
+            "API: apply_upload_protocol called (pk=%s — resolved from protocol file)",
+            pk,
+        )
 
-        protocol_file = request.data.get('protocol_file')
+        protocol_file = request.data.get("protocol_file")
         if not protocol_file:
             return Response(
-                {'error': 'protocol_file is required', 'code': 'VALIDATION_ERROR'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "protocol_file is required", "code": "VALIDATION_ERROR"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from methodology.services.workflow_protocol_service import WorkflowProtocolService
+        from methodology.services.workflow_protocol_service import (
+            WorkflowProtocolService,
+        )
 
         try:
             result = WorkflowProtocolService.apply_upload_protocol(protocol_file)
         except (ValidationError, PermissionError) as exc:
-            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(result)
-    
-    @action(detail=True, methods=['post'], url_path='create-pip')
+
+    @action(detail=True, methods=["post"], url_path="create-pip")
     def create_pip(self, request, pk=None):
         """
         Create PIP from protocol for released workflow.
-        
+
         Maps to: create_pip_from_protocol MCP tool
         """
-        logger.info('API: create_pip_from_protocol called (pk=%s — resolved from protocol file)', pk)
+        logger.info(
+            "API: create_pip_from_protocol called (pk=%s — resolved from protocol file)",
+            pk,
+        )
 
-        protocol_file = request.data.get('protocol_file')
-        pip_title = request.data.get('pip_title')
+        protocol_file = request.data.get("protocol_file")
+        pip_title = request.data.get("pip_title")
 
         if not protocol_file or not pip_title:
             return Response(
-                {'error': 'protocol_file and pip_title are required', 'code': 'VALIDATION_ERROR'},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "error": "protocol_file and pip_title are required",
+                    "code": "VALIDATION_ERROR",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         from methodology.services.pip_service import PIPService
@@ -693,14 +803,14 @@ class WorkflowViewSet(viewsets.ModelViewSet):
                 protocol_file, pip_title, actor=request.user
             )
         except (ValidationError, ValueError) as exc:
-            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(result, status=status.HTTP_201_CREATED)
 
 
 class ActivityViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Activity resource.
-    
+
     Maps to MCP tools: create_activity, list_activities, get_activity,
     update_activity, delete_activity, set_predecessor.
     """
@@ -711,113 +821,118 @@ class ActivityViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         """Use lightweight list serializer (no guidance) for list action."""
-        if self.action == 'list':
+        if self.action == "list":
             return ActivityListSerializer
         return ActivitySerializer
 
     def get_queryset(self):
         """Activities for workflows in playbooks accessible to the current user."""
         accessible = _accessible_playbook_ids(self.request.user)
-        queryset = Activity.objects.filter(
-            workflow__playbook_id__in=accessible
-        ).select_related(
-            'predecessor', 'agent', 'workflow', 'workflow__playbook'
-        ).prefetch_related('skills')
+        queryset = (
+            Activity.objects.filter(workflow__playbook_id__in=accessible)
+            .select_related("predecessor", "agent", "workflow", "workflow__playbook")
+            .prefetch_related("skills")
+        )
 
-        workflow_id = self.request.query_params.get('workflow_id')
+        workflow_id = self.request.query_params.get("workflow_id")
         if workflow_id:
             queryset = queryset.filter(workflow_id=workflow_id)
 
-        return queryset.order_by('order')
-    
+        return queryset.order_by("order")
+
     def create(self, request):
         """
         Create activity in workflow (draft playbook only).
-        
+
         Maps to: create_activity MCP tool
         """
-        logger.info(f'API: create_activity called by user={request.user.id}')
-        
+        logger.info(f"API: create_activity called by user={request.user.id}")
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         # workflow_id is now writable via explicit IntegerField on ActivitySerializer
-        workflow_id = serializer.validated_data.get('workflow_id') or request.data.get('workflow_id')
+        workflow_id = serializer.validated_data.get("workflow_id") or request.data.get(
+            "workflow_id"
+        )
         workflow = get_object_or_404(
-            Workflow,
-            id=workflow_id,
-            playbook__author=request.user
+            Workflow, id=workflow_id, playbook__author=request.user
         )
 
         # Check draft status
-        if workflow.playbook.status != 'draft':
+        if workflow.playbook.status != "draft":
             return Response(
-                {'error': f'Cannot modify released playbook "{workflow.playbook.name}". Use create_pip instead.',
-                 'code': 'PERMISSION_DENIED'},
-                status=status.HTTP_403_FORBIDDEN
+                {
+                    "error": f'Cannot modify released playbook "{workflow.playbook.name}". Use create_pip instead.',
+                    "code": "PERMISSION_DENIED",
+                },
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # Create activity using service (takes workflow object, not workflow_id)
         activity = ActivityService.create_activity(
             workflow=workflow,
-            name=serializer.validated_data['name'],
-            guidance=serializer.validated_data.get('guidance', ''),
-            phase_id=serializer.validated_data.get('phase_id'),
-            order=serializer.validated_data.get('order', 1)
+            name=serializer.validated_data["name"],
+            guidance=serializer.validated_data.get("guidance", ""),
+            phase_id=serializer.validated_data.get("phase_id"),
+            order=serializer.validated_data.get("order", 1),
         )
-        
+
         # Increment grandparent version
         playbook = workflow.playbook
         old_version = playbook.version
-        playbook.version += Decimal('0.1')
+        playbook.version += Decimal("0.1")
         playbook.save()
-        
-        logger.info(f'API: Created activity id={activity.id}, grandparent version {old_version} → {playbook.version}')
-        
+
+        logger.info(
+            f"API: Created activity id={activity.id}, grandparent version {old_version} → {playbook.version}"
+        )
+
         response_serializer = self.get_serializer(activity)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-    
-    @action(detail=True, methods=['put'])
+
+    @action(detail=True, methods=["put"])
     def predecessor(self, request, pk=None):
         """
         Set predecessor dependency.
-        
+
         Maps to: set_predecessor MCP tool
         """
-        logger.info(f'API: set_predecessor called - activity_id={pk}')
-        
+        logger.info(f"API: set_predecessor called - activity_id={pk}")
+
         activity = self.get_object()
-        predecessor_id = request.data.get('predecessor_id')
-        
+        predecessor_id = request.data.get("predecessor_id")
+
         if not predecessor_id:
             return Response(
-                {'error': 'predecessor_id is required', 'code': 'VALIDATION_ERROR'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "predecessor_id is required", "code": "VALIDATION_ERROR"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Set predecessor using service
         try:
             from methodology.models import Activity as ActivityModel
+
             predecessor = ActivityModel.objects.get(pk=predecessor_id)
             ActivityService.set_predecessor(activity, predecessor)
         except ActivityModel.DoesNotExist:
             return Response(
-                {'error': 'Predecessor activity not found', 'code': 'VALIDATION_ERROR'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Predecessor activity not found", "code": "VALIDATION_ERROR"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         except (ValueError, ValidationError) as e:
             return Response(
-                {'error': str(e), 'code': 'VALIDATION_ERROR'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": str(e), "code": "VALIDATION_ERROR"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Refresh from DB
         activity.refresh_from_db()
-        
+
         response_serializer = self.get_serializer(activity)
         return Response(response_serializer.data)
-    
-    @action(detail=True, methods=['put', 'delete'])
+
+    @action(detail=True, methods=["put", "delete"])
     def skill(self, request, pk=None):
         """
         Add (PUT) or remove (DELETE) one skill on an activity.
@@ -825,129 +940,147 @@ class ActivityViewSet(viewsets.ModelViewSet):
         Maps to: link_skill_to_activity / unlink_skill_from_activity MCP tools
         """
         activity = self.get_object()
-        if request.method == 'PUT':
-            logger.info(f'API: link_skill_to_activity called - activity_id={pk}')
-            skill_id = request.data.get('skill_id')
+        if request.method == "PUT":
+            logger.info(f"API: link_skill_to_activity called - activity_id={pk}")
+            skill_id = request.data.get("skill_id")
             if not skill_id:
                 return Response(
-                    {'error': 'skill_id is required', 'code': 'VALIDATION_ERROR'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"error": "skill_id is required", "code": "VALIDATION_ERROR"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             try:
                 ActivityService.add_activity_skill(activity.id, int(skill_id))
             except ValidationError as e:
                 return Response(
-                    {'error': str(e), 'code': 'VALIDATION_ERROR'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"error": str(e), "code": "VALIDATION_ERROR"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             activity.refresh_from_db()
-            skill_ids = list(activity.skills.values_list('id', flat=True))
+            skill_ids = list(activity.skills.values_list("id", flat=True))
             skill = get_object_or_404(Skill, id=skill_id)
-            return Response({
-                'activity_id': activity.id,
-                'skill_id': skill.id,
-                'skill_title': skill.title,
-                'skill_ids': skill_ids,
-            })
-        logger.info(f'API: unlink_skill_from_activity called - activity_id={pk}')
-        skill_id = request.data.get('skill_id')
+            return Response(
+                {
+                    "activity_id": activity.id,
+                    "skill_id": skill.id,
+                    "skill_title": skill.title,
+                    "skill_ids": skill_ids,
+                }
+            )
+        logger.info(f"API: unlink_skill_from_activity called - activity_id={pk}")
+        skill_id = request.data.get("skill_id")
         if not skill_id:
             return Response(
-                {'error': 'skill_id is required', 'code': 'VALIDATION_ERROR'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "skill_id is required", "code": "VALIDATION_ERROR"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         ActivityService.remove_activity_skill(activity.id, int(skill_id))
         activity.refresh_from_db()
-        skill_ids = list(activity.skills.values_list('id', flat=True))
-        return Response({
-            'activity_id': activity.id,
-            'skill_id': int(skill_id),
-            'skill_ids': skill_ids,
-        })
+        skill_ids = list(activity.skills.values_list("id", flat=True))
+        return Response(
+            {
+                "activity_id": activity.id,
+                "skill_id": int(skill_id),
+                "skill_ids": skill_ids,
+            }
+        )
 
-    @action(detail=True, methods=['put'], url_path='skills')
+    @action(detail=True, methods=["put"], url_path="skills")
     def skills_bulk(self, request, pk=None):
         """
         Replace all skills on an activity.
 
         Maps to: set_activity_skills MCP tool
         """
-        logger.info(f'API: set_activity_skills called - activity_id={pk}')
+        logger.info(f"API: set_activity_skills called - activity_id={pk}")
         activity = self.get_object()
-        skill_ids = request.data.get('skill_ids', [])
+        skill_ids = request.data.get("skill_ids", [])
         if skill_ids is None:
             skill_ids = []
         try:
             ActivityService.set_activity_skills(activity.id, skill_ids)
         except ValidationError as e:
             return Response(
-                {'error': str(e), 'code': 'VALIDATION_ERROR'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": str(e), "code": "VALIDATION_ERROR"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         activity.refresh_from_db()
-        result_ids = list(activity.skills.values_list('id', flat=True))
-        return Response({'activity_id': activity.id, 'skill_ids': result_ids})
-    
-    @action(detail=True, methods=['put', 'delete'])
+        result_ids = list(activity.skills.values_list("id", flat=True))
+        return Response({"activity_id": activity.id, "skill_ids": result_ids})
+
+    @action(detail=True, methods=["put", "delete"])
     def agent(self, request, pk=None):
         """
         Link (PUT) or unlink (DELETE) agent from activity.
-        
+
         Maps to: link_agent_to_activity / unlink_agent_from_activity MCP tools
         """
         activity = self.get_object()
-        if request.method == 'PUT':
-            logger.info(f'API: link_agent_to_activity called - activity_id={pk}')
-            agent_id = request.data.get('agent_id')
+        if request.method == "PUT":
+            logger.info(f"API: link_agent_to_activity called - activity_id={pk}")
+            agent_id = request.data.get("agent_id")
             if not agent_id:
                 return Response(
-                    {'error': 'agent_id is required', 'code': 'VALIDATION_ERROR'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"error": "agent_id is required", "code": "VALIDATION_ERROR"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             agent = get_object_or_404(Agent, id=agent_id)
             if agent.playbook_id != activity.workflow.playbook_id:
                 return Response(
-                    {'error': 'Cannot link agent from different playbook', 'code': 'CROSS_PLAYBOOK'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {
+                        "error": "Cannot link agent from different playbook",
+                        "code": "CROSS_PLAYBOOK",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             activity.agent = agent
             activity.save()
-            return Response({'activity_id': activity.id, 'agent_id': agent.id, 'agent_name': agent.name})
+            return Response(
+                {
+                    "activity_id": activity.id,
+                    "agent_id": agent.id,
+                    "agent_name": agent.name,
+                }
+            )
         else:  # DELETE
-            logger.info(f'API: unlink_agent_from_activity called - activity_id={pk}')
+            logger.info(f"API: unlink_agent_from_activity called - activity_id={pk}")
             activity.agent = None
             activity.save()
-            return Response({'activity_id': activity.id, 'agent_id': None})
-    
-    @action(detail=True, methods=['put'])
+            return Response({"activity_id": activity.id, "agent_id": None})
+
+    @action(detail=True, methods=["put"])
     def rules(self, request, pk=None):
         """
         Replace activity's linked rules.
-        
+
         Maps to: set_activity_rules MCP tool
         """
-        logger.info(f'API: set_activity_rules called - activity_id={pk}')
-        
+        logger.info(f"API: set_activity_rules called - activity_id={pk}")
+
         activity = self.get_object()
-        rule_ids = request.data.get('rule_ids', [])
-        
+        rule_ids = request.data.get("rule_ids", [])
+
         # Verify all rules exist and are in same playbook
         rules = Rule.objects.filter(id__in=rule_ids)
         for rule in rules:
             if rule.playbook_id != activity.workflow.playbook_id:
                 return Response(
-                    {'error': 'Cannot link rule from different playbook', 'code': 'CROSS_PLAYBOOK'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {
+                        "error": "Cannot link rule from different playbook",
+                        "code": "CROSS_PLAYBOOK",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-        
+
         # Replace rules
         activity.rules.set(rules)
-        
-        return Response({
-            'activity_id': activity.id,
-            'rule_ids': list(rule_ids),
-            'count': len(rule_ids)
-        })
+
+        return Response(
+            {
+                "activity_id": activity.id,
+                "rule_ids": list(rule_ids),
+                "count": len(rule_ids),
+            }
+        )
 
 
 # Continuing with remaining ViewSets in next file due to length...

@@ -18,13 +18,19 @@ _PLAYBOOK_VISIBILITY_ALLOWED = frozenset({"private", "public"})
 def _validate_playbook_visibility(visibility: str) -> None:
     """Raise ValidationError if visibility is not allowed for GUI/MCP creates and updates."""
     if visibility not in _PLAYBOOK_VISIBILITY_ALLOWED:
-        logger.warning("Rejected playbook visibility value %r (allowed=%s)", visibility, _PLAYBOOK_VISIBILITY_ALLOWED)
+        logger.warning(
+            "Rejected playbook visibility value %r (allowed=%s)",
+            visibility,
+            _PLAYBOOK_VISIBILITY_ALLOWED,
+        )
         raise ValidationError("Visibility must be private or public.")
 
 
 def _playbook_release_snapshot(playbook: Playbook) -> dict:
     """JSON-serializable snapshot of playbook structure for PlaybookVersion."""
-    workflows = Workflow.objects.filter(playbook=playbook).order_by("order", "created_at")
+    workflows = Workflow.objects.filter(playbook=playbook).order_by(
+        "order", "created_at"
+    )
     return {
         "name": playbook.name,
         "description": playbook.description,
@@ -32,7 +38,12 @@ def _playbook_release_snapshot(playbook: Playbook) -> dict:
         "status": playbook.status,
         "version": str(playbook.version),
         "workflows": [
-            {"id": w.pk, "name": w.name, "order": w.order, "abbreviation": w.abbreviation}
+            {
+                "id": w.pk,
+                "name": w.name,
+                "order": w.order,
+                "abbreviation": w.abbreviation,
+            }
             for w in workflows
         ],
     }
@@ -42,13 +53,20 @@ class PlaybookService:
     """Service class for playbook CRUD operations."""
 
     @staticmethod
-    def create_playbook(name, description, category, author, 
-                       status='draft', visibility='private', source='owned'):
+    def create_playbook(
+        name,
+        description,
+        category,
+        author,
+        status="draft",
+        visibility="private",
+        source="owned",
+    ):
         """
         Create playbook with validation.
-        
+
         Used by both UI and MCP.
-        
+
         :param name: Playbook name (max 100 chars, unique per author)
         :param description: Description (max 500 chars)
         :param category: Category (product/development/research/design/other)
@@ -58,7 +76,7 @@ class PlaybookService:
         :param source: owned/downloaded (default: owned)
         :returns: Created Playbook instance
         :raises ValidationError: If validation fails
-        
+
         Example:
             >>> playbook = PlaybookService.create_playbook(
             ...     name="React Development",
@@ -67,51 +85,62 @@ class PlaybookService:
             ...     author=user
             ... )
         """
-        logger.info(f"Creating playbook '{name}' for author {author.id}, status={status}")
-        
+        logger.info(
+            f"Creating playbook '{name}' for author {author.id}, status={status}"
+        )
+
         # Validate name
         if not name or not name.strip():
-            logger.warning(f"Playbook creation failed: empty name")
+            logger.warning("Playbook creation failed: empty name")
             raise ValidationError("Playbook name cannot be empty")
 
         _validate_playbook_visibility(visibility)
 
         # Set initial version based on status
-        initial_version = Decimal('1.0') if status in ['released', 'active'] else Decimal('0.1')
-        
+        initial_version = (
+            Decimal("1.0") if status in ["released", "active"] else Decimal("0.1")
+        )
+
         try:
             playbook = Playbook.objects.create(
                 name=name.strip(),
-                description=description.strip() if description else '',
+                description=description.strip() if description else "",
                 category=category,
                 author=author,
                 status=status,
                 version=initial_version,
                 visibility=visibility,
-                source=source
+                source=source,
             )
-            
+
             # Create initial version record for non-draft playbooks (active and released both
             # start at version 1.0 and need an audit trail entry from day one).
-            if status in ['released', 'active']:
+            if status in ["released", "active"]:
                 PlaybookVersion.objects.create(
                     playbook=playbook,
-                    version_number=Decimal('1.0'),
-                    snapshot_data={'name': playbook.name, 'version': str(playbook.version)},
-                    change_summary='Initial version',
-                    description='Initial version',
+                    version_number=Decimal("1.0"),
+                    snapshot_data={
+                        "name": playbook.name,
+                        "version": str(playbook.version),
+                    },
+                    change_summary="Initial version",
+                    description="Initial version",
                     is_major=True,
                     source=VersionSource.RELEASE,
                     created_by=author,
                 )
-            
-            logger.info(f"Created playbook '{name}' (id={playbook.id}, version={playbook.version})")
+
+            logger.info(
+                f"Created playbook '{name}' (id={playbook.id}, version={playbook.version})"
+            )
             return playbook
-            
+
         except IntegrityError as e:
-            logger.error(f"Playbook creation failed: duplicate name '{name}' for author {author.id}")
+            logger.error(
+                f"Playbook creation failed: duplicate name '{name}' for author {author.id}"
+            )
             raise ValidationError(f"Playbook '{name}' already exists") from e
-    
+
     @staticmethod
     def get_playbook(playbook_id, user, *, prefetch_workflows: bool = False):
         """
@@ -170,25 +199,25 @@ class PlaybookService:
                 f"Playbook with id={playbook_id} does not exist."
             ) from None
         return playbook
-    
+
     @staticmethod
     def list_playbooks(author, status=None):
         """
         List playbooks for author, optionally filtered by status.
-        
+
         :param author: User instance
         :param status: Optional status filter (draft/released/active/disabled)
         :returns: QuerySet of Playbook instances
-        
+
         Example:
             >>> draft_playbooks = PlaybookService.list_playbooks(user, status='draft')
         """
         logger.info(f"Listing playbooks for author {author.id}, status_filter={status}")
-        
+
         queryset = Playbook.objects.filter(author=author)
         if status:
             queryset = queryset.filter(status=status)
-        
+
         playbooks = list(queryset)
         logger.info(f"Found {len(playbooks)} playbooks")
         return playbooks
@@ -227,15 +256,19 @@ class PlaybookService:
         :returns: List of Playbook instances accessible via teams.
         """
         from methodology.models import TeamMembership, TeamPlaybook
-        
+
         logger.info(f"Listing team playbooks for user {user.id}")
-        
+
         # Get all teams where user is a member
-        team_ids = TeamMembership.objects.filter(user=user).values_list("team_id", flat=True)
-        
+        team_ids = TeamMembership.objects.filter(user=user).values_list(
+            "team_id", flat=True
+        )
+
         # Get all playbooks linked to those teams (excluding own-authored)
-        playbook_ids = TeamPlaybook.objects.filter(team_id__in=team_ids).values_list("playbook_id", flat=True)
-        
+        playbook_ids = TeamPlaybook.objects.filter(team_id__in=team_ids).values_list(
+            "playbook_id", flat=True
+        )
+
         qs = (
             Playbook.objects.filter(pk__in=playbook_ids)
             .exclude(author=user)
@@ -250,40 +283,44 @@ class PlaybookService:
     def get_accessible_playbook_ids(user):
         """
         Get IDs of all playbooks accessible to user (owned + public + team).
-        
+
         Useful for filtering related objects (workflows, activities, etc.) to only
         show items from playbooks the user can access.
-        
+
         :param user: User whose accessible playbooks to retrieve.
         :returns: Set of playbook IDs.
         """
         from methodology.models import TeamMembership, TeamPlaybook
-        
+
         logger.info(f"Getting accessible playbook IDs for user {user.id}")
-        
+
         # Get owned playbook IDs
         owned_ids = set(
-            Playbook.objects.filter(author=user).values_list('id', flat=True)
+            Playbook.objects.filter(author=user).values_list("id", flat=True)
         )
-        
+
         # Get public playbook IDs (non-draft, excluding own)
         public_ids = set(
             Playbook.objects.filter(visibility="public", status="released")
             .exclude(author=user)
-            .values_list('id', flat=True)
+            .values_list("id", flat=True)
         )
-        
+
         # Get team playbook IDs
-        team_ids = list(TeamMembership.objects.filter(user=user).values_list("team_id", flat=True))
+        team_ids = list(
+            TeamMembership.objects.filter(user=user).values_list("team_id", flat=True)
+        )
         team_playbook_ids = set(
-            TeamPlaybook.objects.filter(team_id__in=team_ids).values_list("playbook_id", flat=True)
+            TeamPlaybook.objects.filter(team_id__in=team_ids).values_list(
+                "playbook_id", flat=True
+            )
         )
 
         # Get Django auth Group shared playbook IDs (API group sharing)
         group_playbook_ids = set(
             Playbook.objects.filter(shared_with_groups__in=user.groups.all())
             .exclude(author=user)
-            .values_list('id', flat=True)
+            .values_list("id", flat=True)
         )
 
         # Combine all IDs
@@ -319,12 +356,12 @@ class PlaybookService:
     def update_playbook(playbook_id, **data):
         """
         Update playbook fields with validation.
-        
+
         :param playbook_id: Playbook ID
         :param data: Fields to update (name, description, category, etc.)
         :returns: Updated Playbook instance
         :raises ValidationError: If validation fails
-        
+
         Example:
             >>> playbook = PlaybookService.update_playbook(
             ...     playbook_id=1,
@@ -333,35 +370,39 @@ class PlaybookService:
             ... )
         """
         logger.info(f"Updating playbook {playbook_id}")
-        
+
         playbook = Playbook.objects.get(pk=playbook_id)
 
         if "visibility" in data:
             _validate_playbook_visibility(data["visibility"])
 
         # Check for duplicate name if changing name
-        if 'name' in data and data['name'] != playbook.name:
-            if Playbook.objects.filter(author=playbook.author, name=data['name']).exists():
-                logger.warning(f"Playbook update failed: duplicate name '{data['name']}'")
+        if "name" in data and data["name"] != playbook.name:
+            if Playbook.objects.filter(
+                author=playbook.author, name=data["name"]
+            ).exists():
+                logger.warning(
+                    f"Playbook update failed: duplicate name '{data['name']}'"
+                )
                 raise ValidationError(f"Playbook '{data['name']}' already exists")
-        
+
         # Update fields
         for field, value in data.items():
             if hasattr(playbook, field):
                 setattr(playbook, field, value)
-        
+
         playbook.save()
         logger.info(f"Playbook {playbook_id} updated")
         return playbook
-    
+
     @staticmethod
     @transaction.atomic
     def delete_playbook(playbook_id):
         """
         Delete playbook (cascades to workflows and activities).
-        
+
         :param playbook_id: Playbook ID
-        
+
         Example:
             >>> PlaybookService.delete_playbook(1)
         """
@@ -370,19 +411,19 @@ class PlaybookService:
         playbook_name = playbook.name
         playbook.delete()
         logger.info(f"Playbook '{playbook_name}' (id={playbook_id}) deleted")
-    
+
     @staticmethod
     @transaction.atomic
     def duplicate_playbook(playbook_id, new_name, author):
         """
         Duplicate playbook (deep copy with workflows and activities).
-        
+
         :param playbook_id: Original playbook ID
         :param new_name: Name for duplicate
         :param author: User instance (owner of duplicate)
         :returns: Duplicated Playbook instance
         :raises ValidationError: If new name already exists
-        
+
         Example:
             >>> duplicate = PlaybookService.duplicate_playbook(
             ...     playbook_id=1,
@@ -391,29 +432,29 @@ class PlaybookService:
             ... )
         """
         logger.info(f"Duplicating playbook {playbook_id} as '{new_name}'")
-        
+
         original = Playbook.objects.get(pk=playbook_id)
-        
+
         # Check for duplicate name
         if Playbook.objects.filter(author=author, name=new_name).exists():
             logger.warning(f"Duplicate failed: name '{new_name}' already exists")
             raise ValidationError(f"Playbook '{new_name}' already exists")
-        
+
         # Create duplicate (workflows/activities handled by UI views currently)
         duplicate = Playbook.objects.create(
             name=new_name,
             description=original.description,
             category=original.category,
             author=author,
-            status='draft',  # Always start as draft
-            version=Decimal('0.1'),  # Reset version
+            status="draft",  # Always start as draft
+            version=Decimal("0.1"),  # Reset version
             visibility=original.visibility,
-            source='owned'
+            source="owned",
         )
-        
+
         logger.info(f"Playbook duplicated as {duplicate.pk}")
         return duplicate
-    
+
     @staticmethod
     @transaction.atomic
     def release_playbook(playbook_id, author, *, description: str):

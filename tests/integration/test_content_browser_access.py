@@ -7,7 +7,6 @@ Tests scenarios from docs/features/act-16-content-browser/01-access-and-nav.feat
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
-from django.urls import reverse
 
 from methodology.models import Playbook, Team, TeamMembership, TeamPlaybook
 
@@ -113,7 +112,9 @@ class TestContentBrowserServerSide:
         """Template contains data-playbook-pk={{ pk }} so JS can init the graph."""
         response = self.client.get(f"/browser/{self.public_playbook.pk}/")
         assert response.status_code == 200
-        assert f'data-playbook-pk="{self.public_playbook.pk}"' in response.content.decode()
+        assert (
+            f'data-playbook-pk="{self.public_playbook.pk}"' in response.content.decode()
+        )
 
     # FOB-CONTENT-BROWSER-03
     def test_browser_playbook_shows_playbook_name_in_left_panel(self):
@@ -177,20 +178,32 @@ class TestPickerAccessControl:
         )
         # Playbooks with varied visibility/ownership
         self.marias_private = Playbook.objects.create(
-            name="Maria Private", description="", category="development",
-            author=self.maria, visibility="private",
+            name="Maria Private",
+            description="",
+            category="development",
+            author=self.maria,
+            visibility="private",
         )
         self.others_private = Playbook.objects.create(
-            name="Others Private", description="", category="development",
-            author=self.other, visibility="private",
+            name="Others Private",
+            description="",
+            category="development",
+            author=self.other,
+            visibility="private",
         )
         self.others_public_draft = Playbook.objects.create(
-            name="Others Public Draft", description="", category="development",
-            author=self.other, visibility="public",
+            name="Others Public Draft",
+            description="",
+            category="development",
+            author=self.other,
+            visibility="public",
         )
         self.others_public_released = Playbook.objects.create(
-            name="Others Public Released", description="", category="development",
-            author=self.other, visibility="public",
+            name="Others Public Released",
+            description="",
+            category="development",
+            author=self.other,
+            visibility="public",
         )
         # Mark released
         self.others_public_released.status = "released"

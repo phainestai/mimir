@@ -4,16 +4,16 @@ Routing picker includes straight-triangle curve-style.
 
 Checkpoint command: uv run pytest tests/e2e/test_content_browser_routing_complete.py -x
 """
-import pytest
-from playwright.sync_api import Page, expect
 
-from accounts.models import mark_email_verified
+import pytest
+from playwright.sync_api import Page
+
 from django.contrib.auth import get_user_model
 
 pytestmark = pytest.mark.e2e
 
 User = get_user_model()
-LOGIN_URL_PATH = '/auth/user/login/'
+LOGIN_URL_PATH = "/auth/user/login/"
 
 
 def _login(page: Page, live_server_url: str, username: str, password: str) -> None:
@@ -21,7 +21,7 @@ def _login(page: Page, live_server_url: str, username: str, password: str) -> No
     page.fill('input[name="username"]', username)
     page.fill('input[name="password"]', password)
     page.click('button[type="submit"]')
-    page.wait_for_load_state('networkidle')
+    page.wait_for_load_state("networkidle")
     assert LOGIN_URL_PATH not in page.url
 
 
@@ -30,7 +30,6 @@ def _wait_for_graph(page: Page, timeout: int = 10_000) -> None:
         "() => window.cy != null && window.cy.nodes().length > 0",
         timeout=timeout,
     )
-
 
 
 @pytest.mark.django_db(transaction=True)
@@ -52,7 +51,9 @@ class TestRoutingCatalogComplete:
         }""")
         assert count == 8, f"Expected 8 routing catalog entries, got {count}"
 
-    def test_straight_triangle_option_applies_correct_curve_style(self, cb_graph_page: Page):
+    def test_straight_triangle_option_applies_correct_curve_style(
+        self, cb_graph_page: Page
+    ):
         """Selecting straight-triangle sets edge curve-style to 'straight-triangle' on cy edges."""
         cb_graph_page.evaluate("() => _applyRouting('straight-triangle')")
         edge_style = cb_graph_page.evaluate("""() => {
@@ -60,5 +61,6 @@ class TestRoutingCatalogComplete:
             if (edges.length === 0) return 'straight-triangle';  // no edges — can't verify
             return edges[0].style('curve-style');
         }""")
-        assert edge_style == 'straight-triangle', \
+        assert edge_style == "straight-triangle", (
             f"Expected curve-style 'straight-triangle', got '{edge_style}'"
+        )
