@@ -87,8 +87,7 @@ Feature: FOB-CONTENT-BROWSER-API Content Browser Graph API and Data
     Given Maria is viewing a graph and her Django session expires
     When content-browser.js fetches /api/playbooks/<pk>/graph/ (e.g. on retry)
     Then the client detects the non-JSON response and redirects to /auth/user/login/?next=/browser/<pk>/
-    And the redirect URL does NOT include filter params — filter state is lost on re-auth
-      (acceptable: user can re-apply filters after logging back in)
+    And the redirect URL uses only the playbook path in next= (no layout/routing/compound query params)
 
 
   Scenario: FOB-CONTENT-BROWSER-13d Playbook deleted while Maria is viewing it

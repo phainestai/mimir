@@ -14,7 +14,7 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
   # ---------------------------------------------------------------------------
 
   Scenario: FOB-CONTENT-BROWSER-35 Edge routing picker — dropdown to select Cytoscape curve-style
-    Given Maria is on the graph view canvas with a playbook loaded
+    Given Maria is on the graph view canvas with custom layout mode enabled
     Then an edge routing button (data-testid="browser-routing-btn") is visible
       in the canvas controls toolbar alongside the layout picker
     And the button label shows the human-readable name of the currently active routing style
@@ -23,7 +23,7 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
     Then a dropdown panel (data-testid="browser-routing-dropdown") opens near the button
     And the dropdown lists the following options (all curve-style values supported by Cytoscape 3.x):
       | routing-key       | label                | Cytoscape curve-style |
-      | bezier            | Bezier (default)     | bezier                |
+      | bezier            | Bezier               | bezier                |
       | unbundled-bezier  | Unbundled Bezier     | unbundled-bezier      |
       | straight          | Straight             | straight              |
       | taxi              | Orthogonal           | taxi                  |
@@ -43,9 +43,10 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
     Then the dropdown closes without changing the active routing style
     Note: routing change is a style-only update — cy.style().update() is sufficient,
       no need to re-add elements or re-run the layout
-    Note: "bezier" is the default when no "routing" URL param is present
-    Note: if the "routing" URL param contains an unrecognised value, fall back
-      to "bezier" silently
+    Note: on page entry (FOB-63 default layout mode), routing is straight — the routing
+      picker is hidden until custom layout is checked
+    Note: in custom layout mode, if the "routing" URL param contains an unrecognised value,
+      fall back to "bezier" silently
     Note: "haystack" forces straight bundled lines; it may look identical to
       "straight" on sparse graphs — this is expected behaviour
 
@@ -352,10 +353,10 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
   # ---------------------------------------------------------------------------
 
   Scenario: FOB-CONTENT-BROWSER-57 All Cytoscape curve-style values are available in the routing picker
-    Given Maria opens the edge routing dropdown
+    Given Maria has enabled custom layout mode and opens the edge routing dropdown
     Then the following routing options are available (ALL valid Cytoscape 3.x curve-style values):
       | routing-key       | label              | Cytoscape curve-style |
-      | bezier            | Bezier (default)   | bezier                |
+      | bezier            | Bezier             | bezier                |
       | unbundled-bezier  | Unbundled Bezier   | unbundled-bezier      |
       | straight          | Straight           | straight              |
       | taxi              | Orthogonal (Taxi)  | taxi                  |

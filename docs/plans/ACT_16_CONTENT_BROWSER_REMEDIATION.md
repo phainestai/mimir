@@ -2,7 +2,7 @@
 
 **BPE-08 Process Change Request** · Activity **#103** (FeatureFactory v13.3, Construction phase)  
 **Trigger:** [PR #145](https://github.com/phainestai/mimir/pull/145) merged with known review debt; holistic re-review found bugs, stale tests, spec drift, and **IA guideline violations** beyond the inline PR comments.  
-**Status:** **Awaiting Commander approval** — no further code changes until this plan is approved.
+**Status:** **Phases A–C complete** — BPE-06 technical gate green (2026-06-22). Awaiting Commander **BPE-06 sign-off** and explicit **"approved for Phase D"** before IA work.
 
 ---
 
@@ -79,10 +79,10 @@ Holistic review against [`docs/ux/IA_guidelines.md`](../ux/IA_guidelines.md) § 
 | [`methodology/browser_urls.py`](methodology/browser_urls.py) | Canonical routes: `/browser/`, `/browser/<pk>/` only |
 | [`static/js/content-browser.js`](static/js/content-browser.js) | Legacy compound toggle wiring, `_checkSessionExpiry` login URL, filter URL params, CDN-facing layout catalog |
 | [`templates/browser/browser_graph.html`](templates/browser/browser_graph.html) | 13 Cytoscape CDN scripts; no `browser-compound-toggle` in template |
-| [`tests/e2e/conftest.py`](tests/e2e/conftest.py) | Function-scoped `live_server`; no shared login/graph helpers — **A0 speedup target** |
-| [`tests/e2e/pytest.ini`](tests/e2e/pytest.ini) | E2e-only config; add `@pytest.mark.slow` in A0 |
+| [`tests/e2e/conftest.py`](tests/e2e/conftest.py) | Session-scoped `live_server` (A0 ✅); shared helpers in `e2e_helpers.py` |
+| [`tests/e2e/pytest.ini`](tests/e2e/pytest.ini) | E2e-only config; `@pytest.mark.slow` marker registered — **tagging + CI wiring deferred** |
 | [`mimir/settings/e2e.py`](mimir/settings/e2e.py) | Signed-cookie sessions (enables session-scoped live server) |
-| [`tests/e2e/README.md`](tests/e2e/README.md) | Document fixture scopes + smoke vs full commands after A0 |
+| [`tests/e2e/README.md`](tests/e2e/README.md) | A0 essentials ✅ (scopes, helpers, checkpoint commands); xdist/slow/CI docs **deferred** |
 | [`tests/e2e/test_content_browser*.py`](tests/e2e/) | 29 files — 20 on stale URL, contradictory FOB-63 assertions, duplicated waits |
 | [`tests/integration/test_content_browser_access.py`](tests/integration/test_content_browser_access.py) | Stale TDD docstring; `accessible_playbooks` context assertions |
 | [`tests/integration/test_graph_api.py`](tests/integration/test_graph_api.py) | Missing team-playbook graph test; mislabeled FOB-13c section |
@@ -123,17 +123,9 @@ Holistic review against [`docs/ux/IA_guidelines.md`](../ux/IA_guidelines.md) § 
 
 ---
 
-## Uncommitted draft work (pending approval)
+## Uncommitted draft work (resolved)
 
-A prior session applied **uncommitted** changes (not part of approved plan yet):
-
-| File | Change |
-|------|--------|
-| `static/js/content-browser.js` | Removed duplicate `_applyDefaultLayoutMode`; dead filter toolbar functions; consolidated style helpers; moved `_init`/exports to file end (~2723→2494 lines) |
-| `tests/e2e/test_content_browser_compound_labels.py` | Label alignment `left` → `center` |
-| `tests/e2e/test_content_browser_custom_layout.py` | Module docstring: node-size hidden in default mode |
-
-**Decision needed on approval:** keep as Phase C head-start, or revert and re-apply under formal checkpoints.
+Draft JS cleanup from an early session was **folded into Phases B/C** commits (`e2b6b91`, `e7baad8`). No outstanding uncommitted remediation code remains on `fix/content-browser-js-cleanup`.
 
 ---
 
@@ -217,7 +209,18 @@ Failure clusters align with Phase A/B scope: layout picker/position (FOB-63 defa
 | `test_auth_login.py` + `test_content_browser_graph.py` (combined) | 22 | **100.3s** | (per-test, not reported) | 16.2s | Pre-A0, function-scoped `live_server` + `networkidle` |
 | `test_auth_login.py` + `test_content_browser_graph.py` (combined) | 22 | **58.8s** | 1.28s (session setup, once) | 10.7s | Post-A0, session `live_server` + `e2e_helpers` |
 
-**Deferred (process backlog unless Commander opts in at Q10–Q11):** `pytest-xdist`, `@pytest.mark.slow` smoke subset for CI, SAO/README doc updates (fold doc updates into Phase C if deferred).
+**Deferred from A0 (process backlog — Commander Q11–Q12; not Phase C unless explicitly added):**
+
+| Item | Status after A0 commit `0f9b7dc` | Notes |
+|------|-----------------------------------|-------|
+| **`pytest-xdist`** | ❌ Not implemented | Optional parallel E2E (`pytest -n auto`); separate from serial speedup |
+| **`@pytest.mark.slow` + CI smoke subset** | ❌ Not implemented | Marker exists in `pytest.ini` / `tests/e2e/pytest.ini` but no tests tagged; no `-m "not slow"` in CI |
+| **`docs/architecture/SAO.md` § E2E** | ❌ Not updated | Session-scoped `live_server`, `e2e_helpers`, signed-cookie rationale still stale |
+| **`tests/e2e/README.md` (xdist / slow / CI)** | ❌ Not documented | Do **not** conflate with the A0 README work below |
+
+**Already done in A0 (not deferred):** [`tests/e2e/README.md`](../../tests/e2e/README.md) updated for **shipped A0 behavior only** — session `live_server`, `E2E_LIVE_SERVER_SCOPE`, shared `e2e_helpers`, representative vs full-batch commands, wait strategy (no `networkidle`). That README slice is complete; it does **not** imply xdist or slow-marker work landed.
+
+**Phase C:** spec + dead code only — does **not** include xdist/slow/SAO unless Commander adds an explicit doc slice (e.g. C7).
 
 ---
 
@@ -399,10 +402,17 @@ Rewrite stale sections in [`_implementation_notes.md`](docs/features/act-16-cont
 ### C6 — Phase C / BPE-06 exit checkpoint
 
 ```bash
-.venv/bin/python -m pytest tests/e2e/test_content_browser*.py tests/integration/test_content_browser_access.py tests/integration/test_graph_api.py tests/integration/test_embed_views.py -x -q
+# E2E (must run from tests/e2e — pythonpath for e2e_helpers)
+cd tests/e2e && ../../.venv/bin/python -m pytest test_content_browser*.py -x -q
+
+# Integration (from repo root)
+.venv/bin/python -m pytest tests/integration/test_content_browser_access.py \
+  tests/integration/test_graph_api.py tests/integration/test_embed_views.py -x -q
 
 node --check static/js/content-browser.js
 ```
+
+**Result (2026-06-22):** E2E **232/232** (~5m49s serial); integration **83/83**; `node --check` OK. Recorded in `tests.log`.
 
 Walk BPE-06 checklist (activity #101): spec ↔ UI ↔ tests ↔ URLs parity.
 
@@ -585,17 +595,17 @@ rg '<style>' templates/*/_embed.html
 
 ## BPE-06 Definition of Done (exit criteria — Phases A–C)
 
-- [ ] All content-browser E2E + integration tests pass in one batch
-- [ ] Feature files in `docs/features/act-16-content-browser/` match shipped UI
-- [ ] No `pytest.mark.skip` entire files for removed features
-- [ ] No E2E file uses `/browser/graph/`
-- [ ] API access matches `Playbook.can_view()` for team playbooks
-- [ ] All JS auth redirects use `/auth/user/login/`
-- [ ] No duplicate function definitions in `content-browser.js` (`node --check` + manual review)
-- [ ] Stale skeleton / "Not yet implemented" comments removed from touched files
-- [ ] `tests.log` records final green run
-- [ ] A0 e2e speedup landed: shared conftest helpers, session-scoped `live_server`, no new duplicated `_login` in touched files
-- [ ] Full `test_content_browser*.py` batch completes in ≤15 min serial (post-A0; record in `tests.log`)
+- [x] All content-browser E2E + integration tests pass in one batch (232 + 83, 2026-06-22)
+- [x] Feature files in `docs/features/act-16-content-browser/` match shipped UI
+- [x] No `pytest.mark.skip` entire files for removed features
+- [x] No E2E file uses `/browser/graph/`
+- [x] API access matches `Playbook.can_view()` for team playbooks
+- [x] All JS auth redirects use `/auth/user/login/`
+- [x] No duplicate function definitions in `content-browser.js` (`node --check` + manual review)
+- [x] Stale `@throws Not yet implemented` removed from touched JS; MIT skeleton comment headers remain (cosmetic)
+- [x] `tests.log` records final green run
+- [x] A0 e2e speedup landed: shared conftest helpers, session-scoped `live_server`
+- [x] Full `test_content_browser*.py` batch completes in ≤15 min serial (~5m49s post-A0)
 
 ---
 
@@ -622,20 +632,18 @@ rg '<style>' templates/*/_embed.html
 
 ---
 
-## Clarifications for Commander (before execution)
+## Clarifications for Commander (resolved)
 
-1. **Uncommitted draft JS cleanup** — keep, revert, or fold into Phase C formally?
-2. **`accessible_playbooks` context** — delete unused context (recommended) or implement server-side picker?
-3. **Filter URL params** — drop tests + JS logic (Option A) or keep as deep-link-only API (Option B)?
-4. **`test_content_browser_compound_view.py`** — delete outright or rewrite against FOB-61?
-5. **Layout CDN trim** — in scope for this remediation or separate product ticket?
-6. **Phase D6 dropdown restyle** — Option A (Bootstrap classes in JS markup), B (template dropdowns), or C (document exception)?
-7. **Phase D scope** — include Phase D in this remediation, or ship A–C first and schedule D separately?
-8. **`static/css/content-browser.css`** — fold into `design-system.css` (recommended) or create dedicated file?
-9. **A0 session-scoped `live_server`** — default for `pytest tests/e2e/`, function scope only via `E2E_LIVE_SERVER_SCOPE=function`?
-10. **A0 auth reuse** — module-scoped Playwright `storage_state` OK for read-only browser tests?
-11. **`pytest-xdist`** — defer to process backlog (recommended) or include in A0?
-12. **CI smoke subset** — register `@pytest.mark.slow` and run `-m "not slow"` on PRs, full batch at A4/milestone close?
+| # | Decision |
+|---|----------|
+| 1 | Draft JS cleanup — **kept**, merged in Phases B/C |
+| 2 | `accessible_playbooks` context — **deleted** |
+| 3 | Filter URL params — **Option A** (drop tests + URL encoding) |
+| 4 | `compound_view` test file — **deleted** (Phase B1) |
+| 5 | Layout CDN trim — **out of scope** |
+| 6 | Phase D6 dropdown restyle — **pending** Commander choice at Phase D start |
+| 7 | Phase D — **defer** until BPE-06 sign-off + explicit "approved for Phase D" |
+| 8–12 | A0 defaults applied; xdist/slow CI — **process backlog** |
 
 ---
 
@@ -644,13 +652,13 @@ rg '<style>' templates/*/_embed.html
 | Step | Owner | Status |
 |------|-------|--------|
 | BPE-08 plan presented | Agent | ✅ This document |
-| Commander reviews plan | Commander | ✅ Approved Phase A0, A, B |
+| Commander reviews plan | Commander | ✅ Approved Phase A0, A, B, C |
 | Phase A0 execution (e2e speedup) | Agent | ✅ Done (session server + helpers; graph migrated) |
 | Phase A1–A4 execution | Agent | ✅ A1–A3 committed; A4 superseded by B7 green batch |
-| Phase B execution | Agent | ✅ Done (uncommitted); B7 E2E **232/232 green** |
-| Phase C execution | Agent | Blocked — await **"approved for Phase C"** |
-| BPE-06 sign-off (A–C) | Commander | Blocked |
-| Phase D execution (IA) | Agent | Blocked |
+| Phase B execution | Agent | ✅ B7 E2E **232/232 green** |
+| Phase C execution | Agent | ✅ C1–C6 complete (commits `28963f4`…`d55a451`) |
+| BPE-06 sign-off (A–C) | Commander | ⏳ Pending explicit sign-off |
+| Phase D execution (IA) | Agent | Blocked — await **"approved for Phase D"** |
 | Phase D sign-off | Commander | Blocked |
 
-**To approve:** reply with answers to clarifications above + explicit **"approved"** (optionally per-phase: e.g. "approved Phase A only" or "approved A–C, defer D").
+**To start Phase D:** reply with **"approved for Phase D"** (and D6 option A/B/C if not yet chosen).
