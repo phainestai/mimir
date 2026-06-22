@@ -17,6 +17,8 @@
        JS updates its `left` position on each toggle. -->
   <button data-testid="browser-toggle-left-panel"
           title="Toggle left panel"
+          data-bs-toggle="tooltip"
+          data-bs-placement="left"
           class="mm-browser-panel-toggle position-absolute top-50 btn btn-sm btn-light border border-secondary rounded-circle p-0"
           style="left: 280px;">
     ‹
@@ -149,36 +151,52 @@
       <div class="d-flex gap-1 mb-1 browser-custom-controls d-none">
         <button data-testid="browser-layout-btn"
                 class="mm-browser-btn-compact btn btn-outline-secondary"
-                title="Switch layout">Layered ▾</button>
+                title="Switch layout"
+                data-bs-toggle="tooltip"
+                data-bs-placement="left">Layered ▾</button>
         <button data-testid="browser-routing-btn"
                 class="mm-browser-btn-compact btn btn-outline-secondary"
-                title="Switch edge routing style">Bezier ▾</button>
+                title="Switch edge routing style"
+                data-bs-toggle="tooltip"
+                data-bs-placement="left">Bezier ▾</button>
       </div>
 
       {# Row 2: Grouping + node size — hidden in default layout mode #}
       <div class="d-flex gap-1 mb-1 browser-custom-controls d-none">
         <button data-testid="browser-compound-btn"
                 class="mm-browser-btn-compact btn btn-outline-secondary"
-                title="Select workflow grouping mode">No grouping ▾</button>
+                title="Select workflow grouping mode"
+                data-bs-toggle="tooltip"
+                data-bs-placement="left">No grouping ▾</button>
         <button data-testid="browser-node-size-toggle"
                 class="mm-browser-btn-compact btn btn-outline-secondary active"
-                title="Toggle node size mode: Fixed size vs Auto-width">Fixed ✓</button>
+                title="Toggle node size mode: Fixed size vs Auto-width"
+                data-bs-toggle="tooltip"
+                data-bs-placement="left">Fixed ✓</button>
       </div>
 
       {# Row 3: Navigation — always visible #}
       <div class="d-flex gap-1">
         <button data-testid="browser-replot-btn"
                 class="mm-browser-btn-compact btn btn-outline-secondary"
-                title="Re-plot graph">↺</button>
+                title="Re-plot graph"
+                data-bs-toggle="tooltip"
+                data-bs-placement="left">↺</button>
         <button data-testid="browser-zoom-in"
                 class="mm-browser-btn-compact btn btn-outline-secondary"
-                title="Zoom in">+</button>
+                title="Zoom in"
+                data-bs-toggle="tooltip"
+                data-bs-placement="left">+</button>
         <button data-testid="browser-zoom-out"
                 class="mm-browser-btn-compact btn btn-outline-secondary"
-                title="Zoom out">−</button>
+                title="Zoom out"
+                data-bs-toggle="tooltip"
+                data-bs-placement="left">−</button>
         <button data-testid="browser-zoom-fit"
                 class="mm-browser-btn-compact btn btn-outline-secondary"
-                title="Fit graph">⊡</button>
+                title="Fit graph"
+                data-bs-toggle="tooltip"
+                data-bs-placement="left">⊡</button>
       </div>
     </div>
 
