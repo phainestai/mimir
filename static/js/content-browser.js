@@ -4,7 +4,7 @@
  * Responsibilities:
  *   1. Read playbook PK from DOM on init
  *   2. Manage URL state via History API (pushState / replaceState)
- *   3. Normalise URL params on load (drop unknown types, drop stale phase IDs)
+ *   3. Normalise canvas URL params on load (layout, routing, compound, nodesize)
  *   4. Fetch graph data from /api/playbooks/<pk>/graph/ (implemented in graph iteration)
  *   5. Initialise Cytoscape.js and render graph (implemented in graph iteration)
  *
@@ -219,33 +219,14 @@ function _getPlaybookPhases() {
 }
 
 /**
- * Parse URL query params into a structured filters object.
- * Normalises on read:
- *   - Unknown type values are discarded
- *   - Empty types param → all entity types active (not zero)
- *   - Phase IDs that are not positive integers are discarded
+ * Parse URL query params for canvas display state.
+ * Entity-type and phase filter params were removed with the filter toolbar (FOB-11/11b).
  *
- * @returns {{ types: string[], phases: number[] }}
+ * @returns {{ types: string[], phases: number[] }} always all types, no phase filter
  */
 function _parseUrlParams() {
   const params = new URLSearchParams(window.location.search);
-  const typesRaw = params.get('types');
-  const phasesRaw = params.get('phases');
   const layoutRaw = params.get('layout');
-
-  let types;
-  if (typesRaw === null || typesRaw === '') {
-    types = _ALL_TYPES.slice();
-  } else {
-    types = typesRaw.split(',').filter(t => _ALL_TYPES.includes(t));
-    if (types.length === 0) types = _ALL_TYPES.slice();
-  }
-
-  const phases = phasesRaw
-    ? phasesRaw.split(',')
-        .map(s => parseInt(s, 10))
-        .filter(n => Number.isFinite(n) && n >= 0)
-    : [];
 
   const legacyMap = { layered: 'elk-layered', mrtree: 'elk-mrtree' };
   const resolvedLayout = (layoutRaw && legacyMap[layoutRaw]) || layoutRaw;
@@ -257,49 +238,30 @@ function _parseUrlParams() {
   _parseCompoundParam();
   _parseNodeSizeParam();
 
-  return { types, phases };
+  return { types: _ALL_TYPES.slice(), phases: [] };
 }
 
 /**
- * Validate parsed filters against the loaded playbook data.
- * Drops phase IDs not present in the playbook's phases array.
- * Rewrites the URL to canonical form (removes invalid/default params).
+ * Rewrite the browser URL to canonical canvas params (layout/routing/compound/nodesize).
  *
  * @param {{ types: string[], phases: number[] }} filters
- * @param {{ id: number, name: string }[]} playbookPhases
- * @returns {{ types: string[], phases: number[] }} validated filters
+ * @param {{ id: number, name: string }[]} _playbookPhases — unused (phase filter removed)
+ * @returns {{ types: string[], phases: number[] }}
  */
-function _normaliseFilters(filters, playbookPhases) {
-  const validPhaseIds = new Set(playbookPhases.map(p => p.id));
-  // 0 is the "Unphased" sentinel — always valid when the playbook has ≥1 phase.
-  const hasPhases = playbookPhases.length > 0;
-  const cleanPhases = filters.phases.filter(id => (id === 0 && hasPhases) || validPhaseIds.has(id));
-  const normalised = { types: filters.types, phases: cleanPhases };
-  _replaceCanonicalUrl(_getPlaybookPk(), normalised);
-  return normalised;
+function _normaliseFilters(filters, _playbookPhases) {
+  _replaceCanonicalUrl(_getPlaybookPk(), filters);
+  return filters;
 }
 
 /**
- * Serialise a filters object back to URL query string.
- * Clean URL rules: omit types param if all entity types are active;
- * omit phases param if no phase filter is active.
+ * Serialise canvas display state to URL query string.
+ * Entity-type and phase filter params are no longer encoded (FOB-11/11b removed).
  *
- * @param {{ types: string[], phases: number[] }} filters
+ * @param {{ types: string[], phases: number[] }} _filters — unused; kept for call-site compat
  * @returns {string} query string including leading '?' or '' if empty
  */
-function _filtersToQueryString(filters) {
+function _filtersToQueryString(_filters) {
   const parts = [];
-  const FILTERABLE = ['workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
-  const allActive = FILTERABLE.every(t => filters.types.includes(t));
-  if (!allActive && filters.types.length > 0) {
-    const encodable = filters.types.filter(t => FILTERABLE.includes(t));
-    if (encodable.length > 0 && encodable.length < FILTERABLE.length) {
-      parts.push('types=' + encodable.join(','));
-    }
-  }
-  if (filters.phases.length > 0) {
-    parts.push('phases=' + filters.phases.join(','));
-  }
   if (_currentLayout !== 'elk-layered') {
     parts.push('layout=' + _currentLayout);
   }
@@ -316,18 +278,16 @@ function _filtersToQueryString(filters) {
 }
 
 /**
- * Update the browser URL when the active playbook changes.
- * Uses pushState so the back button returns to the previous playbook.
- * Resets phase filters on switch (phase IDs are playbook-scoped).
+ * Update the browser URL when the active playbook changes (pushState).
  *
  * @param {number} pk - New playbook PK
- * @param {{ types: string[], phases: number[] }} filters - Current filter state
+ * @param {{ types: string[], phases: number[] }} _filters — unused; kept for E2E compat
  */
-function _pushPlaybookUrl(pk, filters) {
-  const resetFilters = { types: filters.types, phases: [] };
-  const qs = _filtersToQueryString(resetFilters);
+function _pushPlaybookUrl(pk, _filters) {
+  const filters = { types: _ALL_TYPES.slice(), phases: [] };
+  const qs = _filtersToQueryString(filters);
   const url = '/browser/' + pk + '/' + qs;
-  history.pushState({ pk: pk, filters: resetFilters }, '', url);
+  history.pushState({ pk: pk, filters: filters }, '', url);
 }
 
 /**
@@ -1239,8 +1199,8 @@ function _closeDetailPanel() {
 }
 
 /**
- * Detect session expiry in HTMX-swapped HTML.
- * If the login page is swapped in, redirect the tab.
+ * Detect session expiry in fetched embed HTML.
+ * If the login page is returned, redirect the tab.
  *
  * @param {string} html
  */
@@ -1469,7 +1429,6 @@ function _applyCustomLayoutModeFromUrl() {
   _updateLayoutBtn();
   _updateRoutingBtn();
   _updateCompoundBtn();
-  _updateCompoundToggleBtn();
   _updateNodeSizeModeBtn();
 }
 
@@ -1637,7 +1596,6 @@ function _buildEdgeStyle() {
  *
  * @param {boolean} compoundOn — true when compound (grouped) view is active
  * @returns {object[]} Cytoscape stylesheet entries for edges
- * @throws {Error} Not yet implemented
  */
 function _buildEdgeStyleForMode(compoundOn) {
   const base = [
@@ -1681,7 +1639,6 @@ function _buildEdgeStyleForMode(compoundOn) {
  * Called by _highlightTreeNode to ensure the highlighted node is visible.
  *
  * @param {string} nodeId — cy node ID (workflow or activity)
- * @throws {Error} Not yet implemented
  */
 function _expandTreeNodeAccordion(nodeId) {
   const targetRow = document.querySelector(`[data-testid="browser-tree-row"][data-node-id="${nodeId}"]`);
@@ -1899,32 +1856,6 @@ function _parseNodeSizeParam() {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get('nodesize');
   _nodeSizeMode = (raw === 'auto') ? 'auto' : 'fixed';
-}
-
-/**
- * Legacy compound toggle — kept for backward compat; delegates to _applyCompoundLevel.
- * Toggles between 'none' and 'workflow'.
- */
-function _applyCompoundToggle() {
-  _applyCompoundLevel(_compoundLevel === 'none' ? 'workflow' : 'none');
-  _updateCompoundToggleBtn();
-}
-
-/**
- * Update the legacy compound toggle button visual state.
- * ON:  label "Grouped ✓"
- * OFF: label "Grouped ✗"
- */
-function _updateCompoundToggleBtn() {
-  const btn = document.querySelector('[data-testid="browser-compound-toggle"]');
-  if (!btn) return;
-  if (_compoundLevel !== 'none') {
-    btn.textContent = 'Grouped ✓';
-    btn.classList.add('active');
-  } else {
-    btn.textContent = 'Grouped ✗';
-    btn.classList.remove('active');
-  }
 }
 
 /**
@@ -2292,7 +2223,6 @@ function _applyCompoundLevel(level) {
   if (!valid.has(level)) return;
   _compoundLevel = level;
   _updateCompoundBtn();
-  _updateCompoundToggleBtn();
   _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
   if (!window.cy || !_fullGraphData) return;
   const activeTypes = new Set(_currentFilters.types);
@@ -2508,10 +2438,7 @@ function _init() {
 
   const compoundBtn = document.querySelector('[data-testid="browser-compound-btn"]');
   if (compoundBtn) compoundBtn.addEventListener('click', _toggleCompoundDropdown);
-  const compoundToggle = document.querySelector('[data-testid="browser-compound-toggle"]');
-  if (compoundToggle) compoundToggle.addEventListener('click', _applyCompoundToggle);
   _updateCompoundBtn();
-  _updateCompoundToggleBtn();
 
   const nodeSizeToggle = document.querySelector('[data-testid="browser-node-size-toggle"]');
   if (nodeSizeToggle) nodeSizeToggle.addEventListener('click', _applyNodeSizeToggle);
