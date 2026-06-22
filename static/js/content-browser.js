@@ -16,6 +16,77 @@
 
 const _ALL_TYPES = ['workflow', 'activity', 'skill', 'agent', 'artifact', 'rule', 'phase'];
 
+/**
+ * Position a JS-injected dropdown above its trigger (fixed coords avoid canvas clipping).
+ * Visual styling uses Bootstrap dropdown-menu classes per IA guidelines.
+ *
+ * @param {HTMLElement} panel
+ * @param {DOMRect} btnRect
+ * @param {string} [minWidth='180px']
+ */
+function _positionBrowserDropdown(panel, btnRect, minWidth) {
+  panel.classList.add('dropdown-menu', 'show');
+  panel.style.position = 'fixed';
+  panel.style.bottom = `${window.innerHeight - btnRect.top + 4}px`;
+  panel.style.right = `${window.innerWidth - btnRect.right}px`;
+  panel.style.zIndex = '1050';
+  panel.style.minWidth = minWidth || '180px';
+  panel.style.maxHeight = '60vh';
+  panel.style.overflowY = 'auto';
+}
+
+/** @returns {HTMLDivElement} */
+function _createDropdownHeader(testId, text) {
+  const header = document.createElement('div');
+  header.setAttribute('data-testid', testId);
+  header.className = 'dropdown-header';
+  header.textContent = text;
+  return header;
+}
+
+/** @returns {HTMLButtonElement} */
+function _createDropdownItem(testId, label, isActive, onSelect) {
+  const item = document.createElement('button');
+  item.setAttribute('data-testid', testId);
+  item.type = 'button';
+  item.className = 'dropdown-item' + (isActive ? ' active' : '');
+  item.textContent = label + (isActive ? ' ✓' : '');
+  item.addEventListener('click', onSelect);
+  return item;
+}
+
+/**
+ * Wire Escape / outside-click dismiss for a body-appended dropdown panel.
+ *
+ * @param {HTMLElement} panel
+ * @param {HTMLElement} btn
+ * @returns {{ remove: function(): void }}
+ */
+function _wireBrowserDropdownDismiss(panel, btn) {
+  const remove = () => {
+    panel.remove();
+    document.removeEventListener('keydown', escHandler);
+    document.removeEventListener('click', outsideHandler);
+  };
+  const escHandler = (e) => {
+    if (e.key === 'Escape') remove();
+  };
+  const outsideHandler = (e) => {
+    if (!panel.contains(e.target) && e.target !== btn) remove();
+  };
+  document.addEventListener('keydown', escHandler);
+  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
+  return { remove };
+}
+
+/** Hide Bootstrap tooltip on a trigger so it does not block dropdown item clicks. */
+function _hideButtonTooltip(btn) {
+  if (typeof bootstrap !== 'undefined' && btn) {
+    const tip = bootstrap.Tooltip.getInstance(btn);
+    if (tip) tip.hide();
+  }
+}
+
 // ─── Module-level filter + search state ──────────────────────────────────────
 // Mutated by _applyFilters / _applySearch; read by _openDetailPanel / _closeDetailPanel.
 let _currentFilters = { types: _ALL_TYPES.slice(), phases: [] };
@@ -127,14 +198,13 @@ function _toggleLayoutDropdown() {
 
   const btn = document.querySelector('[data-testid="browser-layout-btn"]');
   if (!btn) return;
+  _hideButtonTooltip(btn);
 
   const panel = document.createElement('div');
   panel.setAttribute('data-testid', 'browser-layout-dropdown');
-  const rect = btn.getBoundingClientRect();
-  panel.style.cssText =
-    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
-    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:180px;max-height:60vh;overflow-y:auto;';
+  _positionBrowserDropdown(panel, btn.getBoundingClientRect());
+
+  const dismiss = _wireBrowserDropdownDismiss(panel, btn);
 
   // Build grouped content from _LAYOUT_CATALOG.
   const seenGroups = [];
@@ -145,50 +215,22 @@ function _toggleLayoutDropdown() {
   });
 
   seenGroups.forEach(g => {
-    const header = document.createElement('div');
-    header.setAttribute('data-testid', `browser-layout-group-${g.slug}`);
-    header.style.cssText = 'padding:4px 12px 2px;font-size:0.7rem;font-weight:600;color:#6c757d;text-transform:uppercase;letter-spacing:0.05em;';
-    header.textContent = g.name;
-    panel.appendChild(header);
+    panel.appendChild(_createDropdownHeader(`browser-layout-group-${g.slug}`, g.name));
 
     _LAYOUT_CATALOG.filter(e => e.groupSlug === g.slug).forEach(entry => {
-      const item = document.createElement('button');
-      item.setAttribute('data-testid', `browser-layout-option-${entry.key}`);
-      item.type = 'button';
-      const isActive = _currentLayout === entry.key;
-      item.style.cssText =
-        'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
-        (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
-      item.textContent = entry.label + (isActive ? ' ✓' : '');
-      item.addEventListener('click', () => {
-        panel.remove();
-        document.removeEventListener('keydown', escHandler);
-        document.removeEventListener('click', outsideHandler);
-        _applyLayout(entry.key);
-      });
-      panel.appendChild(item);
+      panel.appendChild(_createDropdownItem(
+        `browser-layout-option-${entry.key}`,
+        entry.label,
+        _currentLayout === entry.key,
+        () => {
+          dismiss.remove();
+          _applyLayout(entry.key);
+        },
+      ));
     });
   });
 
   document.body.appendChild(panel);
-
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  const outsideHandler = (e) => {
-    if (!panel.contains(e.target) && e.target !== btn) {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
-  // Defer outside-click handler to avoid immediately closing on the triggering click.
-  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
 }
 
 /**
@@ -1716,51 +1758,27 @@ function _toggleRoutingDropdown() {
 
   const btn = document.querySelector('[data-testid="browser-routing-btn"]');
   if (!btn) return;
+  _hideButtonTooltip(btn);
 
   const panel = document.createElement('div');
   panel.setAttribute('data-testid', 'browser-routing-dropdown');
-  const rect = btn.getBoundingClientRect();
-  panel.style.cssText =
-    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
-    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:180px;max-height:60vh;overflow-y:auto;';
+  _positionBrowserDropdown(panel, btn.getBoundingClientRect());
+
+  const dismiss = _wireBrowserDropdownDismiss(panel, btn);
 
   _ROUTING_CATALOG.forEach(entry => {
-    const item = document.createElement('button');
-    item.setAttribute('data-testid', `browser-routing-option-${entry.key}`);
-    item.type = 'button';
-    const isActive = _currentRouting === entry.key;
-    item.style.cssText =
-      'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
-      (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
-    item.textContent = entry.label + (isActive ? ' ✓' : '');
-    item.addEventListener('click', () => {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-      _applyRouting(entry.key);
-    });
-    panel.appendChild(item);
+    panel.appendChild(_createDropdownItem(
+      `browser-routing-option-${entry.key}`,
+      entry.label,
+      _currentRouting === entry.key,
+      () => {
+        dismiss.remove();
+        _applyRouting(entry.key);
+      },
+    ));
   });
 
   document.body.appendChild(panel);
-
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  const outsideHandler = (e) => {
-    if (!panel.contains(e.target) && e.target !== btn) {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
-  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
 }
 
 /**
@@ -2171,51 +2189,27 @@ function _toggleCompoundDropdown() {
 
   const btn = document.querySelector('[data-testid="browser-compound-btn"]');
   if (!btn) return;
+  _hideButtonTooltip(btn);
 
   const panel = document.createElement('div');
   panel.setAttribute('data-testid', 'browser-compound-dropdown');
-  const rect = btn.getBoundingClientRect();
-  panel.style.cssText =
-    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
-    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:200px;';
+  _positionBrowserDropdown(panel, btn.getBoundingClientRect(), '200px');
+
+  const dismiss = _wireBrowserDropdownDismiss(panel, btn);
 
   _COMPOUND_OPTIONS.forEach(opt => {
-    const item = document.createElement('button');
-    item.setAttribute('data-testid', `browser-compound-option-${opt.key}`);
-    item.type = 'button';
-    const isActive = _compoundLevel === opt.key;
-    item.style.cssText =
-      'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
-      (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
-    item.textContent = opt.label + (isActive ? ' ✓' : '');
-    item.addEventListener('click', () => {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-      _applyCompoundLevel(opt.key);
-    });
-    panel.appendChild(item);
+    panel.appendChild(_createDropdownItem(
+      `browser-compound-option-${opt.key}`,
+      opt.label,
+      _compoundLevel === opt.key,
+      () => {
+        dismiss.remove();
+        _applyCompoundLevel(opt.key);
+      },
+    ));
   });
 
   document.body.appendChild(panel);
-
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  const outsideHandler = (e) => {
-    if (!panel.contains(e.target) && e.target !== btn) {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
-  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
 }
 
 function _applyCompoundLevel(level) {
