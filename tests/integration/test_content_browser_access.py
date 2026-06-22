@@ -2,7 +2,6 @@
 Integration tests for Content Browser access and navigation.
 
 Tests scenarios from docs/features/act-16-content-browser/01-access-and-nav.feature.
-Following TDD: tests FAIL until implementation is complete (NotImplementedError stubs).
 """
 
 import pytest
@@ -157,10 +156,15 @@ class TestContentBrowserServerSide:
 
 @pytest.mark.django_db
 class TestPickerAccessControl:
-    """S2 — Picker access control.
+    """S2 — Picker access control via GET /api/playbooks/.
 
     Covers: FOB-CONTENT-BROWSER-03e
     """
+
+    def _picker_names(self):
+        response = self.client.get("/api/playbooks/")
+        assert response.status_code == 200
+        return [item["name"] for item in response.json()["results"]]
 
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -197,30 +201,25 @@ class TestPickerAccessControl:
     # FOB-CONTENT-BROWSER-03e
     def test_picker_includes_own_playbooks_of_any_status(self):
         """Picker includes playbooks owned by the user regardless of status."""
-        response = self.client.get("/browser/")
-        assert response.status_code == 200
-        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        names = self._picker_names()
         assert "Maria Private" in names
 
     # FOB-CONTENT-BROWSER-03e
     def test_picker_includes_public_non_draft_playbooks_from_others(self):
         """Picker includes public released/active/disabled playbooks from other users."""
-        response = self.client.get("/browser/")
-        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        names = self._picker_names()
         assert "Others Public Released" in names
 
     # FOB-CONTENT-BROWSER-03e
     def test_picker_excludes_private_playbooks_from_others(self):
         """Picker does NOT include private playbooks owned by other users."""
-        response = self.client.get("/browser/")
-        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        names = self._picker_names()
         assert "Others Private" not in names
 
     # FOB-CONTENT-BROWSER-03e
     def test_picker_excludes_public_draft_playbooks_from_others(self):
         """Picker does NOT include public draft playbooks owned by other users."""
-        response = self.client.get("/browser/")
-        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        names = self._picker_names()
         assert "Others Public Draft" not in names
 
     # FOB-CONTENT-BROWSER-03e

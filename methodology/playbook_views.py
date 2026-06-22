@@ -23,6 +23,7 @@ from methodology.forms.playbook_forms import (
 )
 from methodology.models import Playbook
 from methodology.services.playbook_service import PlaybookService
+from methodology.utils.playbook_access import playbook_readable_or_404
 from methodology.services.workflow_service import WorkflowService
 
 logger = logging.getLogger(__name__)
@@ -75,19 +76,6 @@ def _create_wizard_workflows(playbook: Playbook, workflows_data: list) -> None:
             index,
         )
 
-
-def _playbook_readable_or_404(request, pk):
-    """Return playbook if the logged-in user may view it (owner or public); else Http404."""
-    playbook = get_object_or_404(Playbook, pk=pk)
-    if not playbook.can_view(request.user):
-        logger.info(
-            "User %s denied view on playbook id=%s (visibility=%s)",
-            request.user.username,
-            pk,
-            playbook.visibility,
-        )
-        raise Http404()
-    return playbook
 
 
 # ==================== LIST ====================
@@ -310,7 +298,7 @@ def playbook_detail(request, pk):
     :param pk: Playbook primary key
     :return: Rendered detail template
     """
-    playbook = _playbook_readable_or_404(request, pk)
+    playbook = playbook_readable_or_404(request, pk)
     workflows = WorkflowService.get_workflows_for_playbook(playbook.pk)
     quick_stats = playbook.get_quick_stats()
     can_edit = playbook.can_edit(request.user)
@@ -341,7 +329,7 @@ def playbook_detail(request, pk):
 @login_required
 def playbook_version_snapshot(request, pk, version_slug):
     """Pretty-print one historical ``PlaybookVersion.snapshot_data`` (S13)."""
-    playbook = _playbook_readable_or_404(request, pk)
+    playbook = playbook_readable_or_404(request, pk)
     vn = Decimal(str(version_slug.replace("_", ".")))
 
     from methodology.services.playbook_history_service import get_playbook_version_by_number
@@ -365,7 +353,7 @@ def playbook_version_snapshot(request, pk, version_slug):
 @login_required
 def playbook_versions_compare(request, pk):
     """Split view of two snapshots (JSON) for HISTORY compare (S14)."""
-    playbook = _playbook_readable_or_404(request, pk)
+    playbook = playbook_readable_or_404(request, pk)
     left_slug = request.GET.get("left", "").strip()
     right_slug = request.GET.get("right", "").strip()
     if not left_slug or not right_slug:
