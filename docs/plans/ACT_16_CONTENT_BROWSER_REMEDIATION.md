@@ -443,9 +443,10 @@ Execute in order (small vertical slices — one D-step per commit after its chec
 
 ```css
 /* Content Browser — full-viewport three-panel shell */
-body.mm-content-browser main.container-fluid { margin-top: 0; padding: 0; overflow: hidden; }
+body.mm-content-browser { height: 100vh; max-height: 100vh; overflow: hidden; }
+body.mm-content-browser main.container-fluid { margin-top: 0; padding: 0; overflow: hidden; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 body.mm-content-browser footer.footer { display: none; }
-body.mm-content-browser #browser-root { height: calc(100vh - var(--mm-navbar-height, 64px)); overflow: hidden; }
+body.mm-content-browser #browser-root { flex: 1 1 auto; min-height: 0; overflow: hidden; }
 ```
 
 3. Remove the page-level `<style>` block from `browser_graph.html` (keep `{% block extra_css %}` empty or drop block if unused).

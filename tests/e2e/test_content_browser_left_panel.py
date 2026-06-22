@@ -5,6 +5,8 @@ playbook header, and picker (FOB-20, 21, 22, 23).
 Run: DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_left_panel.py -x
 """
 
+import re
+
 import pytest
 from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
@@ -131,6 +133,18 @@ class TestPlaybookHeader:
         expect(status_el).to_be_visible()
         # draft playbook → status text should be non-empty
         assert status_el.text_content().strip() != ''
+
+    def test_status_badge_keeps_draft_warning_color_after_graph_load(
+        self, page: Page, live_server, left_panel_user, playbook_a,
+    ):
+        """Graph fetch must not downgrade draft badge from warning to secondary grey."""
+        _login(page, live_server.url, 'lp_user', 'testpass123')
+        page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
+        page.wait_for_function('() => window.cy && window.cy.nodes().length >= 1', timeout=15_000)
+
+        status_el = page.locator('[data-testid="browser-playbook-status"]')
+        expect(status_el).to_have_class(re.compile(r'bg-warning'))
+        expect(status_el).to_have_text('Draft')
 
 
 # ---------------------------------------------------------------------------

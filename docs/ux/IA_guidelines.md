@@ -3621,7 +3621,7 @@ async function loadMore() {
 
 The Content Browser (`templates/browser/browser_graph.html`) uses a full-viewport shell:
 
-- **Body class**: `body.mm-content-browser` — rules in `static/css/design-system.css` (same pattern as `body.mm-landing`)
+- **Body class**: `body.mm-content-browser` — flex column shell in `static/css/design-system.css` (`main` + `#browser-root` fill remaining viewport below navbar; no `100vh` calc)
 - **Panels & controls**: semantic `mm-browser-*` classes in `design-system.css`; avoid page-level `<style>` blocks
 - **Icons**: Font Awesome Pro (`fa-solid fa-*`) for empty states and chrome
 - **Tooltips**: Bootstrap tooltips on canvas action buttons (`data-bs-toggle="tooltip"`)

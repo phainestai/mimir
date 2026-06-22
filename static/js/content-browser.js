@@ -55,6 +55,22 @@ const _PASTEL_NODE_DEFAULT = {
   text: _BOOTSTRAP_PALETTE.bodyColor,
 };
 
+/** Playbook status → Bootstrap badge class (mirrors Playbook.get_status_badge_color). */
+const _PLAYBOOK_STATUS_BADGE = {
+  active: 'success',
+  draft: 'warning',
+  released: 'primary',
+  disabled: 'secondary',
+};
+
+/** Playbook status code → human-readable label (mirrors Playbook.STATUS_CHOICES). */
+const _PLAYBOOK_STATUS_LABEL = {
+  active: 'Active',
+  draft: 'Draft',
+  released: 'Released',
+  disabled: 'Disabled',
+};
+
 /**
  * Position a JS-injected dropdown above its trigger (fixed coords avoid canvas clipping).
  * Visual styling uses Bootstrap dropdown-menu classes per IA guidelines.
@@ -562,6 +578,8 @@ function _renderGraph(pk, graphData, filters) {
     minZoom: 0.1, maxZoom: 3,
     minZoomedFontSize: 8,
   });
+  window.cy.resize();
+  requestAnimationFrame(() => { if (window.cy) window.cy.resize(); });
 
   // Hide overlay states, make canvas visible.
   const loading = document.querySelector('[data-testid="browser-loading"]');
@@ -1410,11 +1428,24 @@ function _selectPlaybook(pk) {
  * @param {string} name
  * @param {string} status
  */
+function _playbookStatusBadgeClass(status) {
+  const key = (status || '').toLowerCase();
+  return 'badge bg-' + (_PLAYBOOK_STATUS_BADGE[key] || 'secondary') + ' small';
+}
+
+function _playbookStatusLabel(status) {
+  const key = (status || '').toLowerCase();
+  return _PLAYBOOK_STATUS_LABEL[key] || status || '';
+}
+
 function _updatePlaybookHeader(pk, name, status) {
   const nameEl = document.querySelector('[data-testid="browser-playbook-title"]');
   if (nameEl) nameEl.textContent = name;
   const statusEl = document.querySelector('[data-testid="browser-playbook-status"]');
-  if (statusEl) { statusEl.textContent = status; statusEl.className = 'badge bg-secondary small'; }
+  if (statusEl) {
+    statusEl.textContent = _playbookStatusLabel(status);
+    statusEl.className = _playbookStatusBadgeClass(status);
+  }
 
   // Ensure Change Playbook button is visible; swap Select → Change if needed.
   const select = document.querySelector('[data-testid="browser-select-playbook"]');
@@ -1826,8 +1857,6 @@ function _parseRoutingParam() {
   const raw = params.get('routing');
   if (raw && _ROUTING_CATALOG.some(e => e.key === raw)) {
     _currentRouting = raw;
-  } else {
-    _currentRouting = 'bezier';
   }
 }
 
@@ -1898,7 +1927,9 @@ function _updateNodeSizeModeBtn() {
 function _parseNodeSizeParam() {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get('nodesize');
-  _nodeSizeMode = (raw === 'auto') ? 'auto' : 'fixed';
+  if (raw === 'auto' || raw === 'fixed') {
+    _nodeSizeMode = raw;
+  }
 }
 
 /**
@@ -2281,14 +2312,13 @@ function _updateCompoundBtn() {
 function _parseCompoundLevelParam() {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get('compound');
+  if (raw === null) return;
   const valid = new Set(['none', 'workflow', 'workflow-activity']);
   // Backward compat: '1' from old URLs means 'workflow'.
   if (raw === '1') {
     _compoundLevel = 'workflow';
-  } else if (raw && valid.has(raw)) {
+  } else if (valid.has(raw)) {
     _compoundLevel = raw;
-  } else {
-    _compoundLevel = 'none';
   }
 }
 
@@ -2417,7 +2447,6 @@ function _init() {
   const phases = _getPlaybookPhases();
   const customCanvasFromUrl = _urlRequestsCustomCanvasMode();
   const filters = _parseUrlParams();
-  _normaliseFilters(filters, phases);
 
   const panelClose = document.querySelector('[data-testid="browser-panel-close"]');
   if (panelClose) panelClose.addEventListener('click', _closeDetailPanel);
@@ -2439,6 +2468,7 @@ function _init() {
   if (nodeSearch) nodeSearch.addEventListener('input', e => _applySearch(e.target.value));
 
   if (!pk) {
+    _normaliseFilters(filters, phases);
     _showEmptyState();
     return;
   }
@@ -2474,6 +2504,7 @@ function _init() {
   } else {
     _applyDefaultLayoutMode();
   }
+  _normaliseFilters(filters, phases);
   _fetchGraph(pk);
 }
 
