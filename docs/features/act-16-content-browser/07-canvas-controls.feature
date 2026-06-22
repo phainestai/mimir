@@ -399,7 +399,7 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
   # ---------------------------------------------------------------------------
 
   Scenario: FOB-CONTENT-BROWSER-59 Routing picker includes straight-triangle curve-style
-    Given Maria opens the edge routing dropdown
+    Given Maria has enabled custom layout mode and opens the edge routing dropdown
     Then the routing catalog includes the "straight-triangle" option:
       | routing-key       | label                | Cytoscape curve-style |
       | straight-triangle | Straight (Triangle)  | straight-triangle     |
