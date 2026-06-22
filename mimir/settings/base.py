@@ -159,6 +159,13 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@mimir.local")
 # Galdr MVP: use synchronous assessments in tests only (sqlite + threads are flaky).
 GALDR_EAGER = False
 
+# Galdr v2: evaluate PIP changes against target state after all changes applied.
+GALDR_USE_TARGET_STATE = os.environ.get("GALDR_USE_TARGET_STATE", "").lower() in {
+    "1",
+    "true",
+    "yes",
+}
+
 # Authentication settings
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth
 

@@ -35,6 +35,9 @@ CSRF_TRUSTED_ORIGINS = [
 # Disable live Claude in pytest — StubGaldrClient path.
 GALDR_USE_ANTHROPIC = False
 
+# Galdr v2: evaluate against target state in tests (issue #129).
+GALDR_USE_TARGET_STATE = True
+
 # Galdr: synchronous in tests keeps ProcessImprovementProposal rows visible during assertions.
 GALDR_EAGER = True
 

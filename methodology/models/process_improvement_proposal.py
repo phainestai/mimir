@@ -62,6 +62,11 @@ class ProcessImprovementProposal(models.Model):
         blank=True,
         help_text="When Galdr finished (PIP moved to Reviewed).",
     )
+    galdr_holistic_assessment = models.TextField(
+        blank=True,
+        default="",
+        help_text="Galdr v2 overall coherence reasoning (when GALDR_USE_TARGET_STATE is enabled).",
+    )
     decided_at = models.DateTimeField(null=True, blank=True)
     status_changed_at = models.DateTimeField(
         null=True,
