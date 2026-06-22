@@ -678,5 +678,16 @@ rg '<style>' templates/*/_embed.html
 | BPE-06 sign-off (A–C) | Commander | ✅ Signed off 2026-06-22 (retroactive DoD for Act-16 remediation PR #145 debt) |
 | Phase D execution (IA) | Agent | ✅ D1–D10 complete (**232/232** E2E, guardrails green; D10 `9cd8507`) |
 | Phase D sign-off | Commander | ✅ Visual sign-off 2026-06-22 (after D10 fixes) |
+| BPE-06 sign-off (fresh run) | Commander | ✅ 2026-06-22 — 233 E2E + 50 graph/access + 33 embed integration green |
+| BPE-07 finalize + PR | Agent | ✅ PR opened; deferred items filed under `backlog` label |
+| Screen-flow.drawio update | — | **N/A** — Act-16 Content Browser screens not yet on MVP flow diagram |
 
 **Phase D:** Commander approved 2026-06-22 (D6 option A). Remediation plan **closed**.
+
+### BPE-07 deferred backlog (Commander approved 2026-06-22)
+
+| Item | Disposition |
+|------|-------------|
+| `mimir.db`, `.cursor/mcp.json` local drift | Do **not** commit |
+| `test_concurrent_creates_get_unique_orders` SQLite lock | Deferred — [#150](https://github.com/phainestai/mimir/issues/150) |
+| `content-browser.js` method length (>30 lines) | Deferred — [#151](https://github.com/phainestai/mimir/issues/151) |
