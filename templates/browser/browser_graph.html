@@ -17,21 +17,18 @@
        JS updates its `left` position on each toggle. -->
   <button data-testid="browser-toggle-left-panel"
           title="Toggle left panel"
-          class="position-absolute top-50 btn btn-sm btn-light border border-secondary rounded-circle p-0"
-          style="left: 280px; width: 20px; height: 20px; font-size: 10px;
-                 z-index: 9999; transform: translate(-50%, -50%);">
+          class="mm-browser-panel-toggle position-absolute top-50 btn btn-sm btn-light border border-secondary rounded-circle p-0"
+          style="left: 280px;">
     ‹
   </button>
 
   {# ── Left panel ── #}
   <div id="browser-left-panel"
        data-testid="browser-left-panel"
-       class="border-end bg-light flex-shrink-0"
-       style="width: 280px; min-width: 280px; overflow: hidden; transition: width 0.2s;">
+       class="mm-browser-left-panel border-end bg-light flex-shrink-0">
 
     {# Scrollable content wrapper — owns overflow-y, not the panel itself #}
-    <div id="browser-left-panel-content"
-         style="height: 100%; overflow-y: auto; overflow-x: hidden;">
+    <div id="browser-left-panel-content" class="mm-browser-left-panel-content">
     <div class="p-3">
       {# Playbook name + status badge #}
       <div class="fw-bold mb-1" data-testid="browser-playbook-title">
@@ -61,10 +58,10 @@
                class="form-control form-control-sm mb-2"
                placeholder="Search playbooks…"
                autocomplete="off">
-        <div id="browser-picker-list" class="list-group" style="max-height: 240px; overflow-y: auto;"></div>
+        <div id="browser-picker-list" class="mm-browser-picker-list list-group"></div>
       </div>
 
-      <div data-testid="browser-panel-compact" style="font-size: 0.75rem;">
+      <div data-testid="browser-panel-compact" class="mm-browser-panel-compact">
       {% if playbook %}
         {# Search input — filters canvas nodes by name #}
         <div class="mt-2 mb-1">
@@ -89,8 +86,7 @@
   </div>
 
   {# ── Canvas ── #}
-  <div id="browser-canvas-wrapper" class="flex-grow-1 position-relative"
-       style="min-height: 0; height: 100%;">
+  <div id="browser-canvas-wrapper" class="mm-browser-canvas-wrapper flex-grow-1 position-relative">
 
     {# Loading state #}
     <div data-testid="browser-loading"
@@ -103,8 +99,7 @@
     {# Empty state — shown when no playbook selected #}
     {% if not playbook %}
     <div data-testid="browser-empty-state"
-         class="position-absolute top-50 start-50 translate-middle text-center"
-         style="z-index: 20;">
+         class="mm-browser-overlay-state position-absolute top-50 start-50 translate-middle text-center">
       <i class="fa-solid fa-diagram-project display-1 text-muted"></i>
       <h5 class="mt-3">Select a playbook to explore</h5>
       <p class="text-muted">Choose a playbook to see its full entity graph.</p>
@@ -116,7 +111,7 @@
 
     {# No-content state — shown by JS when the selected playbook has no entities #}
     <div data-testid="browser-no-content-state"
-         class="position-absolute top-50 start-50 translate-middle text-center d-none">
+         class="mm-browser-overlay-state position-absolute top-50 start-50 translate-middle text-center d-none">
       <i class="fa-solid fa-inbox display-1 text-muted"></i>
       <h5 class="mt-3">This playbook has no content yet.</h5>
       <p class="text-muted">Add workflows and activities to see the graph.</p>
@@ -127,15 +122,14 @@
 
     {# Error state — shown by JS on fetch failure #}
     <div data-testid="browser-error-state"
-         class="position-absolute top-50 start-50 translate-middle text-center d-none">
+         class="mm-browser-overlay-state position-absolute top-50 start-50 translate-middle text-center d-none">
       <p class="text-danger">Could not load graph data.</p>
       <button data-testid="browser-retry" class="btn btn-outline-danger btn-sm">Retry</button>
     </div>
 
     {# Canvas controls — grouped by function, compact size, bottom-right #}
-    <div class="position-absolute bottom-0 end-0 mb-3 me-3"
-         data-testid="browser-canvas-controls"
-         style="z-index: 20; pointer-events: auto;">
+    <div class="mm-browser-canvas-controls position-absolute bottom-0 end-0 mb-3 me-3"
+         data-testid="browser-canvas-controls">
 
       {# Node count badge #}
       <div class="text-end mb-1">
@@ -144,11 +138,9 @@
 
       {# Row 0: Custom layout toggle — always visible #}
       <div class="d-flex justify-content-end mb-1">
-        <label class="d-flex align-items-center gap-1 text-secondary"
-               style="font-size: 0.65rem; cursor: pointer; user-select: none;">
+        <label class="mm-browser-custom-layout-label d-flex align-items-center gap-1 text-secondary">
           <input type="checkbox"
-                 data-testid="browser-custom-layout-toggle"
-                 style="cursor: pointer;">
+                 data-testid="browser-custom-layout-toggle">
           Custom layout
         </label>
       </div>
@@ -156,57 +148,48 @@
       {# Row 1: Layout + routing — hidden in default layout mode #}
       <div class="d-flex gap-1 mb-1 browser-custom-controls d-none">
         <button data-testid="browser-layout-btn"
-                class="btn btn-outline-secondary"
-                style="font-size: 0.65rem; padding: 2px 6px;"
+                class="mm-browser-btn-compact btn btn-outline-secondary"
                 title="Switch layout">Layered ▾</button>
         <button data-testid="browser-routing-btn"
-                class="btn btn-outline-secondary"
-                style="font-size: 0.65rem; padding: 2px 6px;"
+                class="mm-browser-btn-compact btn btn-outline-secondary"
                 title="Switch edge routing style">Bezier ▾</button>
       </div>
 
       {# Row 2: Grouping + node size — hidden in default layout mode #}
       <div class="d-flex gap-1 mb-1 browser-custom-controls d-none">
         <button data-testid="browser-compound-btn"
-                class="btn btn-outline-secondary"
-                style="font-size: 0.65rem; padding: 2px 6px;"
+                class="mm-browser-btn-compact btn btn-outline-secondary"
                 title="Select workflow grouping mode">No grouping ▾</button>
         <button data-testid="browser-node-size-toggle"
-                class="btn btn-outline-secondary active"
-                style="font-size: 0.65rem; padding: 2px 6px;"
+                class="mm-browser-btn-compact btn btn-outline-secondary active"
                 title="Toggle node size mode: Fixed size vs Auto-width">Fixed ✓</button>
       </div>
 
       {# Row 3: Navigation — always visible #}
       <div class="d-flex gap-1">
         <button data-testid="browser-replot-btn"
-                class="btn btn-outline-secondary"
-                style="font-size: 0.65rem; padding: 2px 6px;"
+                class="mm-browser-btn-compact btn btn-outline-secondary"
                 title="Re-plot graph">↺</button>
         <button data-testid="browser-zoom-in"
-                class="btn btn-outline-secondary"
-                style="font-size: 0.65rem; padding: 2px 6px;"
+                class="mm-browser-btn-compact btn btn-outline-secondary"
                 title="Zoom in">+</button>
         <button data-testid="browser-zoom-out"
-                class="btn btn-outline-secondary"
-                style="font-size: 0.65rem; padding: 2px 6px;"
+                class="mm-browser-btn-compact btn btn-outline-secondary"
                 title="Zoom out">−</button>
         <button data-testid="browser-zoom-fit"
-                class="btn btn-outline-secondary"
-                style="font-size: 0.65rem; padding: 2px 6px;"
+                class="mm-browser-btn-compact btn btn-outline-secondary"
                 title="Fit graph">⊡</button>
       </div>
     </div>
 
     {# Cytoscape canvas target — JS mounts here #}
-    <div data-testid="browser-canvas" id="cy" style="position: absolute; inset: 0;"></div>
+    <div data-testid="browser-canvas" id="cy" class="mm-browser-canvas"></div>
   </div>
 
   {# ── Detail panel — hidden until node click ── #}
   <div id="browser-detail-panel"
        data-testid="browser-detail-panel"
-       class="border-start bg-white d-none"
-       style="width: 420px; min-width: 420px; overflow-y: auto;">
+       class="mm-browser-detail-panel border-start bg-white d-none">
 
     <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
       <div>

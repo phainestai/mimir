@@ -223,3 +223,74 @@ body.mm-content-browser #browser-root {
     height: calc(100vh - var(--mm-navbar-height, 64px));
     overflow: hidden;
 }
+
+/* Content Browser — panels & controls */
+.mm-browser-left-panel {
+    width: 280px;
+    min-width: 280px;
+    overflow: hidden;
+    transition: width 0.2s;
+}
+
+.mm-browser-left-panel-content {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.mm-browser-detail-panel {
+    width: 420px;
+    min-width: 420px;
+    overflow-y: auto;
+}
+
+.mm-browser-panel-toggle {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+}
+
+.mm-browser-canvas-wrapper {
+    min-height: 0;
+    height: 100%;
+}
+
+.mm-browser-canvas {
+    position: absolute;
+    inset: 0;
+}
+
+.mm-browser-overlay-state {
+    z-index: 20;
+}
+
+.mm-browser-canvas-controls {
+    z-index: 20;
+    pointer-events: auto;
+}
+
+.mm-browser-btn-compact {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+}
+
+.mm-browser-panel-compact {
+    font-size: 0.75rem;
+}
+
+.mm-browser-custom-layout-label {
+    font-size: 0.65rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.mm-browser-custom-layout-label input {
+    cursor: pointer;
+}
+
+.mm-browser-picker-list {
+    max-height: 240px;
+    overflow-y: auto;
+}
