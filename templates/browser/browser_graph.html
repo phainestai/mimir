@@ -3,25 +3,14 @@
 
 {% block title %}Content Browser{% if playbook %} — {{ playbook.name }}{% endif %}{% endblock %}
 
-{% block extra_css %}
-<style>
-  /* Full-screen canvas: remove main margin/padding and hide footer on this page */
-  main.container-fluid {
-    margin-top: 0 !important;
-    padding-bottom: 0 !important;
-    overflow: hidden;
-  }
-  footer.footer { display: none !important; }
-</style>
-{% endblock %}
+{% block body_class %}mm-content-browser{% endblock %}
 
 {% block content %}
 {# Three-panel layout shell — all panels rendered server-side; JS drives content #}
 <div id="browser-root"
      data-playbook-pk="{{ playbook_pk|default:'' }}"
      data-playbook-phases="{{ phases_json }}"
-     class="d-flex position-relative"
-     style="height: calc(100vh - 64px); overflow: hidden;">
+     class="d-flex position-relative overflow-hidden">
 
   <!-- Collapse/expand toggle — lives OUTSIDE the panel as a sibling so it is never
        clipped by overflow:hidden or covered by the main container at 0-panel-width.

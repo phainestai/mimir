@@ -204,3 +204,22 @@ body.mm-landing footer {
 .markdown-content > :last-child {
     margin-bottom: 0;
 }
+
+/* ============================================================
+   Content Browser — full-viewport three-panel shell
+   ============================================================ */
+
+body.mm-content-browser main.container-fluid {
+    margin-top: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+body.mm-content-browser footer.footer {
+    display: none;
+}
+
+body.mm-content-browser #browser-root {
+    height: calc(100vh - var(--mm-navbar-height, 64px));
+    overflow: hidden;
+}
