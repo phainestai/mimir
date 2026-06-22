@@ -86,7 +86,7 @@ Feature: FOB-CONTENT-BROWSER-API Content Browser Graph API and Data
   Scenario: FOB-CONTENT-BROWSER-13c Session expires while graph is loaded
     Given Maria is viewing a graph and her Django session expires
     When content-browser.js fetches /api/playbooks/<pk>/graph/ (e.g. on retry)
-    Then the client detects the non-JSON response and redirects to /auth/login/?next=/browser/<pk>/
+    Then the client detects the non-JSON response and redirects to /auth/user/login/?next=/browser/<pk>/
     And the redirect URL does NOT include filter params — filter state is lost on re-auth
       (acceptable: user can re-apply filters after logging back in)
 
