@@ -546,7 +546,7 @@ const _BOOTSTRAP_PALETTE = {
 - [x] Embed markdown styles defined once in `design-system.css`
 - [x] Inline `style=` count on `browser_graph.html` reduced to JS-dynamic cases only (e.g. toggle `left` position)
 - [x] Cytoscape colors sourced from `_BOOTSTRAP_PALETTE` (or CSS var reader), not scattered literals
-- [ ] Full content-browser E2E batch green after D changes (D9 checkpoint)
+- [x] Full content-browser E2E batch green after D changes (D9 checkpoint — **232/232**, 2026-06-22)
 - [x] Optional: add § *Content Browser layout* to `IA_guidelines.md` documenting `body.mm-content-browser` and canvas JS exceptions
 
 ### D9 — Phase D checkpoint
@@ -611,9 +611,9 @@ rg '<style>' templates/*/_embed.html
 
 ## Phase D Definition of Done (IA alignment — optional after BPE-06)
 
-- [x] All items in [D8 exit checklist](#d8--phase-d-exit-checklist) checked (E2E batch pending D9)
+- [x] All items in [D8 exit checklist](#d8--phase-d-exit-checklist) checked
 - [ ] Commander visual sign-off on Content Browser chrome
-- [ ] `tests.log` records post–Phase D green E2E run
+- [x] `tests.log` records post–Phase D green E2E run (232 E2E + 33 embed integration, 2026-06-22)
 
 ---
 
@@ -658,7 +658,7 @@ rg '<style>' templates/*/_embed.html
 | Phase B execution | Agent | ✅ B7 E2E **232/232 green** |
 | Phase C execution | Agent | ✅ C1–C6 complete (commits `28963f4`…`d55a451`) |
 | BPE-06 sign-off (A–C) | Commander | ✅ Signed off 2026-06-22 (retroactive DoD for Act-16 remediation PR #145 debt) |
-| Phase D execution (IA) | Agent | ✅ D1–D7 committed; D9 checkpoint pending |
+| Phase D execution (IA) | Agent | ✅ D1–D9 complete (**232/232** E2E, guardrails green) |
 | Phase D sign-off | Commander | Awaiting visual review in browser |
 
 **Phase D:** Commander approved 2026-06-22 (D6 option A). D9 E2E batch + visual sign-off remain.
