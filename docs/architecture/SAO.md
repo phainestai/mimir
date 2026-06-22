@@ -913,6 +913,8 @@ The FOB web UI needs to display complex graph structures (workflows, activity de
 
 **Rationale**: The **Content Browser** feature requires a fully interactive node-based graph of an entire playbook's entity graph. Cytoscape.js covers 100% of those requirements (pan/zoom/drag, click events, CSS-selector-style node styling, hierarchical layout via the `cytoscape-dagre` plugin, 300+ node performance via Canvas rendering) with a single CDN script and no framework or build toolchain.
 
+**ADR**: [ADR-001: Content Browser graph rendering stack](adr/001-content-browser-graph-rendering-stack.md) — decision context, alternatives (Graphviz + HTMX), consequences, revisit criteria.
+
 **Rules for Cytoscape.js views**:
 
 1. **Dedicated route family only** — Cytoscape.js is restricted to dedicated full-page route families (e.g., `/browser/`, `/browser/<pk>/`). It must NOT be embedded in existing Django template pages or HTMX-driven partial responses.
