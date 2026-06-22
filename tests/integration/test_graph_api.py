@@ -1,9 +1,9 @@
 """
 Integration tests for Content Browser Graph API endpoint.
 
-Covers: FOB-CONTENT-BROWSER-13, 13b (activity phase metadata), 13c (session expiry redirect),
-        13d (404 on deleted playbook), 13e (per-activity resource scoping),
-        13f (display_code on activity nodes), 13g (sequence edges).
+Covers: FOB-CONTENT-BROWSER-13, 13b (activity phase metadata), 13d (404 on deleted playbook),
+        13e (per-activity resource scoping), 13f (display_code on activity nodes),
+        13g (sequence edges). Session-expiry redirect (13c) is covered in E2E detail-panel tests.
 """
 
 import pytest
@@ -318,7 +318,7 @@ class TestGraphAPIPhaseMetadata:
 
 
 # ---------------------------------------------------------------------------
-# FOB-CONTENT-BROWSER-13c: Contains edges
+# FOB-CONTENT-BROWSER-13 — Graph edge relationships (contains, predecessor)
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
