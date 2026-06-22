@@ -36,7 +36,6 @@ let _customLayoutMode = false; // false = default mode (FOB-63)
 /**
  * Full layout catalog used by the layout picker dropdown (FOB-19, FOB-34).
  * Each entry: { key, label, group }  — key is also the URL param value.
- * TODO S34: implement _applyLayout() to dispatch on these keys.
  */
 const _LAYOUT_CATALOG = [
   // ELK sub-algorithms (elkjs already loaded)
@@ -753,9 +752,8 @@ function _sortForLayout(nodes) {
 }
 
 /**
- * Apply the combined visual state (entity type visibility, phase dim, search dim)
- * to all canvas nodes and edges. Also re-renders the structural tree and phase filter
- * controls so they stay in sync with the active filter.
+ * Apply the combined visual state (phase dim, search dim) to canvas nodes and edges.
+ * Also re-renders the structural tree so it stays in sync with the active filter.
  */
 function _refreshVisualState() {
   if (!window.cy) return;
@@ -821,116 +819,6 @@ function _applySearch(term) {
     _currentSearchTerm = term;
     _refreshVisualState();
   }, 250);
-}
-
-/**
- * Render the entity-type filter toolbar on the canvas.
- * One toggle button per type that has nodes; shows total count (static).
- * Called once after graph loads — recreated on playbook switch.
- *
- * @param {{ types: string[], phases: number[] }} filters
- */
-function _renderFilterToolbar(filters) {
-  const container = document.querySelector('[data-testid="browser-type-filter-row"]');
-  if (!container || !window.cy) return;
-
-  const displayTypes = ['workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
-  const typeCounts = {};
-  displayTypes.forEach(t => { typeCounts[t] = 0; });
-  (_fullGraphData ? _fullGraphData.nodes : []).forEach(n => {
-    if (n.type in typeCounts) typeCounts[n.type]++;
-  });
-
-  container.innerHTML = '';
-  displayTypes.forEach(type => {
-    if (typeCounts[type] === 0) return;
-    const isActive = filters.types.includes(type);
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = `btn btn-sm ${isActive ? 'btn-secondary' : 'btn-outline-secondary'}`;
-    btn.setAttribute('data-testid', 'browser-filter-btn');
-    btn.setAttribute('data-filter-type', type);
-    btn.title = `Toggle ${type} nodes`;
-    const label = type.charAt(0).toUpperCase() + type.slice(1);
-    btn.textContent = `${label} (${typeCounts[type]})`;
-    btn.addEventListener('click', () => {
-      const types = _currentFilters.types.slice();
-      const idx = types.indexOf(type);
-      if (idx >= 0) {
-        types.splice(idx, 1);
-      } else {
-        types.push(type);
-      }
-      const newFilters = { ..._currentFilters, types };
-      _applyFilters(newFilters);
-      _replaceCanonicalUrl(_getPkFromPath(), newFilters);
-      _renderFilterToolbar(newFilters);
-    });
-    container.appendChild(btn);
-  });
-}
-
-/**
- * Render phase filter pills in the canvas filter toolbar (second row).
- * Hidden entirely when the playbook has no phases.
- * Called from _refreshVisualState to stay in sync.
- */
-function _renderPhaseFilter() {
-  const playbookPhases = _getPlaybookPhases();
-  const container = document.querySelector('[data-testid="browser-phase-filter"]');
-
-  if (!container) return;
-  if (playbookPhases.length === 0) {
-    container.innerHTML = '';
-    return;
-  }
-
-  const activePhases = new Set(_currentFilters.phases);
-  const allPhaseIds = playbookPhases.map(p => p.id);
-  // Include 0 (Unphased) as an option
-  const phaseOptions = [{ id: 0, name: '(Unphased)' }, ...playbookPhases];
-
-  container.innerHTML = '';
-  phaseOptions.forEach(phase => {
-    const isActive = activePhases.size === 0 || activePhases.has(phase.id);
-    const pill = document.createElement('button');
-    pill.type = 'button';
-    pill.className = `btn btn-sm me-1 mb-1 ${isActive ? 'btn-primary' : 'btn-outline-secondary'}`;
-    pill.setAttribute('data-testid', 'browser-phase-pill');
-    pill.setAttribute('data-phase-id', String(phase.id));
-    pill.textContent = phase.name;
-    pill.addEventListener('click', () => {
-      let phases = _currentFilters.phases.slice();
-      if (phases.length === 0) {
-        phases = [phase.id];
-      } else if (phases.includes(phase.id)) {
-        phases = phases.filter(id => id !== phase.id);
-        if (phases.length === 0) phases = [];
-      } else {
-        phases = phases.concat([phase.id]);
-        if (phaseOptions.every(p => phases.includes(p.id))) phases = [];
-      }
-      const newFilters = { ..._currentFilters, phases };
-      _applyFilters(newFilters);
-      _replaceCanonicalUrl(_getPkFromPath(), newFilters);
-    });
-    container.appendChild(pill);
-  });
-
-  // "All" reset button when filter is active
-  if (activePhases.size > 0) {
-    const clearBtn = document.createElement('button');
-    clearBtn.type = 'button';
-    clearBtn.className = 'btn btn-sm btn-outline-danger mb-1';
-    clearBtn.setAttribute('data-testid', 'browser-phase-clear');
-    clearBtn.textContent = 'All';
-    clearBtn.addEventListener('click', () => {
-      const newFilters = { ..._currentFilters, phases: [] };
-      _applyFilters(newFilters);
-      _replaceCanonicalUrl(_getPkFromPath(), newFilters);
-    });
-    container.appendChild(clearBtn);
-  }
 }
 
 /**
@@ -1542,14 +1430,6 @@ function _applyDefaultLayoutMode() {
   }
 }
 
-function _applyDefaultLayoutMode() {
-  _customLayoutMode = false;
-  _showCustomControls(false);
-  _applyLayout(_DEFAULT_LAYOUT_MODE_KEY);
-  _applyRouting(_DEFAULT_ROUTING_MODE_KEY);
-  _applyCompoundLevel(_DEFAULT_COMPOUND_MODE_KEY);
-}
-
 function _applyCustomLayoutMode() {
   _customLayoutMode = true;
   _showCustomControls(true);
@@ -1568,123 +1448,13 @@ function _initCustomLayoutToggle() {
   });
 }
 
-/**
- * Main entry point — called on DOMContentLoaded.
- * Reads PK, normalises URL params, fetches graph if PK present.
- */
-function _init() {
-  const pk = _getPlaybookPk();
-  const phases = _getPlaybookPhases();
-  const filters = _parseUrlParams();
-  _normaliseFilters(filters, phases);
-
-  // Wire panel close button.
-  const panelClose = document.querySelector('[data-testid="browser-panel-close"]');
-  if (panelClose) panelClose.addEventListener('click', _closeDetailPanel);
-
-  // Wire panel entity-name navigation links.
-  _initPanelNavigation();
-
-  // Wire custom layout toggle (FOB-63) — must run before pk check so toggle is always wired.
-  _initCustomLayoutToggle();
-
-  // Wire collapse toggle.
-  const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
-  if (toggleBtn) toggleBtn.addEventListener('click', _toggleLeftPanel);
-
-  // Wire picker open — both Change Playbook and Select Playbook buttons.
-  document.querySelectorAll('[data-testid="browser-change-playbook"], [data-testid="browser-select-playbook"]').forEach(btn => {
-    btn.addEventListener('click', _openPicker);
-  });
-
-  // Wire picker search input.
-  const pickerSearch = document.querySelector('[data-testid="browser-picker-search"]');
-  if (pickerSearch) pickerSearch.addEventListener('input', e => _filterPickerItems(e.target.value));
-
-  // Wire node search input (debounced canvas node name filter).
-  const nodeSearch = document.querySelector('[data-testid="browser-search-input"]');
-  if (nodeSearch) nodeSearch.addEventListener('input', e => _applySearch(e.target.value));
-
-  if (!pk) {
-    _showEmptyState();
-    return;
-  }
-
-  // Wire zoom controls.
-  const zoomIn = document.querySelector('[data-testid="browser-zoom-in"]');
-  const zoomOut = document.querySelector('[data-testid="browser-zoom-out"]');
-  const zoomFit = document.querySelector('[data-testid="browser-zoom-fit"]');
-  if (zoomIn) zoomIn.addEventListener('click', () => window.cy && window.cy.zoom({ level: window.cy.zoom() * 1.3, renderedPosition: { x: window.cy.width() / 2, y: window.cy.height() / 2 } }));
-  if (zoomOut) zoomOut.addEventListener('click', () => window.cy && window.cy.zoom({ level: window.cy.zoom() / 1.3, renderedPosition: { x: window.cy.width() / 2, y: window.cy.height() / 2 } }));
-  if (zoomFit) zoomFit.addEventListener('click', () => window.cy && window.cy.fit());
-
-  // Wire layout switcher.
-  const layoutBtn = document.querySelector('[data-testid="browser-layout-btn"]');
-  if (layoutBtn) layoutBtn.addEventListener('click', _toggleLayoutDropdown);
-  _updateLayoutBtn();
-
-  // Wire routing picker.
-  const routingBtn = document.querySelector('[data-testid="browser-routing-btn"]');
-  if (routingBtn) routingBtn.addEventListener('click', _toggleRoutingDropdown);
-  _updateRoutingBtn();
-
-  // Wire compound grouping dropdown.
-  const compoundBtn = document.querySelector('[data-testid="browser-compound-btn"]');
-  if (compoundBtn) compoundBtn.addEventListener('click', _toggleCompoundDropdown);
-  // Legacy toggle button (kept for backward compat in older templates).
-  const compoundToggle = document.querySelector('[data-testid="browser-compound-toggle"]');
-  if (compoundToggle) compoundToggle.addEventListener('click', _applyCompoundToggle);
-  _updateCompoundBtn();
-  _updateCompoundToggleBtn();
-
-  // Wire node size mode toggle.
-  const nodeSizeToggle = document.querySelector('[data-testid="browser-node-size-toggle"]');
-  if (nodeSizeToggle) nodeSizeToggle.addEventListener('click', _applyNodeSizeToggle);
-  _updateNodeSizeModeBtn();
-
-  // Wire re-plot button.
-  const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
-  if (replotBtn) replotBtn.addEventListener('click', _replot);
-
-  // Apply default layout mode — sets klay+straight+workflow-activity and hides advanced buttons.
-  _applyDefaultLayoutMode();
-
-  _fetchGraph(pk);
-}
-
-// Expose instance globally for Playwright E2E tests.
-window.cy = null;
-// Expose module state for Playwright E2E tests.
-Object.defineProperty(window, '_currentRouting', { get: () => _currentRouting });
-Object.defineProperty(window, '_compoundViewOn', { get: () => _compoundLevel !== 'none' });
-Object.defineProperty(window, '_compoundLevel', { get: () => _compoundLevel });
-Object.defineProperty(window, '_nodeSizeMode', { get: () => _nodeSizeMode });
-Object.defineProperty(window, '_customLayoutMode', { get: () => _customLayoutMode });
-Object.defineProperty(window, '_currentLayout', { get: () => _currentLayout });
-
-document.addEventListener('DOMContentLoaded', _init);
-window.addEventListener('popstate', _onPopState);
-
 // ─────────────────────────────────────────────────────────────────────────────
-// S38 — Enhanced node visual styling (FOB-38)
-// All functions below are skeletons — implementation fills in the bodies.
+// Enhanced node visual styling (FOB-38)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Build the Cytoscape stylesheet with enhanced node shapes and Mimir design-aligned
- * visual style (FOB-38). Replaces _cytoscapeStyle() when implemented.
- *
- * Node shapes per entity type:
- *   playbook    → round-octagon
- *   workflow    → round-rectangle (wider, bolder)
- *   activity    → bottom-round-rectangle
- *   artifact    → round-diamond
- *   skill       → hexagon
- *   agent       → ellipse (unchanged)
- *   rule        → cut-rectangle
- *
- * Typography: Montserrat font, weight 600 structural / 400 resource.
- * Borders: 2px solid on all node types.
+ * visual style (FOB-38).
  *
  * @returns {object[]} Cytoscape stylesheet array
  */
@@ -1810,32 +1580,7 @@ function _buildNodeIcon(type) {
  * @returns {object[]} Cytoscape stylesheet entries for edges
  */
 function _buildEdgeStyle() {
-  return [
-    {
-      selector: 'edge',
-      style: {
-        'line-color': '#212529',
-        'target-arrow-color': '#212529',
-        'target-arrow-shape': 'triangle',
-        'curve-style': 'bezier',
-        'width': 1.5,
-        'opacity': 0.85,
-      },
-    },
-    {
-      selector: 'edge[relationship = "predecessor"]',
-      style: {
-        'line-style': 'dashed',
-        'line-dash-pattern': [6, 3],
-      },
-    },
-    {
-      selector: 'edge[relationship = "contains"]',
-      style: {
-        'display': 'none',
-      },
-    },
-  ];
+  return _buildEdgeStyleForMode(_compoundLevel !== 'none');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2233,28 +1978,27 @@ function _addElkCompoundData(nodeData) {
 }
 
 /**
- * Return the label positioning overrides that float the compound parent's label
- * gently above the top-left corner of the compound boundary.
- *
- * Expected output (when implemented):
- *   {
- *     'text-margin-y': -14,      // push label above top border
- *     'text-margin-x': 6,        // slight left indent
- *     'text-background-color': '#ffffff',
- *     'text-background-opacity': 0.85,
- *     'text-background-padding': '3px',
- *   }
+ * Return compound parent label style using the padding-top approach.
  *
  * @returns {object} Cytoscape style overrides for the :parent selector label
  */
 function _buildCompoundLabelStyle() {
   return {
-    'text-margin-y': -14,
-    'text-margin-x': 6,
+    'label': ele => ele.data('label') || '',
+    'padding-top': '28px',
+    'text-valign': 'top',
+    'text-halign': 'center',
+    'text-margin-x': 0,
+    'text-margin-y': 4,
+    'font-size': 20,
+    'font-family': 'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'font-weight': 600,
+    'text-transform': 'none',
+    'text-max-width': 200,
+    'text-wrap': 'ellipsis',
     'text-background-color': '#ffffff',
     'text-background-opacity': 0.85,
-    'text-background-padding': '3px',
-    'text-border-opacity': 0,
+    'text-background-padding': '4px',
     'color': '#084298',
   };
 }
@@ -2275,13 +2019,12 @@ function _cytoscapeCompoundStyle() {
     {
       selector: ':parent',
       style: {
-        'label': ele => ele.data('label') || '',
         'background-color': _compoundBackgroundForType('workflow'),
         'border-color': '#0d6efd',
         'border-width': 2,
         'border-style': 'solid',
         'shape': 'round-rectangle',
-        ..._buildCompoundLabelStyleV2(),
+        ..._buildCompoundLabelStyle(),
       },
     },
   ];
@@ -2320,59 +2063,8 @@ function _buildFontRenderingGuards() {
 // (Implementation: add { key: 'straight-triangle', label: 'Straight (Triangle)', cyValue: 'straight-triangle' }
 //  to _ROUTING_CATALOG. No new function needed — skeleton is the catalog entry itself.)
 
-// ─────────────────────────────────────────────────────────────────────────────
-// S60 — Compound label visibility + font size + activity colour skeleton (FOB-60)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Return compound parent label style using the padding-top approach:
- * text-valign:top positions the label in the top padding strip (not outside the box).
- *
- * Expected output (when implemented):
- *   {
- *     'padding-top': '28px',
- *     'text-valign': 'top',
- *     'text-halign': 'left',
- *     'text-margin-x': 8,
- *     'text-margin-y': 4,
- *     'font-size': 20,
- *     'font-family': 'Montserrat, system-ui',
- *     'font-weight': 600,
- *     'text-transform': 'none',
- *     'text-background-color': '#ffffff',
- *     'text-background-opacity': 0.85,
- *     'text-background-padding': '4px',
- *     'color': '#084298',
- *   }
- *
- * @returns {object} Cytoscape style overrides for compound parent label
- */
-function _buildCompoundLabelStyleV2() {
-  return {
-    'padding-top': '28px',
-    'text-valign': 'top',
-    'text-halign': 'center',
-    'text-margin-x': 0,
-    'text-margin-y': 4,
-    'font-size': 20,
-    'font-family': 'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-    'font-weight': 600,
-    'text-transform': 'none',
-    'text-max-width': 200,
-    'text-wrap': 'ellipsis',
-    'text-background-color': '#ffffff',
-    'text-background-opacity': 0.85,
-    'text-background-padding': '4px',
-    'color': '#084298',
-  };
-}
-
 /**
  * Return background colour for compound nodes by compound level and node type.
- *
- * Expected output (when implemented):
- *   If nodeType === 'activity': '#d4edda'   (light mint-green)
- *   Otherwise (workflow):       '#eef2ff'   (light periwinkle)
  *
  * @param {string} nodeType — 'workflow' or 'activity'
  * @returns {string} CSS colour string
@@ -2382,7 +2074,7 @@ function _compoundBackgroundForType(nodeType) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// S61 — 3-level compound grouping context menu skeleton (FOB-61)
+// S61 — 3-level compound grouping context menu (FOB-61)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -2493,7 +2185,7 @@ function _cytoscapeCompoundStyleForLevel(level) {
         'background-color': _compoundBackgroundForType('activity'),
         'border-color': '#198754',
         'border-width': 2,
-        ..._buildCompoundLabelStyleV2(),
+        ..._buildCompoundLabelStyle(),
       },
     },
   ];
@@ -2720,3 +2412,83 @@ function _initPanelNavigation() {
     if (nodeId) _selectTreeNode(nodeId);
   });
 }
+
+/**
+ * Main entry point — called on DOMContentLoaded.
+ * Reads PK, normalises URL params, fetches graph if PK present.
+ */
+function _init() {
+  const pk = _getPlaybookPk();
+  const phases = _getPlaybookPhases();
+  const filters = _parseUrlParams();
+  _normaliseFilters(filters, phases);
+
+  const panelClose = document.querySelector('[data-testid="browser-panel-close"]');
+  if (panelClose) panelClose.addEventListener('click', _closeDetailPanel);
+
+  _initPanelNavigation();
+  _initCustomLayoutToggle();
+
+  const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
+  if (toggleBtn) toggleBtn.addEventListener('click', _toggleLeftPanel);
+
+  document.querySelectorAll('[data-testid="browser-change-playbook"], [data-testid="browser-select-playbook"]').forEach(btn => {
+    btn.addEventListener('click', _openPicker);
+  });
+
+  const pickerSearch = document.querySelector('[data-testid="browser-picker-search"]');
+  if (pickerSearch) pickerSearch.addEventListener('input', e => _filterPickerItems(e.target.value));
+
+  const nodeSearch = document.querySelector('[data-testid="browser-search-input"]');
+  if (nodeSearch) nodeSearch.addEventListener('input', e => _applySearch(e.target.value));
+
+  if (!pk) {
+    _showEmptyState();
+    return;
+  }
+
+  const zoomIn = document.querySelector('[data-testid="browser-zoom-in"]');
+  const zoomOut = document.querySelector('[data-testid="browser-zoom-out"]');
+  const zoomFit = document.querySelector('[data-testid="browser-zoom-fit"]');
+  if (zoomIn) zoomIn.addEventListener('click', () => window.cy && window.cy.zoom({ level: window.cy.zoom() * 1.3, renderedPosition: { x: window.cy.width() / 2, y: window.cy.height() / 2 } }));
+  if (zoomOut) zoomOut.addEventListener('click', () => window.cy && window.cy.zoom({ level: window.cy.zoom() / 1.3, renderedPosition: { x: window.cy.width() / 2, y: window.cy.height() / 2 } }));
+  if (zoomFit) zoomFit.addEventListener('click', () => window.cy && window.cy.fit());
+
+  const layoutBtn = document.querySelector('[data-testid="browser-layout-btn"]');
+  if (layoutBtn) layoutBtn.addEventListener('click', _toggleLayoutDropdown);
+  _updateLayoutBtn();
+
+  const routingBtn = document.querySelector('[data-testid="browser-routing-btn"]');
+  if (routingBtn) routingBtn.addEventListener('click', _toggleRoutingDropdown);
+  _updateRoutingBtn();
+
+  const compoundBtn = document.querySelector('[data-testid="browser-compound-btn"]');
+  if (compoundBtn) compoundBtn.addEventListener('click', _toggleCompoundDropdown);
+  const compoundToggle = document.querySelector('[data-testid="browser-compound-toggle"]');
+  if (compoundToggle) compoundToggle.addEventListener('click', _applyCompoundToggle);
+  _updateCompoundBtn();
+  _updateCompoundToggleBtn();
+
+  const nodeSizeToggle = document.querySelector('[data-testid="browser-node-size-toggle"]');
+  if (nodeSizeToggle) nodeSizeToggle.addEventListener('click', _applyNodeSizeToggle);
+  _updateNodeSizeModeBtn();
+
+  const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
+  if (replotBtn) replotBtn.addEventListener('click', _replot);
+
+  _applyDefaultLayoutMode();
+  _fetchGraph(pk);
+}
+
+window.cy = null;
+Object.defineProperty(window, '_currentRouting', { get: () => _currentRouting });
+Object.defineProperty(window, '_compoundViewOn', { get: () => _compoundLevel !== 'none' });
+Object.defineProperty(window, '_compoundLevel', { get: () => _compoundLevel });
+Object.defineProperty(window, '_nodeSizeMode', { get: () => _nodeSizeMode });
+Object.defineProperty(window, '_customLayoutMode', { get: () => _customLayoutMode });
+Object.defineProperty(window, '_currentLayout', { get: () => _currentLayout });
+window._buildEdgeStyle = _buildEdgeStyle;
+window._buildCompoundLabelStyle = _buildCompoundLabelStyle;
+
+document.addEventListener('DOMContentLoaded', _init);
+window.addEventListener('popstate', _onPopState);

@@ -75,8 +75,8 @@ class TestCompoundModeLabelVisibility:
             f"Expected 'label' in compound style to be function or string, got '{style}'"
         )
 
-    def test_compound_label_position_is_top_left_outside(self, graph_page):
-        """Compound label style uses valign:top and halign:left."""
+    def test_compound_label_position_is_top_center(self, graph_page):
+        """Compound label style uses valign:top and halign:center."""
         valign = graph_page.evaluate(
             "() => _buildCompoundLabelStyle()['text-valign']"
         )
@@ -84,7 +84,7 @@ class TestCompoundModeLabelVisibility:
             "() => _buildCompoundLabelStyle()['text-halign']"
         )
         assert valign == 'top', f"Expected text-valign 'top', got '{valign}'"
-        assert halign == 'left', f"Expected text-halign 'left', got '{halign}'"
+        assert halign == 'center', f"Expected text-halign 'center', got '{halign}'"
 
     def test_workflow_label_is_workflow_name(self, graph_page):
         """The label on a compound parent node equals the workflow's name."""

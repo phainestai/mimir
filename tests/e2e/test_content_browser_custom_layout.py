@@ -7,8 +7,8 @@ Covers:
 On page entry:
   - The "Custom layout" checkbox is unchecked.
   - Default settings are applied: layout=klay, routing=straight, compound=workflow-activity.
-  - Layout picker, routing picker, and compound btn are hidden.
-  - Node-size toggle, re-plot, and zoom buttons remain visible.
+  - Layout picker, routing picker, compound btn, and node-size toggle are hidden.
+  - Re-plot and zoom buttons remain visible.
 
 When the user ticks the checkbox:
   - The three advanced buttons become visible.
