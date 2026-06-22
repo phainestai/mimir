@@ -43,7 +43,7 @@ def graph_page(page: Page, live_server, django_user_model):
     pb = Playbook.objects.filter(status='released').first()
     if pb is None:
         pytest.skip('No released playbook available')
-    page.goto(f"{live_server.url}/browser/graph/{pb.id}/")
+    page.goto(f"{live_server.url}/browser/{pb.id}/")
     _wait_for_graph(page)
     return page
 
@@ -129,7 +129,7 @@ class TestNodeSizeModeURLParam:
         pb = Playbook.objects.filter(status='released').first()
         if pb is None:
             pytest.skip('No released playbook available')
-        page.goto(f"{live_server.url}/browser/graph/{pb.id}/?nodesize=auto")
+        page.goto(f"{live_server.url}/browser/{pb.id}/?nodesize=auto")
         _wait_for_graph(page)
         mode = page.evaluate("() => window._nodeSizeMode")
         assert mode == 'auto', f"Expected 'auto' from URL param, got {mode}"

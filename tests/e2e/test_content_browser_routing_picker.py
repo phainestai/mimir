@@ -46,7 +46,7 @@ def graph_page(page: Page, live_server, django_user_model):
     pb = Playbook.objects.filter(status='released').first()
     if pb is None:
         pytest.skip('No released playbook available')
-    page.goto(f"{live_server.url}/browser/graph/{pb.id}/")
+    page.goto(f"{live_server.url}/browser/{pb.id}/")
     _wait_for_graph(page)
     return page
 
@@ -82,7 +82,7 @@ class TestRoutingCatalog:
         pb = Playbook.objects.filter(status='released').first()
         if pb is None:
             pytest.skip('No released playbook available')
-        graph_page.goto(f"{live_server.url}/browser/graph/{pb.id}/?routing=taxi")
+        graph_page.goto(f"{live_server.url}/browser/{pb.id}/?routing=taxi")
         _wait_for_graph(graph_page)
         btn = graph_page.locator('[data-testid="browser-routing-btn"]')
         expect(btn).to_contain_text('Orthogonal')
@@ -93,7 +93,7 @@ class TestRoutingCatalog:
         pb = Playbook.objects.filter(status='released').first()
         if pb is None:
             pytest.skip('No released playbook available')
-        graph_page.goto(f"{live_server.url}/browser/graph/{pb.id}/?routing=invalid")
+        graph_page.goto(f"{live_server.url}/browser/{pb.id}/?routing=invalid")
         _wait_for_graph(graph_page)
         routing = graph_page.evaluate("() => window._currentRouting")
         assert routing == 'bezier'

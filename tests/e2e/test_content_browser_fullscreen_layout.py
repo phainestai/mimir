@@ -35,7 +35,7 @@ def graph_page(page: Page, live_server, django_user_model):
     pb = Playbook.objects.filter(status='released').first()
     if pb is None:
         pytest.skip('No released playbook available')
-    page.goto(f"{live_server.url}/browser/graph/{pb.id}/")
+    page.goto(f"{live_server.url}/browser/{pb.id}/")
     page.wait_for_load_state('networkidle')
     return page
 

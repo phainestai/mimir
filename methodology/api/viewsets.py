@@ -38,21 +38,12 @@ logger = logging.getLogger(__name__)
 
 def _accessible_playbook_ids(user):
     """
-    Return a set of playbook PKs the user may read:
-    their own playbooks (any status/visibility) plus public non-draft
-    playbooks authored by others.
+    Return playbook PKs the user may read (owned + public + team).
 
-    Mirrors PlaybookViewSet.get_queryset() so that all resource viewsets
-    honour the same access contract (bug #115 fix).
+    Delegates to PlaybookService.get_accessible_playbook_ids so all resource
+    viewsets honour the same access contract as can_view() and the browser UI.
     """
-    from django.db.models import Q
-    owned_ids = set(
-        Playbook.objects.filter(
-            Q(author=user) | Q(shared_with_groups__in=user.groups.all())
-        ).distinct().values_list("pk", flat=True)
-    )
-    public_ids = {p.pk for p in PlaybookService.list_public_playbooks(user)}
-    return owned_ids | public_ids
+    return PlaybookService.get_accessible_playbook_ids(user)
 
 
 class PlaybookViewSet(viewsets.ModelViewSet):
@@ -74,22 +65,10 @@ class PlaybookViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Playbooks the user may access: owned, shared via groups, or public (others, non-draft).
+        Playbooks the user may access: owned, team-shared, or public (others, non-draft).
         """
-        from django.db.models import Q
-
         user = self.request.user
-
-        owned_or_shared = (
-            Playbook.objects.filter(
-                Q(author=user) | Q(shared_with_groups__in=user.groups.all())
-            )
-            .distinct()
-            .values_list("pk", flat=True)
-        )
-        public_ids = [p.pk for p in PlaybookService.list_public_playbooks(user)]
-        all_ids = set(owned_or_shared) | set(public_ids)
-
+        all_ids = PlaybookService.get_accessible_playbook_ids(user)
         queryset = Playbook.objects.filter(pk__in=all_ids).distinct()
 
         status_filter = self.request.query_params.get('status')

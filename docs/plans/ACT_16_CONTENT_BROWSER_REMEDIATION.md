@@ -1,7 +1,7 @@
 # Act-16 Content Browser — Post-Merge Remediation Plan
 
 **BPE-08 Process Change Request** · Activity **#103** (FeatureFactory v13.3, Construction phase)  
-**Trigger:** [PR #145](https://github.com/phainestai/mimir/pull/145) merged with known review debt; holistic re-review ([agent transcript](68dfb718-a3bb-4655-a7fc-79d2d00c9082)) found bugs, stale tests, spec drift, and **IA guideline violations** beyond the inline PR comments.  
+**Trigger:** [PR #145](https://github.com/phainestai/mimir/pull/145) merged with known review debt; holistic re-review found bugs, stale tests, spec drift, and **IA guideline violations** beyond the inline PR comments.  
 **Status:** **Awaiting Commander approval** — no further code changes until this plan is approved.
 
 ---
@@ -10,7 +10,7 @@
 
 | Phase | What | Gate |
 |-------|------|------|
-| **A — Make CI honest** | Access-control parity, canonical URLs, login redirect, full E2E baseline | **Human approval required** — stop here; no Phase B/C until A checkpoint green |
+| **A — Make CI honest** | E2E fixture speedup (A0), access-control parity, canonical URLs, login redirect, full E2E baseline | **Human approval required** — stop here; no Phase B/C until A checkpoint green |
 | **B — Retire stale tests** | Delete/rewrite contradictory E2E; reconcile FOB-63 defaults | Only after Phase A checkpoint passes |
 | **C — Spec + dead code** | Feature files, implementation notes, legacy JS wiring, unused context | Only after Phase B checkpoint passes |
 | **D — IA alignment** | Bootstrap-first styling, design tokens, icons, tooltips, shared CSS | Only after Phase C / BPE-06 checkpoint passes |
@@ -21,7 +21,7 @@
 
 **Exit gate (Phase D):** Content Browser chrome matches [`docs/ux/IA_guidelines.md`](../ux/IA_guidelines.md) Bootstrap-first rules; see [Phase D exit checklist](#d8--phase-d-exit-checklist).
 
-**Process backlog (post-remediation PIPs — not in Phases A–D scope):** milestone-close full-suite checkpoint, mandatory BPE-08 on mid-iteration UI removal, Dr. Dobbs on BPE-06, layout CDN trim / `_LAYOUT_CATALOG` collapse.
+**Process backlog (post-remediation PIPs — not in Phases A–D scope):** mandatory BPE-08 on mid-iteration UI removal, Dr. Dobbs on BPE-06, layout CDN trim / `_LAYOUT_CATALOG` collapse, optional `pytest-xdist` parallel e2e (deferred from A0 unless Commander opts in).
 
 ---
 
@@ -36,6 +36,7 @@ Act-16 shipped as **12 MIT iterations, 63 scenarios** with **narrow per-file che
 | FOB-11/11b entity + phase filters | Removed from template | URL param tests + JS filter logic remain |
 | FOB-19 ELK “Layered” default | FOB-63 custom-layout mode (klay + straight + workflow-activity) | `layout_position`, `routing_picker`, `node_size_toggle` assert old defaults/visibility |
 | `/browser/graph/<pk>/` (iteration artifact) | `/browser/<pk>/` (`browser_urls.py`) | **20 of 29** E2E files still use stale path |
+| Per-file MIT checkpoints only | Milestone-close full E2E batch assumed practical | ~274 e2e tests; function-scoped `live_server`, duplicated `_login`, `networkidle`, fixed `wait_for_timeout` — batch takes 15–45+ min serial |
 | IA Bootstrap-first rules | Fast iteration on canvas chrome | Inline `style=`, page `<style>` + `!important`, Bootstrap Icons without CDN, duplicate embed CSS, JS-built dropdowns, hardcoded hex in Cytoscape styles |
 
 ### IA guideline gaps (PR #145 — Phase D scope)
@@ -78,7 +79,11 @@ Holistic review against [`docs/ux/IA_guidelines.md`](../ux/IA_guidelines.md) § 
 | [`methodology/browser_urls.py`](methodology/browser_urls.py) | Canonical routes: `/browser/`, `/browser/<pk>/` only |
 | [`static/js/content-browser.js`](static/js/content-browser.js) | Legacy compound toggle wiring, `_checkSessionExpiry` login URL, filter URL params, CDN-facing layout catalog |
 | [`templates/browser/browser_graph.html`](templates/browser/browser_graph.html) | 13 Cytoscape CDN scripts; no `browser-compound-toggle` in template |
-| [`tests/e2e/test_content_browser*.py`](tests/e2e/) | 29 files — 20 on stale URL, contradictory FOB-63 assertions |
+| [`tests/e2e/conftest.py`](tests/e2e/conftest.py) | Function-scoped `live_server`; no shared login/graph helpers — **A0 speedup target** |
+| [`tests/e2e/pytest.ini`](tests/e2e/pytest.ini) | E2e-only config; add `@pytest.mark.slow` in A0 |
+| [`mimir/settings/e2e.py`](mimir/settings/e2e.py) | Signed-cookie sessions (enables session-scoped live server) |
+| [`tests/e2e/README.md`](tests/e2e/README.md) | Document fixture scopes + smoke vs full commands after A0 |
+| [`tests/e2e/test_content_browser*.py`](tests/e2e/) | 29 files — 20 on stale URL, contradictory FOB-63 assertions, duplicated waits |
 | [`tests/integration/test_content_browser_access.py`](tests/integration/test_content_browser_access.py) | Stale TDD docstring; `accessible_playbooks` context assertions |
 | [`tests/integration/test_graph_api.py`](tests/integration/test_graph_api.py) | Missing team-playbook graph test; mislabeled FOB-13c section |
 | [`tests/e2e/test_content_browser_detail_panel.py`](tests/e2e/test_content_browser_detail_panel.py) | Asserts wrong `/auth/login/` on embed expiry |
@@ -102,12 +107,16 @@ Holistic review against [`docs/ux/IA_guidelines.md`](../ux/IA_guidelines.md) § 
 - Do **not** add a Bootstrap Icons CDN to fix empty states — use Font Awesome per IA § Icon System.
 - Do **not** refactor Cytoscape layout algorithm catalog during Phase D — visual chrome only.
 - Do **not** change graph node shapes/colors in Phase D unless required for token centralization (D7).
+- Do **not** run the full ~274-test e2e suite on every incremental step — use representative modules + `--durations`; full batch only at phase checkpoints.
+- Do **not** switch e2e to async Playwright or re-enable the `pytest-playwright` plugin.
+- Do **not** weaken test assertions to gain speed (fixture/wait strategy only).
 
 ---
 
 ## SAO.md sections that apply
 
 - **§5 Test Strategy** — pytest; integration uses real objects; E2E uses Playwright + `mimir.settings.e2e` (signed-cookie sessions).
+- **§ E2E Testing with Playwright** — sync API, manual fixtures, `live_server`; update after A0 fixture scope changes.
 - **Access control** — `Playbook.can_view()` is authoritative for page; API list/graph must match.
 - **UI patterns** — Django templates + fetch (not HTMX for detail panel); `data-testid` on interactive elements.
 - **IA guidelines** — Bootstrap 5.3+ first; Font Awesome Pro; design tokens in `design-system.css`; Bootstrap tooltips on action buttons ([`docs/ux/IA_guidelines.md`](../ux/IA_guidelines.md)).
@@ -130,7 +139,87 @@ A prior session applied **uncommitted** changes (not part of approved plan yet):
 
 ## Phase A — Make CI honest
 
-**Goal:** Fix real bugs and establish a trustworthy test baseline. Failures after this phase = actionable backlog, not false negatives from wrong URLs.
+**Goal:** Fix real bugs, make the e2e batch runnable in reasonable time, and establish a trustworthy test baseline. Failures after this phase = actionable backlog, not false negatives from wrong URLs.
+
+**Incremental testing rule:** During A0–A3, checkpoint with representative modules only. Run the full `test_content_browser*.py` batch **once** at A4 (and record `--durations` before/after A0).
+
+### A0 — E2E fixture speedup (prerequisite for honest CI)
+
+**Problem:** ~274 e2e tests; function-scoped `live_server` costs ~1–6s setup per test; duplicated `_login()` + `wait_for_load_state('networkidle')` add ~1–3s per navigation; 80+ `wait_for_timeout` calls. Full content-browser batch is impractical for phase gates.
+
+**Partial timing evidence (representative modules):**
+
+| Module | Approx. behavior |
+|--------|------------------|
+| `test_auth_login.py` (4 tests) | ~12s total (~3s/test incl. setup) |
+| `test_content_browser_graph.py` (16 tests) | ~6–14s/test call time; setup dominated by server + login |
+
+**Target after A0:** ≥3× serial speedup on representative modules; full `test_content_browser*.py` batch ≤15 min serial (before optional xdist).
+
+#### A0.1 — Baseline timings (before code changes)
+
+```bash
+.venv/bin/python -m pytest tests/e2e/test_auth_login.py -q --durations=10
+.venv/bin/python -m pytest tests/e2e/test_content_browser_graph.py -q --durations=10
+```
+
+Record results in [A0 baseline timings](#a0-baseline-timings) below.
+
+#### A0.2 — Shared helpers in `tests/e2e/conftest.py`
+
+Add and use from all touched e2e files (migrate incrementally during A2/B2):
+
+| Helper | Replaces |
+|--------|----------|
+| `login(page, live_server_url, username, password)` | ~30 duplicated `_login()` functions |
+| `wait_for_cy_graph(page, timeout=10_000)` | Per-file `window.cy` waits |
+| `open_content_browser(page, live_server_url, playbook_id)` | Repeated goto + graph wait |
+
+**Wait strategy:** `domcontentloaded` + wait until login URL gone — **not** `networkidle`. Replace `wait_for_timeout` with `wait_for_function` / `expect(...)` except one documented animation settle where required.
+
+#### A0.3 — Session-scoped `live_server` for e2e-only runs
+
+Default **session** scope when running `pytest tests/e2e/` (signed-cookie sessions in `mimir.settings.e2e` avoid the SQLite session race that motivated function scope). Retain **function** scope via `E2E_LIVE_SERVER_SCOPE=function` when mixing suites.
+
+#### A0.4 — Module-scoped auth reuse (optional — Commander Q9)
+
+Playwright `storage_state`: one login per module for read-only content-browser tests. Keep function-scoped fresh login for auth/session-expiry tests (`test_auth_login.py`, `test_content_browser_detail_panel.py` session-expiry scenario).
+
+#### A0.5 — A0 checkpoint
+
+```bash
+.venv/bin/python -m pytest tests/e2e/test_auth_login.py tests/e2e/test_content_browser_graph.py -q --durations=10
+```
+
+Compare to A0.1 baseline — setup times should drop sharply.
+
+#### A0.6 — Commit
+
+`perf(e2e): session live_server and shared login helpers`
+
+#### A0 baseline timings
+
+**Full-suite snapshot (2026-06-22, pre-A0 — background run on `fix/content-browser-js-cleanup`):**
+
+| Metric | Value |
+|--------|-------|
+| Wall time | **1519s (~25 min)** |
+| Passed | 83 |
+| Failed | 41 |
+| Skipped | 150 |
+
+Failure clusters align with Phase A/B scope: layout picker/position (FOB-63 defaults), resource tree, URL/filter params, journey tests. Speed target post-A0: same inventory run ≤15 min serial.
+
+**Per-module timings (fill during A0.1):**
+
+| Module | Tests | Wall time | Slowest setup | Slowest call | Notes |
+|--------|-------|-----------|---------------|--------------|-------|
+| `test_auth_login.py` | | | | | |
+| `test_content_browser_graph.py` | | | | | |
+
+**Deferred (process backlog unless Commander opts in at Q10–Q11):** `pytest-xdist`, `@pytest.mark.slow` smoke subset for CI, SAO/README doc updates (fold doc updates into Phase C if deferred).
+
+---
 
 ### A1 — Align API access with `get_accessible_playbook_ids()`
 
@@ -163,18 +252,17 @@ A prior session applied **uncommitted** changes (not part of approved plan yet):
 ### A4 — Phase A checkpoint
 
 ```bash
-cd /home/neo/Work/mimir
 .venv/bin/python -m pytest \
   tests/integration/test_content_browser_access.py \
   tests/integration/test_graph_api.py \
   tests/unit/test_accessible_global_lists.py \
   -x -q
 
-# Full E2E batch — record pass/fail inventory (Playwright required)
-.venv/bin/python -m pytest tests/e2e/test_content_browser*.py -x -q 2>&1 | tee tests.log
+# Full E2E batch — first honest inventory after A0 speedup + A2 URL fixes (Playwright required)
+.venv/bin/python -m pytest tests/e2e/test_content_browser*.py -q --durations=20 2>&1 | tee tests.log
 ```
 
-**Approval checkpoint:** Commander reviews A checkpoint log. Explicit **"approved for Phase B"** before retiring tests.
+**Approval checkpoint:** Commander reviews A checkpoint log (pass/fail inventory + duration summary vs A0 baseline). Explicit **"approved for Phase B"** before retiring tests.
 
 ---
 
@@ -236,7 +324,7 @@ Consider merging `compound_labels.py` + `compound_labels_v2.py` after v1 stops u
 
 Replace `pytest.skip('No released playbook available')` in 20 files with deterministic playbook factory (pattern from `test_content_browser_graph.py`).
 
-Extract shared `_login` / `_wait_for_graph` into [`tests/e2e/conftest.py`](tests/e2e/conftest.py) (optional within Phase B if timeboxed).
+Migrate remaining content-browser files to A0 conftest helpers (`login`, `wait_for_cy_graph`, `open_content_browser`); drop local `_login` / `networkidle` / unnecessary `wait_for_timeout` as each file is touched in B2–B3.
 
 ### B7 — Phase B checkpoint
 
@@ -471,7 +559,7 @@ rg '<style>' templates/*/_embed.html
 
 - Integration: team member → `/browser/<pk>/` + `GET .../graph/` 200
 - Integration or E2E: embed session expiry → `/auth/user/login/`
-- Optional: shared E2E conftest fixtures
+- A0 shared E2E conftest helpers + session-scoped `live_server` (required)
 
 ### Phase D (IA alignment)
 
@@ -491,6 +579,8 @@ rg '<style>' templates/*/_embed.html
 - [ ] No duplicate function definitions in `content-browser.js` (`node --check` + manual review)
 - [ ] Stale skeleton / "Not yet implemented" comments removed from touched files
 - [ ] `tests.log` records final green run
+- [ ] A0 e2e speedup landed: shared conftest helpers, session-scoped `live_server`, no new duplicated `_login` in touched files
+- [ ] Full `test_content_browser*.py` batch completes in ≤15 min serial (post-A0; record in `tests.log`)
 
 ---
 
@@ -506,14 +596,14 @@ rg '<style>' templates/*/_embed.html
 
 | Gap | Evidence |
 |-----|----------|
-| Narrow MIT checkpoints | Per-scenario `pytest file::Class -x` never runs full `test_content_browser*.py` |
+| Narrow MIT checkpoints | Per-scenario `pytest file::Class -x` never runs full `test_content_browser*.py`; full batch also impractical until A0 (slow fixtures) |
 | BPE-08 skipped on UI removal | Seq toggle skipped not deleted; compound_view left active |
 | Dr. Dobbs on BPE-02–05 only | BPE-06 has Agent: None; no holistic merge review |
 | Skeleton-first + parallel JS edits | Duplicate `_applyDefaultLayoutMode`, `_init` mid-file |
 | PIT prescribed copy-paste | `_playbook_readable_or_404` verbatim; `get_accessible_playbook_ids` partially ignored |
 | No IA review gate at merge | Inline styles, wrong icon library, duplicate CSS — not caught by per-scenario E2E |
 
-**PIP candidates (process backlog):** milestone-close full E2E batch; mandatory BPE-08 when removing UI; assign Dr. Dobbs to BPE-06; ban merged `@throws Not yet implemented`; **IA checklist on BPE-06** for any feature touching templates.
+**PIP candidates (process backlog):** mandatory BPE-08 when removing UI; assign Dr. Dobbs to BPE-06; ban merged `@throws Not yet implemented`; **IA checklist on BPE-06** for any feature touching templates; **milestone-close full E2E batch** now in Phase A4 (enabled by A0).
 
 ---
 
@@ -527,6 +617,10 @@ rg '<style>' templates/*/_embed.html
 6. **Phase D6 dropdown restyle** — Option A (Bootstrap classes in JS markup), B (template dropdowns), or C (document exception)?
 7. **Phase D scope** — include Phase D in this remediation, or ship A–C first and schedule D separately?
 8. **`static/css/content-browser.css`** — fold into `design-system.css` (recommended) or create dedicated file?
+9. **A0 session-scoped `live_server`** — default for `pytest tests/e2e/`, function scope only via `E2E_LIVE_SERVER_SCOPE=function`?
+10. **A0 auth reuse** — module-scoped Playwright `storage_state` OK for read-only browser tests?
+11. **`pytest-xdist`** — defer to process backlog (recommended) or include in A0?
+12. **CI smoke subset** — register `@pytest.mark.slow` and run `-m "not slow"` on PRs, full batch at A4/milestone close?
 
 ---
 
@@ -536,7 +630,8 @@ rg '<style>' templates/*/_embed.html
 |------|-------|--------|
 | BPE-08 plan presented | Agent | ✅ This document |
 | Commander reviews plan | Commander | ⏳ **Pending** |
-| Phase A execution | Agent | Blocked |
+| Phase A0 execution (e2e speedup) | Agent | Blocked |
+| Phase A1–A4 execution | Agent | Blocked |
 | Phase B execution | Agent | Blocked |
 | Phase C execution | Agent | Blocked |
 | BPE-06 sign-off (A–C) | Commander | Blocked |

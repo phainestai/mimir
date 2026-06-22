@@ -13,7 +13,7 @@ from rest_framework.authtoken.models import Token
 
 from methodology.models import (
     Playbook, Workflow, Activity, Phase, Skill, Agent, Artifact, Rule,
-    ArtifactInput,
+    ArtifactInput, Team, TeamMembership, TeamPlaybook,
 )
 
 User = get_user_model()
@@ -136,6 +136,32 @@ def private_playbook(other_user, db):
     )
 
 
+@pytest.fixture
+def team_playbook_access(db, other_user):
+    """Private team playbook: other_user owns; graph_user is team member."""
+    member = User.objects.get(username='graph_user')
+    playbook = Playbook.objects.create(
+        name='Team Shared Playbook',
+        description='Shared via team',
+        category='development',
+        status='released',
+        version='1.0',
+        source='owned',
+        author=other_user,
+        visibility='private',
+    )
+    Workflow.objects.create(playbook=playbook, name='Team WF', order=1)
+    team = Team.objects.create(
+        name='Graph API Team',
+        visibility=Team.VISIBILITY_HIDDEN,
+        admin=other_user,
+    )
+    TeamMembership.objects.create(team=team, user=other_user, role='admin')
+    TeamMembership.objects.create(team=team, user=member, role='member')
+    TeamPlaybook.objects.create(team=team, playbook=playbook)
+    return {'playbook': playbook, 'member': member, 'owner': other_user}
+
+
 # ---------------------------------------------------------------------------
 # FOB-CONTENT-BROWSER-13: Authentication and access
 # ---------------------------------------------------------------------------
@@ -159,6 +185,24 @@ class TestGraphAPIAccess:
         """Non-existent playbook PK returns 404."""
         response = auth_client.get('/api/playbooks/99999/graph/')
         assert response.status_code == 404
+
+    def test_team_member_can_access_team_playbook_graph(self, auth_client, team_playbook_access):
+        """Team member can load graph API for a private team playbook (Act-16 A1)."""
+        playbook = team_playbook_access['playbook']
+        url = f'/api/playbooks/{playbook.pk}/graph/'
+        response = auth_client.get(url)
+        assert response.status_code == 200, response.content
+        data = response.json()
+        assert data['playbook_name'] == 'Team Shared Playbook'
+        assert len(data['nodes']) >= 1
+
+    def test_team_playbook_appears_in_playbook_list_api(self, auth_client, team_playbook_access):
+        """GET /api/playbooks/ includes team-shared playbooks for members (Act-16 A1)."""
+        playbook = team_playbook_access['playbook']
+        response = auth_client.get('/api/playbooks/')
+        assert response.status_code == 200
+        ids = [item['id'] for item in response.data['results']]
+        assert playbook.pk in ids
 
     def test_graph_owner_can_access_own_playbook(self, auth_client, released_playbook):
         """Owner can access their own playbook graph (FOB-CONTENT-BROWSER-13)."""

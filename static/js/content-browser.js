@@ -1242,9 +1242,13 @@ function _closeDetailPanel() {
  * @param {string} html
  */
 function _checkSessionExpiry(html) {
-  if (html.includes('id="login-form"') || html.includes('/auth/login/')) {
+  if (
+    html.includes('id="login-form"') ||
+    html.includes('/auth/user/login/') ||
+    html.includes('/auth/login/')
+  ) {
     const pk = _getPlaybookPk();
-    window.location.href = '/auth/login/?next=' + encodeURIComponent('/browser/' + (pk || '') + '/');
+    window.location.href = '/auth/user/login/?next=' + encodeURIComponent('/browser/' + (pk || '') + '/');
   }
 }
 

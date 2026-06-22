@@ -258,7 +258,7 @@ class TestSessionExpiry:
     def test_session_expiry_during_panel_load_redirects_to_login(
         self, page: Page, live_server, panel_playbook,
     ):
-        """FOB-08c: if embed fetch returns login page HTML, browser redirects to /auth/login/."""
+        """FOB-08c: if embed fetch returns login page HTML, browser redirects to /auth/user/login/."""
         _login(page, live_server.url, panel_playbook['username'], panel_playbook['password'])
         pb = panel_playbook['pb']
         wf = panel_playbook['wf']
@@ -266,19 +266,23 @@ class TestSessionExpiry:
         page.goto(f"{live_server.url}/browser/{pb.pk}/")
         _wait_for_graph(page)
 
-        # Intercept the embed URL (query param ?embed=1) and return HTML containing the login form marker
-        page.route('**?embed=**', lambda route: route.fulfill(
-            status=200,
-            content_type='text/html',
-            body='<html><body><form id="login-form"><input name="username"></form></body></html>',
-        ))
+        def _embed_returns_login_page(route):
+            # Session expired on server — clear cookies so login redirect stays on login page
+            page.context.clear_cookies()
+            route.fulfill(
+                status=200,
+                content_type='text/html',
+                body='<html><body><form id="login-form"><input name="username"></form></body></html>',
+            )
+
+        page.route('**?embed=**', _embed_returns_login_page)
 
         _tap_node(page, f"workflow:{wf.pk}")
-        page.wait_for_timeout(1500)
+        page.wait_for_url('**/auth/user/login/**', timeout=10000)
 
-        # The JS _checkSessionExpiry should have triggered a redirect to /auth/login/
-        assert '/auth/login/' in page.url, (
-            f"Expected redirect to /auth/login/ after session expiry, got {page.url}"
+        # The JS _checkSessionExpiry should have triggered a redirect to /auth/user/login/
+        assert '/auth/user/login/' in page.url, (
+            f"Expected redirect to /auth/user/login/ after session expiry, got {page.url}"
         )
 
 

@@ -49,7 +49,7 @@ def graph_page(page: Page, live_server, django_user_model):
     pb = Playbook.objects.filter(status='released').first()
     if pb is None:
         pytest.skip('No released playbook available')
-    page.goto(f"{live_server.url}/browser/graph/{pb.id}/")
+    page.goto(f"{live_server.url}/browser/{pb.id}/")
     _wait_for_graph(page)
     return page
 
@@ -76,7 +76,7 @@ class TestSeqToggleDefault:
         pb = Playbook.objects.filter(status='released').first()
         if pb is None:
             pytest.skip('No released playbook available')
-        graph_page.goto(f"{live_server.url}/browser/graph/{pb.id}/?seq=0")
+        graph_page.goto(f"{live_server.url}/browser/{pb.id}/?seq=0")
         _wait_for_graph(graph_page)
         is_on = graph_page.evaluate("() => window._seqEdgesOn")
         assert is_on is False
