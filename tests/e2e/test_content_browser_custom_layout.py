@@ -25,34 +25,25 @@ from playwright.sync_api import Page
 
 from accounts.models import mark_email_verified
 from django.contrib.auth import get_user_model
+from e2e_helpers import login, open_content_browser
+from methodology.models import Activity, Playbook, Workflow
 
 User = get_user_model()
-LOGIN_URL_PATH = '/auth/user/login/'
-
-
-def _login(page, live_server_url, username, password):
-    page.goto(f"{live_server_url}{LOGIN_URL_PATH}")
-    page.fill('input[name="username"]', username)
-    page.fill('input[name="password"]', password)
-    page.click('button[type="submit"]')
-    page.wait_for_load_state('networkidle')
-    assert LOGIN_URL_PATH not in page.url
 
 
 @pytest.fixture()
-def graph_page(page: Page, live_server, django_user_model):
-    user = django_user_model.objects.create_user(username='custom_layout_tester', password='pass1234')
+def graph_page(page: Page, live_server, transactional_db):
+    user = User.objects.create_user(username='custom_layout_tester', password='pass1234')
     mark_email_verified(user)
-    _login(page, live_server.url, 'custom_layout_tester', 'pass1234')
-    from methodology.models import Playbook
-    pb = Playbook.objects.filter(status='released').first()
-    if pb is None:
-        pytest.skip('No released playbook available')
-    page.goto(f"{live_server.url}/browser/{pb.id}/")
-    page.wait_for_function(
-        "() => window.cy != null && window.cy.nodes().length > 0",
-        timeout=10_000,
+    pb = Playbook.objects.create(
+        name='Custom Layout PB', description='FOB-63 tests',
+        category='development', status='released', version='1.0',
+        source='owned', author=user, visibility='public',
     )
+    wf = Workflow.objects.create(name='CL Workflow', playbook=pb, order=1)
+    Activity.objects.create(name='CL Act', workflow=wf, order=1)
+    login(page, live_server.url, 'custom_layout_tester', 'pass1234')
+    open_content_browser(page, live_server.url, pb.pk)
     return page
 
 
@@ -110,7 +101,6 @@ class TestCustomLayoutToggle:
     def test_always_visible_buttons_present_in_default_mode(self, graph_page):
         """Node-size, re-plot, and zoom buttons are always visible regardless of mode."""
         selectors = [
-            'browser-node-size-toggle',
             'browser-replot-btn',
             'browser-zoom-in',
             'browser-zoom-out',

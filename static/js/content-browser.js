@@ -309,6 +309,9 @@ function _filtersToQueryString(filters) {
   if (_compoundLevel !== 'none') {
     parts.push('compound=' + _compoundLevel);
   }
+  if (_nodeSizeMode !== _DEFAULT_NODE_SIZE_MODE) {
+    parts.push('nodesize=' + _nodeSizeMode);
+  }
   return parts.length ? '?' + parts.join('&') : '';
 }
 
@@ -1434,6 +1437,42 @@ function _applyDefaultLayoutMode() {
   }
 }
 
+/**
+ * True when URL query params explicitly request non-FOB-63-default canvas options.
+ * Used at init to preserve deep-link layout/routing/compound/nodesize instead of
+ * resetting via _applyDefaultLayoutMode().
+ *
+ * @returns {boolean}
+ */
+function _urlRequestsCustomCanvasMode() {
+  const params = new URLSearchParams(window.location.search);
+  const legacyMap = { layered: 'elk-layered', mrtree: 'elk-mrtree' };
+  if (params.has('layout')) {
+    const raw = params.get('layout');
+    const resolved = legacyMap[raw] || raw;
+    if (resolved !== _DEFAULT_LAYOUT_MODE_KEY) return true;
+  }
+  if (params.has('routing') && params.get('routing') !== _DEFAULT_ROUTING_MODE_KEY) return true;
+  if (params.has('compound')) {
+    const raw = params.get('compound');
+    const resolved = raw === '1' ? 'workflow' : raw;
+    if (resolved !== _DEFAULT_COMPOUND_MODE_KEY) return true;
+  }
+  if (params.has('nodesize') && params.get('nodesize') !== _DEFAULT_NODE_SIZE_MODE) return true;
+  return false;
+}
+
+function _applyCustomLayoutModeFromUrl() {
+  _applyCustomLayoutMode();
+  const toggle = document.querySelector('[data-testid="browser-custom-layout-toggle"]');
+  if (toggle) toggle.checked = true;
+  _updateLayoutBtn();
+  _updateRoutingBtn();
+  _updateCompoundBtn();
+  _updateCompoundToggleBtn();
+  _updateNodeSizeModeBtn();
+}
+
 function _applyCustomLayoutMode() {
   _customLayoutMode = true;
   _showCustomControls(true);
@@ -2424,6 +2463,7 @@ function _initPanelNavigation() {
 function _init() {
   const pk = _getPlaybookPk();
   const phases = _getPlaybookPhases();
+  const customCanvasFromUrl = _urlRequestsCustomCanvasMode();
   const filters = _parseUrlParams();
   _normaliseFilters(filters, phases);
 
@@ -2480,7 +2520,11 @@ function _init() {
   const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
   if (replotBtn) replotBtn.addEventListener('click', _replot);
 
-  _applyDefaultLayoutMode();
+  if (customCanvasFromUrl) {
+    _applyCustomLayoutModeFromUrl();
+  } else {
+    _applyDefaultLayoutMode();
+  }
   _fetchGraph(pk);
 }
 
@@ -2491,6 +2535,8 @@ Object.defineProperty(window, '_compoundLevel', { get: () => _compoundLevel });
 Object.defineProperty(window, '_nodeSizeMode', { get: () => _nodeSizeMode });
 Object.defineProperty(window, '_customLayoutMode', { get: () => _customLayoutMode });
 Object.defineProperty(window, '_currentLayout', { get: () => _currentLayout });
+window._pushPlaybookUrl = _pushPlaybookUrl;
+window._parseUrlParams = _parseUrlParams;
 window._buildEdgeStyle = _buildEdgeStyle;
 window._buildCompoundLabelStyle = _buildCompoundLabelStyle;
 

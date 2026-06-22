@@ -14,22 +14,11 @@ from playwright.sync_api import Page, expect
 
 from accounts.models import mark_email_verified
 from django.contrib.auth import get_user_model
+from e2e_helpers import enable_custom_layout, login, wait_for_cy_graph
 from methodology.models import Activity, Playbook, Workflow
 
 User = get_user_model()
-LOGIN_URL_PATH = '/auth/user/login/'
-
-
-def _login(page, live_server_url, username, password):
-    page.goto(f"{live_server_url}{LOGIN_URL_PATH}")
-    page.fill('input[name="username"]', username)
-    page.fill('input[name="password"]', password)
-    page.click('button[type="submit"]')
-    page.wait_for_load_state('networkidle')
-    assert LOGIN_URL_PATH not in page.url
-
-
-def _wait_for_graph(page):
+def wait_for_cy_graph(page):
     page.wait_for_function(
         "() => window.cy != null && window.cy.nodes().length > 0",
         timeout=10000,
@@ -84,9 +73,9 @@ class TestLayoutPosition:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Left panel must start at x ≈ 0 (no stray text pushes it right)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
 
         left = page.evaluate(
             "document.getElementById('browser-left-panel').getBoundingClientRect().left"
@@ -97,9 +86,9 @@ class TestLayoutPosition:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Canvas must start to the right of the left panel (≥ 270 px)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
 
         canvas_left = page.evaluate(
             "document.getElementById('browser-canvas-wrapper').getBoundingClientRect().left"
@@ -110,9 +99,9 @@ class TestLayoutPosition:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Toggle button should be at ≈ 280 px from left when panel is expanded."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
 
         # The toggle button's centre should be at ~280px (within ±30px tolerance)
         btn_rect = page.evaluate(
@@ -125,9 +114,9 @@ class TestLayoutPosition:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """No raw template comment text should appear in the DOM (regression guard)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
 
         root_text = page.evaluate(
             "() => { const root = document.getElementById('browser-root'); "
@@ -144,9 +133,9 @@ class TestLayoutPosition:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """After collapsing the panel, its width should be 0 (or near 0)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
 
         page.locator('[data-testid="browser-toggle-left-panel"]').click()
         page.wait_for_timeout(400)
@@ -160,9 +149,9 @@ class TestLayoutPosition:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """After collapse, toggle button should move near left edge (≤ 20 px)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
 
         page.locator('[data-testid="browser-toggle-left-panel"]').click()
         page.wait_for_timeout(400)
@@ -184,9 +173,9 @@ class TestNoDegradedBanner:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """browser-degraded-banner must not exist in the DOM at all (FOB-20b)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
 
         count = page.locator('[data-testid="browser-degraded-banner"]').count()
         assert count == 0, "Degraded-mode banner must be absent from the DOM"
@@ -198,27 +187,30 @@ class TestNoDegradedBanner:
 
 class TestLayoutSwitcher:
 
-    def test_layout_button_present_and_shows_layered(
+    def test_layout_button_present_and_shows_klay_default(
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
-        """Layout button is present and defaults to 'Layered ▾' (FOB-19)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        """Layout button is present and shows FOB-63 default 'Klay' in custom mode."""
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
+        enable_custom_layout(page)
 
         btn = page.locator('[data-testid="browser-layout-btn"]')
         expect(btn).to_be_visible()
         btn_text = btn.text_content()
-        assert 'Layered' in btn_text, f"Button should contain 'Layered', got: {btn_text!r}"
+        assert 'Klay' in btn_text, f"Button should contain 'Klay', got: {btn_text!r}"
         assert '▾' in btn_text, f"Button should contain '▾' chevron, got: {btn_text!r}"
 
     def test_clicking_layout_button_opens_dropdown(
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Clicking layout button opens the 2-level dropdown panel (FOB-19)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
 
         page.locator('[data-testid="browser-layout-btn"]').click()
         dropdown = page.wait_for_selector('[data-testid="browser-layout-dropdown"]', timeout=3_000)
@@ -228,9 +220,10 @@ class TestLayoutSwitcher:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Selecting elk-mrtree from dropdown switches button label to 'Tree ▾' (FOB-19)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
         _wait_for_elk_complete(page)
 
         page.locator('[data-testid="browser-layout-btn"]').click()
@@ -244,9 +237,10 @@ class TestLayoutSwitcher:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """After selecting elk-mrtree, URL contains ?layout=elk-mrtree (FOB-19)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
         _wait_for_elk_complete(page)
 
         page.locator('[data-testid="browser-layout-btn"]').click()
@@ -260,9 +254,10 @@ class TestLayoutSwitcher:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Selecting elk-layered from dropdown restores 'Layered ▾' button label (FOB-19)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/?layout=elk-mrtree")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
         _wait_for_elk_complete(page)
 
         page.locator('[data-testid="browser-layout-btn"]').click()
@@ -276,9 +271,9 @@ class TestLayoutSwitcher:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Loading URL with ?layout=elk-mrtree applies Tree layout (FOB-19)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/?layout=elk-mrtree")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
 
         expect(page.locator('[data-testid="browser-layout-btn"]')).to_contain_text('Tree')
 
@@ -286,9 +281,10 @@ class TestLayoutSwitcher:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Selecting a different layout actually repositions nodes on canvas (FOB-19 bug fix S27)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
         _wait_for_elk_complete(page)  # ensure initial ELK is done before counting
 
         # Capture positions of all nodes before layout switch
@@ -348,18 +344,20 @@ class TestReplotButton:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Re-plot button is visible on the canvas controls (FOB-29)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
         expect(page.locator('[data-testid="browser-replot-btn"]')).to_be_visible()
 
     def test_replot_button_repositions_nodes(
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Clicking re-plot manually re-runs ELK layout on current nodes (FOB-29 / S28)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
         _wait_for_elk_complete(page)  # ensure initial ELK is done before counting
 
         # Switch to dagre-tb so re-plot produces a different layout than initial ELK
@@ -409,9 +407,10 @@ class TestZoomControls:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Clicking zoom-in button increases the Cytoscape zoom level (FOB-07b)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
 
         zoom_before = page.evaluate("() => window.cy ? window.cy.zoom() : null")
         assert zoom_before is not None
@@ -424,9 +423,10 @@ class TestZoomControls:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Clicking zoom-out button decreases the Cytoscape zoom level (FOB-07b)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
 
         zoom_before = page.evaluate("() => window.cy ? window.cy.zoom() : null")
         assert zoom_before is not None
@@ -439,9 +439,10 @@ class TestZoomControls:
         self, page: Page, live_server, layout_user, layout_playbook,
     ):
         """Clicking fit button adjusts zoom so all nodes are visible (FOB-07b)."""
-        _login(page, live_server.url, 'layout_user', 'testpass123')
+        login(page, live_server.url, 'layout_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
+        enable_custom_layout(page)
 
         # Zoom in dramatically so the graph is not fully visible
         page.evaluate("() => window.cy && window.cy.zoom(3.0)")

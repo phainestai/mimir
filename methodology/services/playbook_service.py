@@ -278,13 +278,21 @@ class PlaybookService:
         team_playbook_ids = set(
             TeamPlaybook.objects.filter(team_id__in=team_ids).values_list("playbook_id", flat=True)
         )
-        
+
+        # Get Django auth Group shared playbook IDs (API group sharing)
+        group_playbook_ids = set(
+            Playbook.objects.filter(shared_with_groups__in=user.groups.all())
+            .exclude(author=user)
+            .values_list('id', flat=True)
+        )
+
         # Combine all IDs
-        all_ids = owned_ids | public_ids | team_playbook_ids
-        
+        all_ids = owned_ids | public_ids | team_playbook_ids | group_playbook_ids
+
         logger.info(
             f"User {user.id} has access to {len(all_ids)} playbooks "
-            f"({len(owned_ids)} owned, {len(public_ids)} public, {len(team_playbook_ids)} team)"
+            f"({len(owned_ids)} owned, {len(public_ids)} public, {len(team_playbook_ids)} team, "
+            f"{len(group_playbook_ids)} group-shared)"
         )
         return all_ids
 

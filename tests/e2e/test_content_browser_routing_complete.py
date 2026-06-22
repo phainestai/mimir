@@ -32,43 +32,30 @@ def _wait_for_graph(page: Page, timeout: int = 10_000) -> None:
     )
 
 
-@pytest.fixture()
-def graph_page(page: Page, live_server, django_user_model):
-    user = django_user_model.objects.create_user(username='routing_complete_tester', password='pass1234')
-    mark_email_verified(user)
-    _login(page, live_server.url, 'routing_complete_tester', 'pass1234')
-    from methodology.models import Playbook
-    pb = Playbook.objects.filter(status='released').first()
-    if pb is None:
-        pytest.skip('No released playbook available')
-    page.goto(f"{live_server.url}/browser/{pb.id}/")
-    _wait_for_graph(page)
-    return page
-
 
 @pytest.mark.django_db(transaction=True)
 class TestRoutingCatalogComplete:
     """FOB-59: Routing picker must contain all 8 Cytoscape curve-styles including straight-triangle."""
 
-    def test_routing_catalog_includes_straight_triangle(self, graph_page: Page):
+    def test_routing_catalog_includes_straight_triangle(self, cb_graph_page: Page):
         """straight-triangle is present as an option in the routing dropdown."""
-        has_entry = graph_page.evaluate("""() => {
+        has_entry = cb_graph_page.evaluate("""() => {
             return typeof _ROUTING_CATALOG !== 'undefined' &&
                    _ROUTING_CATALOG.some(e => e.key === 'straight-triangle');
         }""")
         assert has_entry, "Expected straight-triangle entry in _ROUTING_CATALOG"
 
-    def test_routing_catalog_has_all_8_options(self, graph_page: Page):
+    def test_routing_catalog_has_all_8_options(self, cb_graph_page: Page):
         """Routing dropdown contains exactly 8 options."""
-        count = graph_page.evaluate("""() => {
+        count = cb_graph_page.evaluate("""() => {
             return typeof _ROUTING_CATALOG !== 'undefined' ? _ROUTING_CATALOG.length : 0;
         }""")
         assert count == 8, f"Expected 8 routing catalog entries, got {count}"
 
-    def test_straight_triangle_option_applies_correct_curve_style(self, graph_page: Page):
+    def test_straight_triangle_option_applies_correct_curve_style(self, cb_graph_page: Page):
         """Selecting straight-triangle sets edge curve-style to 'straight-triangle' on cy edges."""
-        graph_page.evaluate("() => _applyRouting('straight-triangle')")
-        edge_style = graph_page.evaluate("""() => {
+        cb_graph_page.evaluate("() => _applyRouting('straight-triangle')")
+        edge_style = cb_graph_page.evaluate("""() => {
             const edges = window.cy.edges();
             if (edges.length === 0) return 'straight-triangle';  // no edges — can't verify
             return edges[0].style('curve-style');

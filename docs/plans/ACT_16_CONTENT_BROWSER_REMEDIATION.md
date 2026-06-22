@@ -333,6 +333,21 @@ Migrate remaining content-browser files to A0 conftest helpers (`login`, `wait_f
 .venv/bin/python -m pytest tests/ -x -q --ignore=tests/e2e  # integration + unit, no regressions
 ```
 
+**Result (2026-06-22, branch `fix/content-browser-js-cleanup`, uncommitted):**
+
+| Suite | Result | Duration |
+|-------|--------|----------|
+| Content-browser E2E (`test_content_browser*.py`) | **232 passed**, 0 failed | ~6m 11s |
+| Unit + integration (`--ignore=tests/e2e`) | **1363 passed**, 1 failed, 5 skipped | ~29s |
+
+**E2E delta vs pre-Phase-B baseline:** ~35 failed → **0 failed**; ~195 pass → **232 pass** (deleted obsolete files + deterministic fixtures).
+
+**Non-E2E note:** `test_concurrent_creates_get_unique_orders` fails consistently (SQLite thread-pool ordering — pre-existing, unrelated to content-browser). Group-sharing API gap from Phase A1 fixed in `get_accessible_playbook_ids()` (Django `shared_with_groups` M2M).
+
+**JS product fixes (Phase B, uncommitted):** URL deep-link custom canvas mode (`_urlRequestsCustomCanvasMode`); `nodesize` in canonical URL; `window._pushPlaybookUrl` / `_parseUrlParams` exposed for E2E.
+
+**Commander gate:** Phase B E2E checkpoint **green**. Await explicit **"approved for Phase C"** before spec/dead-code work.
+
 ---
 
 ## Phase C — Spec + dead code
@@ -629,11 +644,11 @@ rg '<style>' templates/*/_embed.html
 | Step | Owner | Status |
 |------|-------|--------|
 | BPE-08 plan presented | Agent | ✅ This document |
-| Commander reviews plan | Commander | ⏳ **Pending** |
+| Commander reviews plan | Commander | ✅ Approved Phase A0, A, B |
 | Phase A0 execution (e2e speedup) | Agent | ✅ Done (session server + helpers; graph migrated) |
-| Phase A1–A4 execution | Agent | A1–A3 ✅ committed; A4 partial (await A0 re-run) |
-| Phase B execution | Agent | Blocked |
-| Phase C execution | Agent | Blocked |
+| Phase A1–A4 execution | Agent | ✅ A1–A3 committed; A4 superseded by B7 green batch |
+| Phase B execution | Agent | ✅ Done (uncommitted); B7 E2E **232/232 green** |
+| Phase C execution | Agent | Blocked — await **"approved for Phase C"** |
 | BPE-06 sign-off (A–C) | Commander | Blocked |
 | Phase D execution (IA) | Agent | Blocked |
 | Phase D sign-off | Commander | Blocked |

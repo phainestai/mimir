@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 # Allow Django to run in async context for E2E tests only
 os.environ['DJANGO_ALLOW_ASYNC_UNSAFE'] = 'true'
 
+pytest_plugins = ['content_browser_fixtures']
+
 # Re-export helpers for tests: from e2e_helpers import login, ...
 __all__ = [
     'LOGIN_URL_PATH',

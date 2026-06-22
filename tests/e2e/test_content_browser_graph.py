@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from playwright.sync_api import Page, expect
 
 from accounts.models import mark_email_verified
-from e2e_helpers import login, open_content_browser, wait_for_cy_edges, wait_for_cy_graph
+from e2e_helpers import login, open_content_browser, set_compound_level, wait_for_cy_edges, wait_for_cy_graph
 from methodology.models import Playbook, Workflow, Activity, Phase, Skill, Agent, Rule
 
 User = get_user_model()
@@ -102,10 +102,11 @@ def test_graph_nodes_are_visually_differentiated(page: Page, live_server_url: st
 
 
 def test_contains_edge_connects_workflow_to_activity(page: Page, live_server_url: str, graph_playbook):
-    """A 'contains' edge exists from the workflow node to each activity node."""
+    """A 'contains' edge exists from the workflow node to each activity node (flat mode)."""
     data = graph_playbook
     login(page, live_server_url, data['username'], data['password'])
-    page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
+    open_content_browser(page, live_server_url, data['pb'].pk)
+    set_compound_level(page, 'none')
     wait_for_cy_edges(page)
 
     contains_count = page.evaluate(
@@ -122,7 +123,9 @@ def test_layout_workflow_above_activity(page: Page, live_server_url: str, graph_
     """Workflow nodes appear above (lower Y) than activity nodes in dagre TB layout."""
     data = graph_playbook
     login(page, live_server_url, data['username'], data['password'])
-    open_content_browser(page, live_server_url, data['pb'].pk)
+    page.goto(f"{live_server_url}/browser/{data['pb'].pk}/?layout=dagre-tb&compound=none")
+    wait_for_cy_graph(page)
+    page.wait_for_function("() => (window._elkLayoutCount || 0) >= 1", timeout=15_000)
 
     wf_y = page.evaluate(
         "() => window.cy.nodes('[type = \"workflow\"]').first().position().y"
@@ -288,6 +291,7 @@ class TestNodeInsertionOrder:
     """FOB-CONTENT-BROWSER-33: Nodes are inserted into Cytoscape in deterministic order."""
 
     def _wait_for_order(self, page):
+        set_compound_level(page, 'none')
         page.wait_for_function(
             "() => Array.isArray(window._lastElementOrder) && window._lastElementOrder.length > 0",
             timeout=10000,
@@ -299,7 +303,7 @@ class TestNodeInsertionOrder:
         """All workflow nodes appear before any activity node in _lastElementOrder."""
         data = order_playbook
         login(page, live_server_url, data['username'], data['password'])
-        page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
+        open_content_browser(page, live_server_url, data['pb'].pk)
         self._wait_for_order(page)
 
         order = page.evaluate("() => window._lastElementOrder.map(n => n.type)")
@@ -318,7 +322,7 @@ class TestNodeInsertionOrder:
         """All activity nodes appear before any resource (skill/rule/agent/artifact) node."""
         data = order_playbook
         login(page, live_server_url, data['username'], data['password'])
-        page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
+        open_content_browser(page, live_server_url, data['pb'].pk)
         self._wait_for_order(page)
 
         order = page.evaluate("() => window._lastElementOrder.map(n => n.type)")
@@ -338,7 +342,7 @@ class TestNodeInsertionOrder:
         """Resource nodes for act1 appear before resource nodes for act2."""
         data = order_playbook
         login(page, live_server_url, data['username'], data['password'])
-        page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
+        open_content_browser(page, live_server_url, data['pb'].pk)
         self._wait_for_order(page)
 
         act1_pk = str(data['act1'].pk)
@@ -364,16 +368,13 @@ class TestNodeInsertionOrder:
     def test_order_preserved_after_filter_rebuild(
         self, page: Page, live_server_url: str, order_playbook,
     ):
-        """After deactivating and reactivating a type, insertion order is still correct."""
+        """Insertion order remains workflow → activity → resource after layout re-plot."""
         data = order_playbook
         login(page, live_server_url, data['username'], data['password'])
-        page.goto(f"{live_server_url}/browser/{data['pb'].pk}/")
+        open_content_browser(page, live_server_url, data['pb'].pk)
         self._wait_for_order(page)
 
-        skill_btn = page.locator('[data-filter-type="skill"]')
-        skill_btn.click()
-        page.wait_for_timeout(500)
-        skill_btn.click()
+        page.get_by_test_id('browser-replot-btn').click()
         self._wait_for_order(page)
 
         order = page.evaluate("() => window._lastElementOrder.map(n => n.type)")

@@ -16,29 +16,13 @@ from django.contrib.auth import get_user_model
 
 
 User = get_user_model()
-LOGIN_URL_PATH = '/auth/user/login/'
 
 
 # ---------------------------------------------------------------------------
 # Module-level helpers
 # ---------------------------------------------------------------------------
 
-def _login(page: Page, live_server_url: str, username: str, password: str) -> None:
-    """Authenticate via browser form login."""
-    page.goto(f"{live_server_url}{LOGIN_URL_PATH}")
-    page.fill('input[name="username"]', username)
-    page.fill('input[name="password"]', password)
-    page.click('button[type="submit"]')
-    page.wait_for_load_state('networkidle')
-    assert LOGIN_URL_PATH not in page.url, f"Login failed; still on login page. URL: {page.url}"
-
-
-def _wait_for_graph(page: Page, timeout: int = 10_000) -> None:
-    """Wait until Cytoscape is initialised with at least one node."""
-    page.wait_for_function(
-        "() => window.cy != null && window.cy.nodes().length > 0",
-        timeout=timeout,
-    )
+from e2e_helpers import enable_custom_layout, login, open_content_browser_custom, wait_for_cy_graph
 
 
 def _wait_for_layout_complete(page: Page, min_count: int = 1, timeout: int = 15_000) -> None:
@@ -106,9 +90,8 @@ class TestLayoutPickerDropdown:
 
     def test_layout_picker_button_visible_with_chevron(self, page: Page, layout_playbook, live_server, picker_user):
         """Layout picker button (browser-layout-btn) is visible and shows current layout name + chevron."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
 
         btn = page.locator('[data-testid="browser-layout-btn"]')
@@ -119,9 +102,8 @@ class TestLayoutPickerDropdown:
 
     def test_clicking_picker_opens_dropdown_panel(self, page: Page, layout_playbook, live_server, picker_user):
         """Clicking browser-layout-btn opens browser-layout-dropdown panel with grouped layout options."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
 
         # Dropdown should not exist yet
@@ -141,9 +123,8 @@ class TestLayoutPickerDropdown:
 
     def test_selecting_layout_closes_dropdown_and_reruns_graph(self, page: Page, layout_playbook, live_server, picker_user):
         """Clicking a layout option closes dropdown, updates button label, and re-runs layout."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
 
         old_count = _select_layout(page, 'dagre-tb')
@@ -161,9 +142,8 @@ class TestLayoutPickerDropdown:
 
     def test_escape_closes_dropdown_without_changing_layout(self, page: Page, layout_playbook, live_server, picker_user):
         """Pressing Escape while dropdown is open closes it without changing the active layout."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
 
         initial_text = page.locator('[data-testid="browser-layout-btn"]').text_content()
@@ -180,9 +160,8 @@ class TestLayoutPickerDropdown:
 
     def test_layout_key_stored_in_url_param(self, page: Page, layout_playbook, live_server, picker_user):
         """After selecting a layout, the layout-key is reflected in the URL ?layout= param."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
 
         _select_layout(page, 'dagre-lr')
@@ -193,9 +172,9 @@ class TestLayoutPickerDropdown:
 
     def test_url_layout_param_restored_on_reload(self, page: Page, layout_playbook, live_server, picker_user):
         """Reloading with ?layout=dagre-tb restores Dagre Top-Down as active layout."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
+        login(page, live_server.url, 'picker_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/?layout=dagre-tb")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
         _wait_for_layout_complete(page)
 
         btn_text = page.locator('[data-testid="browser-layout-btn"]').text_content()
@@ -203,16 +182,16 @@ class TestLayoutPickerDropdown:
 
     def test_legacy_url_params_mapped_to_new_keys(self, page: Page, layout_playbook, live_server, picker_user):
         """Legacy URL values 'layered' and 'mrtree' are silently mapped to elk-layered and elk-mrtree."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
+        login(page, live_server.url, 'picker_user', 'testpass123')
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/?layout=layered")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
         _wait_for_layout_complete(page)
 
         btn_text = page.locator('[data-testid="browser-layout-btn"]').text_content()
         assert 'Layered' in btn_text, f"Legacy 'layered' should map to elk-layered (shows 'Layered'), got: {btn_text!r}"
 
         page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/?layout=mrtree")
-        _wait_for_graph(page)
+        wait_for_cy_graph(page)
         _wait_for_layout_complete(page)
 
         btn_text = page.locator('[data-testid="browser-layout-btn"]').text_content()
@@ -228,9 +207,8 @@ class TestLayoutCatalog:
 
     def test_all_layout_groups_present_in_dropdown(self, page: Page, layout_playbook, live_server, picker_user):
         """Dropdown contains all 10 group headers: ELK, Dagre, Cola, Klay, CiSE, Euler, AVSDF, CoSE-Bilkent, fCoSE, Cytoscape."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
         _open_dropdown(page)
 
@@ -241,9 +219,8 @@ class TestLayoutCatalog:
 
     def test_all_twenty_four_layout_options_present(self, page: Page, layout_playbook, live_server, picker_user):
         """All 24 layout options (browser-layout-option-{key}) exist in the dropdown."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
         _open_dropdown(page)
 
@@ -258,22 +235,19 @@ class TestLayoutCatalog:
             el = page.locator(f'[data-testid="browser-layout-option-{key}"]')
             assert el.count() == 1, f"Layout option '{key}' not found in dropdown"
 
-    def test_default_layout_is_elk_layered(self, page: Page, layout_playbook, live_server, picker_user):
-        """With no URL param the default active layout is elk-layered (button shows 'Layered ▾')."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+    def test_default_layout_is_klay(self, page: Page, layout_playbook, live_server, picker_user):
+        """With no URL param FOB-63 default layout is klay (button shows 'Klay ▾' in custom mode)."""
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
 
         btn_text = page.locator('[data-testid="browser-layout-btn"]').text_content()
-        assert 'Layered' in btn_text, f"Default layout button should show 'Layered', got: {btn_text!r}"
-        assert '▾' in btn_text, f"Default layout button should show '▾', got: {btn_text!r}"
+        assert 'Klay' in btn_text, f"Default layout button should show 'Klay', got: {btn_text!r}"
 
     def test_elk_sub_algorithms_render_graph(self, page: Page, layout_playbook, live_server, picker_user):
         """Selecting each ELK sub-algorithm (layered, mrtree, force, stress, disco) runs without error."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
 
         elk_keys = ['elk-layered', 'elk-mrtree', 'elk-force', 'elk-stress', 'elk-disco']
@@ -289,9 +263,8 @@ class TestLayoutCatalog:
 
     def test_dagre_layouts_render_graph(self, page: Page, layout_playbook, live_server, picker_user):
         """Selecting dagre-tb and dagre-lr each render the graph without error."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
 
         for key in ['dagre-tb', 'dagre-lr']:
@@ -302,9 +275,8 @@ class TestLayoutCatalog:
 
     def test_new_library_layouts_render_graph(self, page: Page, layout_playbook, live_server, picker_user):
         """Selecting cola, klay, cise, euler, avsdf, cose-bilkent, fcose each render graph without error."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
 
         extension_keys = ['cola', 'klay', 'cise', 'euler', 'avsdf', 'cose-bilkent', 'fcose']
@@ -322,9 +294,8 @@ class TestLayoutCatalog:
 
     def test_native_cytoscape_layouts_render_graph(self, page: Page, layout_playbook, live_server, picker_user):
         """Selecting cy-grid, cy-circle, cy-concentric, cy-breadthfirst, cy-cose, cy-random each render graph."""
-        _login(page, live_server.url, 'picker_user', 'testpass123')
-        page.goto(f"{live_server.url}/browser/{layout_playbook.pk}/")
-        _wait_for_graph(page)
+        login(page, live_server.url, 'picker_user', 'testpass123')
+        open_content_browser_custom(page, live_server.url, layout_playbook.pk)
         _wait_for_layout_complete(page)
 
         native_keys = ['cy-grid', 'cy-circle', 'cy-concentric', 'cy-breadthfirst', 'cy-cose', 'cy-random']

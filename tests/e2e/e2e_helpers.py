@@ -58,3 +58,38 @@ def open_content_browser(
     page.goto(url)
     if wait_graph:
         wait_for_cy_graph(page, min_nodes=min_nodes)
+
+
+def enable_custom_layout(page: Page) -> None:
+    """Enable FOB-63 custom layout mode so advanced canvas controls are visible."""
+    toggle = page.locator('[data-testid="browser-custom-layout-toggle"]')
+    if not toggle.is_checked():
+        toggle.check()
+    page.wait_for_function(
+        '() => window._customLayoutMode === true',
+        timeout=10_000,
+    )
+
+
+def set_compound_level(page: Page, level: str) -> None:
+    """Set compound grouping via FOB-61 dropdown (none | workflow | workflow-activity)."""
+    enable_custom_layout(page)
+    page.click('[data-testid="browser-compound-btn"]')
+    page.wait_for_selector('[data-testid="browser-compound-dropdown"]', timeout=5_000)
+    page.click(f'[data-testid="browser-compound-option-{level}"]')
+    page.wait_for_function(
+        f"() => window._compoundLevel === '{level}'",
+        timeout=10_000,
+    )
+
+
+def open_content_browser_custom(
+    page: Page,
+    live_server_url: str,
+    playbook_id: int,
+    *,
+    min_nodes: int = 1,
+) -> None:
+    """Open content browser and enable custom layout mode."""
+    open_content_browser(page, live_server_url, playbook_id, min_nodes=min_nodes)
+    enable_custom_layout(page)
