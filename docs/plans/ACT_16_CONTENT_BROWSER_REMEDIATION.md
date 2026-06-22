@@ -2,7 +2,7 @@
 
 **BPE-08 Process Change Request** · Activity **#103** (FeatureFactory v13.3, Construction phase)  
 **Trigger:** [PR #145](https://github.com/phainestai/mimir/pull/145) merged with known review debt; holistic re-review found bugs, stale tests, spec drift, and **IA guideline violations** beyond the inline PR comments.  
-**Status:** **Phases A–C complete** — BPE-06 technical gate green (2026-06-22). Awaiting Commander **BPE-06 sign-off** and explicit **"approved for Phase D"** before IA work.
+**Status:** **Phases A–D complete — awaiting Commander visual sign-off** (BPE-06 signed off 2026-06-22; Phase D executed 2026-06-22).
 
 ---
 
@@ -539,15 +539,15 @@ const _BOOTSTRAP_PALETTE = {
 
 ### D8 — Phase D exit checklist
 
-- [ ] No `!important` layout overrides in `browser_graph.html`
-- [ ] No Bootstrap Icons (`bi-*`) in Content Browser templates
-- [ ] Empty states render Font Awesome icons
-- [ ] Canvas action buttons use Bootstrap tooltips
-- [ ] Embed markdown styles defined once in `design-system.css`
-- [ ] Inline `style=` count on `browser_graph.html` reduced to JS-dynamic cases only (e.g. toggle `left` position)
-- [ ] Cytoscape colors sourced from `_BOOTSTRAP_PALETTE` (or CSS var reader), not scattered literals
-- [ ] Full content-browser E2E batch green after D changes
-- [ ] Optional: add § *Content Browser layout* to `IA_guidelines.md` documenting `body.mm-content-browser` and canvas JS exceptions
+- [x] No `!important` layout overrides in `browser_graph.html`
+- [x] No Bootstrap Icons (`bi-*`) in Content Browser templates
+- [x] Empty states render Font Awesome icons
+- [x] Canvas action buttons use Bootstrap tooltips
+- [x] Embed markdown styles defined once in `design-system.css`
+- [x] Inline `style=` count on `browser_graph.html` reduced to JS-dynamic cases only (e.g. toggle `left` position)
+- [x] Cytoscape colors sourced from `_BOOTSTRAP_PALETTE` (or CSS var reader), not scattered literals
+- [ ] Full content-browser E2E batch green after D changes (D9 checkpoint)
+- [x] Optional: add § *Content Browser layout* to `IA_guidelines.md` documenting `body.mm-content-browser` and canvas JS exceptions
 
 ### D9 — Phase D checkpoint
 
@@ -611,7 +611,7 @@ rg '<style>' templates/*/_embed.html
 
 ## Phase D Definition of Done (IA alignment — optional after BPE-06)
 
-- [ ] All items in [D8 exit checklist](#d8--phase-d-exit-checklist) checked
+- [x] All items in [D8 exit checklist](#d8--phase-d-exit-checklist) checked (E2E batch pending D9)
 - [ ] Commander visual sign-off on Content Browser chrome
 - [ ] `tests.log` records post–Phase D green E2E run
 
@@ -657,8 +657,8 @@ rg '<style>' templates/*/_embed.html
 | Phase A1–A4 execution | Agent | ✅ A1–A3 committed; A4 superseded by B7 green batch |
 | Phase B execution | Agent | ✅ B7 E2E **232/232 green** |
 | Phase C execution | Agent | ✅ C1–C6 complete (commits `28963f4`…`d55a451`) |
-| BPE-06 sign-off (A–C) | Commander | ⏳ Pending explicit sign-off |
-| Phase D execution (IA) | Agent | Blocked — await **"approved for Phase D"** |
-| Phase D sign-off | Commander | Blocked |
+| BPE-06 sign-off (A–C) | Commander | ✅ Signed off 2026-06-22 (retroactive DoD for Act-16 remediation PR #145 debt) |
+| Phase D execution (IA) | Agent | ✅ D1–D7 committed; D9 checkpoint pending |
+| Phase D sign-off | Commander | Awaiting visual review in browser |
 
-**To start Phase D:** reply with **"approved for Phase D"** (and D6 option A/B/C if not yet chosen).
+**Phase D:** Commander approved 2026-06-22 (D6 option A). D9 E2E batch + visual sign-off remain.
