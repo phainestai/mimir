@@ -79,6 +79,10 @@ Custom layout checkbox state is **not** persisted in the URL; full reload resets
 See FOB-38 / FOB-53 in `07-canvas-controls.feature` for the shipped pastel palette,
 round-rectangle shapes, FA6 Unicode icons, and uniform black edges.
 
+Colour tokens are centralized in `static/js/content-browser.js`:
+- `_BOOTSTRAP_PALETTE` — Bootstrap 5.3 theme hex values for base node/edge styles
+- `_PASTEL_NODE_PALETTE` — per-entity-type pastel fills (enhanced mode, FOB-38)
+
 ---
 
 ## Embed mode (?embed=1)

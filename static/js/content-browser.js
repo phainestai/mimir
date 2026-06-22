@@ -17,6 +17,45 @@
 const _ALL_TYPES = ['workflow', 'activity', 'skill', 'agent', 'artifact', 'rule', 'phase'];
 
 /**
+ * Bootstrap 5.3 theme tokens for Cytoscape stylesheets.
+ * Cytoscape cannot consume CSS var() strings — values mirror design-system.css.
+ * Optional runtime read: getComputedStyle(document.documentElement).getPropertyValue('--bs-primary')
+ */
+const _BOOTSTRAP_PALETTE = {
+  primary: '#0d6efd',
+  success: '#198754',
+  warning: '#ffc107',
+  danger: '#dc3545',
+  info: '#0dcaf0',
+  secondary: '#6c757d',
+  dark: '#343a40',
+  light: '#f8f9fa',
+  bodyColor: '#212529',
+  white: '#ffffff',
+  orange: '#fd7e14',
+  borderColor: '#dee2e6',
+  compoundWorkflowBg: '#eef2ff',
+  compoundActivityBg: '#d4edda',
+};
+
+/** Pastel node chrome — Bootstrap-tinted fills for enhanced graph mode (FOB-38). */
+const _PASTEL_NODE_PALETTE = {
+  playbook: { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' },
+  workflow: { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' },
+  activity: { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' },
+  artifact: { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' },
+  skill:    { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' },
+  agent:    { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' },
+  rule:     { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' },
+};
+
+const _PASTEL_NODE_DEFAULT = {
+  bg: _BOOTSTRAP_PALETTE.light,
+  border: _BOOTSTRAP_PALETTE.borderColor,
+  text: _BOOTSTRAP_PALETTE.bodyColor,
+};
+
+/**
  * Position a JS-injected dropdown above its trigger (fixed coords avoid canvas clipping).
  * Visual styling uses Bootstrap dropdown-menu classes per IA guidelines.
  *
@@ -563,6 +602,7 @@ function _renderGraph(pk, graphData, filters) {
  * @returns {object[]}
  */
 function _cytoscapeStyle() {
+  const P = _BOOTSTRAP_PALETTE;
   const _nodeBase = {
     'label': 'data(label)',
     'text-valign': 'center',
@@ -572,7 +612,7 @@ function _cytoscapeStyle() {
     'text-max-width': 110,
     'width': 120,
     'height': 40,
-    'color': '#fff',
+    'color': P.white,
   };
   return [
     { selector: 'node[type = "workflow"]',
@@ -581,7 +621,7 @@ function _cytoscapeStyle() {
                  const abbr = ele.data('meta') && ele.data('meta').abbreviation;
                  return abbr ? `${abbr}\n${ele.data('label')}` : ele.data('label');
                },
-               'background-color': '#0d6efd', 'shape': 'round-rectangle',
+               'background-color': P.primary, 'shape': 'round-rectangle',
                'width': 130, 'height': 50, 'font-size': 10 } },
     { selector: 'node[type = "activity"]',
       style: { ..._nodeBase,
@@ -589,50 +629,50 @@ function _cytoscapeStyle() {
                  const code = ele.data('meta') && ele.data('meta').display_code;
                  return code ? `${code}\n${ele.data('label')}` : ele.data('label');
                },
-               'background-color': '#198754', 'shape': 'round-rectangle',
+               'background-color': P.success, 'shape': 'round-rectangle',
                'height': 50, 'font-size': 10, 'text-max-width': 110 } },
     { selector: 'node[type = "artifact"]',
-      style: { ..._nodeBase, 'background-color': '#ffc107', 'shape': 'ellipse', 'color': '#212529' } },
+      style: { ..._nodeBase, 'background-color': P.warning, 'shape': 'ellipse', 'color': P.bodyColor } },
     { selector: 'node[type = "skill"]',
-      style: { ..._nodeBase, 'background-color': '#fd7e14', 'shape': 'ellipse' } },
+      style: { ..._nodeBase, 'background-color': P.orange, 'shape': 'ellipse' } },
     { selector: 'node[type = "agent"]',
-      style: { ..._nodeBase, 'background-color': '#0dcaf0', 'shape': 'ellipse', 'color': '#212529' } },
+      style: { ..._nodeBase, 'background-color': P.info, 'shape': 'ellipse', 'color': P.bodyColor } },
     { selector: 'node[type = "rule"]',
-      style: { ..._nodeBase, 'background-color': '#6c757d', 'shape': 'ellipse' } },
+      style: { ..._nodeBase, 'background-color': P.secondary, 'shape': 'ellipse' } },
     { selector: 'node:selected',
-      style: { 'border-width': 3, 'border-color': '#dc3545' } },
+      style: { 'border-width': 3, 'border-color': P.danger } },
     // Edges — taxi (right-angle) routing for clean hierarchical layout.
     // 'contains' and 'predecessor' use downward/auto taxi; resource edges use
     // a shorter turn so they branch off activities cleanly.
     { selector: 'edge[relationship = "contains"]',
-      style: { 'line-color': '#0d6efd', 'target-arrow-color': '#0d6efd', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.primary, 'target-arrow-color': P.primary, 'target-arrow-shape': 'triangle',
                'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '50%', 'width': 2 } },
     { selector: 'edge[relationship = "predecessor"]',
-      style: { 'line-color': '#198754', 'target-arrow-color': '#198754', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.success, 'target-arrow-color': P.success, 'target-arrow-shape': 'triangle',
                'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'auto', 'taxi-turn': '50%',
                'width': 1, 'opacity': 0.7 } },
     { selector: 'edge[relationship = "sequence"]',
-      style: { 'line-color': '#343a40', 'target-arrow-color': '#343a40', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.dark, 'target-arrow-color': P.dark, 'target-arrow-shape': 'triangle',
                'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '50%',
                'width': 2, 'opacity': 0.55 } },
     { selector: 'edge[relationship = "produces"]',
-      style: { 'line-color': '#ffc107', 'target-arrow-color': '#ffc107', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.warning, 'target-arrow-color': P.warning, 'target-arrow-shape': 'triangle',
                'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
                'width': 1.5 } },
     { selector: 'edge[relationship = "consumes"]',
-      style: { 'line-color': '#ffc107', 'target-arrow-color': '#ffc107', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.warning, 'target-arrow-color': P.warning, 'target-arrow-shape': 'triangle',
                'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
                'width': 1.5, 'opacity': 0.8 } },
     { selector: 'edge[relationship = "uses_skill"]',
-      style: { 'line-color': '#fd7e14', 'target-arrow-color': '#fd7e14', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.orange, 'target-arrow-color': P.orange, 'target-arrow-shape': 'triangle',
                'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
                'width': 1.5 } },
     { selector: 'edge[relationship = "assigned_agent"]',
-      style: { 'line-color': '#0dcaf0', 'target-arrow-color': '#0dcaf0', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.info, 'target-arrow-color': P.info, 'target-arrow-shape': 'triangle',
                'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
                'width': 1.5 } },
     { selector: 'edge[relationship = "governed_by_rule"]',
-      style: { 'line-color': '#6c757d', 'target-arrow-color': '#6c757d', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.secondary, 'target-arrow-color': P.secondary, 'target-arrow-shape': 'triangle',
                'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
                'width': 1.5 } },
   ];
@@ -1183,7 +1223,7 @@ function _openDetailPanel(node) {
     const nodeIsVisible = node.style('visibility') !== 'hidden';
     if (nodeIsVisible) {
       window.cy.nodes().forEach(n => { n.style('border-width', 0); });
-      node.style({ 'border-width': 3, 'border-color': '#dc3545' });
+      node.style({ 'border-width': 3, 'border-color': _BOOTSTRAP_PALETTE.danger });
     }
   }
   _currentPanelNode = node;
@@ -1549,29 +1589,13 @@ function _buildEnhancedNodeStyle(type) {
 /**
  * Return pastel Bootstrap 5.3 colour tokens for a given node type.
  *
- * Expected palette (when implemented):
- *   playbook  → { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' }
- *   workflow  → { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' }
- *   activity  → { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' }
- *   artifact  → { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' }
- *   skill     → { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' }
- *   agent     → { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' }
- *   rule      → { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' }
+ * Expected palette: see _PASTEL_NODE_PALETTE at module top (_BOOTSTRAP_PALETTE for theme tokens).
  *
  * @param {string} type — entity type string
  * @returns {{ bg: string, border: string, text: string }}
  */
 function _buildNodeColor(type) {
-  const palette = {
-    playbook: { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' },
-    workflow: { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' },
-    activity: { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' },
-    artifact: { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' },
-    skill:    { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' },
-    agent:    { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' },
-    rule:     { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' },
-  };
-  return palette[type] || { bg: '#f8f9fa', border: '#dee2e6', text: '#212529' };
+  return _PASTEL_NODE_PALETTE[type] || _PASTEL_NODE_DEFAULT;
 }
 
 /**
@@ -1610,12 +1634,12 @@ function _buildNodeIcon(type) {
 
 /**
  * Return edge stylesheet entries for the enhanced style.
- * All edges must use uniform black (#212529) colour.
+ * All edges must use uniform black (_BOOTSTRAP_PALETTE.bodyColor) colour.
  * Inherits curve-style from _currentRouting via _applyRouting().
  *
  * Expected output (when implemented):
  *   [
- *     { selector: 'edge', style: { 'line-color': '#212529', 'target-arrow-color': '#212529',
+ *     { selector: 'edge', style: { 'line-color': _BOOTSTRAP_PALETTE.bodyColor, ...
  *         'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'width': 1.5 } },
  *     { selector: 'edge[relationship = "predecessor"]', style: { 'line-style': 'dashed', ... } },
  *     { selector: 'edge[relationship = "contains"]', style: { 'display': 'none' } },
@@ -1640,12 +1664,13 @@ function _buildEdgeStyle() {
  * @returns {object[]} Cytoscape stylesheet entries for edges
  */
 function _buildEdgeStyleForMode(compoundOn) {
+  const P = _BOOTSTRAP_PALETTE;
   const base = [
     {
       selector: 'edge',
       style: {
-        'line-color': '#212529',
-        'target-arrow-color': '#212529',
+        'line-color': P.bodyColor,
+        'target-arrow-color': P.bodyColor,
         'target-arrow-shape': 'triangle',
         'curve-style': 'bezier',
         'width': 1.5,
@@ -1975,6 +2000,7 @@ function _addElkCompoundData(nodeData) {
  * @returns {object} Cytoscape style overrides for the :parent selector label
  */
 function _buildCompoundLabelStyle() {
+  const P = _BOOTSTRAP_PALETTE;
   return {
     'label': ele => ele.data('label') || '',
     'padding-top': '28px',
@@ -1988,18 +2014,18 @@ function _buildCompoundLabelStyle() {
     'text-transform': 'none',
     'text-max-width': 200,
     'text-wrap': 'ellipsis',
-    'text-background-color': '#ffffff',
+    'text-background-color': P.white,
     'text-background-opacity': 0.85,
     'text-background-padding': '4px',
-    'color': '#084298',
+    'color': _PASTEL_NODE_PALETTE.workflow.text,
   };
 }
 
 /**
  * Return the Cytoscape stylesheet additions for compound parent (workflow) nodes.
  * These entries augment the base stylesheet when compound view is active:
- *   - background-color: #eef2ff (light periwinkle)
- *   - border: 2px solid #0d6efd
+ *   - background-color: _BOOTSTRAP_PALETTE.compoundWorkflowBg
+ *   - border: 2px solid _BOOTSTRAP_PALETTE.primary
  *   - border-radius: 8px (via shape: round-rectangle)
  *   - text-valign: top, text-halign: left
  *   - padding: 20px
@@ -2007,12 +2033,13 @@ function _buildCompoundLabelStyle() {
  * @returns {object[]} additional stylesheet entries for :parent selector
  */
 function _cytoscapeCompoundStyle() {
+  const P = _BOOTSTRAP_PALETTE;
   return [
     {
       selector: ':parent',
       style: {
         'background-color': _compoundBackgroundForType('workflow'),
-        'border-color': '#0d6efd',
+        'border-color': P.primary,
         'border-width': 2,
         'border-style': 'solid',
         'shape': 'round-rectangle',
@@ -2062,7 +2089,8 @@ function _buildFontRenderingGuards() {
  * @returns {string} CSS colour string
  */
 function _compoundBackgroundForType(nodeType) {
-  return nodeType === 'activity' ? '#d4edda' : '#eef2ff';
+  const P = _BOOTSTRAP_PALETTE;
+  return nodeType === 'activity' ? P.compoundActivityBg : P.compoundWorkflowBg;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2175,7 +2203,7 @@ function _cytoscapeCompoundStyleForLevel(level) {
       selector: 'node[type = "activity"]:parent',
       style: {
         'background-color': _compoundBackgroundForType('activity'),
-        'border-color': '#198754',
+        'border-color': _BOOTSTRAP_PALETTE.success,
         'border-width': 2,
         ..._buildCompoundLabelStyle(),
       },
