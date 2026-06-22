@@ -2,7 +2,7 @@
 
 **BPE-08 Process Change Request** · Activity **#103** (FeatureFactory v13.3, Construction phase)  
 **Trigger:** [PR #145](https://github.com/phainestai/mimir/pull/145) merged with known review debt; holistic re-review found bugs, stale tests, spec drift, and **IA guideline violations** beyond the inline PR comments.  
-**Status:** **Phases A–D complete — awaiting Commander visual sign-off** (BPE-06 signed off 2026-06-22; Phase D executed 2026-06-22).
+**Status:** **Complete** — Phases A–D signed off (BPE-06 2026-06-22; Phase D Commander visual sign-off 2026-06-22; D10 regression fixes in `9cd8507`).
 
 ---
 
@@ -563,6 +563,22 @@ rg '<style>' templates/*/_embed.html
 
 **Approval checkpoint:** Commander visual review of Content Browser in browser (empty state, loaded graph, detail panel, custom-layout controls). Sign off Phase D complete.
 
+### D10 — Visual regression fixes (post-D9 Commander review)
+
+**Trigger:** Commander visual review found landing layout, graph load, and status-badge regressions after D1–D2 CSS refactors (D9 E2E green did not catch them).
+
+**Change (commit `9cd8507`):**
+- Flex viewport height chain for `#browser-root` / canvas wrapper; explicit `#cy` sizing + `cy.resize()` on mount
+- Landing empty state: in-flow flex centre (not absolute positioning); FA icons without `display-1`
+- Full-canvas loading overlay (`mm-browser-overlay-state`)
+- `_updatePlaybookHeader`: preserve status badge colour/label (draft stays `bg-warning`, not forced `bg-secondary`)
+- URL param parsing: do not reset routing/compound/nodesize when param absent; apply default layout before `_normaliseFilters`
+- E2E: `test_status_badge_keeps_draft_warning_color_after_graph_load`
+
+**Test:** Representative E2E green; full batch re-run recommended before merge.
+
+**Sign-off:** Commander visual review passed 2026-06-22 (empty `/browser/`, FeatureFactory `/browser/3/`, Change Playbook flow).
+
 ---
 
 ## Tests — drop / rewrite / add matrix
@@ -613,8 +629,9 @@ rg '<style>' templates/*/_embed.html
 ## Phase D Definition of Done (IA alignment — optional after BPE-06)
 
 - [x] All items in [D8 exit checklist](#d8--phase-d-exit-checklist) checked
-- [ ] Commander visual sign-off on Content Browser chrome
+- [x] Commander visual sign-off on Content Browser chrome (2026-06-22, after D10)
 - [x] `tests.log` records post–Phase D green E2E run (232 E2E + 33 embed integration, 2026-06-22)
+- [x] D10 visual regression fixes committed (`9cd8507`)
 
 ---
 
@@ -659,7 +676,7 @@ rg '<style>' templates/*/_embed.html
 | Phase B execution | Agent | ✅ B7 E2E **232/232 green** |
 | Phase C execution | Agent | ✅ C1–C6 complete (commits `28963f4`…`d55a451`) |
 | BPE-06 sign-off (A–C) | Commander | ✅ Signed off 2026-06-22 (retroactive DoD for Act-16 remediation PR #145 debt) |
-| Phase D execution (IA) | Agent | ✅ D1–D9 complete (**232/232** E2E, guardrails green) |
-| Phase D sign-off | Commander | Awaiting visual review in browser |
+| Phase D execution (IA) | Agent | ✅ D1–D10 complete (**232/232** E2E, guardrails green; D10 `9cd8507`) |
+| Phase D sign-off | Commander | ✅ Visual sign-off 2026-06-22 (after D10 fixes) |
 
-**Phase D:** Commander approved 2026-06-22 (D6 option A). D9 E2E batch + visual sign-off remain.
+**Phase D:** Commander approved 2026-06-22 (D6 option A). Remediation plan **closed**.
