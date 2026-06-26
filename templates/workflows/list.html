@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load markdown_filters %}
 
 {% block title %}Workflows - {{ playbook.name }}{% endblock %}
 
@@ -71,7 +72,7 @@
                             {{ workflow.name }}
                         </a>
                     </td>
-                    <td>{{ workflow.description|truncatewords:10 }}</td>
+                    <td>{{ workflow.description|markdown|striptags|truncatewords:10 }}</td>
                     <td>{{ workflow.get_activity_count }}</td>
                     <td>
                         <div class="btn-group btn-group-sm" role="group">

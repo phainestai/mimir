@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load markdown_filters %}
 
 {% block title %}Create Playbook - Step 3{% endblock %}
 
@@ -54,7 +55,7 @@
                 <dd class="col-sm-9">{{ wizard_data.name }}</dd>
 
                 <dt class="col-sm-3">Description:</dt>
-                <dd class="col-sm-9">{{ wizard_data.description }}</dd>
+                <dd class="col-sm-9 markdown-content">{{ wizard_data.description|markdown }}</dd>
 
                 <dt class="col-sm-3">Category:</dt>
                 <dd class="col-sm-9">{{ wizard_data.category|title }}</dd>

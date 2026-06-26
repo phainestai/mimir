@@ -152,7 +152,7 @@
                 </div>
                 <div class="card-body">
                     <h6 class="card-title">{{ workflow.name }}</h6>
-                    <p class="card-text small text-muted">{{ workflow.description|truncatewords:20 }}</p>
+                    <p class="card-text small text-muted">{{ workflow.description|markdown|striptags|truncatewords:20 }}</p>
                     <a href="{% url 'workflow_detail' playbook_pk=playbook.pk pk=workflow.pk %}" 
                        class="btn btn-sm btn-outline-primary">
                         <i class="fa-solid fa-arrow-right"></i> View Workflow

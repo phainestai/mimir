@@ -195,8 +195,12 @@
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fa-solid fa-align-left"></i> Description</h5>
                 </div>
-                <div class="card-body">
-                    <p>{{ playbook.description }}</p>
+                <div class="card-body markdown-content" data-testid="playbook-description">
+                    {% if playbook.description %}
+                        {{ playbook.description|markdown }}
+                    {% else %}
+                        <p class="text-muted fst-italic mb-0">No description provided.</p>
+                    {% endif %}
                 </div>
             </div>
 
@@ -310,7 +314,7 @@
                                                class="text-decoration-none fw-semibold"
                                                data-testid="workflow-name-link-{{ workflow.pk }}">{{ workflow.name }}</a>
                                             {% if workflow.description %}
-                                                <p class="mb-0 text-muted small">{{ workflow.description }}</p>
+                                                <p class="mb-0 text-muted small">{{ workflow.description|markdown|striptags|truncatewords:20 }}</p>
                                             {% endif %}
                                         </li>
                                     {% endfor %}
@@ -391,7 +395,7 @@
                         <span class="badge bg-info">{{ phase.get_activity_count }} activities</span>
                     </div>
                     {% if phase.description %}
-                    <p class="mb-0 text-muted small mt-1">{{ phase.description|truncatewords:20 }}</p>
+                    <p class="mb-0 text-muted small mt-1">{{ phase.description|markdown|striptags|truncatewords:20 }}</p>
                     {% endif %}
                 </a>
                 {% endfor %}

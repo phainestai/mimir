@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load markdown_filters %}
 
 {% block title %}Teams{% endblock %}
 
@@ -126,7 +127,7 @@
                             {{ team.visibility }}
                         </span>
                     </div>
-                    <p class="card-text text-muted small mb-3">{{ team.description }}</p>
+                    <p class="card-text text-muted small mb-3">{{ team.description|markdown|striptags|truncatewords:25 }}</p>
                     <div class="d-flex gap-3 text-muted small mb-3">
                         <span data-bs-toggle="tooltip" title="Members">
                             <i class="fa-solid fa-user-group me-1"></i>

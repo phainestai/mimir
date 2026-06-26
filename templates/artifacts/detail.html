@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load markdown_filters %}
 
 {% block title %}{{ artifact.name }} - Artifact{% endblock %}
 
@@ -47,8 +48,8 @@
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fa-solid fa-align-left"></i> Description</h5>
                 </div>
-                <div class="card-body" data-testid="artifact-description">
-                    <p class="mb-0">{{ artifact.description }}</p>
+                <div class="card-body markdown-content" data-testid="artifact-description">
+                    {{ artifact.description|markdown }}
                 </div>
             </div>
             {% endif %}

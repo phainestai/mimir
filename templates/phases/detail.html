@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load markdown_filters %}
 
 {% block title %}{{ phase.name }} - {{ playbook.name }}{% endblock %}
 
@@ -57,11 +58,11 @@
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fa-solid fa-info-circle"></i> Description</h5>
                 </div>
-                <div class="card-body" data-testid="phase-description">
+                <div class="card-body markdown-content" data-testid="phase-description">
                     {% if phase.description %}
-                    <p>{{ phase.description }}</p>
+                    {{ phase.description|markdown }}
                     {% else %}
-                    <p class="text-muted fst-italic">No description provided</p>
+                    <p class="text-muted fst-italic mb-0">No description provided</p>
                     {% endif %}
                 </div>
             </div>

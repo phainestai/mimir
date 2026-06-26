@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load markdown_filters %}
 
 {% block title %}Phases{% endblock %}
 
@@ -87,7 +88,7 @@
                             </a>
                         </td>
                         <td class="text-muted small">{{ phase.order }}</td>
-                        <td class="text-muted small">{{ phase.description|truncatewords:10 }}</td>
+                        <td class="text-muted small">{{ phase.description|markdown|striptags|truncatewords:10 }}</td>
                         <td>
                             <a href="{% url 'phase_detail' playbook_pk=phase.playbook.id phase_pk=phase.id %}"
                                class="btn btn-outline-primary btn-sm"
