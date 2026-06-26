@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load markdown_filters %}
 {% block title %}PIP-{{ pip.pk }} — Mimir{% endblock %}
 {% block content %}
 <div class="container mt-4 pb-5" data-testid="pip-detail-page">
@@ -127,7 +128,13 @@
                             {% if ch.target_entity_ref %}<span class="me-2">tgt: <code>{{ ch.target_entity_ref }}</code></span>{% endif %}
                         </p>
                         {% endif %}
-                        <pre class="bg-light border rounded p-3 small mb-2" style="white-space: pre-wrap;" data-testid="pip-change-content-{{ ch.order }}">{{ ch.content|default:'(empty)' }}</pre>
+                        {% if ch.content %}
+                        <div class="markdown-content border rounded p-3 mb-2" data-testid="pip-change-content-{{ ch.order }}">
+                            {{ ch.content|markdown }}
+                        </div>
+                        {% else %}
+                        <p class="text-muted small mb-2" data-testid="pip-change-content-{{ ch.order }}">(empty)</p>
+                        {% endif %}
                         {% if ch.galdr_reasoning %}
                         <div class="small mt-2" data-testid="galdr-reason-{{ ch.order }}">
                             <span class="text-secondary">Galdr rationale:</span> {{ ch.galdr_reasoning }}
@@ -171,4 +178,5 @@
     status: "{{ pip.status|escapejs }}",
     can_submit: {{ can_submit|yesno:"true,false" }},
 });</script>
+{% include "includes/markdown_content_assets.html" %}
 {% endblock %}

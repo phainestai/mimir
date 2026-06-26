@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load markdown_filters %}
 {% block title %}PIP-{{ pip.pk }} preview{% endblock %}
 {% block content %}
 <div class="container mt-4" data-testid="pip-preview-page">
@@ -9,19 +10,23 @@
         </div>
         <a href="{% url 'pip_edit' pip.pk %}" class="btn btn-outline-secondary flex-shrink-0" data-testid="pip-preview-back"><i class="fas fa-arrow-left me-1"></i>Back to editor</a>
     </div>
-    <table class="table table-sm">
-        <thead><tr><th>Section</th><th>Change</th><th>Snippet</th></tr></thead>
-        <tbody>
-        {% for row in rows %}
-        <tr>
-            <td>{{ row.section }}</td>
-            <td>{{ row.change_type }}</td>
-            <td class="small"><pre class="mb-0">{{ row.snippet }}</pre></td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="3" class="text-muted">No changes yet.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    {% for row in rows %}
+    <div class="card mb-3" data-testid="pip-preview-row">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 py-2">
+            <span class="fw-semibold">{{ row.section }}</span>
+            <span class="badge bg-secondary">{{ row.change_type }}</span>
+        </div>
+        {% if row.content %}
+        <div class="card-body markdown-content pip-preview-markdown" data-testid="pip-preview-content">
+            {{ row.content|markdown }}
+        </div>
+        {% elif row.snippet %}
+        <div class="card-body small text-muted">{{ row.snippet }}</div>
+        {% endif %}
+    </div>
+    {% empty %}
+    <div class="text-muted border rounded p-3">No changes yet.</div>
+    {% endfor %}
 </div>
+{% include "includes/markdown_content_assets.html" %}
 {% endblock %}
