@@ -25,6 +25,7 @@ provision: ## Python venv + deps, migrations, dark-factory CLI tools, verify
 	@echo "Provision complete."
 	@echo "  App:  make run"
 	@echo "  MCP:  make mcp"
+	@echo "  Personal DB (once): make dev-db-init   # needs MIMIR_DB_PATH in .env"
 	@echo "  Factory: scripts/preflight.sh '<milestone>' then scripts/factory.sh '<slug>'"
 
 .PHONY: factory-check
@@ -67,10 +68,10 @@ demo: ## Load demo FeatureFactory data
 	$(PYTHON) manage.py create_demo_fdd
 
 ##@ Testing
-
-export DJANGO_SETTINGS_MODULE ?= mimir.settings.test
+# Test settings only for test targets — do not export globally (breaks make run → mimir_test.db).
 
 .PHONY: test
+test: export DJANGO_SETTINGS_MODULE := mimir.settings.test
 test: ## Run all tests (mirrors CI)
 	$(PYTEST) tests/ \
 	  --ignore=tests/e2e \
@@ -80,10 +81,12 @@ test: ## Run all tests (mirrors CI)
 	  --ignore=tests/unit/test_activity_graph_service.py
 
 .PHONY: test-unit
+test-unit: export DJANGO_SETTINGS_MODULE := mimir.settings.test
 test-unit: ## Run unit tests only
 	$(PYTEST) tests/unit/
 
 .PHONY: test-integration
+test-integration: export DJANGO_SETTINGS_MODULE := mimir.settings.test
 test-integration: ## Run integration tests only
 	$(PYTEST) tests/integration/ \
 	  --ignore=tests/integration/test_mcp_server_acceptance.py \
@@ -91,6 +94,7 @@ test-integration: ## Run integration tests only
 	  --ignore=tests/integration/test_mcp_e2e_all_tools.py
 
 .PHONY: test-e2e
+test-e2e: export DJANGO_SETTINGS_MODULE := mimir.settings.test
 test-e2e: ## Run Playwright E2E tests (requires running server)
 	$(PYTEST) tests/e2e/
 
@@ -110,13 +114,39 @@ lint-fix: ## Run ruff linter with auto-fix
 	$(RUFF) check --fix .
 
 ##@ Database
-# Local dev uses SQLite (mimir.db). Production on EB uses Postgres (DATABASE_URL env var).
+# Committed seed: mimir.db. Personal sandbox: mimir.dev.db via MIMIR_DB_PATH in .env.
+# Production on EB uses Postgres (DATABASE_URL env var).
+
+.PHONY: dev-db-init
+dev-db-init: ## [local] Copy seed mimir.db → mimir.dev.db (first-time personal sandbox)
+	@if [ -f mimir.dev.db ]; then \
+	  echo "mimir.dev.db already exists — use 'make refresh-dev-db' to reset from seed."; \
+	  exit 1; \
+	fi
+	cp mimir.db mimir.dev.db
+	@echo "Created mimir.dev.db from mimir.db."
+	@echo "Set MIMIR_DB_PATH=mimir.dev.db in .env (see .env.example), then: make run"
+
+.PHONY: refresh-dev-db
+refresh-dev-db: ## [local] Overwrite mimir.dev.db from seed mimir.db and run migrations
+	cp mimir.db mimir.dev.db
+	$(PYTHON) manage.py migrate --noinput
+	@echo "mimir.dev.db refreshed from committed seed (mimir.db)."
+
+.PHONY: dev-db-reset
+dev-db-reset: ## [local] Delete mimir.dev.db and recreate from seed mimir.db
+	@echo "WARNING: This will delete mimir.dev.db and all personal local data."
+	@read -p "Continue? [y/N] " ans && [ "$$ans" = "y" ]
+	rm -f mimir.dev.db mimir.dev.db-shm mimir.dev.db-wal
+	cp mimir.db mimir.dev.db
+	$(PYTHON) manage.py migrate --noinput
+	@echo "mimir.dev.db recreated from seed."
 
 .PHONY: db-reset
-db-reset: ## [local] Delete mimir.db and re-run migrations (destroys all local data)
-	@echo "WARNING: This will delete mimir.db and all local data."
+db-reset: ## [local] Delete mimir.db and re-run migrations (destroys committed seed file — rare)
+	@echo "WARNING: This will delete mimir.db and all data in the seed database."
 	@read -p "Continue? [y/N] " ans && [ "$$ans" = "y" ]
-	rm -f mimir.db
+	rm -f mimir.db mimir.db-shm mimir.db-wal
 	$(PYTHON) manage.py migrate --noinput
 	@echo "Database reset. Run 'make demo' to reload demo data."
 

@@ -161,6 +161,8 @@ Maintainers publishing from CI configure GitHub Actions secrets **`DOCKERHUB_USE
    cp .env.example .env   # edit values as needed (email, API keys, etc.)
    ```
 
+   `.env.example` sets `MIMIR_DB_PATH=mimir.dev.db` so daily work stays in a **personal SQLite file** (gitignored). The committed `mimir.db` remains the shared seed only.
+
    Without a local `.env`, dev defaults may differ from `.env.example` (e.g. email via AWS SES instead of the console backend).
 
 3. **Create virtual environment**
@@ -177,9 +179,12 @@ Maintainers publishing from CI configure GitHub Actions secrets **`DOCKERHUB_USE
 5. **Initialize database**
    ```bash
    python manage.py migrate
+   make dev-db-init    # once: copies seed mimir.db → mimir.dev.db
    ```
-   
-   **Note:** The default database (`mimir.db`) includes the **FeatureFactory** playbook, which was used to build Mimir itself. This playbook provides a complete feature development workflow with 8 activities covering planning, implementation, testing, and finalization.
+
+   **Note:** Committed `mimir.db` includes the **FeatureFactory** playbook (the workflow used to build Mimir). With `MIMIR_DB_PATH=mimir.dev.db` in `.env`, `make run` and `make mcp` use your personal copy; git will not track local users or experiments.
+
+   After `git pull` updates the seed, refresh your sandbox: `make refresh-dev-db`.
 
 6. **Ensure local superuser**
 
@@ -223,19 +228,20 @@ Maintainers publishing from CI configure GitHub Actions secrets **`DOCKERHUB_USE
 
 ```bash
 # Start web UI (keep running in terminal)
-python manage.py runserver 8000
+make run
 # → Open http://localhost:8000
 
 # Test MCP server manually (different terminal)
-python manage.py mcp_server --user=admin
+make mcp
 # → Press Ctrl+C to stop
+
+# Personal DB (MIMIR_DB_PATH=mimir.dev.db in .env)
+make dev-db-init      # once: copy seed → mimir.dev.db
+make refresh-dev-db   # after pull: re-sync from committed mimir.db
+make dev-db-reset     # wipe personal DB and recreate from seed
 
 # Run all tests
 pytest tests/
-# → Should see: 250 passed, 1 skipped
-
-# Create a new user
-python manage.py createsuperuser
 ```
 
 ### MCP Configuration Files

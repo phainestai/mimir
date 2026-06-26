@@ -64,8 +64,10 @@ else:
     # Support for volume-mounted database in Docker container
     db_path = os.getenv('MIMIR_DB_PATH')
     if db_path:
-        # Use environment variable path (for Docker)
+        # Docker uses absolute paths; local dev may use repo-relative names (e.g. mimir.dev.db)
         database_path = Path(db_path)
+        if not database_path.is_absolute():
+            database_path = BASE_DIR / database_path  # noqa: F405
     else:
         # Check if we're in containerized environment (data directory exists)
         data_dir = BASE_DIR / "data"  # noqa: F405

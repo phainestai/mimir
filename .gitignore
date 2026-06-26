@@ -224,8 +224,8 @@ tests.log
 *.sqlite3
 *.db
 !mimir.db
-mimir.db-shm
-mimir.db-wal
+*.db-shm
+*.db-wal
 
 
 # Application logs

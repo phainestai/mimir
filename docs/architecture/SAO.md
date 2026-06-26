@@ -319,7 +319,7 @@ python manage.py runserver 8000
 - PIP review and approval
 
 **Shared SQLite Database**:
-- Both processes connect to same `mimir.db`
+- Web UI and MCP connect to the same SQLite file (`mimir.db` seed, or `MIMIR_DB_PATH` e.g. `mimir.dev.db` for personal dev)
 - SQLite handles concurrent access (timeout: 20s)
 - Minimal write conflicts (MCP reads, Web UI writes)
 - No complex coordination needed
@@ -2131,8 +2131,8 @@ Complete reference for all environment variables consumed by Mimir, grouped by e
 | `AWS_SES_REGION_NAME` | If SES | `us-east-1` | Required when `USE_SES_IN_DEV=1` |
 | `DEFAULT_FROM_EMAIL` | If SES | `noreply@featurefactory.io` | Must be SES-verified |
 | `AWS_SES_CONFIGURATION_SET` | No | `mimir-transactional` | SES configuration set for bounce/open tracking |
-| `DATABASE_URL` | No | — | If set, uses Postgres via `dj-database-url`; otherwise SQLite at `mimir.db` |
-| `MIMIR_DB_PATH` | No | — | Override SQLite path (used in Docker) |
+| `DATABASE_URL` | No | — | If set, uses Postgres via `dj-database-url`; otherwise SQLite |
+| `MIMIR_DB_PATH` | No | `mimir.db` (or `data/mimir.db` in Docker) | SQLite path; use `mimir.dev.db` locally (see `.env.example`, `make dev-db-init`) |
 | `FRONTEND_URL` | No | `http://localhost:8000` | Used in email links |
 | `MIMIR_MCP_MODE` | No | `1` | Set by MCP server startup; suppresses console logging on stdio |
 
