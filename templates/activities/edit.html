@@ -96,7 +96,7 @@
                                 <option value="">-- No Phase --</option>
                                 {% for phase in available_phases %}
                                 <option value="{{ phase.id }}" {% if form_data.phase|stringformat:"s" == phase.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ phase.name }}{% if phase.description %} - {{ phase.description }}{% endif %}
+                                    {{ phase.name }}{% if phase.description %} - {{ phase.description|markdown|striptags|truncatewords:10 }}{% endif %}
                                 </option>
                                 {% endfor %}
                             </select>

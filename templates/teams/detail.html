@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load markdown_filters %}
 
 {% block title %}{{ team.name }}{% endblock %}
 
@@ -106,7 +107,7 @@
                 <div class="card-body">
                     <h6 class="text-muted text-uppercase small fw-semibold mb-3">About</h6>
                     {% if team.description %}
-                    <p class="mb-3">{{ team.description }}</p>
+                    <div class="markdown-content mb-3">{{ team.description|markdown }}</div>
                     {% else %}
                     <p class="text-muted fst-italic mb-3">No description provided.</p>
                     {% endif %}

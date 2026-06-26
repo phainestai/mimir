@@ -1,5 +1,6 @@
 {# templates/methodology/partials/my_playbooks_section.html #}
 {# My Playbooks section partial for dashboard #}
+{% load markdown_filters %}
 
 <div class="col-lg-6 mb-4" data-testid="my-playbooks-section">
     <div class="card h-100">
@@ -31,7 +32,7 @@
                                     <i class="fas fa-code-branch"></i> v{{ playbook.version }}
                                 </small>
                                 {% if playbook.description %}
-                                <p class="text-muted small mb-0 mt-1 dashboard-playbook-description">{{ playbook.description|truncatechars:80 }}</p>
+                                <p class="text-muted small mb-0 mt-1 dashboard-playbook-description">{{ playbook.description|markdown|striptags|truncatechars:80 }}</p>
                                 {% endif %}
                             </div>
                             <div class="text-end flex-shrink-0">

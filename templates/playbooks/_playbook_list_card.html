@@ -1,4 +1,5 @@
 {# Unified playbook card for owned and browsable public playbooks. #}
+{% load markdown_filters %}
 <div class="col-md-6 col-lg-4 mb-4">
     <div class="playbook-book-card h-100"
          data-testid="{% if playbook.author == request.user %}playbook-book-card{% else %}public-playbook-card{% endif %}-{{ playbook.pk }}">
@@ -26,7 +27,7 @@
             <div class="card-body pt-3 pb-0 d-flex flex-column flex-grow-1">
                 {% if playbook.description %}
                     <p class="card-text text-muted small playbook-book-card-description mb-0">
-                        {{ playbook.description|truncatewords:42 }}
+                        {{ playbook.description|markdown|striptags|truncatewords:42 }}
                     </p>
                 {% else %}
                     <p class="card-text text-muted small playbook-book-card-description mb-0 fst-italic">

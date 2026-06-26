@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load markdown_filters %}
 
 {% block title %}{{ workflow.name }} - {{ playbook.name }}{% endblock %}
 
@@ -78,7 +79,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title">Description</h5>
-            <p class="card-text" data-testid="workflow-description">{{ workflow.description }}</p>
+            <div class="card-text markdown-content" data-testid="workflow-description">{{ workflow.description|markdown }}</div>
         </div>
     </div>
     {% endif %}
