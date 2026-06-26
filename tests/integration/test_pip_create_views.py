@@ -134,3 +134,52 @@ def test_pip_add_change_accepts_parent_workflow_ref_via_gui(maria, released_pb):
     assert act_change.parent_workflow_ref == "#wf1"
     assert act_change.parent_workflow_id is None
 
+
+@pytest.mark.django_db
+def test_pip_detail_renders_change_content_as_markdown(maria, released_pb):
+    wf = Workflow.objects.create(name="BPE", playbook=released_pb, order=1)
+    pip = PIPService.create_draft_for_playbook(
+        actor=maria, playbook_id=released_pb.pk, title="Markdown detail",
+    )
+    PIPService.add_change(
+        actor=maria,
+        pip=pip,
+        change_type=PipChange.CHANGE_ADD,
+        entity_type=PipChange.ENTITY_ACTIVITY,
+        name="Feature Gate",
+        content="## Feature Gate\n\n**Cursor skill:** `dev-0-feature-gate`",
+        parent_workflow_id=wf.pk,
+    )
+    client = Client()
+    client.force_login(maria)
+    rsp = client.get(reverse("pip_detail", kwargs={"pk": pip.pk}))
+    body = rsp.content.decode()
+    assert rsp.status_code == 200
+    assert 'class="markdown-content' in body
+    assert "<h2>Feature Gate</h2>" in body
+    assert "<strong>Cursor skill:</strong>" in body
+
+
+@pytest.mark.django_db
+def test_pip_preview_renders_change_content_as_markdown(maria, released_pb):
+    wf = Workflow.objects.create(name="BPE", playbook=released_pb, order=1)
+    pip = PIPService.create_draft_for_playbook(
+        actor=maria, playbook_id=released_pb.pk, title="Markdown preview",
+    )
+    PIPService.add_change(
+        actor=maria,
+        pip=pip,
+        change_type=PipChange.CHANGE_ADD,
+        entity_type=PipChange.ENTITY_ACTIVITY,
+        name="Plan Testability",
+        content="## Plan Testability\n\nManual-only skill for test planning.",
+        parent_workflow_id=wf.pk,
+    )
+    client = Client()
+    client.force_login(maria)
+    rsp = client.get(reverse("pip_preview", kwargs={"pk": pip.pk}))
+    body = rsp.content.decode()
+    assert rsp.status_code == 200
+    assert 'data-testid="pip-preview-content"' in body
+    assert "<h2>Plan Testability</h2>" in body
+

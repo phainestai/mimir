@@ -636,11 +636,13 @@ class PIPService:
             label = (
                 ch.name or ch.target_name_snapshot or str(ch.target_id or "")
             ).strip()
+            content = ch.content or ""
             rows.append(
                 {
                     "section": f"{ch.entity_type}:{label or 'target'}",
                     "change_type": entity_bucket.get(ch.change_type, ch.change_type),
-                    "snippet": (ch.content or "")[:400],
+                    "snippet": content[:400],
+                    "content": content,
                 }
             )
         return rows
