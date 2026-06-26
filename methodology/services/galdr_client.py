@@ -9,7 +9,7 @@ from typing import Tuple
 
 from django.conf import settings
 
-from methodology.services.galdr_prompts import SYSTEM_PROMPT
+from methodology.services.galdr_prompts import HOLISTIC_SYSTEM_PROMPT, SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +34,25 @@ class GaldrClient:
         :return: ``(recommendation, reasoning)`` where recommendation is ACCEPT|REJECT|NEEDS_CLARIFICATION.
         :raises GaldrLLMError: on transport or parsing errors.
         """
-        raw = self._call_llm_raw(user_prompt)
+        raw = self._call_llm_raw(user_prompt, system=SYSTEM_PROMPT)
         return self._parse_response(raw)
 
-    def _call_llm_raw(self, user_prompt: str) -> str:
+    def evaluate_pip_holistically(
+        self,
+        user_prompt: str,
+    ) -> Tuple[dict[str, str], list[tuple[int, str, str]]]:
+        """
+        Ask the model for a holistic PIP verdict with per-change diagnostics.
+
+        :param user_prompt: User message with current + target state and all changes.
+        :return: ``(holistic_assessment, change_payloads)`` where payloads are
+            ``(change_pk, recommendation, reasoning)`` tuples.
+        :raises GaldrLLMError: on transport or parsing errors.
+        """
+        raw = self._call_llm_raw(user_prompt, system=HOLISTIC_SYSTEM_PROMPT)
+        return self._parse_holistic_response(raw)
+
+    def _call_llm_raw(self, user_prompt: str, *, system: str = SYSTEM_PROMPT) -> str:
         model = getattr(settings, "GALDR_MODEL", "claude-sonnet-4-20250514")
         try:
             import anthropic
@@ -50,8 +65,8 @@ class GaldrClient:
         client = anthropic.Anthropic()
         message = client.messages.create(
             model=model,
-            max_tokens=2048,
-            system=SYSTEM_PROMPT,
+            max_tokens=4096,
+            system=system,
             messages=[{"role": "user", "content": user_prompt}],
         )
         pieces: list[str] = []
@@ -90,17 +105,71 @@ class GaldrClient:
             raise GaldrLLMError("Missing recommendation or reasoning in JSON payload")
         return rec, why
 
+    def _parse_holistic_response(
+        self,
+        raw: str,
+    ) -> Tuple[dict[str, str], list[tuple[int, str, str]]]:
+        blob = self._strip_code_fences(raw)
+        try:
+            payload = json.loads(blob)
+        except json.JSONDecodeError as exc:
+            logger.warning("Galdr holistic parse JSON failure raw=%s", blob[:400])
+            raise GaldrLLMError("Invalid JSON from model") from exc
+
+        holistic_raw = payload.get("holistic_assessment") or {}
+        coherence = str(holistic_raw.get("overall_coherence", "")).strip().upper()
+        holistic_reason = str(holistic_raw.get("reasoning", "")).strip()
+        if coherence not in {"COHERENT", "INCOHERENT"} or not holistic_reason:
+            raise GaldrLLMError("Missing holistic_assessment in JSON payload")
+
+        ok = {"ACCEPT", "REJECT", "NEEDS_CLARIFICATION"}
+        payloads: list[tuple[int, str, str]] = []
+        for item in payload.get("change_assessments") or []:
+            cid = item.get("change_id")
+            rec = str(item.get("recommendation", "")).strip().upper()
+            why = str(item.get("reasoning", "")).strip()
+            if cid is None or rec not in ok or not why:
+                raise GaldrLLMError("Invalid change_assessments entry in JSON payload")
+            payloads.append((int(cid), rec, why))
+
+        if not payloads:
+            raise GaldrLLMError("change_assessments must not be empty")
+
+        holistic = {
+            "overall_coherence": coherence,
+            "reasoning": holistic_reason,
+        }
+        return holistic, payloads
+
 
 class StubGaldrClient(GaldrClient):
     """Deterministic client for CI / tests."""
 
     STUB_SENTENCE = "Galdr stub — automated ACCEPT for integration tests."
 
-    def _call_llm_raw(self, user_prompt: str) -> str:  # noqa: ARG002
+    def _call_llm_raw(self, user_prompt: str, *, system: str = SYSTEM_PROMPT) -> str:  # noqa: ARG002
         logger.info("StubGaldrClient returning canned ACCEPT")
         return json.dumps(
             {"recommendation": "ACCEPT", "reasoning": self.STUB_SENTENCE},
         )
+
+    def evaluate_pip_holistically(
+        self,
+        user_prompt: str,
+    ) -> Tuple[dict[str, str], list[tuple[int, str, str]]]:
+        change_ids = [int(m) for m in re.findall(r"Change \[(\d+)\]", user_prompt)]
+        logger.info(
+            "StubGaldrClient holistic ACCEPT for change_ids=%s",
+            change_ids,
+        )
+        holistic = {
+            "overall_coherence": "COHERENT",
+            "reasoning": self.STUB_SENTENCE,
+        }
+        payloads = [(cid, "ACCEPT", self.STUB_SENTENCE) for cid in change_ids]
+        if not payloads:
+            raise GaldrLLMError("Stub could not find change IDs in prompt")
+        return holistic, payloads
 
 
 def get_galdr_client() -> GaldrClient:

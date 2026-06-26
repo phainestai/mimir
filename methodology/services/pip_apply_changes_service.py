@@ -7,6 +7,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Max
 
 from methodology.models import (
@@ -581,6 +582,48 @@ class PipApplyChangesService:
             return
 
         raise ValidationError(f"Unsupported DROP entity '{entity_type}'.")
+
+    @staticmethod
+    def build_target_state_summary(
+        *,
+        pip: ProcessImprovementProposal,
+        playbook: Playbook,
+    ) -> str:
+        """
+        Apply all PIP changes in a rolled-back transaction and serialize result.
+
+        Used by Galdr v2 to evaluate interdependent changes against target state.
+
+        :param pip: Parent proposal whose changes are applied in order.
+        :param playbook: Released playbook row to mutate transiently.
+        :return: Extended textual summary of the post-apply playbook.
+        :raises ValidationError: when changes cannot be applied.
+        """
+        from methodology.services.galdr_prompts import build_extended_playbook_summary
+
+        changes = list(
+            PipChange.objects.filter(pip=pip).order_by("order", "pk"),
+        )
+        logger.info(
+            "PIP dry-run target state pip=%s playbook=%s change_count=%s",
+            pip.pk,
+            playbook.pk,
+            len(changes),
+        )
+        with transaction.atomic():
+            PipApplyChangesService.apply_changes(
+                pip=pip,
+                accepted=changes,
+                playbook=playbook,
+            )
+            summary = build_extended_playbook_summary(playbook)
+            transaction.set_rollback(True)
+        logger.info(
+            "PIP dry-run target state complete pip=%s summary_chars=%s",
+            pip.pk,
+            len(summary),
+        )
+        return summary
 
 
 def _bump_orders_after_activity(workflow_id: int, after_order: int) -> None:
