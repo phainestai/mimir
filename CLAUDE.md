@@ -243,7 +243,9 @@ Both processes share the same SQLite DB with a 20-second timeout for concurrent 
 
 **Bug reports (production):** Configure **`GITHUB_TOKEN`** (Issues: write) and optional **`GITHUB_BUG_REPO`** on the **FOB** host (Elastic Beanstalk environment properties or `docker-compose` web service). See [`docs/architecture/SAO.md`](docs/architecture/SAO.md) § *Bug reports — GitHub Issues*. The MCP facade does not need this token.
 
-**Contributors:** `mimir.db` is tracked in git; when migrations or committed demo data change the DB file, **commit `mimir.db` in the same change**—do not drop it from PRs by habit.
+**Contributors:** `mimir.db` is tracked in git as the **shared seed** (FeatureFactory playbook, baseline data). When migrations or seed content change, **commit `mimir.db` in the same change**—do not drop it from PRs by habit.
+
+**Local development:** Set `MIMIR_DB_PATH=mimir.dev.db` in `.env` (see `.env.example`). Run `make dev-db-init` once, then `make run` / `make mcp` against your personal DB. After pull updates seed: `make refresh-dev-db`. Do not commit `mimir.dev.db`.
 
 ---
 
