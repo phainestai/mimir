@@ -691,7 +691,16 @@ class TestMCPAllTools:
             "workflow_id": TestMCPAllTools.wf_id,
             "target_directory": export_dir
         })
-        assert "export_path" in result or "files_written" in result or isinstance(result, dict)
+        assert result.get("status") == "exported"
+        assert "export_path" in result
+        assert "_workflow.md" in result.get("files_created", [])
+
+        export_path = Path(result["export_path"])
+        assert export_path.exists()
+        workflow_md = export_path / "_workflow.md"
+        assert workflow_md.exists(), f"Expected _workflow.md at {workflow_md}"
+        assert workflow_md.read_text(encoding="utf-8").startswith("# ")
+
         TestMCPAllTools.export_dir = export_dir
         logger.info(f"✓ export_workflow_to_local → {result}")
 

@@ -13,11 +13,20 @@ Feature: FOB-WORKFLOWS-EXPORT_IMPORT-1 MCP Workflow Synchronization
   ✅ Scenario: FOB-WORKFLOWS-EXPORT_IMPORT-01 Export via MCP tool
     Given Maria's AI assistant has access to Mimir MCP server
     When AI calls mcp.export_workflow_to_local(workflow_id=42, target_directory=".windsurf/workflows", folder_name="FFE")
-    Then the MCP server exports the workflow
+    Then the MCP facade receives file contents from the server
+    And the facade writes files to the AI workspace at ".windsurf/workflows/FFE/"
     And returns success response with export path and file list
     And 16 files are created in ".windsurf/workflows/FFE/"
     And folder contains "_workflow.md" with workflow metadata
     And folder contains 15 activity files: FFE-01-*.md through FFE-15-*.md
+
+  ✅ Scenario: FOB-WORKFLOWS-EXPORT_IMPORT-01c Hosted server returns file contents, not a path
+    Given Maria's AI assistant uses the HTTP MCP facade against a hosted FOB server
+    When AI calls mcp.export_workflow_to_local(workflow_id=42, target_directory=".windsurf/workflows", folder_name="FFE")
+    Then the server response contains a "workflow_files" array with "filename" and "content" pairs
+    And the server response does not contain an "export_path" key
+    And the facade computes the local export path under ".windsurf/workflows/FFE/"
+    And the tool return value includes that local "export_path" and "files_created" list
 
   Scenario: FOB-WORKFLOWS-EXPORT_IMPORT-01b Export writes rules to sibling rules folder
     Given activities in the workflow link playbook rules "pytest" and "ruff"
