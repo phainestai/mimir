@@ -424,3 +424,102 @@ class TestWorkflowExportService:
         assert '## Skill' in content
         assert '## Artifacts Produced' in content
         assert '## Artifacts Consumed' in content
+
+
+@pytest.mark.django_db
+class TestGenerateWorkflowFiles:
+    """Test generate_workflow_files() — pure content generation, no filesystem I/O."""
+
+    @pytest.fixture
+    def playbook(self, django_user_model):
+        user = django_user_model.objects.create_user(
+            username='maria',
+            email='maria@example.com',
+            password='testpass123',
+        )
+        return Playbook.objects.create(
+            name='React Frontend Development',
+            description='Modern React patterns',
+            category='development',
+            author=user,
+            status='draft',
+            version='0.5',
+        )
+
+    @pytest.fixture
+    def workflow(self, playbook):
+        return Workflow.objects.create(
+            name='Frontend Development',
+            description='Complete frontend development process',
+            playbook=playbook,
+            abbreviation='FFE',
+            order=1,
+        )
+
+    @pytest.fixture
+    def activities(self, workflow, create_test_phases):
+        phases = create_test_phases(workflow.playbook)
+        activities = []
+        for i in range(1, 4):
+            activity = Activity.objects.create(
+                workflow=workflow,
+                name=f'Activity {i}',
+                guidance=f'Guidance for activity {i}',
+                order=i,
+                phase=phases['Foundation'] if i == 1 else phases['Implementation'],
+            )
+            activities.append(activity)
+        return activities
+
+    def test_generate_returns_file_contents(self, workflow, activities):
+        """Result has workflow_files, rule_files, folder_name; no filesystem side effects."""
+        result = WorkflowExportService.generate_workflow_files(
+            workflow_id=workflow.id,
+            folder_name='FFE',
+        )
+
+        assert result['workflow_id'] == workflow.id
+        assert result['workflow_name'] == workflow.name
+        assert result['folder_name'] == 'FFE'
+        assert 'workflow_files' in result
+        assert 'rule_files' in result
+        assert len(result['workflow_files']) == 4  # _workflow.md + 3 activities
+
+        workflow_md = next(
+            f for f in result['workflow_files'] if f['filename'] == '_workflow.md'
+        )
+        assert '# Frontend Development' in workflow_md['content']
+        assert 'Total Activities**: 3' in workflow_md['content']
+
+    def test_generate_with_rules(self, workflow, activities, playbook):
+        """Activities with linked rules produce rule_files entries with .mdc YAML front matter."""
+        rule = Rule.objects.create(
+            playbook=playbook,
+            title='Pytest rule',
+            slug='pytest-rule',
+            content='Use pytest for all tests.',
+            always_apply=True,
+        )
+        activities[0].rules.add(rule)
+
+        result = WorkflowExportService.generate_workflow_files(
+            workflow_id=workflow.id,
+            folder_name='FFE',
+        )
+
+        assert len(result['rule_files']) == 1
+        rule_file = result['rule_files'][0]
+        assert rule_file['filename'] == 'pytest-rule.mdc'
+        assert 'alwaysApply: true' in rule_file['content']
+        assert 'Use pytest' in rule_file['content']
+
+    def test_generate_default_folder_name(self, workflow, activities):
+        """Omitting folder_name uses slugified workflow name."""
+        result = WorkflowExportService.generate_workflow_files(workflow_id=workflow.id)
+
+        assert result['folder_name'] == 'Frontend_Development'
+
+    def test_generate_nonexistent_workflow_raises(self):
+        """ObjectDoesNotExist propagates for missing workflow."""
+        with pytest.raises(ObjectDoesNotExist):
+            WorkflowExportService.generate_workflow_files(workflow_id=99999)

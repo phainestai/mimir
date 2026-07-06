@@ -107,6 +107,71 @@ class WorkflowExportService:
         
         logger.info(f"Export completed: {len(files_created)} files created at {export_path}")
         return result
+
+    @staticmethod
+    def generate_workflow_files(
+        workflow_id: int,
+        folder_name: Optional[str] = None,
+    ) -> dict:
+        """
+        Generate workflow export file contents without filesystem I/O.
+
+        :param workflow_id: Workflow ID. Example: 42
+        :param folder_name: Folder name. Example: "FFE" (defaults to workflow slug)
+        :return: Dict with workflow_files and rule_files content lists
+        :raises ObjectDoesNotExist: If workflow does not exist
+        """
+        logger.info(f"Generating workflow files for workflow {workflow_id}")
+
+        try:
+            workflow = Workflow.objects.select_related('playbook').get(pk=workflow_id)
+        except ObjectDoesNotExist:
+            logger.error(f"Workflow {workflow_id} not found")
+            raise ObjectDoesNotExist(f"Workflow with ID {workflow_id} does not exist")
+
+        activities = list(
+            workflow.activities.select_related('agent').prefetch_related('skills', 'rules')
+            .prefetch_related(
+                'output_artifacts',
+                'input_artifacts__artifact',
+                'rules',
+            )
+            .order_by('order')
+        )
+        logger.info(f"Found {len(activities)} activities in workflow '{workflow.name}'")
+
+        if not folder_name:
+            folder_name = WorkflowExportService._slugify(workflow.name)
+
+        workflow_files = []
+        workflow_md = WorkflowExportService._generate_workflow_metadata_md(
+            workflow, len(activities)
+        )
+        workflow_files.append({"filename": "_workflow.md", "content": workflow_md})
+
+        slug_prefix = folder_name
+        for activity in activities:
+            filename, content = WorkflowExportService._generate_activity_md(
+                activity, activity.order, slug_prefix
+            )
+            workflow_files.append({"filename": filename, "content": content})
+
+        rule_files = WorkflowExportService._generate_rule_files_for_workflow(activities)
+
+        result = {
+            "workflow_id": workflow_id,
+            "workflow_name": workflow.name,
+            "folder_name": folder_name,
+            "workflow_files": workflow_files,
+            "rule_files": rule_files,
+        }
+        logger.info(
+            "Generated %s workflow files and %s rule files for workflow %s",
+            len(workflow_files),
+            len(rule_files),
+            workflow_id,
+        )
+        return result
     
     @staticmethod
     def _generate_workflow_metadata_md(workflow, activity_count: int) -> str:
@@ -299,6 +364,30 @@ No additional notes.
             logger.info('Exported rule file %s', out)
 
         return rules_dir, rel_created
+
+    @staticmethod
+    def _generate_rule_files_for_workflow(activities) -> list:
+        """
+        Build rule file contents for activities without filesystem I/O.
+
+        :returns: List of {"filename": str, "content": str} dicts
+        """
+        seen = {}
+        for activity in activities:
+            for rule in activity.rules.all():
+                seen[rule.id] = rule
+        if not seen:
+            logger.info('No rules linked to workflow activities; skipping rule generation')
+            return []
+
+        rule_files = []
+        for rule in sorted(seen.values(), key=lambda r: r.slug):
+            fname = f'{rule.slug}.mdc'
+            body = WorkflowExportService._format_rule_mdc(rule)
+            rule_files.append({"filename": fname, "content": body})
+            logger.info('Generated rule file content for %s', fname)
+
+        return rule_files
 
     @staticmethod
     def _format_rule_mdc(rule) -> str:

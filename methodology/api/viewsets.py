@@ -539,24 +539,15 @@ class WorkflowViewSet(viewsets.ModelViewSet):
         """
         logger.info(f'API: export_workflow_to_local called - workflow_id={pk}')
 
-        workflow = self.get_object()
-        target_directory = request.data.get('target_directory', '.windsurf/workflows')
+        self.get_object()
         folder_name = request.data.get('folder_name')
-        
+
         from methodology.services.workflow_export_service import WorkflowExportService
 
-        try:
-            result = WorkflowExportService.export_workflow_to_markdown(
-                workflow_id=pk,
-                target_directory=target_directory,
-                folder_name=folder_name,
-            )
-        except (PermissionError, OSError) as exc:
-            return Response(
-                {'error': f'Export to filesystem not supported on hosted server: {exc}',
-                 'code': 'NOT_SUPPORTED'},
-                status=status.HTTP_501_NOT_IMPLEMENTED
-            )
+        result = WorkflowExportService.generate_workflow_files(
+            workflow_id=pk,
+            folder_name=folder_name,
+        )
         return Response(result)
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])

@@ -9,6 +9,7 @@ No Django, no ORM — only the standard library + httpx.
 """
 import logging
 import os
+from pathlib import Path
 from typing import Literal, Optional
 
 from mcp_integration.facade.client import get_client, check_response
@@ -316,12 +317,57 @@ def export_workflow_to_local(
     :param folder_name: Folder name. Example: "FFE" (defaults to workflow slug)
     :return: Export result with file paths and counts
     """
-    logger.info(f'HTTP Tool: export_workflow_to_local workflow={workflow_id}')
-    payload = {"target_directory": target_directory}
+    logger.info(
+        'HTTP Tool: export_workflow_to_local workflow=%s target=%s folder=%s',
+        workflow_id,
+        target_directory,
+        folder_name,
+    )
+    payload = {}
     if folder_name:
         payload["folder_name"] = folder_name
     r = get_client().post(f"/api/workflows/{workflow_id}/export/", json=payload)
-    return check_response(r, "export_workflow_to_local")
+    data = check_response(r, "export_workflow_to_local")
+
+    wf_dir = Path(target_directory) / data["folder_name"]
+    wf_dir.mkdir(parents=True, exist_ok=True)
+    for file_entry in data["workflow_files"]:
+        (wf_dir / file_entry["filename"]).write_text(
+            file_entry["content"], encoding="utf-8"
+        )
+    logger.info(
+        'HTTP Tool: wrote %s workflow files to %s',
+        len(data["workflow_files"]),
+        wf_dir,
+    )
+
+    rule_files_written = []
+    if data.get("rule_files"):
+        rules_dir = Path(target_directory).resolve().parent / "rules"
+        rules_dir.mkdir(parents=True, exist_ok=True)
+        for file_entry in data["rule_files"]:
+            (rules_dir / file_entry["filename"]).write_text(
+                file_entry["content"], encoding="utf-8"
+            )
+            rule_files_written.append(file_entry["filename"])
+        logger.info(
+            'HTTP Tool: wrote %s rule files to %s',
+            len(rule_files_written),
+            rules_dir,
+        )
+
+    return {
+        "status": "exported",
+        "workflow_id": data["workflow_id"],
+        "workflow_name": data["workflow_name"],
+        "export_path": str(wf_dir),
+        "files_created": [f["filename"] for f in data["workflow_files"]],
+        "rule_files_created": rule_files_written,
+        "message": (
+            "Workflow exported successfully. Edit files locally and use "
+            "import_workflow_from_local to apply changes."
+        ),
+    }
 
 
 def import_workflow_from_local(

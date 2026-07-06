@@ -409,3 +409,125 @@ Run integration tests
         assert result['changes_count'] == 0, (
             f"Activity with null guidance must not be a false positive; got {result['changes_count']}"
         )
+
+
+@pytest.mark.django_db
+class TestWorkflowExportAPIShape:
+    """Integration tests for POST /api/workflows/{id}/export/ JSON response shape."""
+
+    @pytest.fixture
+    def user(self, django_user_model):
+        return django_user_model.objects.create_user(
+            username='maria',
+            email='maria@example.com',
+            password='testpass123',
+        )
+
+    @pytest.fixture
+    def client(self, user):
+        from rest_framework.test import APIClient
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client
+
+    @pytest.fixture
+    def playbook(self, user):
+        return Playbook.objects.create(
+            name='React Frontend Development',
+            description='Modern React patterns',
+            category='development',
+            author=user,
+            status='draft',
+            version='0.5',
+        )
+
+    @pytest.fixture
+    def workflow(self, playbook):
+        return Workflow.objects.create(
+            name='Frontend Development',
+            description='Complete frontend development process',
+            playbook=playbook,
+            abbreviation='FFE',
+            order=1,
+        )
+
+    @pytest.fixture
+    def activities(self, workflow, create_test_phases):
+        phases = create_test_phases(workflow.playbook)
+        activities = []
+        for i in range(1, 4):
+            activity = Activity.objects.create(
+                workflow=workflow,
+                name=f'Activity {i}',
+                guidance=f'Guidance for activity {i}',
+                order=i,
+                phase=phases['Foundation'] if i == 1 else phases['Implementation'],
+            )
+            activities.append(activity)
+        return activities
+
+    def test_export_endpoint_returns_json_not_files(self, client, workflow, activities):
+        """POST /export/ returns 200 with workflow_files list; no export_path key."""
+        response = client.post(
+            f'/api/workflows/{workflow.id}/export/',
+            {'folder_name': 'FFE'},
+            format='json',
+        )
+
+        assert response.status_code == 200
+        data = response.data
+        assert 'workflow_files' in data
+        assert isinstance(data['workflow_files'], list)
+        assert 'export_path' not in data
+        assert data['folder_name'] == 'FFE'
+
+    def test_export_endpoint_returns_correct_file_count(self, client, workflow, activities):
+        """len(workflow_files) == activity count + 1 (_workflow.md)."""
+        response = client.post(
+            f'/api/workflows/{workflow.id}/export/',
+            {'folder_name': 'FFE'},
+            format='json',
+        )
+
+        assert response.status_code == 200
+        assert len(response.data['workflow_files']) == len(activities) + 1
+
+    def test_export_endpoint_rule_files_in_response(self, client, workflow, activities, playbook):
+        """Activities with rules produce rule_files with correct .mdc content."""
+        from methodology.models import Rule
+
+        rule = Rule.objects.create(
+            playbook=playbook,
+            title='Pytest rule',
+            slug='pytest-rule',
+            content='Use pytest for all tests.',
+            always_apply=True,
+        )
+        activities[0].rules.add(rule)
+
+        response = client.post(
+            f'/api/workflows/{workflow.id}/export/',
+            {'folder_name': 'FFE'},
+            format='json',
+        )
+
+        assert response.status_code == 200
+        assert len(response.data['rule_files']) == 1
+        rule_file = response.data['rule_files'][0]
+        assert rule_file['filename'] == 'pytest-rule.mdc'
+        assert 'alwaysApply: true' in rule_file['content']
+        assert 'Use pytest' in rule_file['content']
+
+    def test_export_endpoint_requires_auth(self, workflow, activities):
+        """Unauthenticated POST returns 401 or 403."""
+        from rest_framework.test import APIClient
+
+        client = APIClient()
+        response = client.post(
+            f'/api/workflows/{workflow.id}/export/',
+            {'folder_name': 'FFE'},
+            format='json',
+        )
+
+        assert response.status_code in (401, 403)
