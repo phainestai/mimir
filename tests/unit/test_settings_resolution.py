@@ -16,9 +16,13 @@ from django.conf import settings
 class TestCurrentEnvironmentSettings:
     """Test that current environment settings are correctly configured."""
 
-    def test_test_environment_uses_in_memory_db(self):
-        """Test environment should use PostgreSQL (huginn-db container)."""
-        assert settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3'
+    def test_test_environment_uses_expected_db_backend(self):
+        """Test env uses Postgres when DATABASE_URL is set (CI), else SQLite locally."""
+        engine = settings.DATABASES['default']['ENGINE']
+        if os.getenv('DATABASE_URL'):
+            assert engine == 'django.db.backends.postgresql'
+        else:
+            assert engine == 'django.db.backends.sqlite3'
 
     def test_test_environment_has_debug_off(self):
         """Test environment should have DEBUG=False (closer to prod)."""
