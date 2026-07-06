@@ -86,6 +86,30 @@ def test_pre_deploy_backup_pg_dump_failure(
     mock_dumpdata_cmd.assert_not_called()
 
 
+@patch("methodology.management.commands.pre_deploy_backup.boto3")
+@patch("methodology.management.commands.pre_deploy_backup.subprocess")
+@patch("methodology.management.commands.pre_deploy_backup.call_command")
+def test_pre_deploy_backup_dumpdata_failure_is_non_fatal(
+    mock_dumpdata_cmd, mock_subprocess, mock_boto3, backup_env
+):
+    mock_proc = MagicMock()
+    mock_proc.returncode = 0
+    mock_proc.stdout = b"-- PostgreSQL dump\n"
+    mock_subprocess.run.return_value = mock_proc
+    mock_dumpdata_cmd.side_effect = CommandError(
+        "Unable to serialize database: column does not exist"
+    )
+
+    mock_s3 = MagicMock()
+    mock_boto3.client.return_value = mock_s3
+
+    out = StringIO()
+    call_command("pre_deploy_backup", stdout=out)
+
+    assert mock_s3.upload_fileobj.call_count == 2
+    assert "Backup complete" in out.getvalue()
+
+
 def test_pg_dump_output_is_gzipped(backup_env):
     """Verify gzip round-trip on sample dump bytes."""
     raw = b"-- PostgreSQL database dump\n"

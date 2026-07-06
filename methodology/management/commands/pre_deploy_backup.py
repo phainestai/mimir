@@ -97,15 +97,24 @@ class Command(BaseCommand):
         logger.info("pre_deploy_backup: pg_dump wrote %s bytes (gzip)", dest.stat().st_size)
 
     def _run_dumpdata(self, dest: Path) -> None:
+        """Write JSON fixture; non-fatal if schema lags the deploying image (pre-migrate)."""
         logger.info("pre_deploy_backup: running dumpdata exclude=%s", DUMP_EXCLUDE_APPS)
-        with dest.open("w", encoding="utf-8") as out:
-            call_command(
-                "dumpdata",
-                natural_foreign=True,
-                indent=2,
-                exclude=DUMP_EXCLUDE_APPS,
-                stdout=out,
+        try:
+            with dest.open("w", encoding="utf-8") as out:
+                call_command(
+                    "dumpdata",
+                    natural_foreign=True,
+                    indent=2,
+                    exclude=DUMP_EXCLUDE_APPS,
+                    stdout=out,
+                )
+        except CommandError as exc:
+            logger.warning(
+                "pre_deploy_backup: dumpdata skipped (schema may lag deploying revision): %s",
+                exc,
             )
+            dest.write_text("[]\n", encoding="utf-8")
+            return
         logger.info("pre_deploy_backup: dumpdata wrote %s bytes", dest.stat().st_size)
 
     def _upload_file(
