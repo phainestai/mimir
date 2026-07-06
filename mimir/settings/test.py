@@ -47,17 +47,29 @@ DEFAULT_FROM_EMAIL = "noreply@test.mimir"
 FRONTEND_URL = "http://testserver"
 
 
-# Database — PostgreSQL for proper concurrent transaction support
-# Uses the huginn-db container (postgres:16, localhost:5432, user=huginn)
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "mimir_test.db",
-        "OPTIONS": {
-            "timeout": 20,
-        },
+# Database — PostgreSQL in CI (DATABASE_URL); SQLite locally by default
+import os
+
+database_url = os.getenv('DATABASE_URL')
+if database_url:
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "mimir_test.db",
+            "OPTIONS": {
+                "timeout": 20,
+            },
+        }
+    }
 
 
 # Password hashers (faster for tests)

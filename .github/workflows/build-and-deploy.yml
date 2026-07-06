@@ -25,6 +25,7 @@ jobs:
     env:
       MIMIR_ENV: test
       DJANGO_SETTINGS_MODULE: mimir.settings
+      DATABASE_URL: postgresql://huginn:huginn@localhost:5432/mimir_test
 
     services:
       postgres:
