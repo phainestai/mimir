@@ -1,49 +1,60 @@
-<!-- Notification dropdown content (HTMX target) -->
-<div class="dropdown-menu dropdown-menu-end" style="min-width: 350px; max-width: 400px;" data-testid="notification-dropdown">
-    <div class="dropdown-header d-flex justify-content-between align-items-center">
-        <span>Notifications</span>
-        {% if unread_count > 0 %}
-        <form method="post" action="{% url 'notifications:mark_all_read' %}" class="d-inline">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-link btn-sm p-0" data-testid="mark-all-read-btn">
-                Mark all read
-            </button>
-        </form>
-        {% endif %}
-    </div>
-    <div class="dropdown-divider"></div>
-    
-    {% if notifications %}
-    <div style="max-height: 400px; overflow-y: auto;">
-        {% for notification in notifications %}
-        <a href="{% if notification.link %}{{ notification.link }}{% else %}#{% endif %}"
-           class="dropdown-item {% if not notification.is_read %}bg-light{% endif %}"
-           data-testid="notification-item-{{ notification.pk }}">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <div class="fw-semibold">{{ notification.title }}</div>
-                    {% if notification.message %}
-                    <div class="small text-muted">{{ notification.message|truncatewords:15 }}</div>
-                    {% endif %}
-                    <div class="small text-muted">{{ notification.created_at|timesince }} ago</div>
-                </div>
-                {% if not notification.is_read %}
-                <form method="post" action="{% url 'notifications:mark_read' notification.pk %}" class="ms-2">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-secondary" data-testid="mark-read-{{ notification.pk }}">
-                        <i class="fa-solid fa-check"></i>
-                    </button>
-                </form>
-                {% endif %}
-            </div>
-        </a>
-        {% if not forloop.last %}<div class="dropdown-divider"></div>{% endif %}
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="dropdown-item text-muted text-center py-4" data-testid="notifications-empty">
-        <i class="fa-solid fa-bell-slash fa-2x mb-2"></i>
-        <p class="mb-0">No notifications yet</p>
-    </div>
+<!-- Notification dropdown inner content (HTMX innerHTML target) -->
+<div class="dropdown-header d-flex justify-content-between align-items-center">
+    <span>Notifications</span>
+    {% if unread_count > 0 %}
+    <form method="post"
+          action="{% url 'notifications:mark_all_read' %}"
+          hx-post="{% url 'notifications:mark_all_read' %}"
+          hx-target="#notification-dropdown-container"
+          hx-swap="innerHTML"
+          class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-link btn-sm p-0" data-testid="mark-all-read-btn">
+            Mark all read
+        </button>
+    </form>
     {% endif %}
 </div>
+<div class="dropdown-divider"></div>
+
+{% if notifications %}
+<div class="notification-list">
+    {% for notification in notifications %}
+    <div class="dropdown-item {% if not notification.is_read %}bg-light{% endif %}"
+         data-testid="notification-item-{{ notification.pk }}">
+        <div class="d-flex justify-content-between align-items-start">
+            <a href="{% if notification.link %}{{ notification.link }}{% else %}#{% endif %}"
+               class="flex-grow-1 min-w-0 text-decoration-none text-reset">
+                <div class="fw-semibold">{{ notification.title }}</div>
+                {% if notification.message %}
+                <div class="small text-muted">{{ notification.message|truncatewords:15 }}</div>
+                {% endif %}
+                <div class="small text-muted">{{ notification.created_at|timesince }} ago</div>
+            </a>
+            {% if not notification.is_read %}
+            <form method="post"
+                  action="{% url 'notifications:mark_read' notification.pk %}"
+                  hx-post="{% url 'notifications:mark_read' notification.pk %}"
+                  hx-target="#notification-dropdown-container"
+                  hx-swap="innerHTML"
+                  class="ms-2 flex-shrink-0">
+                {% csrf_token %}
+                <button type="submit"
+                        class="btn btn-sm btn-outline-secondary"
+                        data-testid="mark-read-{{ notification.pk }}"
+                        aria-label="Mark as read">
+                    <i class="fa-solid fa-check"></i>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% if not forloop.last %}<div class="dropdown-divider"></div>{% endif %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="dropdown-item text-muted text-center py-4" data-testid="notifications-empty">
+    <i class="fa-solid fa-bell-slash fa-2x mb-2"></i>
+    <p class="mb-0">No notifications yet</p>
+</div>
+{% endif %}

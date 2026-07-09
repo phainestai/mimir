@@ -115,6 +115,20 @@
             margin-top: auto;
             flex-shrink: 0;
         }
+        /* Notification dropdown: allow vertical scroll, prevent horizontal overflow */
+        #notification-dropdown-container {
+            max-width: min(400px, calc(100vw - 1rem));
+            overflow-x: hidden;
+        }
+        #notification-dropdown-container .notification-list {
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        #notification-dropdown-container .dropdown-item {
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
     </style>
     
     <!-- Font Awesome Pro -->
@@ -309,26 +323,33 @@
                         </form>
                         <div id="global-search-suggestions-container"></div>
                     </li>
-                    <li class="nav-item dropdown d-flex align-items-center me-3">
+                    <li class="nav-item dropdown me-3">
                         <a class="nav-link text-white py-2 position-relative"
                            href="#"
                            id="notification-bell"
                            role="button"
-                           data-bs-toggle="dropdown"
+                           aria-haspopup="true"
                            aria-expanded="false"
                            data-testid="notification-bell"
                            hx-get="/notifications/"
-                           hx-trigger="click"
-                           hx-target="#notification-dropdown-container">
+                           hx-trigger="click prevent"
+                           hx-target="#notification-dropdown-container"
+                           hx-swap="innerHTML">
                             <i class="fas fa-bell"></i>
-                            {% if unread_notification_count > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                                  data-testid="notification-badge">
-                                {{ unread_notification_count }}
+                            <span id="notification-badge-container"
+                                  class="position-absolute top-0 start-100 translate-middle">
+                                {% if unread_notification_count > 0 %}
+                                <span class="badge rounded-pill bg-danger"
+                                      data-testid="notification-badge">
+                                    {{ unread_notification_count }}
+                                </span>
+                                {% endif %}
                             </span>
-                            {% endif %}
                         </a>
-                        <div id="notification-dropdown-container"></div>
+                        <div id="notification-dropdown-container"
+                             class="dropdown-menu dropdown-menu-end"
+                             style="min-width: 350px;"
+                             data-testid="notification-dropdown"></div>
                     </li>
                     <li class="nav-item dropdown d-flex align-items-center">
                         <a class="nav-link dropdown-toggle text-white py-2"
@@ -533,7 +554,7 @@
         document.body.addEventListener('htmx:configRequest', function (event) {
             var elt = event.detail.elt;
             if (!elt || !elt.closest) return;
-            var form = elt.closest('#feedback-form');
+            var form = elt.closest('form');
             if (!form) return;
             var tok = form.querySelector('[name=csrfmiddlewaretoken]');
             if (tok) {
@@ -595,6 +616,57 @@
                 });
             }
         });
+    </script>
+
+    <!-- Notification bell dropdown: menu shell lives in the DOM (like the user menu),
+         but items are lazy-loaded via HTMX. data-bs-toggle would fire before the
+         first fetch, so we call Bootstrap Dropdown.show() after each swap instead. -->
+    <script>
+        (function () {
+            var bell = document.getElementById('notification-bell');
+            var menu = document.getElementById('notification-dropdown-container');
+            if (!bell || !menu) return;
+
+            function getDropdown() {
+                return bootstrap.Dropdown.getOrCreateInstance(bell, { autoClose: 'outside' });
+            }
+
+            // Navbar scrolls with the page; block native mousedown focus scroll.
+            bell.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                bell.focus({ preventScroll: true });
+            });
+
+            // Click while open = close (skip refetch that would reopen via afterSwap).
+            document.body.addEventListener('htmx:beforeRequest', function (event) {
+                if (event.detail.elt !== bell) return;
+                if (bell.getAttribute('aria-expanded') === 'true') {
+                    event.preventDefault();
+                    var open = bootstrap.Dropdown.getInstance(bell);
+                    if (open) open.hide();
+                }
+            });
+
+            menu.addEventListener('htmx:afterSwap', function () {
+                getDropdown().show();
+            });
+
+            // Bootstrap autoClose is unreliable when the menu is opened post-HTMX
+            // without data-bs-toggle, so close explicitly on outside click / Escape.
+            document.addEventListener('click', function (event) {
+                if (bell.getAttribute('aria-expanded') !== 'true') return;
+                var dropdownRoot = bell.closest('.dropdown');
+                if (dropdownRoot && dropdownRoot.contains(event.target)) return;
+                var open = bootstrap.Dropdown.getInstance(bell);
+                if (open) open.hide();
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key !== 'Escape' || bell.getAttribute('aria-expanded') !== 'true') return;
+                var open = bootstrap.Dropdown.getInstance(bell);
+                if (open) open.hide();
+            });
+        })();
     </script>
 
     {% block extra_js %}{% endblock %}

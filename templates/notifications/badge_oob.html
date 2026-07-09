@@ -1,0 +1,5 @@
+<span id="notification-badge-container" hx-swap-oob="innerHTML">
+{% if unread_count > 0 %}
+<span class="badge rounded-pill bg-danger" data-testid="notification-badge">{{ unread_count }}</span>
+{% endif %}
+</span>

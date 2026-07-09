@@ -139,7 +139,7 @@ class TestNotificationViews:
         assert response.status_code == 200
         assert b"Test Notification" in response.content
         assert b"Test message" in response.content
-        assert b'data-testid="notification-dropdown"' in response.content
+        assert b'data-testid="notification-item-' in response.content
 
     def test_notification_list_empty_state(self):
         """GET /notifications/ should show empty state when no notifications."""
@@ -175,6 +175,43 @@ class TestNotificationViews:
         notification.refresh_from_db()
         assert notification.is_read
 
+    def test_mark_read_endpoint_htmx_refreshes_dropdown_and_badge(self):
+        """HTMX mark-read should return refreshed dropdown HTML and badge OOB swap."""
+        user = User.objects.create_user(username="notif_user8b", password="pass", email="user8b@test.com")
+        client = Client()
+        client.force_login(user)
+
+        notification = NotificationService.create(
+            user=user,
+            notification_type=Notification.TYPE_TEAM_INVITE,
+            title="Unread alert",
+            message="Please review",
+            link="/teams/1/",
+        )
+        NotificationService.create(
+            user=user,
+            notification_type=Notification.TYPE_TEAM_INVITE,
+            title="Second alert",
+            message="",
+            link="",
+        )
+
+        response = client.post(
+            reverse("notifications:mark_read", args=[notification.pk]),
+            HTTP_HX_REQUEST="true",
+        )
+        assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert "Unread alert" in content
+        assert 'data-testid="notification-item-' in content
+        assert 'id="notification-badge-container"' in content
+        assert 'hx-swap-oob="innerHTML"' in content
+        assert 'data-testid="notification-badge">1</span>' in content.replace(" ", "")
+
+        notification.refresh_from_db()
+        assert notification.is_read
+        assert NotificationService.get_unread_count(user) == 1
+
     def test_mark_all_read_endpoint(self):
         """POST /notifications/read-all/ should mark all notifications as read."""
         user = User.objects.create_user(username="notif_user9", password="pass", email="user9@test.com")
@@ -196,6 +233,30 @@ class TestNotificationViews:
         assert data["success"] is True
         assert data["count"] == 3
         assert data["unread_count"] == 0
+
+        assert NotificationService.get_unread_count(user) == 0
+
+    def test_mark_all_read_endpoint_htmx_clears_badge(self):
+        """HTMX mark-all-read should return dropdown HTML with empty badge OOB."""
+        user = User.objects.create_user(username="notif_user9b", password="pass", email="user9b@test.com")
+        client = Client()
+        client.force_login(user)
+
+        for i in range(3):
+            NotificationService.create(
+                user=user,
+                notification_type=Notification.TYPE_TEAM_INVITE,
+                title=f"Notification {i}",
+                message="",
+                link="",
+            )
+
+        response = client.post(reverse("notifications:mark_all_read"), HTTP_HX_REQUEST="true")
+        assert response.status_code == 200
+        content = response.content.decode("utf-8")
+        assert 'id="notification-badge-container"' in content
+        assert 'data-testid="notification-badge"' not in content
+        assert 'data-testid="mark-all-read-btn"' not in content
 
         assert NotificationService.get_unread_count(user) == 0
 
