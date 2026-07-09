@@ -314,7 +314,7 @@
                            href="#"
                            id="notification-bell"
                            role="button"
-                           data-bs-toggle="dropdown"
+                           aria-haspopup="true"
                            aria-expanded="false"
                            data-testid="notification-bell"
                            hx-get="/notifications/"
@@ -595,6 +595,54 @@
                 });
             }
         });
+    </script>
+
+    <!-- Notification bell dropdown: content is lazy-loaded via HTMX, so the menu
+         element doesn't exist in the DOM until after the first fetch. Bootstrap's
+         data-bs-toggle would look for it too early and silently no-op, so
+         visibility is driven directly by the HTMX swap + a `show` class instead. -->
+    <script>
+        (function () {
+            var bell = document.getElementById('notification-bell');
+            var container = document.getElementById('notification-dropdown-container');
+            if (!bell || !container) return;
+
+            function closeNotificationDropdown() {
+                var menu = container.querySelector('.dropdown-menu');
+                if (menu) menu.classList.remove('show');
+                bell.setAttribute('aria-expanded', 'false');
+            }
+
+            function openNotificationDropdown() {
+                var menu = container.querySelector('.dropdown-menu');
+                if (menu) menu.classList.add('show');
+                bell.setAttribute('aria-expanded', 'true');
+            }
+
+            // A click while the dropdown is open is a "close" gesture: skip the
+            // refetch so it doesn't immediately reopen via afterSwap below.
+            document.body.addEventListener('htmx:beforeRequest', function (event) {
+                if (event.detail.elt !== bell) return;
+                if (bell.getAttribute('aria-expanded') === 'true') {
+                    event.preventDefault();
+                    closeNotificationDropdown();
+                }
+            });
+
+            container.addEventListener('htmx:afterSwap', openNotificationDropdown);
+
+            document.addEventListener('click', function (event) {
+                if (bell.getAttribute('aria-expanded') !== 'true') return;
+                if (bell.contains(event.target) || container.contains(event.target)) return;
+                closeNotificationDropdown();
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && bell.getAttribute('aria-expanded') === 'true') {
+                    closeNotificationDropdown();
+                }
+            });
+        })();
     </script>
 
     {% block extra_js %}{% endblock %}
