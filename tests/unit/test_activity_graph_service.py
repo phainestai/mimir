@@ -134,6 +134,39 @@ class TestActivityGraphService:
         # All nodes should use uniform lightblue color
         assert svg is not None
         assert 'lightblue' in svg
+
+    def test_graph_typography_uses_stock_montserrat_by_default(self, settings):
+        """SVG text uses Montserrat when UI_BRAND is unset (stock Mimir)."""
+        settings.UI_BRAND = ''
+        Activity.objects.create(
+            workflow=self.workflow,
+            name='Typography Activity',
+            guidance='Test',
+            order=1,
+        )
+
+        svg = self.service.generate_activities_graph(self.workflow, self.playbook)
+
+        assert svg is not None
+        assert 'Montserrat' in svg
+        assert 'font-family="Arial"' not in svg
+        assert "font-family='Arial'" not in svg
+
+    def test_graph_typography_uses_ibm_plex_when_professional_brand(self, settings):
+        """SVG text uses IBM Plex Sans when MIMIR_UI_BRAND / UI_BRAND is professional."""
+        settings.UI_BRAND = 'professional'
+        Activity.objects.create(
+            workflow=self.workflow,
+            name='Professional Typography',
+            guidance='Test',
+            order=1,
+        )
+
+        svg = self.service.generate_activities_graph(self.workflow, self.playbook)
+
+        assert svg is not None
+        assert 'IBM Plex Sans' in svg
+        assert 'font-family="Arial"' not in svg
     
     def test_clickable_nodes_have_href_attributes(self):
         """Test activity nodes have href attributes for clickability."""

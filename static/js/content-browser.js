@@ -966,7 +966,8 @@ function _renderStructureTree() {
   const wfNodes = window.cy.nodes('[type="workflow"]').sort((a, b) => a.data('entity_pk') - b.data('entity_pk'));
   if (wfNodes.length === 0) { container.innerHTML = ''; return; }
 
-  let html = '<div class="small fw-semibold text-muted text-uppercase mb-1 mt-2">Structure</div>';
+  // Section label stays compact; row labels inherit panel 0.875rem (no nested .small).
+  let html = '<div class="fw-semibold text-muted text-uppercase mb-1 mt-2" style="font-size:0.75rem;">Structure</div>';
   wfNodes.forEach(wfNode => {
     const wfId    = wfNode.id();
     const abbr    = (wfNode.data('meta') || {}).abbreviation || '';
@@ -994,9 +995,9 @@ function _renderStructureTree() {
       <div class="mb-1">
         <div class="d-flex align-items-center gap-1 px-1 py-1 rounded browser-tree-row"
              data-node-id="${wfId}" data-testid="browser-tree-row" style="cursor:pointer;">
-          <span class="browser-tree-toggle small text-muted" data-section="${sectionId}">▸</span>
-          ${abbr ? `<span class="small text-muted" style="min-width:2.2em;">${abbr}</span>` : ''}
-          <span class="small fw-semibold text-truncate" title="${wfLabel}">${wfLabel}</span>
+          <span class="browser-tree-toggle text-muted" data-section="${sectionId}">▸</span>
+          ${abbr ? `<span class="text-muted" style="min-width:2.2em;font-size:0.8em;">${abbr}</span>` : ''}
+          <span class="fw-semibold text-truncate" title="${wfLabel}">${wfLabel}</span>
         </div>
         <div id="${sectionId}" class="ps-3" style="display:none;">`;
 
@@ -1015,8 +1016,8 @@ function _renderStructureTree() {
       html += `
           <div class="d-flex align-items-center gap-1 px-1 py-1 rounded browser-tree-row"
                data-node-id="${actId}" data-testid="browser-tree-row" style="cursor:pointer;">
-            ${code ? `<span class="small text-muted" style="min-width:2.8em;">${code}</span>` : ''}
-            <span class="small text-truncate flex-grow-1" title="${actLabel}">${actLabel}</span>
+            ${code ? `<span class="text-muted" style="min-width:2.8em;font-size:0.8em;">${code}</span>` : ''}
+            <span class="text-truncate flex-grow-1" title="${actLabel}">${actLabel}</span>
             ${chip}
           </div>`;
     });
@@ -1223,15 +1224,15 @@ function _renderResourceTree(node) {
 
   const anyResources = _RESOURCE_ORDER.some(t => grouped[t].size > 0);
   if (!anyResources) {
-    container.innerHTML = '<span class="small text-muted">No resources linked.</span>';
+    container.innerHTML = '<span class="text-muted">No resources linked.</span>';
     return;
   }
 
-  let html = '<div class="small fw-semibold text-muted text-uppercase mb-1">Resources</div>';
+  let html = '<div class="fw-semibold text-muted text-uppercase mb-1" style="font-size:0.75rem;">Resources</div>';
   _RESOURCE_ORDER.forEach(rType => {
     if (grouped[rType].size === 0) return;
     const label = rType.charAt(0).toUpperCase() + rType.slice(1) + 's';
-    html += `<div class="small text-muted mt-1 mb-1">${label}</div>`;
+    html += `<div class="text-muted mt-1 mb-1" style="font-size:0.8em;">${label}</div>`;
     grouped[rType].forEach((rNode, _epk) => {
       const icon  = _RESOURCE_ICONS[rType] || '';
       const label = rNode.data('label') || '';
@@ -1241,7 +1242,7 @@ function _renderResourceTree(node) {
              data-node-id="${nId}" data-testid="browser-resource-row" style="cursor:pointer;"
              title="${label}">
           <span>${icon}</span>
-          <span class="small text-truncate">${label}</span>
+          <span class="text-truncate">${label}</span>
         </div>`;
     });
   });
@@ -1265,7 +1266,7 @@ function _renderResourceTree(node) {
  */
 function _clearResourceTree() {
   const container = document.querySelector('[data-testid="browser-resource-tree"]');
-  if (container) container.innerHTML = '<span class="small text-muted">Select a Workflow to see its resources.</span>';
+  if (container) container.innerHTML = '<span class="text-muted">Select a Workflow to see its resources.</span>';
 }
 
 /**
@@ -1689,12 +1690,38 @@ function _cssVar(name, fallback) {
 
 /** @returns {string} Selection ring colour for the active theme */
 function _selectionBorderColor() {
-  return _cssVar('--mimir-graph-select', '#0d7ea8');
+  return _cssVar('--mimir-graph-select', '#0d6efd');
 }
 
 /** @returns {string} Uniform edge colour for the active theme */
 function _edgeColor() {
-  return _cssVar('--mimir-graph-edge', '#5a6575');
+  return _cssVar('--mimir-graph-edge', '#6c757d');
+}
+
+/**
+ * UI font stack from design tokens (stock Montserrat / brand overrides).
+ * Appends Font Awesome so node icon glyphs still render in labels.
+ *
+ * @returns {string}
+ */
+function _graphFontFamily() {
+  const base = _cssVar(
+    '--mimir-graph-font',
+    'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+  );
+  return `${base}, "Font Awesome 6 Free", "Font Awesome 6 Pro"`;
+}
+
+/**
+ * Compound / parent label font (no Font Awesome — text only).
+ *
+ * @returns {string}
+ */
+function _graphLabelFontFamily() {
+  return _cssVar(
+    '--mimir-graph-font',
+    'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+  );
 }
 
 /**
@@ -1746,7 +1773,7 @@ function _initThemeSync() {
  *   agent       → ellipse (unchanged)
  *   rule        → cut-rectangle
  *
- * Typography: IBM Plex Sans, weight 600 structural / 400 resource.
+ * Typography: --mimir-graph-font (stock Montserrat / brand pack), weight 600.
  * Borders: 2px solid on all node types.
  *
  * @returns {object[]} Cytoscape stylesheet array
@@ -1776,7 +1803,7 @@ function _buildEnhancedNodeStyle(type) {
     'label': ele => `${icon} ${ele.data('label') || ''}`,
     'text-valign': 'center',
     'text-halign': 'center',
-    'font-family': 'IBM Plex Sans, "Font Awesome 6 Free", "Font Awesome 6 Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'font-family': _graphFontFamily(),
     'font-weight': 600,
     'text-wrap': 'ellipsis',
     'border-width': 2,
@@ -2393,7 +2420,7 @@ function _buildFontRenderingGuards() {
  *     'text-margin-x': 8,
  *     'text-margin-y': 4,
  *     'font-size': 20,
- *     'font-family': 'IBM Plex Sans, system-ui',
+ *     'font-family': 'Montserrat, system-ui',
  *     'font-weight': 600,
  *     'text-transform': 'none',
  *     'text-background-color': '#ffffff',
@@ -2412,7 +2439,7 @@ function _buildCompoundLabelStyleV2() {
     'text-margin-x': 0,
     'text-margin-y': 4,
     'font-size': 20,
-    'font-family': 'IBM Plex Sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'font-family': _graphLabelFontFamily(),
     'font-weight': 600,
     'text-transform': 'none',
     'text-max-width': 200,

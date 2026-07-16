@@ -7,10 +7,22 @@ Supports phase grouping, clickable nodes, and status-based styling.
 
 import logging
 import graphviz
+from django.conf import settings
 from django.urls import reverse
 from methodology.models import Activity
 
 logger = logging.getLogger(__name__)
+
+
+def _graphviz_fontname():
+    """Return Graphviz fontname for the active UI brand pack.
+
+    :returns: Font family name string for Graphviz ``fontname``.
+    """
+    brand = (getattr(settings, 'UI_BRAND', '') or '').strip().lower()
+    if brand == 'professional':
+        return 'IBM Plex Sans'
+    return 'Montserrat'
 
 
 class ActivityGraphService:
@@ -64,11 +76,18 @@ class ActivityGraphService:
             return None
         
         try:
-            # Create directed graph
+            # Graphviz font follows UI brand (stock Montserrat / professional IBM Plex).
+            graph_font = _graphviz_fontname()
+            logger.info(
+                "Activity graph font set to %s for workflow %s (ui_brand=%s)",
+                graph_font,
+                workflow.pk,
+                getattr(settings, 'UI_BRAND', ''),
+            )
             dot = graphviz.Digraph(comment=f'{workflow.name} Activities')
-            dot.attr(rankdir='LR')  # Left to right layout
-            dot.attr('node', shape='box', style='filled,rounded', fontname='Arial')
-            dot.attr('edge', fontname='Arial')
+            dot.attr(rankdir='LR', fontname=graph_font)  # Left to right; graph/cluster labels
+            dot.attr('node', shape='box', style='filled,rounded', fontname=graph_font)
+            dot.attr('edge', fontname=graph_font)
             
             # Check if activities have phases
             has_phases = self._has_phases(activities)
@@ -81,7 +100,12 @@ class ActivityGraphService:
                 for phase_name, phase_activities in phase_groups.items():
                     cluster_name = f'cluster_{phase_name.lower().replace(" ", "_")}'
                     with dot.subgraph(name=cluster_name) as subg:
-                        subg.attr(label=phase_name, style='filled', color='lightgrey')
+                        subg.attr(
+                            label=phase_name,
+                            style='filled',
+                            color='lightgrey',
+                            fontname=graph_font,
+                        )
                         
                         # Add activity nodes within this phase
                         for activity in phase_activities:
