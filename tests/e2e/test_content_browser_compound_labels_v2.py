@@ -84,11 +84,11 @@ class TestCompoundLabelVisibility:
         assert opacity > 0, f"Expected text-background-opacity > 0, got {opacity}"
 
     def test_workflow_compound_background_colour(self, graph_page: Page):
-        """Workflow compound nodes have background '#eef2ff'."""
+        """Workflow compound nodes have theme cool-cyan wash background."""
         bg = graph_page.evaluate("() => _compoundBackgroundForType('workflow')")
-        assert bg == '#eef2ff', f"Expected '#eef2ff' for workflow compound, got '{bg}'"
+        assert bg == '#e4f2f7', f"Expected '#e4f2f7' for workflow compound, got '{bg}'"
 
     def test_activity_compound_background_colour_distinct_from_workflow(self, graph_page: Page):
-        """In workflow-activity mode, activity compound nodes have background '#d4edda'."""
+        """In workflow-activity mode, activity compound nodes have mint wash background."""
         bg = graph_page.evaluate("() => _compoundBackgroundForType('activity')")
-        assert bg == '#d4edda', f"Expected '#d4edda' for activity compound, got '{bg}'"
+        assert bg == '#e2f3ec', f"Expected '#e2f3ec' for activity compound, got '{bg}'"

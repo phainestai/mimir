@@ -2,8 +2,9 @@
 E2E tests for Content Browser enhanced node visual styling (FOB-38).
 
 Covers:
-  - FOB-CONTENT-BROWSER-38: Uniform round-rectangle shape, pastel Bootstrap 5.3 palette,
-    FontAwesome icons per type, uniform black (#212529) edges, no text overflow.
+  - FOB-CONTENT-BROWSER-38: Uniform round-rectangle shape, cool cyan-family palette
+    (theme tokens --mimir-graph-*), FontAwesome icons per type, uniform theme-aware
+    edges, no text overflow.
 
 Checkpoint command:
   pytest tests/e2e/test_content_browser_node_styles.py -x
@@ -17,6 +18,18 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 LOGIN_URL_PATH = '/auth/user/login/'
+
+# Light-theme graph tokens (must match design-system.css [data-bs-theme="light"]).
+LIGHT_NODE_BACKGROUNDS = {
+    'playbook': '#d4eef7',
+    'workflow': '#cfe8f2',
+    'activity': '#d4efe8',
+    'artifact': '#f5edd8',
+    'skill': '#f3e4d6',
+    'agent': '#d6eef4',
+    'rule': '#e4e8ed',
+}
+LIGHT_EDGE = '#5a6575'
 
 
 def _login(page: Page, live_server_url: str, username: str, password: str) -> None:
@@ -75,11 +88,11 @@ class TestNodeShape:
             assert style['shape'] == 'round-rectangle', \
                 f"{node_type} should use round-rectangle, got {style.get('shape')}"
 
-    def test_all_node_types_use_montserrat_font(self, graph_page: Page):
-        """All nodes in cy stylesheet specify Montserrat as font-family."""
+    def test_all_node_types_use_ibm_plex_sans_font(self, graph_page: Page):
+        """All nodes in cy stylesheet specify IBM Plex Sans as font-family."""
         for node_type in ('playbook', 'workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'):
             style = _get_stylesheet_for_type(graph_page, node_type)
-            assert 'Montserrat' in style['font-family'], f"{node_type} missing Montserrat font"
+            assert 'IBM Plex Sans' in style['font-family'], f"{node_type} missing IBM Plex Sans font"
 
     def test_all_nodes_have_2px_border_width(self, graph_page: Page):
         """All node selectors specify border-width 2 in Cytoscape stylesheet."""
@@ -88,24 +101,16 @@ class TestNodeShape:
             assert style['border-width'] == 2, f"{node_type} border-width should be 2"
 
 
-# ── S47: Pastel Bootstrap 5.3 palette ─────────────────────────────────────────
+# ── S47: Theme-aware cool cyan palette ────────────────────────────────────────
 
 @pytest.mark.django_db(transaction=True)
 class TestNodePastelPalette:
-    """FOB-38: Node background colours must be pastel Bootstrap 5.3 tints (S47)."""
+    """FOB-38: Node backgrounds match --mimir-graph-* light theme tokens."""
 
-    EXPECTED_BACKGROUNDS = {
-        'playbook':  '#e0cffc',
-        'workflow':  '#cfe2ff',
-        'activity':  '#d1e7dd',
-        'artifact':  '#fff3cd',
-        'skill':     '#ffe5d0',
-        'agent':     '#cff4fc',
-        'rule':      '#e2e3e5',
-    }
+    EXPECTED_BACKGROUNDS = LIGHT_NODE_BACKGROUNDS
 
     def test_all_node_types_use_pastel_backgrounds(self, graph_page: Page):
-        """Each node type background-color matches the pastel Bootstrap 5.3 palette."""
+        """Each node type background-color matches the cool cyan-family light palette."""
         for node_type, expected_hex in self.EXPECTED_BACKGROUNDS.items():
             style = _get_stylesheet_for_type(graph_page, node_type)
             bg = style.get('background-color', '').lower()
@@ -121,35 +126,38 @@ class TestNodePastelPalette:
                 f"{node_type} should not use white text on pastel background, got {color}"
 
 
-# ── S47: Uniform black edges ───────────────────────────────────────────────────
+# ── S47: Uniform theme-aware edges ─────────────────────────────────────────────
 
 @pytest.mark.django_db(transaction=True)
 class TestEdgeColour:
-    """FOB-38: All edges must use uniform black #212529 colour (S47)."""
+    """FOB-38: All edges use uniform theme slate (--mimir-graph-edge)."""
 
-    def test_edges_use_black_line_colour(self, graph_page: Page):
-        """All edges rendered in cy have line-color #212529 (S47)."""
-        non_black = graph_page.evaluate("""
-        () => window.cy.edges().filter(e => {
-            const c = e.style('line-color').toLowerCase();
-            return !c.includes('#212529') && !c.includes('rgb(33, 37, 41)');
-        }).length
+    def test_edges_use_theme_line_colour(self, graph_page: Page):
+        """All edges rendered in cy have the light-theme edge colour."""
+        non_matching = graph_page.evaluate(f"""
+        () => {{
+            const expected = '{LIGHT_EDGE}'.toLowerCase();
+            return window.cy.edges().filter(e => {{
+                const c = e.style('line-color').toLowerCase();
+                return !c.includes(expected) && !c.includes('rgb(90, 101, 117)');
+            }}).length;
+        }}
         """)
-        assert non_black == 0, f"{non_black} edges do not use black line colour"
+        assert non_matching == 0, f"{non_matching} edges do not use theme edge colour {LIGHT_EDGE}"
 
     def test_build_edge_style_returns_array(self, graph_page: Page):
         """_buildEdgeStyle() returns an array of stylesheet objects (S47)."""
         result = graph_page.evaluate("() => Array.isArray(window._buildEdgeStyle())")
         assert result is True, "_buildEdgeStyle should return an array"
 
-    def test_build_edge_style_contains_black_edge_entry(self, graph_page: Page):
-        """_buildEdgeStyle() includes an entry with line-color #212529 (S47)."""
+    def test_build_edge_style_contains_theme_edge_entry(self, graph_page: Page):
+        """_buildEdgeStyle() includes an entry with the theme edge colour."""
         entries = graph_page.evaluate("() => window._buildEdgeStyle()")
-        found_black = any(
-            '#212529' in str(entry.get('style', {}).get('line-color', ''))
+        found = any(
+            LIGHT_EDGE in str(entry.get('style', {}).get('line-color', ''))
             for entry in entries
         )
-        assert found_black, "No black edge entry found in _buildEdgeStyle output"
+        assert found, f"No theme edge entry ({LIGHT_EDGE}) found in _buildEdgeStyle output"
 
 
 # ── S47: FA icons in node labels ───────────────────────────────────────────────

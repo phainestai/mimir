@@ -108,7 +108,7 @@ class TestCompoundViewActivation:
         assert orphan_activities == 0, f"{orphan_activities} activity nodes have no parent in compound mode"
 
     def test_compound_box_has_light_blue_background(self, graph_page: Page):
-        """Compound workflow node background-color is #eef2ff in Cytoscape stylesheet."""
+        """Compound workflow node background-color uses theme token (cool cyan wash)."""
         graph_page.click('[data-testid="browser-compound-toggle"]')
         graph_page.wait_for_function("() => window._compoundViewOn === true")
         compound_style = graph_page.evaluate("""
@@ -117,10 +117,10 @@ class TestCompoundViewActivation:
                 return styles[0] ? styles[0].style['background-color'] : null;
             }
         """)
-        assert compound_style == '#eef2ff', f"Expected #eef2ff, got {compound_style}"
+        assert compound_style == '#e4f2f7', f"Expected #e4f2f7, got {compound_style}"
 
     def test_compound_box_has_primary_blue_border(self, graph_page: Page):
-        """Compound workflow node border-color is #0d6efd in Cytoscape stylesheet."""
+        """Compound workflow node border-color uses theme primary cyan."""
         graph_page.click('[data-testid="browser-compound-toggle"]')
         graph_page.wait_for_function("() => window._compoundViewOn === true")
         border_color = graph_page.evaluate("""
@@ -129,7 +129,7 @@ class TestCompoundViewActivation:
                 return styles[0] ? styles[0].style['border-color'] : null;
             }
         """)
-        assert border_color == '#0d6efd', f"Expected #0d6efd, got {border_color}"
+        assert border_color == '#0d7ea8', f"Expected #0d7ea8, got {border_color}"
 
     def test_compound_box_label_top_left(self, graph_page: Page):
         """Compound workflow node uses text-valign:top and text-halign:left for label."""

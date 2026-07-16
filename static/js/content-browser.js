@@ -131,11 +131,10 @@ function _toggleLayoutDropdown() {
 
   const panel = document.createElement('div');
   panel.setAttribute('data-testid', 'browser-layout-dropdown');
+  panel.className = 'browser-menu-dropdown';
   const rect = btn.getBoundingClientRect();
   panel.style.cssText =
-    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
-    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:180px;max-height:60vh;overflow-y:auto;';
+    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;`;
 
   // Build grouped content from _LAYOUT_CATALOG.
   const seenGroups = [];
@@ -148,7 +147,7 @@ function _toggleLayoutDropdown() {
   seenGroups.forEach(g => {
     const header = document.createElement('div');
     header.setAttribute('data-testid', `browser-layout-group-${g.slug}`);
-    header.style.cssText = 'padding:4px 12px 2px;font-size:0.7rem;font-weight:600;color:#6c757d;text-transform:uppercase;letter-spacing:0.05em;';
+    header.className = 'browser-menu-group';
     header.textContent = g.name;
     panel.appendChild(header);
 
@@ -157,9 +156,7 @@ function _toggleLayoutDropdown() {
       item.setAttribute('data-testid', `browser-layout-option-${entry.key}`);
       item.type = 'button';
       const isActive = _currentLayout === entry.key;
-      item.style.cssText =
-        'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
-        (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
+      item.className = 'browser-menu-item' + (isActive ? ' is-active' : '');
       item.textContent = entry.label + (isActive ? ' ✓' : '');
       item.addEventListener('click', () => {
         panel.remove();
@@ -596,7 +593,7 @@ function _cytoscapeStyle() {
     { selector: 'node[type = "rule"]',
       style: { ..._nodeBase, 'background-color': '#6c757d', 'shape': 'ellipse' } },
     { selector: 'node:selected',
-      style: { 'border-width': 3, 'border-color': '#dc3545' } },
+      style: { 'border-width': 3, 'border-color': _selectionBorderColor() } },
     // Edges — taxi (right-angle) routing for clean hierarchical layout.
     // 'contains' and 'predecessor' use downward/auto taxi; resource edges use
     // a shorter turn so they branch off activities cleanly.
@@ -1290,7 +1287,7 @@ function _openDetailPanel(node) {
     const nodeIsVisible = node.style('visibility') !== 'hidden';
     if (nodeIsVisible) {
       window.cy.nodes().forEach(n => { n.style('border-width', 0); });
-      node.style({ 'border-width': 3, 'border-color': '#dc3545' });
+      node.style({ 'border-width': 3, 'border-color': _selectionBorderColor() });
     }
   }
   _currentPanelNode = node;
@@ -1605,6 +1602,9 @@ function _init() {
   const nodeSearch = document.querySelector('[data-testid="browser-search-input"]');
   if (nodeSearch) nodeSearch.addEventListener('input', e => _applySearch(e.target.value));
 
+  // Theme toggle → restyle Cytoscape (safe before cy exists).
+  _initThemeSync();
+
   if (!pk) {
     _showEmptyState();
     return;
@@ -1667,8 +1667,71 @@ window.addEventListener('popstate', _onPopState);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // S38 — Enhanced node visual styling (FOB-38)
-// All functions below are skeletons — implementation fills in the bodies.
+// Theme-aware: colours come from --mimir-graph-* CSS variables on data-bs-theme.
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Read a CSS custom property from the document root.
+ *
+ * @param {string} name — e.g. '--mimir-graph-edge'
+ * @param {string} fallback
+ * @returns {string}
+ */
+function _cssVar(name, fallback) {
+  try {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+  } catch (err) {
+    console.log('content-browser: css var read failed', { name: name, err: String(err) });
+    return fallback;
+  }
+}
+
+/** @returns {string} Selection ring colour for the active theme */
+function _selectionBorderColor() {
+  return _cssVar('--mimir-graph-select', '#0d7ea8');
+}
+
+/** @returns {string} Uniform edge colour for the active theme */
+function _edgeColor() {
+  return _cssVar('--mimir-graph-edge', '#5a6575');
+}
+
+/**
+ * Rebuild Cytoscape stylesheet from current theme tokens (light/dark toggle).
+ * Preserves selection border on the open detail panel node when present.
+ */
+function _reapplyCytoscapeTheme() {
+  if (!window.cy) return;
+  const theme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+  console.log('content-browser: reapplying cytoscape theme styles', { theme: theme });
+  const style = _compoundLevel !== 'none'
+    ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyleForLevel(_compoundLevel))
+    : _cytoscapeStyleEnhanced();
+  window.cy.style(style);
+  if (_currentPanelNode && _currentPanelNode.length) {
+    _currentPanelNode.style({ 'border-width': 3, 'border-color': _selectionBorderColor() });
+  }
+}
+
+/**
+ * Watch data-bs-theme changes and restyle the graph when light/dark toggles.
+ * Called once from _init().
+ */
+function _initThemeSync() {
+  if (window._mimirBrowserThemeObserver) return;
+  const observer = new MutationObserver(mutations => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && m.attributeName === 'data-bs-theme') {
+        _reapplyCytoscapeTheme();
+        break;
+      }
+    }
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+  window._mimirBrowserThemeObserver = observer;
+  console.log('content-browser: theme sync observer attached');
+}
 
 /**
  * Build the Cytoscape stylesheet with enhanced node shapes and Mimir design-aligned
@@ -1683,7 +1746,7 @@ window.addEventListener('popstate', _onPopState);
  *   agent       → ellipse (unchanged)
  *   rule        → cut-rectangle
  *
- * Typography: Montserrat font, weight 600 structural / 400 resource.
+ * Typography: IBM Plex Sans, weight 600 structural / 400 resource.
  * Borders: 2px solid on all node types.
  *
  * @returns {object[]} Cytoscape stylesheet array
@@ -1713,7 +1776,7 @@ function _buildEnhancedNodeStyle(type) {
     'label': ele => `${icon} ${ele.data('label') || ''}`,
     'text-valign': 'center',
     'text-halign': 'center',
-    'font-family': 'Montserrat, "Font Awesome 6 Free", "Font Awesome 6 Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'font-family': 'IBM Plex Sans, "Font Awesome 6 Free", "Font Awesome 6 Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     'font-weight': 600,
     'text-wrap': 'ellipsis',
     'border-width': 2,
@@ -1733,31 +1796,35 @@ function _buildEnhancedNodeStyle(type) {
 }
 
 /**
- * Return pastel Bootstrap 5.3 colour tokens for a given node type.
- *
- * Expected palette (when implemented):
- *   playbook  → { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' }
- *   workflow  → { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' }
- *   activity  → { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' }
- *   artifact  → { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' }
- *   skill     → { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' }
- *   agent     → { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' }
- *   rule      → { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' }
+ * Return pastel colour tokens for a given node type, read from CSS theme variables.
+ * Falls back to cool cyan-family light palette if variables are unavailable.
  *
  * @param {string} type — entity type string
  * @returns {{ bg: string, border: string, text: string }}
  */
 function _buildNodeColor(type) {
-  const palette = {
-    playbook: { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' },
-    workflow: { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' },
-    activity: { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' },
-    artifact: { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' },
-    skill:    { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' },
-    agent:    { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' },
-    rule:     { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' },
+  const keys = {
+    playbook: 'playbook',
+    workflow: 'workflow',
+    activity: 'activity',
+    artifact: 'artifact',
+    skill: 'skill',
+    agent: 'agent',
+    rule: 'rule',
   };
-  return palette[type] || { bg: '#f8f9fa', border: '#dee2e6', text: '#212529' };
+  const key = keys[type];
+  if (!key) {
+    return {
+      bg: _cssVar('--mimir-bg-surface', '#f8f9fa'),
+      border: _cssVar('--mimir-border', '#dee2e6'),
+      text: _cssVar('--bs-body-color', '#212529'),
+    };
+  }
+  return {
+    bg: _cssVar(`--mimir-graph-${key}-bg`, '#e8ecf1'),
+    border: _cssVar(`--mimir-graph-${key}-border`, '#a8b2c0'),
+    text: _cssVar(`--mimir-graph-${key}-text`, '#1c2430'),
+  };
 }
 
 /**
@@ -1796,26 +1863,19 @@ function _buildNodeIcon(type) {
 
 /**
  * Return edge stylesheet entries for the enhanced style.
- * All edges must use uniform black (#212529) colour.
+ * All edges use a uniform theme-aware slate colour (--mimir-graph-edge).
  * Inherits curve-style from _currentRouting via _applyRouting().
- *
- * Expected output (when implemented):
- *   [
- *     { selector: 'edge', style: { 'line-color': '#212529', 'target-arrow-color': '#212529',
- *         'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'width': 1.5 } },
- *     { selector: 'edge[relationship = "predecessor"]', style: { 'line-style': 'dashed', ... } },
- *     { selector: 'edge[relationship = "contains"]', style: { 'display': 'none' } },
- *   ]
  *
  * @returns {object[]} Cytoscape stylesheet entries for edges
  */
 function _buildEdgeStyle() {
+  const edge = _edgeColor();
   return [
     {
       selector: 'edge',
       style: {
-        'line-color': '#212529',
-        'target-arrow-color': '#212529',
+        'line-color': edge,
+        'target-arrow-color': edge,
         'target-arrow-shape': 'triangle',
         'curve-style': 'bezier',
         'width': 1.5,
@@ -1852,12 +1912,13 @@ function _buildEdgeStyle() {
  * @throws {Error} Not yet implemented
  */
 function _buildEdgeStyleForMode(compoundOn) {
+  const edge = _edgeColor();
   const base = [
     {
       selector: 'edge',
       style: {
-        'line-color': '#212529',
-        'target-arrow-color': '#212529',
+        'line-color': edge,
+        'target-arrow-color': edge,
         'target-arrow-shape': 'triangle',
         'curve-style': 'bezier',
         'width': 1.5,
@@ -1974,20 +2035,17 @@ function _toggleRoutingDropdown() {
 
   const panel = document.createElement('div');
   panel.setAttribute('data-testid', 'browser-routing-dropdown');
+  panel.className = 'browser-menu-dropdown';
   const rect = btn.getBoundingClientRect();
   panel.style.cssText =
-    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
-    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:180px;max-height:60vh;overflow-y:auto;';
+    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;`;
 
   _ROUTING_CATALOG.forEach(entry => {
     const item = document.createElement('button');
     item.setAttribute('data-testid', `browser-routing-option-${entry.key}`);
     item.type = 'button';
     const isActive = _currentRouting === entry.key;
-    item.style.cssText =
-      'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
-      (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
+    item.className = 'browser-menu-item' + (isActive ? ' is-active' : '');
     item.textContent = entry.label + (isActive ? ' ✓' : '');
     item.addEventListener('click', () => {
       panel.remove();
@@ -2251,22 +2309,21 @@ function _buildCompoundLabelStyle() {
   return {
     'text-margin-y': -14,
     'text-margin-x': 6,
-    'text-background-color': '#ffffff',
+    'text-background-color': _cssVar('--mimir-graph-compound-label-bg', '#ffffff'),
     'text-background-opacity': 0.85,
     'text-background-padding': '3px',
     'text-border-opacity': 0,
-    'color': '#084298',
+    'color': _cssVar('--mimir-graph-compound-label', '#0a4a63'),
   };
 }
 
 /**
  * Return the Cytoscape stylesheet additions for compound parent (workflow) nodes.
  * These entries augment the base stylesheet when compound view is active:
- *   - background-color: #eef2ff (light periwinkle)
- *   - border: 2px solid #0d6efd
+ *   - background-color / border from --mimir-graph-compound-wf-* theme tokens
  *   - border-radius: 8px (via shape: round-rectangle)
- *   - text-valign: top, text-halign: left
- *   - padding: 20px
+ *   - text-valign: top, text-halign: center
+ *   - padding via label style v2
  *
  * @returns {object[]} additional stylesheet entries for :parent selector
  */
@@ -2277,7 +2334,7 @@ function _cytoscapeCompoundStyle() {
       style: {
         'label': ele => ele.data('label') || '',
         'background-color': _compoundBackgroundForType('workflow'),
-        'border-color': '#0d6efd',
+        'border-color': _cssVar('--mimir-graph-compound-wf-border', '#0d7ea8'),
         'border-width': 2,
         'border-style': 'solid',
         'shape': 'round-rectangle',
@@ -2336,7 +2393,7 @@ function _buildFontRenderingGuards() {
  *     'text-margin-x': 8,
  *     'text-margin-y': 4,
  *     'font-size': 20,
- *     'font-family': 'Montserrat, system-ui',
+ *     'font-family': 'IBM Plex Sans, system-ui',
  *     'font-weight': 600,
  *     'text-transform': 'none',
  *     'text-background-color': '#ffffff',
@@ -2355,30 +2412,30 @@ function _buildCompoundLabelStyleV2() {
     'text-margin-x': 0,
     'text-margin-y': 4,
     'font-size': 20,
-    'font-family': 'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'font-family': 'IBM Plex Sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     'font-weight': 600,
     'text-transform': 'none',
     'text-max-width': 200,
     'text-wrap': 'ellipsis',
-    'text-background-color': '#ffffff',
+    'text-background-color': _cssVar('--mimir-graph-compound-label-bg', '#ffffff'),
     'text-background-opacity': 0.85,
     'text-background-padding': '4px',
-    'color': '#084298',
+    'color': _cssVar('--mimir-graph-compound-label', '#0a4a63'),
   };
 }
 
 /**
  * Return background colour for compound nodes by compound level and node type.
- *
- * Expected output (when implemented):
- *   If nodeType === 'activity': '#d4edda'   (light mint-green)
- *   Otherwise (workflow):       '#eef2ff'   (light periwinkle)
+ * Reads --mimir-graph-compound-act-bg / --mimir-graph-compound-wf-bg.
  *
  * @param {string} nodeType — 'workflow' or 'activity'
  * @returns {string} CSS colour string
  */
 function _compoundBackgroundForType(nodeType) {
-  return nodeType === 'activity' ? '#d4edda' : '#eef2ff';
+  if (nodeType === 'activity') {
+    return _cssVar('--mimir-graph-compound-act-bg', '#e2f3ec');
+  }
+  return _cssVar('--mimir-graph-compound-wf-bg', '#e4f2f7');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2491,7 +2548,7 @@ function _cytoscapeCompoundStyleForLevel(level) {
       selector: 'node[type = "activity"]:parent',
       style: {
         'background-color': _compoundBackgroundForType('activity'),
-        'border-color': '#198754',
+        'border-color': _cssVar('--mimir-graph-compound-act-border', '#2a9b78'),
         'border-width': 2,
         ..._buildCompoundLabelStyleV2(),
       },
@@ -2508,20 +2565,17 @@ function _toggleCompoundDropdown() {
 
   const panel = document.createElement('div');
   panel.setAttribute('data-testid', 'browser-compound-dropdown');
+  panel.className = 'browser-menu-dropdown';
   const rect = btn.getBoundingClientRect();
   panel.style.cssText =
-    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
-    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:200px;';
+    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;`;
 
   _COMPOUND_OPTIONS.forEach(opt => {
     const item = document.createElement('button');
     item.setAttribute('data-testid', `browser-compound-option-${opt.key}`);
     item.type = 'button';
     const isActive = _compoundLevel === opt.key;
-    item.style.cssText =
-      'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
-      (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
+    item.className = 'browser-menu-item' + (isActive ? ' is-active' : '');
     item.textContent = opt.label + (isActive ? ' ✓' : '');
     item.addEventListener('click', () => {
       panel.remove();
@@ -2648,21 +2702,7 @@ function _createTooltipEl() {
     el = document.createElement('div');
     el.id = 'cy-node-tooltip';
     el.setAttribute('data-testid', 'cy-node-tooltip');
-    el.style.cssText = [
-      'position:fixed',
-      'background:rgba(33,37,41,0.92)',
-      'color:#fff',
-      'font-size:0.75rem',
-      'font-family:Montserrat,system-ui,sans-serif',
-      'padding:4px 10px',
-      'border-radius:4px',
-      'pointer-events:none',
-      'z-index:10000',
-      'max-width:320px',
-      'white-space:pre-wrap',
-      'line-height:1.5',
-      'display:none',
-    ].join(';');
+    // Appearance comes from #cy-node-tooltip in design-system.css (theme-aware).
     document.body.appendChild(el);
   }
   return el;

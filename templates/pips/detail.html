@@ -19,7 +19,7 @@
                 <span class="badge rounded-pill {{ pip.status_bootstrap_class }}" data-testid="pip-status-badge">{{ pip.get_status_display }}</span>
                 &middot;
                 Target playbook: <strong>{{ pip.playbook.name }}</strong>
-                <span class="badge bg-light text-dark border">v{{ pip.playbook.version }}</span>
+                <span class="badge bg-body-secondary text-body border">v{{ pip.playbook.version }}</span>
             </p>
         </div>
         <div class="d-flex flex-wrap gap-2 justify-content-end flex-shrink-0 align-items-center"
