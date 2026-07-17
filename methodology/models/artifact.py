@@ -24,6 +24,7 @@ class Artifact(models.Model):
         ("Code", "Code"),
         ("Diagram", "Diagram"),
         ("Data", "Data"),
+        ("Reference Architecture", "Reference Architecture"),
         ("Other", "Other"),
     ]
 

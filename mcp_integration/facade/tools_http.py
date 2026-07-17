@@ -60,15 +60,38 @@ def list_playbooks(status: Literal["draft", "released", "active", "all"] = "all"
     return data.get("results", data) if isinstance(data, dict) else data
 
 
-def get_playbook(playbook_id: int) -> dict:
+def get_playbook(
+    playbook_id: int,
+    include_history: bool = False,
+    version: str | None = None,
+) -> dict:
     """
-    Get playbook details with workflows.
+    Get playbook details with workflows and optional version history.
 
     :param playbook_id: Playbook ID. Example: 1
-    :return: Playbook dict with nested workflows
+    :param include_history: When True, adds a ``versions`` list to the response
+        (ordered newest-first). Each entry has ``version_number``, ``source``
+        (pip/author/release/admin), ``pip_id``, ``change_summary``,
+        ``created_at`` (ISO-8601), ``is_major``.
+        Ignored when ``version`` is also provided. Example: True
+    :param version: When provided, returns only the recorded snapshot at that
+        version (``snapshot_data`` + metadata). Raises ValueError if not found.
+        Takes precedence over ``include_history``. Example: "1.0"
+    :return: Playbook dict with nested workflows (and optionally ``versions``);
+        or snapshot dict when ``version`` is supplied (contains
+        ``snapshot_data``, no top-level ``workflows`` key).
+    :raises ValueError: if the requested version does not exist.
     """
-    logger.info(f'HTTP Tool: get_playbook id={playbook_id}')
-    r = get_client().get(f"/api/playbooks/{playbook_id}/")
+    logger.info('HTTP Tool: get_playbook id=%s include_history=%s version=%s', playbook_id, include_history, version)
+    params: dict = {}
+    if include_history:
+        params['include_history'] = 'true'
+    if version is not None:
+        params['version'] = version
+    r = get_client().get(f"/api/playbooks/{playbook_id}/", params=params)
+    if version is not None and r.status_code == 404:
+        data = r.json()
+        raise ValueError(data.get('detail', f'Version {version} not found for playbook {playbook_id}.'))
     return check_response(r, "get_playbook")
 
 

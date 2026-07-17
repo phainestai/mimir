@@ -67,6 +67,7 @@ Feature: Mimir MCP UAT — all 63 tools exercised end-to-end in agent mode
     <MCP_ARTIFACT_PK>         — artifact  RECORD (MCP-02 step AR-01)
     <MCP_ARTIFACT_INPUT_PK>   — artifact-activity link RECORD (MCP-02 step AR-02)
     <MCP_RULE_PK>             — rule      RECORD (MCP-02 step RU-01)
+    <MCP_VH_VERSION>          — first version_number from version history RECORD (MCP-12 step VH-01)
     <DRILL_PB_ID>             — delete-drill playbook RECORD (MCP-05)
     <DRILL_WF_ID>             — delete-drill workflow RECORD (MCP-05)
     <DRILL_PH_PK>             — delete-drill phase    RECORD (MCP-05)
@@ -811,6 +812,36 @@ Feature: Mimir MCP UAT — all 63 tools exercised end-to-end in agent mode
     # DO: CallMcpTool server "user-mimir" toolName "get_pip" arguments {"pip_id": <PIP_PROTO_PK>}
     # SEE: `.status` = `accepted`
     # IF DIFFER: MCP-11 FN-05
+
+#############################################################################
+# MCP-12 — Playbook version history via extended get_playbook
+#############################################################################
+
+  @manual @uat @mcp-version-history
+  Scenario: MCP-12 Playbook version history — include_history and version snapshot
+    # Precondition: MCP UAT Playbook is Released (v2.0+) and has ≥2 PIPs applied (from MCP-10).
+    #
+    # STEP VH-01 get_playbook with include_history=True — version list present
+    # DO: CallMcpTool server "user-mimir" toolName "get_playbook" arguments {"playbook_id": <MCP_PB_ID>, "include_history": true}
+    # SEE: JSON `.versions` is a non-empty array; first entry has keys: version_number, source, pip_id, change_summary, created_at, is_major
+    # RECORD: first entry's `version_number` as `<MCP_VH_VERSION>`
+    # IF DIFFER: MCP-12 VH-01 — versions key missing or empty; verify PlaybookVersion rows exist for this playbook
+    #
+    # STEP VH-02 get_playbook without include_history — no versions key by default
+    # DO: CallMcpTool server "user-mimir" toolName "get_playbook" arguments {"playbook_id": <MCP_PB_ID>}
+    # SEE: JSON does NOT contain a `versions` key (default stays lean)
+    # IF DIFFER: MCP-12 VH-02 — include_history must default to False
+    #
+    # STEP VH-03 get_playbook with version=<MCP_VH_VERSION> — snapshot returned
+    # DO: CallMcpTool server "user-mimir" toolName "get_playbook" arguments {"playbook_id": <MCP_PB_ID>, "version": "<MCP_VH_VERSION>"}
+    # SEE: JSON contains `snapshot_data` dict (not null); `.version_number` = `<MCP_VH_VERSION>`
+    # IF DIFFER: MCP-12 VH-03 — snapshot_data missing; verify PlaybookVersion.snapshot_data was populated on PIP acceptance
+    #
+    # STEP VH-04 get_playbook with non-existent version — error returned
+    # DO: CallMcpTool server "user-mimir" toolName "get_playbook" arguments {"playbook_id": <MCP_PB_ID>, "version": "99.9"}
+    # SEE: error payload contains substring `99.9 not found` OR `version not found`
+    # IF DIFFER: MCP-12 VH-04
+
 
 #############################################################################
 # MCP-15 — Team playbook children readable via MCP list tools

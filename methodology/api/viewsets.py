@@ -27,6 +27,11 @@ from methodology.api.permissions import IsOwnerOrReadOnly, IsDraftPlaybook
 from methodology.services.playbook_service import PlaybookService
 from methodology.services.workflow_service import WorkflowService
 from methodology.services.activity_service import ActivityService
+from methodology.services.playbook_history_service import (
+    list_playbook_version_rows,
+    get_playbook_version_by_number,
+    playbook_versions_ordered,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +98,85 @@ class PlaybookViewSet(viewsets.ModelViewSet):
 
         return queryset.order_by('-updated_at')
     
+    def retrieve(self, request, pk=None):
+        """
+        Get playbook details with workflows and optional version history.
+
+        Maps to: get_playbook MCP tool.
+
+        Query parameters
+        ----------------
+        include_history : bool (default false)
+            When ``true``, adds a ``versions`` list to the response (ordered
+            newest-first). Each entry has ``version_number``, ``source``,
+            ``pip_id``, ``change_summary``, ``created_at``, ``is_major``.
+            Ignored when ``version`` is also provided.
+        version : str (optional)
+            When supplied, returns only the recorded snapshot at that version
+            (``snapshot_data`` + metadata). Raises 404 if not found. Takes
+            precedence over ``include_history``.
+        """
+        logger.info('API: get_playbook called - id=%s ip=%s', pk, request.META.get('REMOTE_ADDR'))
+
+        playbook = self.get_object()
+        include_history = request.query_params.get('include_history', '').lower() in ('1', 'true', 'yes')
+        version = request.query_params.get('version') or None
+
+        if version is not None:
+            return self._retrieve_version_snapshot(playbook, version)
+
+        serializer = self.get_serializer(playbook)
+        data = dict(serializer.data)
+
+        if include_history:
+            data = self._attach_version_history(playbook, data)
+
+        return Response(data)
+
+    def _retrieve_version_snapshot(self, playbook, version: str):
+        """Return JSON for a specific historical snapshot of the playbook."""
+        from decimal import InvalidOperation
+        try:
+            version_decimal = Decimal(version)
+        except InvalidOperation:
+            return Response(
+                {'detail': f"Invalid version format '{version}'. Example: '1.0'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        pv = get_playbook_version_by_number(playbook, version_decimal)
+        if pv is None:
+            return Response(
+                {'detail': f"Version {version} not found for playbook {playbook.id}."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        logger.info('API: Returning snapshot v%s for playbook %s', version, playbook.id)
+        return Response({
+            'version_number': str(pv.version_number),
+            'source': pv.source,
+            'pip_id': pv.pip_id,
+            'change_summary': pv.change_summary.strip() if pv.change_summary else '',
+            'created_at': pv.created_at.isoformat() if pv.created_at else None,
+            'is_major': pv.is_major,
+            'snapshot_data': pv.snapshot_data,
+        })
+
+    def _attach_version_history(self, playbook, data: dict) -> dict:
+        """Append ordered version rows to the serialized playbook dict."""
+        raw_versions = list(playbook_versions_ordered(playbook))
+        data['versions'] = [
+            {
+                'version_number': str(v.version_number),
+                'source': v.source,
+                'pip_id': v.pip_id,
+                'change_summary': v.change_summary.strip() if v.change_summary else '',
+                'created_at': v.created_at.isoformat() if v.created_at else None,
+                'is_major': v.is_major,
+            }
+            for v in raw_versions
+        ]
+        logger.info('API: Attached %d version history rows for playbook %s', len(raw_versions), playbook.id)
+        return data
+
     def create(self, request):
         """
         Create new draft playbook (v0.1).

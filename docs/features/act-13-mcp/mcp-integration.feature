@@ -42,3 +42,25 @@ Feature: FOB-MCP-1 MCP Integration and Tools
     When Maria disables MCP
     Then connection is terminated
     And MCP features are hidden
+
+  # ---------------------------------------------------------------------------
+  # FOB-MCP-VH — Playbook version history via get_playbook
+  # ---------------------------------------------------------------------------
+
+  Scenario: FOB-MCP-VH-01 View playbook version history
+    Given a released playbook with at least two accepted PIPs
+    When an MCP agent calls get_playbook with include_history=True
+    Then the response includes the current playbook fields
+    And a "versions" list is returned with one entry per recorded version
+    And each entry contains version_number, source, pip_id, change_summary, created_at, and is_major
+
+  Scenario: FOB-MCP-VH-02 Retrieve playbook snapshot at a specific version
+    Given a released playbook that has a version "1.0" recorded
+    When an MCP agent calls get_playbook with version="1.0"
+    Then the response contains the snapshot_data recorded at version 1.0
+    And the snapshot includes the playbook structure as it was at that version
+
+  Scenario: FOB-MCP-VH-03 Unknown version returns error
+    Given a playbook with versions 1.0 and 2.0
+    When an MCP agent calls get_playbook with version="99.9"
+    Then the response is an error indicating version 99.9 was not found
