@@ -14,7 +14,7 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
   # ---------------------------------------------------------------------------
 
   Scenario: FOB-CONTENT-BROWSER-35 Edge routing picker — dropdown to select Cytoscape curve-style
-    Given Maria is on the graph view canvas with a playbook loaded
+    Given Maria is on the graph view canvas with custom layout mode enabled
     Then an edge routing button (data-testid="browser-routing-btn") is visible
       in the canvas controls toolbar alongside the layout picker
     And the button label shows the human-readable name of the currently active routing style
@@ -23,7 +23,7 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
     Then a dropdown panel (data-testid="browser-routing-dropdown") opens near the button
     And the dropdown lists the following options (all curve-style values supported by Cytoscape 3.x):
       | routing-key       | label                | Cytoscape curve-style |
-      | bezier            | Bezier (default)     | bezier                |
+      | bezier            | Bezier               | bezier                |
       | unbundled-bezier  | Unbundled Bezier     | unbundled-bezier      |
       | straight          | Straight             | straight              |
       | taxi              | Orthogonal           | taxi                  |
@@ -43,133 +43,19 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
     Then the dropdown closes without changing the active routing style
     Note: routing change is a style-only update — cy.style().update() is sufficient,
       no need to re-add elements or re-run the layout
-    Note: "bezier" is the default when no "routing" URL param is present
-    Note: if the "routing" URL param contains an unrecognised value, fall back
-      to "bezier" silently
+    Note: on page entry (FOB-63 default layout mode), routing is straight — the routing
+      picker is hidden until custom layout is checked
+    Note: in custom layout mode, if the "routing" URL param contains an unrecognised value,
+      fall back to "bezier" silently
     Note: "haystack" forces straight bundled lines; it may look identical to
       "straight" on sparse graphs — this is expected behaviour
 
 
-  # ---------------------------------------------------------------------------
-  # FOB-36 — Activity sequence edges toggle
-  # ---------------------------------------------------------------------------
+  # NOTE: FOB-CONTENT-BROWSER-36 (sequence edges toggle) REMOVED — superseded by FOB-51.
+  # Predecessor edges are always visible; data-testid="browser-seq-toggle" is not in the DOM.
 
-  Scenario: FOB-CONTENT-BROWSER-36 Sequence edges toggle — show/hide predecessor links between activities
-    Given Maria is on the graph view canvas with a playbook loaded
-    And the playbook has activities connected by predecessor (sequence) edges
-    Then a sequence toggle button (data-testid="browser-seq-toggle") is visible
-      in the canvas controls toolbar
-    And the button label reads "Seq ✓" when sequence edges are shown (default: ON)
-    And the button label reads "Seq ✗" when sequence edges are hidden
-    And the button has a pressed/active visual state when sequence edges are shown
-    When Maria clicks the sequence toggle to turn sequence edges OFF
-    Then all predecessor (sequence/activity→activity) edges are removed from the Cytoscape graph
-    And the graph is fully rebuilt (same as entity-type filter rebuild):
-      nodes and non-sequence edges are re-added, then the current layout algorithm re-runs
-    And the graph fits to screen automatically after the layout completes
-    And the state is stored in the URL query param "seq=0"
-    When Maria clicks the sequence toggle again to turn sequence edges back ON
-    Then predecessor edges are added back to the Cytoscape graph
-    And the graph is fully rebuilt and re-laid out with the current layout algorithm
-    And the "seq" URL param is removed (default-on state needs no param)
-    Note: "sequence edge" means an edge whose relationship type is "predecessor"
-      in the graph API response — not activity→resource edges
-    Note: other edge types (contains, produces, consumes, uses, assigned, governed)
-      are unaffected by this toggle
-    Note: hiding sequence edges is particularly useful with compound view (FOB-37)
-      where predecessor arrows inside a compound box can visually clutter the layout
-    Note: toggle state is preserved when entity-type filter or phase filter changes;
-      the rebuild triggered by those filters must respect the current seq toggle state
-    Note: COMPOSABILITY — the sequence toggle MUST work in all graph modes:
-      - when compound view is OFF (flat mode): seq toggle filters/adds edges as normal
-      - when compound view is ON (grouped mode): seq toggle must also filter/add edges
-        correctly within the compound graph; the rebuild path used by _applySeqToggle
-        must detect the current compound state and call _buildCompoundElements (not
-        _buildFilteredElements) when compound view is active — both rebuilds must
-        honour the current seq toggle state; currently _applySeqToggle always falls
-        back to flat rebuild regardless of compound mode — THIS IS A BUG that must be
-        fixed so that seq=0 works correctly when compound=1
-
-
-  # ---------------------------------------------------------------------------
-  # FOB-37 — Workflow compound view toggle
-  # ---------------------------------------------------------------------------
-
-  Scenario: FOB-CONTENT-BROWSER-37 Compound view toggle — workflows as containing boxes vs graph nodes
-    Given Maria is on the graph view canvas with a playbook loaded
-    Then a compound view toggle button (data-testid="browser-compound-toggle") is visible
-      in the canvas controls toolbar
-    And the button label reads "Grouped ✗" in default (flat) mode
-    And the button label reads "Grouped ✓" in compound mode
-
-    When Maria activates compound view (clicks the toggle to turn it ON):
-
-    Then the Cytoscape graph is fully rebuilt with compound node semantics:
-      - Each Workflow node becomes a compound parent node (data-testid prefix "browser-node-workflow-{pk}")
-      - Each Activity node that belongs to that Workflow has its Cytoscape "parent" set
-          to the Workflow node ID, making it a child inside the Workflow box
-      - Each resource node (Skill, Agent, Rule, Artifact) that is connected to an Activity
-          within that Workflow also has its "parent" set to the same Workflow node ID,
-          nesting inside the same compound box
-      - The Playbook root node remains a standalone node above all compound boxes
-      - The compound layout is re-run using the current layout algorithm
-
-    And the visual presentation of compound boxes follows these rules:
-      - Background fill: a light tinted shade of the graph canvas background,
-          distinct but harmonious — use #eef2ff (very light periwinkle) so compound boxes
-          are clearly distinguishable from the white canvas without clashing with node colours
-      - Border: 2px solid #0d6efd (Mimir primary blue) with border-radius 8px
-      - Workflow label: displayed ABOVE the top-left corner of the compound box (not
-          inside it), using a negative text-margin-y offset so the label floats gently
-          above the box boundary — implementation: text-valign "top", text-halign "left",
-          text-margin-x 6px (right), text-margin-y -14px (upward); this places the label
-          in empty space above the box rather than overlapping the interior of child nodes
-      - Workflow label position: data-testid="browser-node-workflow-{pk}-label"
-            with Cytoscape label valign "top" and halign "left"
-      - Workflow label MUST be visible in compound mode — if text-valign/halign alone
-          produces an invisible or clipped label, add a text-background-color: #ffffff
-          text-background-opacity: 0.85 and text-background-padding: 3px to ensure
-          readability against the canvas background
-      - font-weight 700, color #0d6efd, font-size slightly larger than activity node labels
-      - Compound box padding: minimum 20px on all sides so child nodes do not overlap the border
-
-    And clicking the Workflow compound box itself (not a child node) opens the Workflow detail panel
-      (same behaviour as clicking a Workflow node in flat mode)
-    And clicking a child Activity or resource node inside the box opens that entity's detail panel
-      (behaviour is unchanged from flat mode)
-
-    When Maria deactivates compound view (clicks the toggle OFF):
-    Then the graph rebuilds in flat mode — Workflow nodes are regular graph nodes again
-    And all "parent" assignments are cleared before the rebuild
-    And the current layout algorithm re-runs in flat mode
-
-    And the compound view state is stored in the URL query param "compound=1"
-      (absent or "0" means flat mode)
-
-    Note: compound view and entity-type filter are composable — if Workflows are filtered OFF,
-      compound view is effectively no-op (no compound parents remain); this is acceptable
-    Note: compound view interacts with the sequence toggle (FOB-36): when both compound view
-      and seq=0 are active, the resulting graph shows tidy boxes with no sequence clutter —
-      the most structured/hierarchical reading of the playbook
-    Note: COMPOUND LAYOUT — when compound view is ON, the layout algorithm MUST be applied to
-      activity nodes inside compound boxes (not just to top-level workflow-parent nodes):
-      - For ELK layouts (elk-layered, elk-stress, etc.): ELK natively supports compound layout
-        via the parent/child relationship; however the layout must be configured to use the
-        NESTED_ALGORITHM option or the parent compound node must receive elk:algorithm in its
-        data so that child node positions are computed by the layout engine, not left random;
-        without this, child nodes render on top of each other at the compound origin
-      - For dagre/cola/cose: compound behaviour varies; dagre does not support compound nodes
-        natively and will ignore child parentage — graceful degradation is acceptable (boxes
-        may not contain children visually) but MUST NOT crash or produce an error state
-      - The Reflow button (data-testid="browser-reflow-btn") MUST trigger a full layout re-run
-        that includes re-positioning child nodes inside each compound box, not only top-level
-        positions; the current bug where only top-level workflow-box positions change on reflow
-        but activity child nodes inside remain static MUST be fixed
-      - Layout picker changes (FOB-34) MUST also re-run the full compound layout including
-        children, not only the outer graph topology
-    Note: for layouts other than ELK (dagre, cola, etc.) compound behaviour depends on
-      each layout's compound support — graceful degradation is acceptable (boxes may not
-      contain children but layout still runs without error)
+  # NOTE: FOB-CONTENT-BROWSER-37 (compound view toggle) REMOVED — superseded by FOB-61.
+  # data-testid="browser-compound-toggle" is not in the DOM; use browser-compound-btn dropdown.
 
 
   # ---------------------------------------------------------------------------
@@ -437,7 +323,7 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
     And the buttons are arranged in compact rows grouped by function:
       Row 1 — Zoom controls:  [+] [−] [⊡]   (zoom in, zoom out, fit)
       Row 2 — Layout/Routing: [Layout ▾] [Routing ▾] [Re-plot]
-      Row 3 — View modes:     [Grouped ✗] [Fixed size ✓] [Node size toggle]
+      Row 3 — View modes:     [Custom layout ☐] [Grouping ▾] [Fixed size ✓] (Grouping and layout/routing pickers hidden until Custom layout is checked — FOB-63)
     And the button group container has data-testid="browser-controls-panel"
     And the overall footprint of the controls panel is compact enough that it does not
       obscure more than 15% of the canvas area at 1280×800 viewport
@@ -467,10 +353,10 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
   # ---------------------------------------------------------------------------
 
   Scenario: FOB-CONTENT-BROWSER-57 All Cytoscape curve-style values are available in the routing picker
-    Given Maria opens the edge routing dropdown
+    Given Maria has enabled custom layout mode and opens the edge routing dropdown
     Then the following routing options are available (ALL valid Cytoscape 3.x curve-style values):
       | routing-key       | label              | Cytoscape curve-style |
-      | bezier            | Bezier (default)   | bezier                |
+      | bezier            | Bezier             | bezier                |
       | unbundled-bezier  | Unbundled Bezier   | unbundled-bezier      |
       | straight          | Straight           | straight              |
       | taxi              | Orthogonal (Taxi)  | taxi                  |
@@ -513,7 +399,7 @@ Feature: FOB-CONTENT-BROWSER-CANVAS-CONTROLS Content Browser Canvas Display Cont
   # ---------------------------------------------------------------------------
 
   Scenario: FOB-CONTENT-BROWSER-59 Routing picker includes straight-triangle curve-style
-    Given Maria opens the edge routing dropdown
+    Given Maria has enabled custom layout mode and opens the edge routing dropdown
     Then the routing catalog includes the "straight-triangle" option:
       | routing-key       | label                | Cytoscape curve-style |
       | straight-triangle | Straight (Triangle)  | straight-triangle     |

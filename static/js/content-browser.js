@@ -4,7 +4,7 @@
  * Responsibilities:
  *   1. Read playbook PK from DOM on init
  *   2. Manage URL state via History API (pushState / replaceState)
- *   3. Normalise URL params on load (drop unknown types, drop stale phase IDs)
+ *   3. Normalise canvas URL params on load (layout, routing, compound, nodesize)
  *   4. Fetch graph data from /api/playbooks/<pk>/graph/ (implemented in graph iteration)
  *   5. Initialise Cytoscape.js and render graph (implemented in graph iteration)
  *
@@ -15,6 +15,132 @@
 'use strict';
 
 const _ALL_TYPES = ['workflow', 'activity', 'skill', 'agent', 'artifact', 'rule', 'phase'];
+
+/**
+ * Bootstrap 5.3 theme tokens for Cytoscape stylesheets.
+ * Cytoscape cannot consume CSS var() strings — values mirror design-system.css.
+ * Optional runtime read: getComputedStyle(document.documentElement).getPropertyValue('--bs-primary')
+ */
+const _BOOTSTRAP_PALETTE = {
+  primary: '#0d6efd',
+  success: '#198754',
+  warning: '#ffc107',
+  danger: '#dc3545',
+  info: '#0dcaf0',
+  secondary: '#6c757d',
+  dark: '#343a40',
+  light: '#f8f9fa',
+  bodyColor: '#212529',
+  white: '#ffffff',
+  orange: '#fd7e14',
+  borderColor: '#dee2e6',
+  compoundWorkflowBg: '#eef2ff',
+  compoundActivityBg: '#d4edda',
+};
+
+/** Pastel node chrome — Bootstrap-tinted fills for enhanced graph mode (FOB-38). */
+const _PASTEL_NODE_PALETTE = {
+  playbook: { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' },
+  workflow: { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' },
+  activity: { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' },
+  artifact: { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' },
+  skill:    { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' },
+  agent:    { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' },
+  rule:     { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' },
+};
+
+const _PASTEL_NODE_DEFAULT = {
+  bg: _BOOTSTRAP_PALETTE.light,
+  border: _BOOTSTRAP_PALETTE.borderColor,
+  text: _BOOTSTRAP_PALETTE.bodyColor,
+};
+
+/** Playbook status → Bootstrap badge class (mirrors Playbook.get_status_badge_color). */
+const _PLAYBOOK_STATUS_BADGE = {
+  active: 'success',
+  draft: 'warning',
+  released: 'primary',
+  disabled: 'secondary',
+};
+
+/** Playbook status code → human-readable label (mirrors Playbook.STATUS_CHOICES). */
+const _PLAYBOOK_STATUS_LABEL = {
+  active: 'Active',
+  draft: 'Draft',
+  released: 'Released',
+  disabled: 'Disabled',
+};
+
+/**
+ * Position a JS-injected dropdown above its trigger (fixed coords avoid canvas clipping).
+ * Visual styling uses Bootstrap dropdown-menu classes per IA guidelines.
+ *
+ * @param {HTMLElement} panel
+ * @param {DOMRect} btnRect
+ * @param {string} [minWidth='180px']
+ */
+function _positionBrowserDropdown(panel, btnRect, minWidth) {
+  panel.classList.add('dropdown-menu', 'show');
+  panel.style.position = 'fixed';
+  panel.style.bottom = `${window.innerHeight - btnRect.top + 4}px`;
+  panel.style.right = `${window.innerWidth - btnRect.right}px`;
+  panel.style.zIndex = '1050';
+  panel.style.minWidth = minWidth || '180px';
+  panel.style.maxHeight = '60vh';
+  panel.style.overflowY = 'auto';
+}
+
+/** @returns {HTMLDivElement} */
+function _createDropdownHeader(testId, text) {
+  const header = document.createElement('div');
+  header.setAttribute('data-testid', testId);
+  header.className = 'dropdown-header';
+  header.textContent = text;
+  return header;
+}
+
+/** @returns {HTMLButtonElement} */
+function _createDropdownItem(testId, label, isActive, onSelect) {
+  const item = document.createElement('button');
+  item.setAttribute('data-testid', testId);
+  item.type = 'button';
+  item.className = 'dropdown-item' + (isActive ? ' active' : '');
+  item.textContent = label + (isActive ? ' ✓' : '');
+  item.addEventListener('click', onSelect);
+  return item;
+}
+
+/**
+ * Wire Escape / outside-click dismiss for a body-appended dropdown panel.
+ *
+ * @param {HTMLElement} panel
+ * @param {HTMLElement} btn
+ * @returns {{ remove: function(): void }}
+ */
+function _wireBrowserDropdownDismiss(panel, btn) {
+  const remove = () => {
+    panel.remove();
+    document.removeEventListener('keydown', escHandler);
+    document.removeEventListener('click', outsideHandler);
+  };
+  const escHandler = (e) => {
+    if (e.key === 'Escape') remove();
+  };
+  const outsideHandler = (e) => {
+    if (!panel.contains(e.target) && e.target !== btn) remove();
+  };
+  document.addEventListener('keydown', escHandler);
+  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
+  return { remove };
+}
+
+/** Hide Bootstrap tooltip on a trigger so it does not block dropdown item clicks. */
+function _hideButtonTooltip(btn) {
+  if (typeof bootstrap !== 'undefined' && btn) {
+    const tip = bootstrap.Tooltip.getInstance(btn);
+    if (tip) tip.hide();
+  }
+}
 
 // ─── Module-level filter + search state ──────────────────────────────────────
 // Mutated by _applyFilters / _applySearch; read by _openDetailPanel / _closeDetailPanel.
@@ -30,13 +156,13 @@ let _currentFilters = { types: _ALL_TYPES.slice(), phases: [] };
 let _fullGraphData = null;
 let _currentSearchTerm = '';
 let _searchDebounceTimer = null;
-let _currentLayout = 'elk-layered'; // layout key — see _LAYOUT_CATALOG
+const _DEFAULT_LAYOUT_KEY = 'elk-layered'; // module fallback default — see _LAYOUT_CATALOG
+let _currentLayout = _DEFAULT_LAYOUT_KEY; // layout key — see _LAYOUT_CATALOG
 let _customLayoutMode = false; // false = default mode (FOB-63)
 
 /**
  * Full layout catalog used by the layout picker dropdown (FOB-19, FOB-34).
  * Each entry: { key, label, group }  — key is also the URL param value.
- * TODO S34: implement _applyLayout() to dispatch on these keys.
  */
 const _LAYOUT_CATALOG = [
   // ELK sub-algorithms (elkjs already loaded)
@@ -128,14 +254,13 @@ function _toggleLayoutDropdown() {
 
   const btn = document.querySelector('[data-testid="browser-layout-btn"]');
   if (!btn) return;
+  _hideButtonTooltip(btn);
 
   const panel = document.createElement('div');
   panel.setAttribute('data-testid', 'browser-layout-dropdown');
-  const rect = btn.getBoundingClientRect();
-  panel.style.cssText =
-    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
-    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:180px;max-height:60vh;overflow-y:auto;';
+  _positionBrowserDropdown(panel, btn.getBoundingClientRect());
+
+  const dismiss = _wireBrowserDropdownDismiss(panel, btn);
 
   // Build grouped content from _LAYOUT_CATALOG.
   const seenGroups = [];
@@ -146,50 +271,22 @@ function _toggleLayoutDropdown() {
   });
 
   seenGroups.forEach(g => {
-    const header = document.createElement('div');
-    header.setAttribute('data-testid', `browser-layout-group-${g.slug}`);
-    header.style.cssText = 'padding:4px 12px 2px;font-size:0.7rem;font-weight:600;color:#6c757d;text-transform:uppercase;letter-spacing:0.05em;';
-    header.textContent = g.name;
-    panel.appendChild(header);
+    panel.appendChild(_createDropdownHeader(`browser-layout-group-${g.slug}`, g.name));
 
     _LAYOUT_CATALOG.filter(e => e.groupSlug === g.slug).forEach(entry => {
-      const item = document.createElement('button');
-      item.setAttribute('data-testid', `browser-layout-option-${entry.key}`);
-      item.type = 'button';
-      const isActive = _currentLayout === entry.key;
-      item.style.cssText =
-        'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
-        (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
-      item.textContent = entry.label + (isActive ? ' ✓' : '');
-      item.addEventListener('click', () => {
-        panel.remove();
-        document.removeEventListener('keydown', escHandler);
-        document.removeEventListener('click', outsideHandler);
-        _applyLayout(entry.key);
-      });
-      panel.appendChild(item);
+      panel.appendChild(_createDropdownItem(
+        `browser-layout-option-${entry.key}`,
+        entry.label,
+        _currentLayout === entry.key,
+        () => {
+          dismiss.remove();
+          _applyLayout(entry.key);
+        },
+      ));
     });
   });
 
   document.body.appendChild(panel);
-
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  const outsideHandler = (e) => {
-    if (!panel.contains(e.target) && e.target !== btn) {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
-  // Defer outside-click handler to avoid immediately closing on the triggering click.
-  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
 }
 
 /**
@@ -220,87 +317,51 @@ function _getPlaybookPhases() {
 }
 
 /**
- * Parse URL query params into a structured filters object.
- * Normalises on read:
- *   - Unknown type values are discarded
- *   - Empty types param → all entity types active (not zero)
- *   - Phase IDs that are not positive integers are discarded
+ * Parse URL query params for canvas display state.
+ * Entity-type and phase filter params were removed with the filter toolbar (FOB-11/11b).
  *
- * @returns {{ types: string[], phases: number[] }}
+ * @returns {{ types: string[], phases: number[] }} always all types, no phase filter
  */
 function _parseUrlParams() {
   const params = new URLSearchParams(window.location.search);
-  const typesRaw = params.get('types');
-  const phasesRaw = params.get('phases');
   const layoutRaw = params.get('layout');
-
-  let types;
-  if (typesRaw === null || typesRaw === '') {
-    types = _ALL_TYPES.slice();
-  } else {
-    types = typesRaw.split(',').filter(t => _ALL_TYPES.includes(t));
-    if (types.length === 0) types = _ALL_TYPES.slice();
-  }
-
-  const phases = phasesRaw
-    ? phasesRaw.split(',')
-        .map(s => parseInt(s, 10))
-        .filter(n => Number.isFinite(n) && n >= 0)
-    : [];
 
   const legacyMap = { layered: 'elk-layered', mrtree: 'elk-mrtree' };
   const resolvedLayout = (layoutRaw && legacyMap[layoutRaw]) || layoutRaw;
   if (resolvedLayout && _LAYOUT_CATALOG.some(e => e.key === resolvedLayout)) {
     _currentLayout = resolvedLayout;
+  } else {
+    _currentLayout = _DEFAULT_LAYOUT_KEY;
   }
 
   _parseRoutingParam();
   _parseCompoundParam();
   _parseNodeSizeParam();
 
-  return { types, phases };
+  return { types: _ALL_TYPES.slice(), phases: [] };
 }
 
 /**
- * Validate parsed filters against the loaded playbook data.
- * Drops phase IDs not present in the playbook's phases array.
- * Rewrites the URL to canonical form (removes invalid/default params).
+ * Rewrite the browser URL to canonical canvas params (layout/routing/compound/nodesize).
  *
  * @param {{ types: string[], phases: number[] }} filters
- * @param {{ id: number, name: string }[]} playbookPhases
- * @returns {{ types: string[], phases: number[] }} validated filters
+ * @param {{ id: number, name: string }[]} _playbookPhases — unused (phase filter removed)
+ * @returns {{ types: string[], phases: number[] }}
  */
-function _normaliseFilters(filters, playbookPhases) {
-  const validPhaseIds = new Set(playbookPhases.map(p => p.id));
-  // 0 is the "Unphased" sentinel — always valid when the playbook has ≥1 phase.
-  const hasPhases = playbookPhases.length > 0;
-  const cleanPhases = filters.phases.filter(id => (id === 0 && hasPhases) || validPhaseIds.has(id));
-  const normalised = { types: filters.types, phases: cleanPhases };
-  _replaceCanonicalUrl(_getPlaybookPk(), normalised);
-  return normalised;
+function _normaliseFilters(filters, _playbookPhases) {
+  _replaceCanonicalUrl(_getPlaybookPk(), filters);
+  return filters;
 }
 
 /**
- * Serialise a filters object back to URL query string.
- * Clean URL rules: omit types param if all entity types are active;
- * omit phases param if no phase filter is active.
+ * Serialise canvas display state to URL query string.
+ * Entity-type and phase filter params are no longer encoded (FOB-11/11b removed).
  *
- * @param {{ types: string[], phases: number[] }} filters
+ * @param {{ types: string[], phases: number[] }} _filters — unused; kept for call-site compat
  * @returns {string} query string including leading '?' or '' if empty
  */
-function _filtersToQueryString(filters) {
+function _filtersToQueryString(_filters) {
   const parts = [];
-  const FILTERABLE = ['workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
-  const allActive = FILTERABLE.every(t => filters.types.includes(t));
-  if (!allActive && filters.types.length > 0) {
-    const encodable = filters.types.filter(t => FILTERABLE.includes(t));
-    if (encodable.length > 0 && encodable.length < FILTERABLE.length) {
-      parts.push('types=' + encodable.join(','));
-    }
-  }
-  if (filters.phases.length > 0) {
-    parts.push('phases=' + filters.phases.join(','));
-  }
   if (_currentLayout !== 'elk-layered') {
     parts.push('layout=' + _currentLayout);
   }
@@ -310,22 +371,23 @@ function _filtersToQueryString(filters) {
   if (_compoundLevel !== 'none') {
     parts.push('compound=' + _compoundLevel);
   }
+  if (_nodeSizeMode !== _DEFAULT_NODE_SIZE_MODE) {
+    parts.push('nodesize=' + _nodeSizeMode);
+  }
   return parts.length ? '?' + parts.join('&') : '';
 }
 
 /**
- * Update the browser URL when the active playbook changes.
- * Uses pushState so the back button returns to the previous playbook.
- * Resets phase filters on switch (phase IDs are playbook-scoped).
+ * Update the browser URL when the active playbook changes (pushState).
  *
  * @param {number} pk - New playbook PK
- * @param {{ types: string[], phases: number[] }} filters - Current filter state
+ * @param {{ types: string[], phases: number[] }} _filters — unused; kept for E2E compat
  */
-function _pushPlaybookUrl(pk, filters) {
-  const resetFilters = { types: filters.types, phases: [] };
-  const qs = _filtersToQueryString(resetFilters);
+function _pushPlaybookUrl(pk, _filters) {
+  const filters = { types: _ALL_TYPES.slice(), phases: [] };
+  const qs = _filtersToQueryString(filters);
   const url = '/browser/' + pk + '/' + qs;
-  history.pushState({ pk: pk, filters: resetFilters }, '', url);
+  history.pushState({ pk: pk, filters: filters }, '', url);
 }
 
 /**
@@ -519,6 +581,8 @@ function _renderGraph(pk, graphData, filters) {
     minZoom: 0.1, maxZoom: 3,
     minZoomedFontSize: 8,
   });
+  window.cy.resize();
+  requestAnimationFrame(() => { if (window.cy) window.cy.resize(); });
 
   // Hide overlay states, make canvas visible.
   const loading = document.querySelector('[data-testid="browser-loading"]');
@@ -559,6 +623,7 @@ function _renderGraph(pk, graphData, filters) {
  * @returns {object[]}
  */
 function _cytoscapeStyle() {
+  const P = _BOOTSTRAP_PALETTE;
   const _nodeBase = {
     'label': 'data(label)',
     'text-valign': 'center',
@@ -568,7 +633,7 @@ function _cytoscapeStyle() {
     'text-max-width': 110,
     'width': 120,
     'height': 40,
-    'color': '#fff',
+    'color': P.white,
   };
   return [
     { selector: 'node[type = "workflow"]',
@@ -577,7 +642,7 @@ function _cytoscapeStyle() {
                  const abbr = ele.data('meta') && ele.data('meta').abbreviation;
                  return abbr ? `${abbr}\n${ele.data('label')}` : ele.data('label');
                },
-               'background-color': '#0d6efd', 'shape': 'round-rectangle',
+               'background-color': P.primary, 'shape': 'round-rectangle',
                'width': 130, 'height': 50, 'font-size': 10 } },
     { selector: 'node[type = "activity"]',
       style: { ..._nodeBase,
@@ -585,50 +650,50 @@ function _cytoscapeStyle() {
                  const code = ele.data('meta') && ele.data('meta').display_code;
                  return code ? `${code}\n${ele.data('label')}` : ele.data('label');
                },
-               'background-color': '#198754', 'shape': 'round-rectangle',
+               'background-color': P.success, 'shape': 'round-rectangle',
                'height': 50, 'font-size': 10, 'text-max-width': 110 } },
     { selector: 'node[type = "artifact"]',
-      style: { ..._nodeBase, 'background-color': '#ffc107', 'shape': 'ellipse', 'color': '#212529' } },
+      style: { ..._nodeBase, 'background-color': P.warning, 'shape': 'ellipse', 'color': P.bodyColor } },
     { selector: 'node[type = "skill"]',
-      style: { ..._nodeBase, 'background-color': '#fd7e14', 'shape': 'ellipse' } },
+      style: { ..._nodeBase, 'background-color': P.orange, 'shape': 'ellipse' } },
     { selector: 'node[type = "agent"]',
-      style: { ..._nodeBase, 'background-color': '#0dcaf0', 'shape': 'ellipse', 'color': '#212529' } },
+      style: { ..._nodeBase, 'background-color': P.info, 'shape': 'ellipse', 'color': P.bodyColor } },
     { selector: 'node[type = "rule"]',
-      style: { ..._nodeBase, 'background-color': '#6c757d', 'shape': 'ellipse' } },
+      style: { ..._nodeBase, 'background-color': P.secondary, 'shape': 'ellipse' } },
     { selector: 'node:selected',
-      style: { 'border-width': 3, 'border-color': '#dc3545' } },
+      style: { 'border-width': 3, 'border-color': P.danger } },
     // Edges — taxi (right-angle) routing for clean hierarchical layout.
     // 'contains' and 'predecessor' use downward/auto taxi; resource edges use
     // a shorter turn so they branch off activities cleanly.
     { selector: 'edge[relationship = "contains"]',
-      style: { 'line-color': '#0d6efd', 'target-arrow-color': '#0d6efd', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.primary, 'target-arrow-color': P.primary, 'target-arrow-shape': 'triangle',
                'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '50%', 'width': 2 } },
     { selector: 'edge[relationship = "predecessor"]',
-      style: { 'line-color': '#198754', 'target-arrow-color': '#198754', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.success, 'target-arrow-color': P.success, 'target-arrow-shape': 'triangle',
                'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'auto', 'taxi-turn': '50%',
                'width': 1, 'opacity': 0.7 } },
     { selector: 'edge[relationship = "sequence"]',
-      style: { 'line-color': '#343a40', 'target-arrow-color': '#343a40', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.dark, 'target-arrow-color': P.dark, 'target-arrow-shape': 'triangle',
                'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '50%',
                'width': 2, 'opacity': 0.55 } },
     { selector: 'edge[relationship = "produces"]',
-      style: { 'line-color': '#ffc107', 'target-arrow-color': '#ffc107', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.warning, 'target-arrow-color': P.warning, 'target-arrow-shape': 'triangle',
                'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
                'width': 1.5 } },
     { selector: 'edge[relationship = "consumes"]',
-      style: { 'line-color': '#ffc107', 'target-arrow-color': '#ffc107', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.warning, 'target-arrow-color': P.warning, 'target-arrow-shape': 'triangle',
                'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
                'width': 1.5, 'opacity': 0.8 } },
     { selector: 'edge[relationship = "uses_skill"]',
-      style: { 'line-color': '#fd7e14', 'target-arrow-color': '#fd7e14', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.orange, 'target-arrow-color': P.orange, 'target-arrow-shape': 'triangle',
                'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
                'width': 1.5 } },
     { selector: 'edge[relationship = "assigned_agent"]',
-      style: { 'line-color': '#0dcaf0', 'target-arrow-color': '#0dcaf0', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.info, 'target-arrow-color': P.info, 'target-arrow-shape': 'triangle',
                'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
                'width': 1.5 } },
     { selector: 'edge[relationship = "governed_by_rule"]',
-      style: { 'line-color': '#6c757d', 'target-arrow-color': '#6c757d', 'target-arrow-shape': 'triangle',
+      style: { 'line-color': P.secondary, 'target-arrow-color': P.secondary, 'target-arrow-shape': 'triangle',
                'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
                'width': 1.5 } },
   ];
@@ -753,9 +818,8 @@ function _sortForLayout(nodes) {
 }
 
 /**
- * Apply the combined visual state (entity type visibility, phase dim, search dim)
- * to all canvas nodes and edges. Also re-renders the structural tree and phase filter
- * controls so they stay in sync with the active filter.
+ * Apply the combined visual state (phase dim, search dim) to canvas nodes and edges.
+ * Also re-renders the structural tree so it stays in sync with the active filter.
  */
 function _refreshVisualState() {
   if (!window.cy) return;
@@ -821,116 +885,6 @@ function _applySearch(term) {
     _currentSearchTerm = term;
     _refreshVisualState();
   }, 250);
-}
-
-/**
- * Render the entity-type filter toolbar on the canvas.
- * One toggle button per type that has nodes; shows total count (static).
- * Called once after graph loads — recreated on playbook switch.
- *
- * @param {{ types: string[], phases: number[] }} filters
- */
-function _renderFilterToolbar(filters) {
-  const container = document.querySelector('[data-testid="browser-type-filter-row"]');
-  if (!container || !window.cy) return;
-
-  const displayTypes = ['workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'];
-  const typeCounts = {};
-  displayTypes.forEach(t => { typeCounts[t] = 0; });
-  (_fullGraphData ? _fullGraphData.nodes : []).forEach(n => {
-    if (n.type in typeCounts) typeCounts[n.type]++;
-  });
-
-  container.innerHTML = '';
-  displayTypes.forEach(type => {
-    if (typeCounts[type] === 0) return;
-    const isActive = filters.types.includes(type);
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = `btn btn-sm ${isActive ? 'btn-secondary' : 'btn-outline-secondary'}`;
-    btn.setAttribute('data-testid', 'browser-filter-btn');
-    btn.setAttribute('data-filter-type', type);
-    btn.title = `Toggle ${type} nodes`;
-    const label = type.charAt(0).toUpperCase() + type.slice(1);
-    btn.textContent = `${label} (${typeCounts[type]})`;
-    btn.addEventListener('click', () => {
-      const types = _currentFilters.types.slice();
-      const idx = types.indexOf(type);
-      if (idx >= 0) {
-        types.splice(idx, 1);
-      } else {
-        types.push(type);
-      }
-      const newFilters = { ..._currentFilters, types };
-      _applyFilters(newFilters);
-      _replaceCanonicalUrl(_getPkFromPath(), newFilters);
-      _renderFilterToolbar(newFilters);
-    });
-    container.appendChild(btn);
-  });
-}
-
-/**
- * Render phase filter pills in the canvas filter toolbar (second row).
- * Hidden entirely when the playbook has no phases.
- * Called from _refreshVisualState to stay in sync.
- */
-function _renderPhaseFilter() {
-  const playbookPhases = _getPlaybookPhases();
-  const container = document.querySelector('[data-testid="browser-phase-filter"]');
-
-  if (!container) return;
-  if (playbookPhases.length === 0) {
-    container.innerHTML = '';
-    return;
-  }
-
-  const activePhases = new Set(_currentFilters.phases);
-  const allPhaseIds = playbookPhases.map(p => p.id);
-  // Include 0 (Unphased) as an option
-  const phaseOptions = [{ id: 0, name: '(Unphased)' }, ...playbookPhases];
-
-  container.innerHTML = '';
-  phaseOptions.forEach(phase => {
-    const isActive = activePhases.size === 0 || activePhases.has(phase.id);
-    const pill = document.createElement('button');
-    pill.type = 'button';
-    pill.className = `btn btn-sm me-1 mb-1 ${isActive ? 'btn-primary' : 'btn-outline-secondary'}`;
-    pill.setAttribute('data-testid', 'browser-phase-pill');
-    pill.setAttribute('data-phase-id', String(phase.id));
-    pill.textContent = phase.name;
-    pill.addEventListener('click', () => {
-      let phases = _currentFilters.phases.slice();
-      if (phases.length === 0) {
-        phases = [phase.id];
-      } else if (phases.includes(phase.id)) {
-        phases = phases.filter(id => id !== phase.id);
-        if (phases.length === 0) phases = [];
-      } else {
-        phases = phases.concat([phase.id]);
-        if (phaseOptions.every(p => phases.includes(p.id))) phases = [];
-      }
-      const newFilters = { ..._currentFilters, phases };
-      _applyFilters(newFilters);
-      _replaceCanonicalUrl(_getPkFromPath(), newFilters);
-    });
-    container.appendChild(pill);
-  });
-
-  // "All" reset button when filter is active
-  if (activePhases.size > 0) {
-    const clearBtn = document.createElement('button');
-    clearBtn.type = 'button';
-    clearBtn.className = 'btn btn-sm btn-outline-danger mb-1';
-    clearBtn.setAttribute('data-testid', 'browser-phase-clear');
-    clearBtn.textContent = 'All';
-    clearBtn.addEventListener('click', () => {
-      const newFilters = { ..._currentFilters, phases: [] };
-      _applyFilters(newFilters);
-      _replaceCanonicalUrl(_getPkFromPath(), newFilters);
-    });
-    container.appendChild(clearBtn);
-  }
 }
 
 /**
@@ -1290,7 +1244,7 @@ function _openDetailPanel(node) {
     const nodeIsVisible = node.style('visibility') !== 'hidden';
     if (nodeIsVisible) {
       window.cy.nodes().forEach(n => { n.style('border-width', 0); });
-      node.style({ 'border-width': 3, 'border-color': '#dc3545' });
+      node.style({ 'border-width': 3, 'border-color': _BOOTSTRAP_PALETTE.danger });
     }
   }
   _currentPanelNode = node;
@@ -1348,15 +1302,19 @@ function _closeDetailPanel() {
 }
 
 /**
- * Detect session expiry in HTMX-swapped HTML.
- * If the login page is swapped in, redirect the tab.
+ * Detect session expiry in fetched embed HTML.
+ * If the login page is returned, redirect the tab.
  *
  * @param {string} html
  */
 function _checkSessionExpiry(html) {
-  if (html.includes('id="login-form"') || html.includes('/auth/login/')) {
+  if (
+    html.includes('id="login-form"') ||
+    html.includes('/auth/user/login/') ||
+    html.includes('/auth/login/')
+  ) {
     const pk = _getPlaybookPk();
-    window.location.href = '/auth/login/?next=' + encodeURIComponent('/browser/' + (pk || '') + '/');
+    window.location.href = '/auth/user/login/?next=' + encodeURIComponent('/browser/' + (pk || '') + '/');
   }
 }
 
@@ -1384,14 +1342,40 @@ async function _openPicker() {
   }
 
   try {
-    const resp = await fetch('/api/playbooks/', {
+    _allPlaybooks = await _fetchAllPlaybooks();
+    _renderPickerItems(_allPlaybooks);
+  } catch (_) {
+    _renderPickerError();
+  }
+}
+
+/**
+ * Fetch every accessible playbook, following DRF's paginated `next` link
+ * so accounts with more than one page of results aren't silently truncated.
+ * @returns {Promise<Array>}
+ */
+async function _fetchAllPlaybooks() {
+  const results = [];
+  let url = '/api/playbooks/';
+  while (url) {
+    const resp = await fetch(url, {
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
     });
-    if (!resp.ok) return;
+    if (!resp.ok) throw new Error('Failed to fetch playbooks: ' + resp.status);
     const data = await resp.json();
-    _allPlaybooks = data.results || data;
-    _renderPickerItems(_allPlaybooks);
-  } catch (_) { /* network error — leave list empty */ }
+    results.push(...(data.results || data));
+    url = data.next || null;
+  }
+  return results;
+}
+
+/**
+ * Render an error row in the picker list when the playbooks fetch fails.
+ */
+function _renderPickerError() {
+  const list = document.getElementById('browser-picker-list');
+  if (!list) return;
+  list.innerHTML = '<div class="list-group-item text-danger small">Could not load playbooks. Please try again.</div>';
 }
 
 /**
@@ -1473,11 +1457,24 @@ function _selectPlaybook(pk) {
  * @param {string} name
  * @param {string} status
  */
+function _playbookStatusBadgeClass(status) {
+  const key = (status || '').toLowerCase();
+  return 'badge bg-' + (_PLAYBOOK_STATUS_BADGE[key] || 'secondary') + ' small';
+}
+
+function _playbookStatusLabel(status) {
+  const key = (status || '').toLowerCase();
+  return _PLAYBOOK_STATUS_LABEL[key] || status || '';
+}
+
 function _updatePlaybookHeader(pk, name, status) {
   const nameEl = document.querySelector('[data-testid="browser-playbook-title"]');
   if (nameEl) nameEl.textContent = name;
   const statusEl = document.querySelector('[data-testid="browser-playbook-status"]');
-  if (statusEl) { statusEl.textContent = status; statusEl.className = 'badge bg-secondary small'; }
+  if (statusEl) {
+    statusEl.textContent = _playbookStatusLabel(status);
+    statusEl.className = _playbookStatusBadgeClass(status);
+  }
 
   // Ensure Change Playbook button is visible; swap Select → Change if needed.
   const select = document.querySelector('[data-testid="browser-select-playbook"]');
@@ -1542,12 +1539,49 @@ function _applyDefaultLayoutMode() {
   }
 }
 
-function _applyDefaultLayoutMode() {
-  _customLayoutMode = false;
-  _showCustomControls(false);
-  _applyLayout(_DEFAULT_LAYOUT_MODE_KEY);
-  _applyRouting(_DEFAULT_ROUTING_MODE_KEY);
-  _applyCompoundLevel(_DEFAULT_COMPOUND_MODE_KEY);
+/**
+ * True when URL query params explicitly request non-FOB-63-default canvas options.
+ * Used at init to preserve deep-link layout/routing/compound/nodesize instead of
+ * resetting via _applyDefaultLayoutMode().
+ *
+ * @returns {boolean}
+ */
+function _urlRequestsCustomCanvasMode() {
+  const params = new URLSearchParams(window.location.search);
+  const legacyMap = { layered: 'elk-layered', mrtree: 'elk-mrtree' };
+  if (params.has('layout')) {
+    const raw = params.get('layout');
+    const resolved = legacyMap[raw] || raw;
+    const isValid = _LAYOUT_CATALOG.some(e => e.key === resolved);
+    if (isValid && resolved !== _DEFAULT_LAYOUT_MODE_KEY) return true;
+  }
+  if (params.has('routing')) {
+    const raw = params.get('routing');
+    const isValid = _ROUTING_CATALOG.some(e => e.key === raw);
+    if (isValid && raw !== _DEFAULT_ROUTING_MODE_KEY) return true;
+  }
+  if (params.has('compound')) {
+    const raw = params.get('compound');
+    const resolved = raw === '1' ? 'workflow' : raw;
+    const isValid = ['none', 'workflow', 'workflow-activity'].includes(resolved);
+    if (isValid && resolved !== _DEFAULT_COMPOUND_MODE_KEY) return true;
+  }
+  if (params.has('nodesize')) {
+    const raw = params.get('nodesize');
+    const isValid = raw === 'auto' || raw === 'fixed';
+    if (isValid && raw !== _DEFAULT_NODE_SIZE_MODE) return true;
+  }
+  return false;
+}
+
+function _applyCustomLayoutModeFromUrl() {
+  _applyCustomLayoutMode();
+  const toggle = document.querySelector('[data-testid="browser-custom-layout-toggle"]');
+  if (toggle) toggle.checked = true;
+  _updateLayoutBtn();
+  _updateRoutingBtn();
+  _updateCompoundBtn();
+  _updateNodeSizeModeBtn();
 }
 
 function _applyCustomLayoutMode() {
@@ -1568,123 +1602,13 @@ function _initCustomLayoutToggle() {
   });
 }
 
-/**
- * Main entry point — called on DOMContentLoaded.
- * Reads PK, normalises URL params, fetches graph if PK present.
- */
-function _init() {
-  const pk = _getPlaybookPk();
-  const phases = _getPlaybookPhases();
-  const filters = _parseUrlParams();
-  _normaliseFilters(filters, phases);
-
-  // Wire panel close button.
-  const panelClose = document.querySelector('[data-testid="browser-panel-close"]');
-  if (panelClose) panelClose.addEventListener('click', _closeDetailPanel);
-
-  // Wire panel entity-name navigation links.
-  _initPanelNavigation();
-
-  // Wire custom layout toggle (FOB-63) — must run before pk check so toggle is always wired.
-  _initCustomLayoutToggle();
-
-  // Wire collapse toggle.
-  const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
-  if (toggleBtn) toggleBtn.addEventListener('click', _toggleLeftPanel);
-
-  // Wire picker open — both Change Playbook and Select Playbook buttons.
-  document.querySelectorAll('[data-testid="browser-change-playbook"], [data-testid="browser-select-playbook"]').forEach(btn => {
-    btn.addEventListener('click', _openPicker);
-  });
-
-  // Wire picker search input.
-  const pickerSearch = document.querySelector('[data-testid="browser-picker-search"]');
-  if (pickerSearch) pickerSearch.addEventListener('input', e => _filterPickerItems(e.target.value));
-
-  // Wire node search input (debounced canvas node name filter).
-  const nodeSearch = document.querySelector('[data-testid="browser-search-input"]');
-  if (nodeSearch) nodeSearch.addEventListener('input', e => _applySearch(e.target.value));
-
-  if (!pk) {
-    _showEmptyState();
-    return;
-  }
-
-  // Wire zoom controls.
-  const zoomIn = document.querySelector('[data-testid="browser-zoom-in"]');
-  const zoomOut = document.querySelector('[data-testid="browser-zoom-out"]');
-  const zoomFit = document.querySelector('[data-testid="browser-zoom-fit"]');
-  if (zoomIn) zoomIn.addEventListener('click', () => window.cy && window.cy.zoom({ level: window.cy.zoom() * 1.3, renderedPosition: { x: window.cy.width() / 2, y: window.cy.height() / 2 } }));
-  if (zoomOut) zoomOut.addEventListener('click', () => window.cy && window.cy.zoom({ level: window.cy.zoom() / 1.3, renderedPosition: { x: window.cy.width() / 2, y: window.cy.height() / 2 } }));
-  if (zoomFit) zoomFit.addEventListener('click', () => window.cy && window.cy.fit());
-
-  // Wire layout switcher.
-  const layoutBtn = document.querySelector('[data-testid="browser-layout-btn"]');
-  if (layoutBtn) layoutBtn.addEventListener('click', _toggleLayoutDropdown);
-  _updateLayoutBtn();
-
-  // Wire routing picker.
-  const routingBtn = document.querySelector('[data-testid="browser-routing-btn"]');
-  if (routingBtn) routingBtn.addEventListener('click', _toggleRoutingDropdown);
-  _updateRoutingBtn();
-
-  // Wire compound grouping dropdown.
-  const compoundBtn = document.querySelector('[data-testid="browser-compound-btn"]');
-  if (compoundBtn) compoundBtn.addEventListener('click', _toggleCompoundDropdown);
-  // Legacy toggle button (kept for backward compat in older templates).
-  const compoundToggle = document.querySelector('[data-testid="browser-compound-toggle"]');
-  if (compoundToggle) compoundToggle.addEventListener('click', _applyCompoundToggle);
-  _updateCompoundBtn();
-  _updateCompoundToggleBtn();
-
-  // Wire node size mode toggle.
-  const nodeSizeToggle = document.querySelector('[data-testid="browser-node-size-toggle"]');
-  if (nodeSizeToggle) nodeSizeToggle.addEventListener('click', _applyNodeSizeToggle);
-  _updateNodeSizeModeBtn();
-
-  // Wire re-plot button.
-  const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
-  if (replotBtn) replotBtn.addEventListener('click', _replot);
-
-  // Apply default layout mode — sets klay+straight+workflow-activity and hides advanced buttons.
-  _applyDefaultLayoutMode();
-
-  _fetchGraph(pk);
-}
-
-// Expose instance globally for Playwright E2E tests.
-window.cy = null;
-// Expose module state for Playwright E2E tests.
-Object.defineProperty(window, '_currentRouting', { get: () => _currentRouting });
-Object.defineProperty(window, '_compoundViewOn', { get: () => _compoundLevel !== 'none' });
-Object.defineProperty(window, '_compoundLevel', { get: () => _compoundLevel });
-Object.defineProperty(window, '_nodeSizeMode', { get: () => _nodeSizeMode });
-Object.defineProperty(window, '_customLayoutMode', { get: () => _customLayoutMode });
-Object.defineProperty(window, '_currentLayout', { get: () => _currentLayout });
-
-document.addEventListener('DOMContentLoaded', _init);
-window.addEventListener('popstate', _onPopState);
-
 // ─────────────────────────────────────────────────────────────────────────────
-// S38 — Enhanced node visual styling (FOB-38)
-// All functions below are skeletons — implementation fills in the bodies.
+// Enhanced node visual styling (FOB-38)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Build the Cytoscape stylesheet with enhanced node shapes and Mimir design-aligned
- * visual style (FOB-38). Replaces _cytoscapeStyle() when implemented.
- *
- * Node shapes per entity type:
- *   playbook    → round-octagon
- *   workflow    → round-rectangle (wider, bolder)
- *   activity    → bottom-round-rectangle
- *   artifact    → round-diamond
- *   skill       → hexagon
- *   agent       → ellipse (unchanged)
- *   rule        → cut-rectangle
- *
- * Typography: Montserrat font, weight 600 structural / 400 resource.
- * Borders: 2px solid on all node types.
+ * visual style (FOB-38).
  *
  * @returns {object[]} Cytoscape stylesheet array
  */
@@ -1735,29 +1659,13 @@ function _buildEnhancedNodeStyle(type) {
 /**
  * Return pastel Bootstrap 5.3 colour tokens for a given node type.
  *
- * Expected palette (when implemented):
- *   playbook  → { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' }
- *   workflow  → { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' }
- *   activity  → { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' }
- *   artifact  → { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' }
- *   skill     → { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' }
- *   agent     → { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' }
- *   rule      → { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' }
+ * Expected palette: see _PASTEL_NODE_PALETTE at module top (_BOOTSTRAP_PALETTE for theme tokens).
  *
  * @param {string} type — entity type string
  * @returns {{ bg: string, border: string, text: string }}
  */
 function _buildNodeColor(type) {
-  const palette = {
-    playbook: { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' },
-    workflow: { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' },
-    activity: { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' },
-    artifact: { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' },
-    skill:    { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' },
-    agent:    { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' },
-    rule:     { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' },
-  };
-  return palette[type] || { bg: '#f8f9fa', border: '#dee2e6', text: '#212529' };
+  return _PASTEL_NODE_PALETTE[type] || _PASTEL_NODE_DEFAULT;
 }
 
 /**
@@ -1796,12 +1704,12 @@ function _buildNodeIcon(type) {
 
 /**
  * Return edge stylesheet entries for the enhanced style.
- * All edges must use uniform black (#212529) colour.
+ * All edges must use uniform black (_BOOTSTRAP_PALETTE.bodyColor) colour.
  * Inherits curve-style from _currentRouting via _applyRouting().
  *
  * Expected output (when implemented):
  *   [
- *     { selector: 'edge', style: { 'line-color': '#212529', 'target-arrow-color': '#212529',
+ *     { selector: 'edge', style: { 'line-color': _BOOTSTRAP_PALETTE.bodyColor, ...
  *         'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'width': 1.5 } },
  *     { selector: 'edge[relationship = "predecessor"]', style: { 'line-style': 'dashed', ... } },
  *     { selector: 'edge[relationship = "contains"]', style: { 'display': 'none' } },
@@ -1810,32 +1718,7 @@ function _buildNodeIcon(type) {
  * @returns {object[]} Cytoscape stylesheet entries for edges
  */
 function _buildEdgeStyle() {
-  return [
-    {
-      selector: 'edge',
-      style: {
-        'line-color': '#212529',
-        'target-arrow-color': '#212529',
-        'target-arrow-shape': 'triangle',
-        'curve-style': 'bezier',
-        'width': 1.5,
-        'opacity': 0.85,
-      },
-    },
-    {
-      selector: 'edge[relationship = "predecessor"]',
-      style: {
-        'line-style': 'dashed',
-        'line-dash-pattern': [6, 3],
-      },
-    },
-    {
-      selector: 'edge[relationship = "contains"]',
-      style: {
-        'display': 'none',
-      },
-    },
-  ];
+  return _buildEdgeStyleForMode(_compoundLevel !== 'none');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1849,15 +1732,15 @@ function _buildEdgeStyle() {
  *
  * @param {boolean} compoundOn — true when compound (grouped) view is active
  * @returns {object[]} Cytoscape stylesheet entries for edges
- * @throws {Error} Not yet implemented
  */
 function _buildEdgeStyleForMode(compoundOn) {
+  const P = _BOOTSTRAP_PALETTE;
   const base = [
     {
       selector: 'edge',
       style: {
-        'line-color': '#212529',
-        'target-arrow-color': '#212529',
+        'line-color': P.bodyColor,
+        'target-arrow-color': P.bodyColor,
         'target-arrow-shape': 'triangle',
         'curve-style': 'bezier',
         'width': 1.5,
@@ -1893,7 +1776,6 @@ function _buildEdgeStyleForMode(compoundOn) {
  * Called by _highlightTreeNode to ensure the highlighted node is visible.
  *
  * @param {string} nodeId — cy node ID (workflow or activity)
- * @throws {Error} Not yet implemented
  */
 function _expandTreeNodeAccordion(nodeId) {
   const targetRow = document.querySelector(`[data-testid="browser-tree-row"][data-node-id="${nodeId}"]`);
@@ -1923,7 +1805,8 @@ function _expandTreeNodeAccordion(nodeId) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Current edge routing key. Defaults to 'bezier'. Read by _filtersToQueryString. */
-let _currentRouting = 'bezier';
+const _DEFAULT_ROUTING_KEY = 'bezier'; // module fallback default — see _ROUTING_CATALOG
+let _currentRouting = _DEFAULT_ROUTING_KEY;
 
 /**
  * Routing catalog — all 6 selectable Cytoscape curve-style options.
@@ -1971,51 +1854,27 @@ function _toggleRoutingDropdown() {
 
   const btn = document.querySelector('[data-testid="browser-routing-btn"]');
   if (!btn) return;
+  _hideButtonTooltip(btn);
 
   const panel = document.createElement('div');
   panel.setAttribute('data-testid', 'browser-routing-dropdown');
-  const rect = btn.getBoundingClientRect();
-  panel.style.cssText =
-    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
-    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:180px;max-height:60vh;overflow-y:auto;';
+  _positionBrowserDropdown(panel, btn.getBoundingClientRect());
+
+  const dismiss = _wireBrowserDropdownDismiss(panel, btn);
 
   _ROUTING_CATALOG.forEach(entry => {
-    const item = document.createElement('button');
-    item.setAttribute('data-testid', `browser-routing-option-${entry.key}`);
-    item.type = 'button';
-    const isActive = _currentRouting === entry.key;
-    item.style.cssText =
-      'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
-      (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
-    item.textContent = entry.label + (isActive ? ' ✓' : '');
-    item.addEventListener('click', () => {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-      _applyRouting(entry.key);
-    });
-    panel.appendChild(item);
+    panel.appendChild(_createDropdownItem(
+      `browser-routing-option-${entry.key}`,
+      entry.label,
+      _currentRouting === entry.key,
+      () => {
+        dismiss.remove();
+        _applyRouting(entry.key);
+      },
+    ));
   });
 
   document.body.appendChild(panel);
-
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  const outsideHandler = (e) => {
-    if (!panel.contains(e.target) && e.target !== btn) {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
-  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
 }
 
 /**
@@ -2039,7 +1898,7 @@ function _parseRoutingParam() {
   if (raw && _ROUTING_CATALOG.some(e => e.key === raw)) {
     _currentRouting = raw;
   } else {
-    _currentRouting = 'bezier';
+    _currentRouting = _DEFAULT_ROUTING_KEY;
   }
 }
 
@@ -2060,7 +1919,7 @@ let _compoundViewOn = false; // maintained as alias only — use _compoundLevel 
  *   'auto'   — node width expands to fit label text; font size stays constant.
  * Initialised from URL param ?nodesize= (see _parseNodeSizeParam).
  */
-let _nodeSizeMode = 'fixed';
+let _nodeSizeMode = _DEFAULT_NODE_SIZE_MODE;
 
 /**
  * Toggle node size mode between 'fixed' and 'auto', update the button,
@@ -2110,32 +1969,10 @@ function _updateNodeSizeModeBtn() {
 function _parseNodeSizeParam() {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get('nodesize');
-  _nodeSizeMode = (raw === 'auto') ? 'auto' : 'fixed';
-}
-
-/**
- * Legacy compound toggle — kept for backward compat; delegates to _applyCompoundLevel.
- * Toggles between 'none' and 'workflow'.
- */
-function _applyCompoundToggle() {
-  _applyCompoundLevel(_compoundLevel === 'none' ? 'workflow' : 'none');
-  _updateCompoundToggleBtn();
-}
-
-/**
- * Update the legacy compound toggle button visual state.
- * ON:  label "Grouped ✓"
- * OFF: label "Grouped ✗"
- */
-function _updateCompoundToggleBtn() {
-  const btn = document.querySelector('[data-testid="browser-compound-toggle"]');
-  if (!btn) return;
-  if (_compoundLevel !== 'none') {
-    btn.textContent = 'Grouped ✓';
-    btn.classList.add('active');
+  if (raw === 'auto' || raw === 'fixed') {
+    _nodeSizeMode = raw;
   } else {
-    btn.textContent = 'Grouped ✗';
-    btn.classList.remove('active');
+    _nodeSizeMode = _DEFAULT_NODE_SIZE_MODE;
   }
 }
 
@@ -2233,37 +2070,37 @@ function _addElkCompoundData(nodeData) {
 }
 
 /**
- * Return the label positioning overrides that float the compound parent's label
- * gently above the top-left corner of the compound boundary.
- *
- * Expected output (when implemented):
- *   {
- *     'text-margin-y': -14,      // push label above top border
- *     'text-margin-x': 6,        // slight left indent
- *     'text-background-color': '#ffffff',
- *     'text-background-opacity': 0.85,
- *     'text-background-padding': '3px',
- *   }
+ * Return compound parent label style using the padding-top approach.
  *
  * @returns {object} Cytoscape style overrides for the :parent selector label
  */
 function _buildCompoundLabelStyle() {
+  const P = _BOOTSTRAP_PALETTE;
   return {
-    'text-margin-y': -14,
-    'text-margin-x': 6,
-    'text-background-color': '#ffffff',
+    'label': ele => ele.data('label') || '',
+    'padding-top': '28px',
+    'text-valign': 'top',
+    'text-halign': 'center',
+    'text-margin-x': 0,
+    'text-margin-y': 4,
+    'font-size': 20,
+    'font-family': 'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'font-weight': 600,
+    'text-transform': 'none',
+    'text-max-width': 200,
+    'text-wrap': 'ellipsis',
+    'text-background-color': P.white,
     'text-background-opacity': 0.85,
-    'text-background-padding': '3px',
-    'text-border-opacity': 0,
-    'color': '#084298',
+    'text-background-padding': '4px',
+    'color': _PASTEL_NODE_PALETTE.workflow.text,
   };
 }
 
 /**
  * Return the Cytoscape stylesheet additions for compound parent (workflow) nodes.
  * These entries augment the base stylesheet when compound view is active:
- *   - background-color: #eef2ff (light periwinkle)
- *   - border: 2px solid #0d6efd
+ *   - background-color: _BOOTSTRAP_PALETTE.compoundWorkflowBg
+ *   - border: 2px solid _BOOTSTRAP_PALETTE.primary
  *   - border-radius: 8px (via shape: round-rectangle)
  *   - text-valign: top, text-halign: left
  *   - padding: 20px
@@ -2271,17 +2108,17 @@ function _buildCompoundLabelStyle() {
  * @returns {object[]} additional stylesheet entries for :parent selector
  */
 function _cytoscapeCompoundStyle() {
+  const P = _BOOTSTRAP_PALETTE;
   return [
     {
       selector: ':parent',
       style: {
-        'label': ele => ele.data('label') || '',
         'background-color': _compoundBackgroundForType('workflow'),
-        'border-color': '#0d6efd',
+        'border-color': P.primary,
         'border-width': 2,
         'border-style': 'solid',
         'shape': 'round-rectangle',
-        ..._buildCompoundLabelStyleV2(),
+        ..._buildCompoundLabelStyle(),
       },
     },
   ];
@@ -2320,69 +2157,19 @@ function _buildFontRenderingGuards() {
 // (Implementation: add { key: 'straight-triangle', label: 'Straight (Triangle)', cyValue: 'straight-triangle' }
 //  to _ROUTING_CATALOG. No new function needed — skeleton is the catalog entry itself.)
 
-// ─────────────────────────────────────────────────────────────────────────────
-// S60 — Compound label visibility + font size + activity colour skeleton (FOB-60)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Return compound parent label style using the padding-top approach:
- * text-valign:top positions the label in the top padding strip (not outside the box).
- *
- * Expected output (when implemented):
- *   {
- *     'padding-top': '28px',
- *     'text-valign': 'top',
- *     'text-halign': 'left',
- *     'text-margin-x': 8,
- *     'text-margin-y': 4,
- *     'font-size': 20,
- *     'font-family': 'Montserrat, system-ui',
- *     'font-weight': 600,
- *     'text-transform': 'none',
- *     'text-background-color': '#ffffff',
- *     'text-background-opacity': 0.85,
- *     'text-background-padding': '4px',
- *     'color': '#084298',
- *   }
- *
- * @returns {object} Cytoscape style overrides for compound parent label
- */
-function _buildCompoundLabelStyleV2() {
-  return {
-    'padding-top': '28px',
-    'text-valign': 'top',
-    'text-halign': 'center',
-    'text-margin-x': 0,
-    'text-margin-y': 4,
-    'font-size': 20,
-    'font-family': 'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-    'font-weight': 600,
-    'text-transform': 'none',
-    'text-max-width': 200,
-    'text-wrap': 'ellipsis',
-    'text-background-color': '#ffffff',
-    'text-background-opacity': 0.85,
-    'text-background-padding': '4px',
-    'color': '#084298',
-  };
-}
-
 /**
  * Return background colour for compound nodes by compound level and node type.
- *
- * Expected output (when implemented):
- *   If nodeType === 'activity': '#d4edda'   (light mint-green)
- *   Otherwise (workflow):       '#eef2ff'   (light periwinkle)
  *
  * @param {string} nodeType — 'workflow' or 'activity'
  * @returns {string} CSS colour string
  */
 function _compoundBackgroundForType(nodeType) {
-  return nodeType === 'activity' ? '#d4edda' : '#eef2ff';
+  const P = _BOOTSTRAP_PALETTE;
+  return nodeType === 'activity' ? P.compoundActivityBg : P.compoundWorkflowBg;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// S61 — 3-level compound grouping context menu skeleton (FOB-61)
+// S61 — 3-level compound grouping context menu (FOB-61)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -2491,9 +2278,9 @@ function _cytoscapeCompoundStyleForLevel(level) {
       selector: 'node[type = "activity"]:parent',
       style: {
         'background-color': _compoundBackgroundForType('activity'),
-        'border-color': '#198754',
+        'border-color': _BOOTSTRAP_PALETTE.success,
         'border-width': 2,
-        ..._buildCompoundLabelStyleV2(),
+        ..._buildCompoundLabelStyle(),
       },
     },
   ];
@@ -2505,51 +2292,27 @@ function _toggleCompoundDropdown() {
 
   const btn = document.querySelector('[data-testid="browser-compound-btn"]');
   if (!btn) return;
+  _hideButtonTooltip(btn);
 
   const panel = document.createElement('div');
   panel.setAttribute('data-testid', 'browser-compound-dropdown');
-  const rect = btn.getBoundingClientRect();
-  panel.style.cssText =
-    `position:fixed;bottom:${window.innerHeight - rect.top + 4}px;right:${window.innerWidth - rect.right}px;` +
-    'z-index:1050;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:6px;' +
-    'box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;min-width:200px;';
+  _positionBrowserDropdown(panel, btn.getBoundingClientRect(), '200px');
+
+  const dismiss = _wireBrowserDropdownDismiss(panel, btn);
 
   _COMPOUND_OPTIONS.forEach(opt => {
-    const item = document.createElement('button');
-    item.setAttribute('data-testid', `browser-compound-option-${opt.key}`);
-    item.type = 'button';
-    const isActive = _compoundLevel === opt.key;
-    item.style.cssText =
-      'display:block;width:100%;padding:4px 20px;text-align:left;border:none;cursor:pointer;font-size:0.85rem;' +
-      (isActive ? 'background:#e9ecef;font-weight:600;' : 'background:transparent;');
-    item.textContent = opt.label + (isActive ? ' ✓' : '');
-    item.addEventListener('click', () => {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-      _applyCompoundLevel(opt.key);
-    });
-    panel.appendChild(item);
+    panel.appendChild(_createDropdownItem(
+      `browser-compound-option-${opt.key}`,
+      opt.label,
+      _compoundLevel === opt.key,
+      () => {
+        dismiss.remove();
+        _applyCompoundLevel(opt.key);
+      },
+    ));
   });
 
   document.body.appendChild(panel);
-
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  const outsideHandler = (e) => {
-    if (!panel.contains(e.target) && e.target !== btn) {
-      panel.remove();
-      document.removeEventListener('keydown', escHandler);
-      document.removeEventListener('click', outsideHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
-  setTimeout(() => document.addEventListener('click', outsideHandler), 0);
 }
 
 function _applyCompoundLevel(level) {
@@ -2557,7 +2320,6 @@ function _applyCompoundLevel(level) {
   if (!valid.has(level)) return;
   _compoundLevel = level;
   _updateCompoundBtn();
-  _updateCompoundToggleBtn();
   _replaceCanonicalUrl(_getPkFromPath(), _currentFilters);
   if (!window.cy || !_fullGraphData) return;
   const activeTypes = new Set(_currentFilters.types);
@@ -2598,7 +2360,7 @@ function _parseCompoundLevelParam() {
   // Backward compat: '1' from old URLs means 'workflow'.
   if (raw === '1') {
     _compoundLevel = 'workflow';
-  } else if (raw && valid.has(raw)) {
+  } else if (valid.has(raw)) {
     _compoundLevel = raw;
   } else {
     _compoundLevel = 'none';
@@ -2720,3 +2482,88 @@ function _initPanelNavigation() {
     if (nodeId) _selectTreeNode(nodeId);
   });
 }
+
+/**
+ * Main entry point — called on DOMContentLoaded.
+ * Reads PK, normalises URL params, fetches graph if PK present.
+ */
+function _init() {
+  const pk = _getPlaybookPk();
+  const phases = _getPlaybookPhases();
+  const customCanvasFromUrl = _urlRequestsCustomCanvasMode();
+  const filters = _parseUrlParams();
+
+  const panelClose = document.querySelector('[data-testid="browser-panel-close"]');
+  if (panelClose) panelClose.addEventListener('click', _closeDetailPanel);
+
+  _initPanelNavigation();
+  _initCustomLayoutToggle();
+
+  const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
+  if (toggleBtn) toggleBtn.addEventListener('click', _toggleLeftPanel);
+
+  document.querySelectorAll('[data-testid="browser-change-playbook"], [data-testid="browser-select-playbook"]').forEach(btn => {
+    btn.addEventListener('click', _openPicker);
+  });
+
+  const pickerSearch = document.querySelector('[data-testid="browser-picker-search"]');
+  if (pickerSearch) pickerSearch.addEventListener('input', e => _filterPickerItems(e.target.value));
+
+  const nodeSearch = document.querySelector('[data-testid="browser-search-input"]');
+  if (nodeSearch) nodeSearch.addEventListener('input', e => _applySearch(e.target.value));
+
+  if (!pk) {
+    _normaliseFilters(filters, phases);
+    _showEmptyState();
+    return;
+  }
+
+  const zoomIn = document.querySelector('[data-testid="browser-zoom-in"]');
+  const zoomOut = document.querySelector('[data-testid="browser-zoom-out"]');
+  const zoomFit = document.querySelector('[data-testid="browser-zoom-fit"]');
+  if (zoomIn) zoomIn.addEventListener('click', () => window.cy && window.cy.zoom({ level: window.cy.zoom() * 1.3, renderedPosition: { x: window.cy.width() / 2, y: window.cy.height() / 2 } }));
+  if (zoomOut) zoomOut.addEventListener('click', () => window.cy && window.cy.zoom({ level: window.cy.zoom() / 1.3, renderedPosition: { x: window.cy.width() / 2, y: window.cy.height() / 2 } }));
+  if (zoomFit) zoomFit.addEventListener('click', () => window.cy && window.cy.fit());
+
+  const layoutBtn = document.querySelector('[data-testid="browser-layout-btn"]');
+  if (layoutBtn) layoutBtn.addEventListener('click', _toggleLayoutDropdown);
+  _updateLayoutBtn();
+
+  const routingBtn = document.querySelector('[data-testid="browser-routing-btn"]');
+  if (routingBtn) routingBtn.addEventListener('click', _toggleRoutingDropdown);
+  _updateRoutingBtn();
+
+  const compoundBtn = document.querySelector('[data-testid="browser-compound-btn"]');
+  if (compoundBtn) compoundBtn.addEventListener('click', _toggleCompoundDropdown);
+  _updateCompoundBtn();
+
+  const nodeSizeToggle = document.querySelector('[data-testid="browser-node-size-toggle"]');
+  if (nodeSizeToggle) nodeSizeToggle.addEventListener('click', _applyNodeSizeToggle);
+  _updateNodeSizeModeBtn();
+
+  const replotBtn = document.querySelector('[data-testid="browser-replot-btn"]');
+  if (replotBtn) replotBtn.addEventListener('click', _replot);
+
+  if (customCanvasFromUrl) {
+    _applyCustomLayoutModeFromUrl();
+  } else {
+    _applyDefaultLayoutMode();
+  }
+  _normaliseFilters(filters, phases);
+  _fetchGraph(pk);
+}
+
+window.cy = null;
+Object.defineProperty(window, '_currentRouting', { get: () => _currentRouting });
+Object.defineProperty(window, '_compoundViewOn', { get: () => _compoundLevel !== 'none' });
+Object.defineProperty(window, '_compoundLevel', { get: () => _compoundLevel });
+Object.defineProperty(window, '_nodeSizeMode', { get: () => _nodeSizeMode });
+Object.defineProperty(window, '_customLayoutMode', { get: () => _customLayoutMode });
+Object.defineProperty(window, '_currentLayout', { get: () => _currentLayout });
+window._pushPlaybookUrl = _pushPlaybookUrl;
+window._parseUrlParams = _parseUrlParams;
+window._buildEdgeStyle = _buildEdgeStyle;
+window._buildCompoundLabelStyle = _buildCompoundLabelStyle;
+
+document.addEventListener('DOMContentLoaded', _init);
+window.addEventListener('popstate', _onPopState);

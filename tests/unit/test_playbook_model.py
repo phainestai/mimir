@@ -7,6 +7,7 @@ quick stats retrieval and status badge color mapping.
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from methodology.models.playbook import Playbook
 from methodology.models.workflow import Workflow
 
@@ -148,6 +149,55 @@ class TestPlaybookStatusBadgeColor:
         )
         
         color = playbook.get_status_badge_color()
-        
+
         assert isinstance(color, str)
         assert len(color) > 0
+
+
+@pytest.mark.django_db
+class TestPlaybookCanView:
+    """Test Playbook.can_view() access rules, including Django Group sharing."""
+
+    def test_group_member_can_view_group_shared_playbook(self):
+        """A user in a group the playbook is shared with can view it.
+
+        Regression test: get_accessible_playbook_ids() (used to filter API
+        list/detail responses) already treats shared_with_groups as granting
+        access; can_view() (used to gate direct page views like /browser/<pk>/
+        and /playbooks/<pk>/) must agree, or group members see a playbook in
+        listings but hit a 404 opening it directly.
+        """
+        owner = User.objects.create_user(username='owner', password='testpass')
+        member = User.objects.create_user(username='member', password='testpass')
+        group = Group.objects.create(name='shared-group')
+        member.groups.add(group)
+
+        playbook = Playbook.objects.create(
+            name='Group Shared Playbook',
+            description='Test',
+            category='product',
+            author=owner,
+            status='draft',
+            visibility='private',
+        )
+        playbook.shared_with_groups.add(group)
+
+        assert playbook.can_view(member) is True
+
+    def test_non_group_member_cannot_view_private_playbook(self):
+        """A user outside the shared group still cannot view a private playbook."""
+        owner = User.objects.create_user(username='owner2', password='testpass')
+        outsider = User.objects.create_user(username='outsider', password='testpass')
+        group = Group.objects.create(name='other-group')
+
+        playbook = Playbook.objects.create(
+            name='Private Playbook',
+            description='Test',
+            category='product',
+            author=owner,
+            status='draft',
+            visibility='private',
+        )
+        playbook.shared_with_groups.add(group)
+
+        assert playbook.can_view(outsider) is False

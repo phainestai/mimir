@@ -12,13 +12,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 
-from methodology.models import Activity, Playbook, Workflow
+from methodology.models import Activity, Workflow
 from methodology.services.activity_service import ActivityService
 from methodology.services.phase_service import PhaseService
 from methodology.services.rule_service import RuleService
 from methodology.services.agent_service import AgentService
 from methodology.services.skill_service import SkillService
 from methodology.services.artifact_service import ArtifactService
+from methodology.utils.playbook_access import playbook_readable_or_404
 
 logger = logging.getLogger(__name__)
 
@@ -95,14 +96,7 @@ def activity_global_list(request):
 
 @login_required
 def activity_list_for_playbook(request, playbook_pk):
-    playbook = get_object_or_404(Playbook, pk=playbook_pk)
-    if not playbook.can_view(request.user):
-        logger.warning(
-            "%s denied playbook-wide activity list for playbook %s",
-            request.user.username,
-            playbook_pk,
-        )
-        raise Http404()
+    playbook = playbook_readable_or_404(request, playbook_pk)
     activities_qs = ActivityService.list_activities_for_playbook(playbook_pk, request.user)
     cnt = activities_qs.count()
     logger.info(
@@ -147,16 +141,8 @@ def activity_list(request, playbook_pk, workflow_pk):
     logger.info(f"User {request.user.username} accessing activity list for workflow {workflow_pk}")
     
     # Get workflow and playbook with permission check
-    playbook = get_object_or_404(Playbook, pk=playbook_pk)
+    playbook = playbook_readable_or_404(request, playbook_pk)
     workflow = get_object_or_404(Workflow, pk=workflow_pk, playbook=playbook)
-
-    if not playbook.can_view(request.user):
-        logger.warning(
-            "%s denied activity list for playbook %s (no view access)",
-            request.user.username,
-            playbook_pk,
-        )
-        raise Http404()
 
     # Get activities grouped by phase
     activities_by_phase = ActivityService.get_activities_grouped_by_phase(workflow)
@@ -207,16 +193,8 @@ def activity_create(request, playbook_pk, workflow_pk):
     logger.info(f"User {request.user.username} accessing activity create for workflow {workflow_pk}")
     
     # Get workflow and playbook with permission check
-    playbook = get_object_or_404(Playbook, pk=playbook_pk)
+    playbook = playbook_readable_or_404(request, playbook_pk)
     workflow = get_object_or_404(Workflow, pk=workflow_pk, playbook=playbook)
-
-    if not playbook.can_view(request.user):
-        logger.warning(
-            "%s denied activity create for playbook %s (no view access)",
-            request.user.username,
-            playbook_pk,
-        )
-        raise Http404()
 
     # Check edit permission
     if not workflow.can_edit(request.user):
@@ -358,7 +336,7 @@ def activity_detail(request, playbook_pk, workflow_pk, activity_pk):
     logger.info(f"User {request.user.username} viewing activity {activity_pk}")
     
     # Get instances with permission check
-    playbook = get_object_or_404(Playbook, pk=playbook_pk)
+    playbook = playbook_readable_or_404(request, playbook_pk)
     workflow = get_object_or_404(Workflow, pk=workflow_pk, playbook=playbook)
     try:
         activity = ActivityService.get_activity_for_user(
@@ -369,15 +347,6 @@ def activity_detail(request, playbook_pk, workflow_pk, activity_pk):
     if activity.workflow_id != workflow.pk:
         raise Http404()
 
-    if not playbook.can_view(request.user):
-        logger.warning(
-            "%s denied activity detail %s (no playbook view access)",
-            request.user.username,
-            activity_pk,
-        )
-        raise Http404()
-
-    
     # Get artifact inputs and outputs for this activity
     artifact_inputs = ArtifactService.get_activity_inputs(activity)
     artifact_outputs = ArtifactService.get_artifacts_for_activity(activity)
@@ -439,21 +408,13 @@ def activity_edit(request, playbook_pk, workflow_pk, activity_pk):
     logger.info(f"User {request.user.username} editing activity {activity_pk}")
     
     # Get instances with permission check
-    playbook = get_object_or_404(Playbook, pk=playbook_pk)
+    playbook = playbook_readable_or_404(request, playbook_pk)
     workflow = get_object_or_404(Workflow, pk=workflow_pk, playbook=playbook)
     try:
         activity = ActivityService.get_activity_for_user(activity_pk, request.user)
     except Exception:
         raise Http404()
     if activity.workflow_id != workflow.pk:
-        raise Http404()
-
-    if not playbook.can_view(request.user):
-        logger.warning(
-            "%s denied activity edit %s (no playbook view access)",
-            request.user.username,
-            activity_pk,
-        )
         raise Http404()
 
     # Check edit permission
@@ -645,17 +606,9 @@ def activity_delete(request, playbook_pk, workflow_pk, activity_pk):
     logger.info(f"User {request.user.username} deleting activity {activity_pk}")
     
     # Get instances with permission check
-    playbook = get_object_or_404(Playbook, pk=playbook_pk)
+    playbook = playbook_readable_or_404(request, playbook_pk)
     workflow = get_object_or_404(Workflow, pk=workflow_pk, playbook=playbook)
     activity = get_object_or_404(Activity, pk=activity_pk, workflow=workflow)
-
-    if not playbook.can_view(request.user):
-        logger.warning(
-            "%s denied activity delete %s (no playbook view access)",
-            request.user.username,
-            activity_pk,
-        )
-        raise Http404()
 
     # Check edit permission
     if not workflow.can_edit(request.user):
