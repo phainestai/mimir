@@ -3652,6 +3652,6 @@ async function loadMore() {
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: November 20, 2024
+**Document Version**: 1.1
+**Last Updated**: July 20, 2026
 **Maintained by**: Mimir UX Team
