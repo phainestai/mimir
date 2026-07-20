@@ -1701,6 +1701,8 @@ function _edgeColor() {
 /**
  * UI font stack from design tokens (IBM Plex Sans, with a system-font fallback).
  * Appends Font Awesome so node icon glyphs still render in labels.
+ * Fallback string: keep in sync with --mimir-graph-font in design-system.css
+ * and GRAPHVIZ_FONTNAME in activity_graph_service.py.
  *
  * @returns {string}
  */

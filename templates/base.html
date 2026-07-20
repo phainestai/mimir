@@ -523,6 +523,14 @@
                 return t === 'dark' ? 'dark' : 'light';
             }
 
+            function syncToggleButtonLabel(theme) {
+                var btn = document.getElementById('mimir-theme-toggle');
+                if (!btn) return;
+                var label = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+                btn.setAttribute('aria-label', label);
+                btn.setAttribute('title', label);
+            }
+
             function applyTheme(theme) {
                 var next = theme === 'dark' ? 'dark' : 'light';
                 document.documentElement.setAttribute('data-bs-theme', next);
@@ -531,17 +539,7 @@
                 } catch (err) {
                     console.log('theme: could not persist preference', err);
                 }
-                var btn = document.getElementById('mimir-theme-toggle');
-                if (btn) {
-                    btn.setAttribute(
-                        'aria-label',
-                        next === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
-                    );
-                    btn.setAttribute(
-                        'title',
-                        next === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
-                    );
-                }
+                syncToggleButtonLabel(next);
                 console.log('theme: applied', { theme: next });
             }
 
@@ -552,7 +550,9 @@
             }
 
             document.addEventListener('DOMContentLoaded', function () {
-                applyTheme(currentTheme());
+                // Theme itself was already set pre-paint by the head FOUC script;
+                // just sync the toggle button's label to it (button didn't exist yet then).
+                syncToggleButtonLabel(currentTheme());
                 var btn = document.getElementById('mimir-theme-toggle');
                 if (btn) {
                     btn.addEventListener('click', toggleTheme);

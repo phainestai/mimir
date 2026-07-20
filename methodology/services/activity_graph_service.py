@@ -12,6 +12,10 @@ from methodology.models import Activity
 
 logger = logging.getLogger(__name__)
 
+# Keep in sync with --mimir-graph-font in static/css/design-system.css and the
+# fallback strings in static/js/content-browser.js's _graphFontFamily() /
+# _graphLabelFontFamily() — three languages, no shared source, so a font
+# change here must be mirrored in both.
 GRAPHVIZ_FONTNAME = 'IBM Plex Sans'
 
 

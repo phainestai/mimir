@@ -12,6 +12,8 @@
     --bs-font-sans-serif: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto,
         "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
     --bs-body-font-family: var(--bs-font-sans-serif);
+    /* Keep in sync with GRAPHVIZ_FONTNAME in activity_graph_service.py and the
+       fallback strings in content-browser.js's _graphFontFamily() / _graphLabelFontFamily() */
     --mimir-graph-font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --bs-body-font-size: 0.9375rem;
     --bs-body-line-height: 1.45;
@@ -22,16 +24,14 @@
     --bs-box-shadow-sm: none;
     --bs-box-shadow-lg: 0 0.35rem 0.85rem rgba(0, 0, 0, 0.12);
 
-    /* Cool cyan-blue primary (shared family; exact values per theme below) */
-    --mimir-primary: #0d7ea8;
-    --mimir-primary-rgb: 13, 126, 168;
+    /* Primary is cool cyan-blue; use --bs-primary/--bs-primary-rgb below (per-theme) */
     --mimir-card-padding: 0.9rem 1rem;
     --mimir-section-gap: 1.25rem;
     --mimir-heading-letter-spacing: -0.02em;
 }
 
 /* ============================================================
-   Light palette — professional cool gray admin
+   Light palette — cool gray admin
    ============================================================ */
 
 [data-bs-theme="light"] {
@@ -58,7 +58,7 @@
 }
 
 /* ============================================================
-   Dark palette — slate professional admin
+   Dark palette — slate admin
    ============================================================ */
 
 [data-bs-theme="dark"] {
