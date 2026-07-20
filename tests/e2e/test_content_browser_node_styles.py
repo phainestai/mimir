@@ -6,13 +6,12 @@ Covers:
     (theme tokens --mimir-graph-*), FontAwesome icons per type, uniform theme-aware
     edges, no text overflow.
 
-These visual tokens match the professional brand pack (MIMIR_UI_BRAND=professional).
+These visual tokens match Mimir's default design system (static/css/design-system.css).
 
 Checkpoint command:
   pytest tests/e2e/test_content_browser_node_styles.py -x
 """
 import pytest
-from django.test import override_settings
 from playwright.sync_api import Page
 
 from accounts.models import mark_email_verified
@@ -22,7 +21,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 LOGIN_URL_PATH = '/auth/user/login/'
 
-# Light-theme graph tokens (must match brands/professional.css [data-bs-theme="light"]).
+# Light-theme graph tokens (must match design-system.css [data-bs-theme="light"]).
 LIGHT_NODE_BACKGROUNDS = {
     'playbook': '#d4eef7',
     'workflow': '#cfe8f2',
@@ -64,9 +63,8 @@ def _get_stylesheet_for_type(page: Page, node_type: str) -> dict:
 
 
 @pytest.fixture()
-def graph_page(page: Page, live_server, django_user_model, settings):
-    """Log in and navigate to the content browser graph under professional brand."""
-    settings.UI_BRAND = 'professional'
+def graph_page(page: Page, live_server, django_user_model):
+    """Log in and navigate to the content browser graph."""
     user = django_user_model.objects.create_user(username='style_tester', password='pass1234')
     mark_email_verified(user)
     _login(page, live_server.url, 'style_tester', 'pass1234')
@@ -82,7 +80,6 @@ def graph_page(page: Page, live_server, django_user_model, settings):
 # ── S47: Uniform shape ────────────────────────────────────────────────────────
 
 @pytest.mark.django_db(transaction=True)
-@override_settings(UI_BRAND='professional')
 class TestNodeShape:
     """FOB-38: All node types must use uniform round-rectangle shape (S47)."""
 
@@ -94,7 +91,7 @@ class TestNodeShape:
                 f"{node_type} should use round-rectangle, got {style.get('shape')}"
 
     def test_all_node_types_use_ibm_plex_sans_font(self, graph_page: Page):
-        """Under professional brand, nodes resolve --mimir-graph-font to IBM Plex Sans."""
+        """Nodes resolve --mimir-graph-font to IBM Plex Sans."""
         for node_type in ('playbook', 'workflow', 'activity', 'artifact', 'skill', 'agent', 'rule'):
             style = _get_stylesheet_for_type(graph_page, node_type)
             assert 'IBM Plex Sans' in style['font-family'], f"{node_type} missing IBM Plex Sans font"
@@ -109,7 +106,6 @@ class TestNodeShape:
 # ── S47: Theme-aware cool cyan palette ────────────────────────────────────────
 
 @pytest.mark.django_db(transaction=True)
-@override_settings(UI_BRAND='professional')
 class TestNodePastelPalette:
     """FOB-38: Node backgrounds match --mimir-graph-* light theme tokens."""
 
@@ -135,7 +131,6 @@ class TestNodePastelPalette:
 # ── S47: Uniform theme-aware edges ─────────────────────────────────────────────
 
 @pytest.mark.django_db(transaction=True)
-@override_settings(UI_BRAND='professional')
 class TestEdgeColour:
     """FOB-38: All edges use uniform theme slate (--mimir-graph-edge)."""
 
@@ -170,7 +165,6 @@ class TestEdgeColour:
 # ── S47: FA icons in node labels ───────────────────────────────────────────────
 
 @pytest.mark.django_db(transaction=True)
-@override_settings(UI_BRAND='professional')
 class TestNodeIcons:
     """FOB-38: Node labels must include a FontAwesome icon glyph prefix (S47)."""
 
