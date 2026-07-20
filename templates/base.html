@@ -1,13 +1,12 @@
 {% load static %}
 <!doctype html>
-<html lang="en"{% if ui_brand_professional %} data-bs-theme="light"{% endif %}>
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Mimir - Methodology Management{% endblock %}</title>
 
-    {% if ui_brand_professional %}
-    <!-- Professional brand: apply saved light/dark before paint to avoid FOUC -->
+    <!-- Apply saved light/dark theme before paint to avoid FOUC -->
     <script>
         (function () {
             try {
@@ -19,37 +18,28 @@
                         ? 'dark' : 'light';
                 }
                 document.documentElement.setAttribute('data-bs-theme', theme);
-                console.log('theme: applied on load', { theme: theme, fromStorage: saved, brand: 'professional' });
+                console.log('theme: applied on load', { theme: theme, fromStorage: saved });
             } catch (err) {
                 console.log('theme: FOUC script failed, defaulting to light', err);
                 document.documentElement.setAttribute('data-bs-theme', 'light');
             }
         })();
     </script>
-    {% endif %}
 
-    <!-- Montserrat (stock UI typography) -->
+    <!-- IBM Plex Sans (UI typography) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
-          rel="stylesheet">
-    {% if ui_brand_professional %}
-    <!-- IBM Plex Sans (professional brand pack) -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
           rel="stylesheet">
-    {% endif %}
-    
+
     <!-- Bootstrap 5.3.8 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" 
-          rel="stylesheet" 
-          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
           crossorigin="anonymous">
 
     <!-- Design system overrides (after Bootstrap) -->
     <link href="{% static 'css/design-system.css' %}" rel="stylesheet">
-    {% if ui_brand_professional %}
-    <link href="{% static 'css/brands/professional.css' %}" rel="stylesheet" data-testid="ui-brand-professional-css">
-    {% endif %}
     <style>
         /* Primary nav: many sections + search share one row on desktop */
         [data-testid="main-navbar"] .navbar-nav.me-auto .nav-link {
@@ -330,7 +320,6 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
-                    {% if ui_brand_professional %}
                     <li class="nav-item d-flex align-items-center me-2">
                         <button type="button"
                                 class="mimir-theme-toggle"
@@ -342,7 +331,6 @@
                             <i class="fa-solid fa-sun theme-icon-dark" aria-hidden="true"></i>
                         </button>
                     </li>
-                    {% endif %}
                     {% if user.is_authenticated %}
                     <li class="nav-item d-flex align-items-center me-3 position-relative">
                         <form class="d-flex" method="get" action="{% url 'global_search' %}"
@@ -525,10 +513,9 @@
             integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" 
             crossorigin="anonymous"></script>
     
-    <!-- Theme toggle (professional brand) + Bootstrap tooltips -->
+    <!-- Theme toggle + Bootstrap tooltips -->
     <script>
         (function () {
-            {% if ui_brand_professional %}
             var STORAGE_KEY = 'mimir-theme';
 
             function currentTheme() {
@@ -563,17 +550,14 @@
                 console.log('theme: toggle clicked', { from: currentTheme(), to: next });
                 applyTheme(next);
             }
-            {% endif %}
 
             document.addEventListener('DOMContentLoaded', function () {
-                {% if ui_brand_professional %}
                 applyTheme(currentTheme());
                 var btn = document.getElementById('mimir-theme-toggle');
                 if (btn) {
                     btn.addEventListener('click', toggleTheme);
                     console.log('theme: toggle bound');
                 }
-                {% endif %}
                 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
                 tooltipTriggerList.map(function (tooltipTriggerEl) {
                     return new bootstrap.Tooltip(tooltipTriggerEl);

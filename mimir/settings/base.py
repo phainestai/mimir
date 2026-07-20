@@ -98,7 +98,6 @@ TEMPLATES = [
                 "methodology.context_processors.pip_nav",
                 "methodology.context_processors.primary_nav_section",
                 "methodology.context_processors.notification_count",
-                "methodology.context_processors.ui_brand",
             ],
         },
     },
@@ -149,11 +148,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# UI brand pack — deploy-time slide-in theme (empty = stock Mimir).
-# Supported: "" (default Montserrat stock), "professional" (dense admin pack).
-# Set via MIMIR_UI_BRAND in .env / EB environment properties.
-UI_BRAND = os.environ.get("MIMIR_UI_BRAND", "").strip().lower()
 
 # Galdr AI review worker
 GALDR_MODEL = os.environ.get("GALDR_MODEL", "claude-sonnet-4-20250514")

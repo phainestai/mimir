@@ -1699,7 +1699,7 @@ function _edgeColor() {
 }
 
 /**
- * UI font stack from design tokens (stock Montserrat / brand overrides).
+ * UI font stack from design tokens (IBM Plex Sans, with a system-font fallback).
  * Appends Font Awesome so node icon glyphs still render in labels.
  *
  * @returns {string}
@@ -1707,7 +1707,7 @@ function _edgeColor() {
 function _graphFontFamily() {
   const base = _cssVar(
     '--mimir-graph-font',
-    'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+    'IBM Plex Sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
   );
   return `${base}, "Font Awesome 6 Free", "Font Awesome 6 Pro"`;
 }
@@ -1720,7 +1720,7 @@ function _graphFontFamily() {
 function _graphLabelFontFamily() {
   return _cssVar(
     '--mimir-graph-font',
-    'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+    'IBM Plex Sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
   );
 }
 
@@ -1773,7 +1773,7 @@ function _initThemeSync() {
  *   agent       → ellipse (unchanged)
  *   rule        → cut-rectangle
  *
- * Typography: --mimir-graph-font (stock Montserrat / brand pack), weight 600.
+ * Typography: --mimir-graph-font (IBM Plex Sans), weight 600.
  * Borders: 2px solid on all node types.
  *
  * @returns {object[]} Cytoscape stylesheet array
@@ -2420,7 +2420,7 @@ function _buildFontRenderingGuards() {
  *     'text-margin-x': 8,
  *     'text-margin-y': 4,
  *     'font-size': 20,
- *     'font-family': 'Montserrat, system-ui',
+ *     'font-family': 'IBM Plex Sans, system-ui',
  *     'font-weight': 600,
  *     'text-transform': 'none',
  *     'text-background-color': '#ffffff',

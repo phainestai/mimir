@@ -98,21 +98,3 @@ def notification_count(request):
         count = NotificationService.get_unread_count(request.user)
         return {"unread_notification_count": count}
     return {"unread_notification_count": 0}
-
-
-def ui_brand(request):
-    """Inject deploy-time UI brand pack flags for templates.
-
-    Reads ``settings.UI_BRAND`` (from ``MIMIR_UI_BRAND``). Empty string means
-    stock Mimir; ``professional`` enables the dense admin brand pack.
-
-    :param request: Django HTTP request (unused; brand is process-wide).
-    :returns: Dict with ``ui_brand`` and ``ui_brand_professional``.
-    """
-    from django.conf import settings
-
-    brand = (getattr(settings, "UI_BRAND", "") or "").strip().lower()
-    return {
-        "ui_brand": brand,
-        "ui_brand_professional": brand == "professional",
-    }
