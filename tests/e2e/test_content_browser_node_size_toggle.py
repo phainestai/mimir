@@ -11,6 +11,8 @@ Checkpoint command:
 import pytest
 from playwright.sync_api import Page, expect
 
+from e2e_helpers import wait_for_cy_graph
+
 
 @pytest.mark.django_db(transaction=True)
 class TestNodeSizeModeToggleDefault:
@@ -78,8 +80,6 @@ class TestNodeSizeModeToggleBehaviour:
         self, cb_graph_page: Page, live_server, cb_playbook
     ):
         """Loading with ?nodesize=auto restores auto mode via URL deep-link."""
-        from e2e_helpers import wait_for_cy_graph
-
         pk = cb_playbook["pb"].pk
         cb_graph_page.goto(f"{live_server.url}/browser/{pk}/?nodesize=auto")
         wait_for_cy_graph(cb_graph_page)

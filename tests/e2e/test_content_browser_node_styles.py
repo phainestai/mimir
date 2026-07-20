@@ -14,6 +14,8 @@ from playwright.sync_api import Page
 
 from django.contrib.auth import get_user_model
 
+from e2e_helpers import set_compound_level
+
 
 User = get_user_model()
 LOGIN_URL_PATH = "/auth/user/login/"
@@ -156,8 +158,6 @@ class TestEdgeColour:
 
     def test_edges_use_black_line_colour(self, cb_graph_page: Page):
         """All edges rendered in cy have line-color #212529 (S47) in flat mode."""
-        from e2e_helpers import set_compound_level
-
         set_compound_level(cb_graph_page, "none")
         non_black = cb_graph_page.evaluate("""
         () => {

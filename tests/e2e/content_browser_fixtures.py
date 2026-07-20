@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from playwright.sync_api import Page
 
 from accounts.models import mark_email_verified
-from e2e_helpers import login, open_content_browser
+from e2e_helpers import enable_custom_layout, login, open_content_browser
 from methodology.models import Activity, Agent, Playbook, Rule, Skill, Workflow
 
 User = get_user_model()
@@ -82,7 +82,5 @@ def cb_graph_page(page: Page, live_server, cb_playbook) -> Page:
 @pytest.fixture
 def cb_custom_graph_page(cb_graph_page: Page) -> Page:
     """cb_graph_page with FOB-63 custom layout mode enabled."""
-    from e2e_helpers import enable_custom_layout
-
     enable_custom_layout(cb_graph_page)
     return cb_graph_page

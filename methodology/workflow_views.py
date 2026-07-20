@@ -1,7 +1,6 @@
 """Workflow views for CRUDV operations."""
 
 import logging
-from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -10,6 +9,7 @@ from django.core.exceptions import ValidationError
 from methodology.models import Playbook, Workflow
 from methodology.services.workflow_service import WorkflowService
 from methodology.services.activity_service import ActivityService
+from methodology.utils.playbook_access import playbook_readable_or_404
 
 logger = logging.getLogger(__name__)
 
@@ -124,11 +124,8 @@ def workflow_detail(request, playbook_pk, pk):
     :param pk: Workflow primary key
     :return: Rendered template response
     """
-    playbook = get_object_or_404(Playbook, pk=playbook_pk)
+    playbook = playbook_readable_or_404(request, playbook_pk)
     workflow = get_object_or_404(Workflow, pk=pk, playbook=playbook)
-
-    if not playbook.can_view(request.user):
-        raise Http404()
 
     # Fetch activities and generate graph
     from methodology.services.activity_graph_service import ActivityGraphService
@@ -179,11 +176,8 @@ def workflow_detail(request, playbook_pk, pk):
 @login_required
 def workflow_list(request, playbook_pk):
     """List workflows for playbook."""
-    playbook = get_object_or_404(Playbook, pk=playbook_pk)
+    playbook = playbook_readable_or_404(request, playbook_pk)
     workflows = WorkflowService.get_workflows_for_playbook(playbook_pk)
-
-    if not playbook.can_view(request.user):
-        raise Http404()
 
     return render(request, 'workflows/list.html', {
         'playbook': playbook,

@@ -156,7 +156,8 @@ let _currentFilters = { types: _ALL_TYPES.slice(), phases: [] };
 let _fullGraphData = null;
 let _currentSearchTerm = '';
 let _searchDebounceTimer = null;
-let _currentLayout = 'elk-layered'; // layout key — see _LAYOUT_CATALOG
+const _DEFAULT_LAYOUT_KEY = 'elk-layered'; // module fallback default — see _LAYOUT_CATALOG
+let _currentLayout = _DEFAULT_LAYOUT_KEY; // layout key — see _LAYOUT_CATALOG
 let _customLayoutMode = false; // false = default mode (FOB-63)
 
 /**
@@ -329,6 +330,8 @@ function _parseUrlParams() {
   const resolvedLayout = (layoutRaw && legacyMap[layoutRaw]) || layoutRaw;
   if (resolvedLayout && _LAYOUT_CATALOG.some(e => e.key === resolvedLayout)) {
     _currentLayout = resolvedLayout;
+  } else {
+    _currentLayout = _DEFAULT_LAYOUT_KEY;
   }
 
   _parseRoutingParam();
@@ -1339,14 +1342,40 @@ async function _openPicker() {
   }
 
   try {
-    const resp = await fetch('/api/playbooks/', {
+    _allPlaybooks = await _fetchAllPlaybooks();
+    _renderPickerItems(_allPlaybooks);
+  } catch (_) {
+    _renderPickerError();
+  }
+}
+
+/**
+ * Fetch every accessible playbook, following DRF's paginated `next` link
+ * so accounts with more than one page of results aren't silently truncated.
+ * @returns {Promise<Array>}
+ */
+async function _fetchAllPlaybooks() {
+  const results = [];
+  let url = '/api/playbooks/';
+  while (url) {
+    const resp = await fetch(url, {
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
     });
-    if (!resp.ok) return;
+    if (!resp.ok) throw new Error('Failed to fetch playbooks: ' + resp.status);
     const data = await resp.json();
-    _allPlaybooks = data.results || data;
-    _renderPickerItems(_allPlaybooks);
-  } catch (_) { /* network error — leave list empty */ }
+    results.push(...(data.results || data));
+    url = data.next || null;
+  }
+  return results;
+}
+
+/**
+ * Render an error row in the picker list when the playbooks fetch fails.
+ */
+function _renderPickerError() {
+  const list = document.getElementById('browser-picker-list');
+  if (!list) return;
+  list.innerHTML = '<div class="list-group-item text-danger small">Could not load playbooks. Please try again.</div>';
 }
 
 /**
@@ -1523,15 +1552,25 @@ function _urlRequestsCustomCanvasMode() {
   if (params.has('layout')) {
     const raw = params.get('layout');
     const resolved = legacyMap[raw] || raw;
-    if (resolved !== _DEFAULT_LAYOUT_MODE_KEY) return true;
+    const isValid = _LAYOUT_CATALOG.some(e => e.key === resolved);
+    if (isValid && resolved !== _DEFAULT_LAYOUT_MODE_KEY) return true;
   }
-  if (params.has('routing') && params.get('routing') !== _DEFAULT_ROUTING_MODE_KEY) return true;
+  if (params.has('routing')) {
+    const raw = params.get('routing');
+    const isValid = _ROUTING_CATALOG.some(e => e.key === raw);
+    if (isValid && raw !== _DEFAULT_ROUTING_MODE_KEY) return true;
+  }
   if (params.has('compound')) {
     const raw = params.get('compound');
     const resolved = raw === '1' ? 'workflow' : raw;
-    if (resolved !== _DEFAULT_COMPOUND_MODE_KEY) return true;
+    const isValid = ['none', 'workflow', 'workflow-activity'].includes(resolved);
+    if (isValid && resolved !== _DEFAULT_COMPOUND_MODE_KEY) return true;
   }
-  if (params.has('nodesize') && params.get('nodesize') !== _DEFAULT_NODE_SIZE_MODE) return true;
+  if (params.has('nodesize')) {
+    const raw = params.get('nodesize');
+    const isValid = raw === 'auto' || raw === 'fixed';
+    if (isValid && raw !== _DEFAULT_NODE_SIZE_MODE) return true;
+  }
   return false;
 }
 
@@ -1766,7 +1805,8 @@ function _expandTreeNodeAccordion(nodeId) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Current edge routing key. Defaults to 'bezier'. Read by _filtersToQueryString. */
-let _currentRouting = 'bezier';
+const _DEFAULT_ROUTING_KEY = 'bezier'; // module fallback default — see _ROUTING_CATALOG
+let _currentRouting = _DEFAULT_ROUTING_KEY;
 
 /**
  * Routing catalog — all 6 selectable Cytoscape curve-style options.
@@ -1857,6 +1897,8 @@ function _parseRoutingParam() {
   const raw = params.get('routing');
   if (raw && _ROUTING_CATALOG.some(e => e.key === raw)) {
     _currentRouting = raw;
+  } else {
+    _currentRouting = _DEFAULT_ROUTING_KEY;
   }
 }
 
@@ -1877,7 +1919,7 @@ let _compoundViewOn = false; // maintained as alias only — use _compoundLevel 
  *   'auto'   — node width expands to fit label text; font size stays constant.
  * Initialised from URL param ?nodesize= (see _parseNodeSizeParam).
  */
-let _nodeSizeMode = 'fixed';
+let _nodeSizeMode = _DEFAULT_NODE_SIZE_MODE;
 
 /**
  * Toggle node size mode between 'fixed' and 'auto', update the button,
@@ -1929,6 +1971,8 @@ function _parseNodeSizeParam() {
   const raw = params.get('nodesize');
   if (raw === 'auto' || raw === 'fixed') {
     _nodeSizeMode = raw;
+  } else {
+    _nodeSizeMode = _DEFAULT_NODE_SIZE_MODE;
   }
 }
 
@@ -2312,13 +2356,14 @@ function _updateCompoundBtn() {
 function _parseCompoundLevelParam() {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get('compound');
-  if (raw === null) return;
   const valid = new Set(['none', 'workflow', 'workflow-activity']);
   // Backward compat: '1' from old URLs means 'workflow'.
   if (raw === '1') {
     _compoundLevel = 'workflow';
   } else if (valid.has(raw)) {
     _compoundLevel = raw;
+  } else {
+    _compoundLevel = 'none';
   }
 }
 
