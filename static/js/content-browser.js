@@ -34,25 +34,28 @@ const _PLAYBOOK_STATUS_LABEL = {
 
 /**
  * Position a JS-injected dropdown above its trigger (fixed coords avoid canvas clipping).
- * Visual styling uses theme-aware .browser-menu-* classes from design-system.css.
+ * Visual styling uses Bootstrap dropdown-menu classes per IA guidelines.
  *
  * @param {HTMLElement} panel
  * @param {DOMRect} btnRect
  * @param {string} [minWidth='180px']
  */
 function _positionBrowserDropdown(panel, btnRect, minWidth) {
-  panel.classList.add('browser-menu-dropdown');
+  panel.classList.add('dropdown-menu', 'show');
   panel.style.position = 'fixed';
   panel.style.bottom = `${window.innerHeight - btnRect.top + 4}px`;
   panel.style.right = `${window.innerWidth - btnRect.right}px`;
+  panel.style.zIndex = '1050';
   panel.style.minWidth = minWidth || '180px';
+  panel.style.maxHeight = '60vh';
+  panel.style.overflowY = 'auto';
 }
 
 /** @returns {HTMLDivElement} */
 function _createDropdownHeader(testId, text) {
   const header = document.createElement('div');
   header.setAttribute('data-testid', testId);
-  header.className = 'browser-menu-group';
+  header.className = 'dropdown-header';
   header.textContent = text;
   return header;
 }
@@ -62,7 +65,7 @@ function _createDropdownItem(testId, label, isActive, onSelect) {
   const item = document.createElement('button');
   item.setAttribute('data-testid', testId);
   item.type = 'button';
-  item.className = 'browser-menu-item' + (isActive ? ' is-active' : '');
+  item.className = 'dropdown-item' + (isActive ? ' active' : '');
   item.textContent = label + (isActive ? ' ✓' : '');
   item.addEventListener('click', onSelect);
   return item;
@@ -1273,8 +1276,12 @@ function _renderPickerItems(playbooks) {
     btn.setAttribute('data-testid', 'browser-picker-item');
     btn.setAttribute('data-pk', String(pb.id));
     btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center small py-2';
-    if (String(pb.id) === String(currentPk)) {
-      btn.classList.add('active');
+    const isCurrent = String(pb.id) === String(currentPk);
+    if (isCurrent) {
+      // Soft primary wash (same language as structure-tree selection) —
+      // Bootstrap's solid .active fills the whole row with --bs-primary and
+      // looks harsh against the professional cool-gray / dark panels.
+      btn.classList.add('bg-primary-subtle', 'text-primary', 'fw-bold');
     }
     const nameSpan = document.createElement('span');
     nameSpan.textContent = pb.name;
@@ -1284,9 +1291,9 @@ function _renderPickerItems(playbooks) {
     badge.className = 'badge bg-secondary';
     badge.textContent = pb.status;
     right.appendChild(badge);
-    if (String(pb.id) === String(currentPk)) {
+    if (isCurrent) {
       const check = document.createElement('i');
-      check.className = 'fa-solid fa-check text-white ms-1';
+      check.className = 'fa-solid fa-check text-primary ms-1';
       right.appendChild(check);
     }
     btn.appendChild(nameSpan);

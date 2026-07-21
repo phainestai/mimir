@@ -1015,6 +1015,17 @@ body.mm-content-browser #browser-root {
     background-color: rgba(var(--bs-primary-rgb), 0.14) !important;
 }
 
+#browser-picker-list .list-group-item.bg-primary-subtle {
+    background-color: rgba(var(--bs-primary-rgb), 0.14) !important;
+    border-color: var(--mimir-border);
+    color: var(--bs-primary);
+}
+
+#browser-picker-list .list-group-item-action:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.08);
+    color: var(--bs-body-color);
+}
+
 [data-testid="browser-panel-compact"] {
     font-size: 0.875rem;
     line-height: 1.4;
@@ -1044,51 +1055,6 @@ body.mm-content-browser #browser-root {
     border: 1px solid var(--mimir-border);
     border-radius: var(--bs-border-radius-sm);
     padding: 2px 6px;
-}
-
-/* JS-built picker menus (layout / routing / compound) */
-.browser-menu-dropdown {
-    z-index: 1050;
-    background: var(--mimir-bg-elevated);
-    border: 1px solid var(--mimir-border);
-    border-radius: var(--bs-border-radius);
-    box-shadow: var(--bs-box-shadow-lg);
-    padding: 4px 0;
-    min-width: 180px;
-    max-height: 60vh;
-    overflow-y: auto;
-    color: var(--bs-body-color);
-}
-
-.browser-menu-group {
-    padding: 4px 12px 2px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--bs-secondary-color, #6c757d);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.browser-menu-item {
-    display: block;
-    width: 100%;
-    padding: 4px 20px;
-    text-align: left;
-    border: none;
-    cursor: pointer;
-    font-size: 0.85rem;
-    background: transparent;
-    color: var(--bs-body-color);
-}
-
-.browser-menu-item:hover {
-    background: rgba(var(--bs-primary-rgb), 0.1);
-}
-
-.browser-menu-item.is-active {
-    background: rgba(var(--bs-primary-rgb), 0.16);
-    font-weight: 600;
-    color: var(--bs-primary);
 }
 
 #cy-node-tooltip {
