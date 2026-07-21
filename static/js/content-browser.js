@@ -661,7 +661,7 @@ function _cytoscapeStyle() {
     { selector: 'node[type = "rule"]',
       style: { ..._nodeBase, 'background-color': P.secondary, 'shape': 'ellipse' } },
     { selector: 'node:selected',
-      style: { 'border-width': 3, 'border-color': P.danger } },
+      style: { 'border-width': 3, 'border-color': _selectionBorderColor() } },
     // Edges — taxi (right-angle) routing for clean hierarchical layout.
     // 'contains' and 'predecessor' use downward/auto taxi; resource edges use
     // a shorter turn so they branch off activities cleanly.
@@ -1245,7 +1245,7 @@ function _openDetailPanel(node) {
     const nodeIsVisible = node.style('visibility') !== 'hidden';
     if (nodeIsVisible) {
       window.cy.nodes().forEach(n => { n.style('border-width', 0); });
-      node.style({ 'border-width': 3, 'border-color': _BOOTSTRAP_PALETTE.danger });
+      node.style({ 'border-width': 3, 'border-color': _selectionBorderColor() });
     }
   }
   _currentPanelNode = node;
@@ -1749,15 +1749,38 @@ function _buildEnhancedNodeStyle(type) {
 }
 
 /**
- * Return pastel Bootstrap 5.3 colour tokens for a given node type.
+ * Return colour tokens for a given node type, read from CSS theme variables.
  *
- * Expected palette: see _PASTEL_NODE_PALETTE at module top (_BOOTSTRAP_PALETTE for theme tokens).
+ * Colours come from --mimir-graph-<type>-{bg,border,text} on the active
+ * data-bs-theme, so nodes track light/dark automatically. Falls back to the
+ * cool cyan-family light palette when a variable is unavailable.
  *
  * @param {string} type — entity type string
  * @returns {{ bg: string, border: string, text: string }}
  */
 function _buildNodeColor(type) {
-  return _PASTEL_NODE_PALETTE[type] || _PASTEL_NODE_DEFAULT;
+  const keys = {
+    playbook: 'playbook',
+    workflow: 'workflow',
+    activity: 'activity',
+    artifact: 'artifact',
+    skill: 'skill',
+    agent: 'agent',
+    rule: 'rule',
+  };
+  const key = keys[type];
+  if (!key) {
+    return {
+      bg: _cssVar('--mimir-bg-surface', '#f8f9fa'),
+      border: _cssVar('--mimir-border', '#dee2e6'),
+      text: _cssVar('--bs-body-color', '#212529'),
+    };
+  }
+  return {
+    bg: _cssVar(`--mimir-graph-${key}-bg`, '#e8ecf1'),
+    border: _cssVar(`--mimir-graph-${key}-border`, '#a8b2c0'),
+    text: _cssVar(`--mimir-graph-${key}-text`, '#1c2430'),
+  };
 }
 
 /**
@@ -1796,16 +1819,8 @@ function _buildNodeIcon(type) {
 
 /**
  * Return edge stylesheet entries for the enhanced style.
- * All edges must use uniform black (_BOOTSTRAP_PALETTE.bodyColor) colour.
+ * All edges use a uniform theme-aware colour (--mimir-graph-edge via _edgeColor()).
  * Inherits curve-style from _currentRouting via _applyRouting().
- *
- * Expected output (when implemented):
- *   [
- *     { selector: 'edge', style: { 'line-color': _BOOTSTRAP_PALETTE.bodyColor, ...
- *         'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'width': 1.5 } },
- *     { selector: 'edge[relationship = "predecessor"]', style: { 'line-style': 'dashed', ... } },
- *     { selector: 'edge[relationship = "contains"]', style: { 'display': 'none' } },
- *   ]
  *
  * @returns {object[]} Cytoscape stylesheet entries for edges
  */
@@ -1826,13 +1841,13 @@ function _buildEdgeStyle() {
  * @returns {object[]} Cytoscape stylesheet entries for edges
  */
 function _buildEdgeStyleForMode(compoundOn) {
-  const P = _BOOTSTRAP_PALETTE;
+  const edge = _edgeColor();
   const base = [
     {
       selector: 'edge',
       style: {
-        'line-color': P.bodyColor,
-        'target-arrow-color': P.bodyColor,
+        'line-color': edge,
+        'target-arrow-color': edge,
         'target-arrow-shape': 'triangle',
         'curve-style': 'bezier',
         'width': 1.5,
@@ -2167,7 +2182,6 @@ function _addElkCompoundData(nodeData) {
  * @returns {object} Cytoscape style overrides for the :parent selector label
  */
 function _buildCompoundLabelStyle() {
-  const P = _BOOTSTRAP_PALETTE;
   return {
     'label': ele => ele.data('label') || '',
     'padding-top': '28px',
@@ -2176,23 +2190,22 @@ function _buildCompoundLabelStyle() {
     'text-margin-x': 0,
     'text-margin-y': 4,
     'font-size': 20,
-    'font-family': 'IBM Plex Sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'font-family': _graphLabelFontFamily(),
     'font-weight': 600,
     'text-transform': 'none',
     'text-max-width': 200,
     'text-wrap': 'ellipsis',
-    'text-background-color': P.white,
+    'text-background-color': _cssVar('--mimir-graph-compound-label-bg', '#ffffff'),
     'text-background-opacity': 0.85,
     'text-background-padding': '4px',
-    'color': _PASTEL_NODE_PALETTE.workflow.text,
+    'color': _cssVar('--mimir-graph-compound-label', '#0a4a63'),
   };
 }
 
 /**
  * Return the Cytoscape stylesheet additions for compound parent (workflow) nodes.
  * These entries augment the base stylesheet when compound view is active:
- *   - background-color: _BOOTSTRAP_PALETTE.compoundWorkflowBg
- *   - border: 2px solid _BOOTSTRAP_PALETTE.primary
+ *   - background-color / border from --mimir-graph-compound-wf-* theme tokens
  *   - border-radius: 8px (via shape: round-rectangle)
  *   - text-valign: top, text-halign: center
  *   - padding via label style v2
@@ -2200,13 +2213,12 @@ function _buildCompoundLabelStyle() {
  * @returns {object[]} additional stylesheet entries for :parent selector
  */
 function _cytoscapeCompoundStyle() {
-  const P = _BOOTSTRAP_PALETTE;
   return [
     {
       selector: ':parent',
       style: {
         'background-color': _compoundBackgroundForType('workflow'),
-        'border-color': P.primary,
+        'border-color': _cssVar('--mimir-graph-compound-wf-border', '#0d7ea8'),
         'border-width': 2,
         'border-style': 'solid',
         'shape': 'round-rectangle',
@@ -2256,8 +2268,10 @@ function _buildFontRenderingGuards() {
  * @returns {string} CSS colour string
  */
 function _compoundBackgroundForType(nodeType) {
-  const P = _BOOTSTRAP_PALETTE;
-  return nodeType === 'activity' ? P.compoundActivityBg : P.compoundWorkflowBg;
+  if (nodeType === 'activity') {
+    return _cssVar('--mimir-graph-compound-act-bg', '#e2f3ec');
+  }
+  return _cssVar('--mimir-graph-compound-wf-bg', '#e4f2f7');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2370,7 +2384,7 @@ function _cytoscapeCompoundStyleForLevel(level) {
       selector: 'node[type = "activity"]:parent',
       style: {
         'background-color': _compoundBackgroundForType('activity'),
-        'border-color': _BOOTSTRAP_PALETTE.success,
+        'border-color': _cssVar('--mimir-graph-compound-act-border', '#2a9b78'),
         'border-width': 2,
         ..._buildCompoundLabelStyle(),
       },
@@ -2576,6 +2590,7 @@ function _init() {
 
   _initPanelNavigation();
   _initCustomLayoutToggle();
+  _initThemeSync();
 
   const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
   if (toggleBtn) toggleBtn.addEventListener('click', _toggleLeftPanel);

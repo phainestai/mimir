@@ -163,17 +163,17 @@ class TestNodePastelPalette:
 class TestEdgeColour:
     """FOB-38: All edges use uniform theme slate (--mimir-graph-edge)."""
 
-    def test_edges_use_black_line_colour(self, cb_graph_page: Page):
-        """All edges rendered in cy have line-color #212529 (S47) in flat mode."""
+    def test_edges_use_theme_line_colour(self, cb_graph_page: Page):
+        """All edges rendered in cy use the light-theme edge colour in flat mode."""
         set_compound_level(cb_graph_page, "none")
-        non_black = cb_graph_page.evaluate("""
-        () => {
-            const norm = c => (c || '').toLowerCase().replace(/\\s/g, '');
-            return window.cy.edges().filter(e => {
-                const c = norm(e.style('line-color'));
-                return !c.includes('#212529') && !c.includes('rgb(33,37,41)');
-            }).length;
-        }
+        non_matching = cb_graph_page.evaluate(f"""
+        () => {{
+            const expected = '{LIGHT_EDGE}'.toLowerCase();
+            return window.cy.edges().filter(e => {{
+                const c = e.style('line-color').toLowerCase();
+                return !c.includes(expected) && !c.includes('rgb(90, 101, 117)');
+            }}).length;
+        }}
         """)
         assert non_matching == 0, f"{non_matching} edges do not use theme edge colour {LIGHT_EDGE}"
 
@@ -182,11 +182,11 @@ class TestEdgeColour:
         result = cb_graph_page.evaluate("() => Array.isArray(window._buildEdgeStyle())")
         assert result is True, "_buildEdgeStyle should return an array"
 
-    def test_build_edge_style_contains_black_edge_entry(self, cb_graph_page: Page):
-        """_buildEdgeStyle() includes an entry with line-color #212529 (S47)."""
+    def test_build_edge_style_contains_theme_edge_entry(self, cb_graph_page: Page):
+        """_buildEdgeStyle() includes an entry with the light-theme edge colour."""
         entries = cb_graph_page.evaluate("() => window._buildEdgeStyle()")
-        found_black = any(
-            "#212529" in str(entry.get("style", {}).get("line-color", ""))
+        found = any(
+            LIGHT_EDGE in str(entry.get("style", {}).get("line-color", ""))
             for entry in entries
         )
         assert found, f"No theme edge entry ({LIGHT_EDGE}) found in _buildEdgeStyle output"
