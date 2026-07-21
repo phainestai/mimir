@@ -223,16 +223,19 @@ class TestPickerOpen:
     def test_picker_marks_active_playbook(
         self, page: Page, live_server, left_panel_user, playbook_a, playbook_b
     ):
-        """Active playbook row shows checkmark (FOB-22)."""
+        """Current playbook row uses soft primary highlight + checkmark (FOB-22)."""
         _login(page, live_server.url, "lp_user", "testpass123")
         page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
         page.wait_for_load_state("networkidle")
 
         page.locator('[data-testid="browser-change-playbook"]').click()
         page.wait_for_timeout(500)
-        active_item = page.locator('[data-testid="browser-picker-item"].active')
+        active_item = page.locator(
+            '[data-testid="browser-picker-item"].bg-primary-subtle'
+        )
         expect(active_item).to_have_count(1)
         expect(active_item).to_contain_text("AlphaPlaybook")
+        expect(active_item.locator(".fa-check")).to_have_count(1)
 
     def test_picker_search_filters_list(
         self, page: Page, live_server, left_panel_user, playbook_a, playbook_b

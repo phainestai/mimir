@@ -3,10 +3,243 @@
 
 {% block title %}What can Mimir do for you?{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Use Cases page — professional denser marketing-within-app */
+    [data-testid="use-cases-page"] .uc-role-card {
+        border: 1px solid var(--mimir-border);
+        background: var(--mimir-bg-surface);
+        transition: border-color 0.15s ease, transform 0.15s ease;
+        box-shadow: none;
+    }
+    [data-testid="use-cases-page"] .uc-role-card:hover {
+        border-color: var(--bs-primary);
+        transform: translateY(-2px);
+        box-shadow: none !important;
+    }
+    [data-testid="use-cases-page"] .uc-role-card .uc-role-blurb {
+        font-size: 0.875rem;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        line-height: 1.45;
+        color: var(--bs-body-color);
+    }
+    [data-testid="use-cases-page"] .uc-role-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        border-radius: var(--bs-border-radius-sm);
+        padding: 0.35rem 0.65rem;
+        border: 1px solid transparent;
+    }
+    [data-testid="use-cases-page"] .uc-role-badge--lead {
+        background: rgba(var(--bs-primary-rgb), 0.12) !important;
+        color: var(--bs-primary) !important;
+        border-color: rgba(var(--bs-primary-rgb), 0.22);
+    }
+    [data-testid="use-cases-page"] .uc-role-badge--scrum {
+        background: rgba(25, 135, 84, 0.12) !important;
+        color: #198754 !important;
+        border-color: rgba(25, 135, 84, 0.22);
+    }
+    [data-testid="use-cases-page"] .uc-role-badge--cc {
+        background: rgba(180, 83, 9, 0.12) !important;
+        color: #b45309 !important;
+        border-color: rgba(180, 83, 9, 0.22);
+    }
+    [data-testid="use-cases-page"] .uc-role-badge--junior {
+        background: rgba(13, 202, 240, 0.14) !important;
+        color: #0aa2c0 !important;
+        border-color: rgba(13, 202, 240, 0.28);
+    }
+    [data-bs-theme="dark"] [data-testid="use-cases-page"] .uc-role-badge--scrum {
+        color: #75b798 !important;
+    }
+    [data-bs-theme="dark"] [data-testid="use-cases-page"] .uc-role-badge--cc {
+        color: #e6a15c !important;
+    }
+    [data-bs-theme="dark"] [data-testid="use-cases-page"] .uc-role-badge--junior {
+        color: #6edff6 !important;
+    }
+    [data-testid="use-cases-page"] .uc-role-badge i {
+        opacity: 0.9;
+        margin-right: 0.25rem;
+    }
+    [data-testid="use-cases-page"] .uc-see-how {
+        font-size: 0.8125rem;
+        font-weight: 600;
+    }
+    [data-testid="use-cases-page"] .uc-see-how--lead { color: var(--bs-primary); }
+    [data-testid="use-cases-page"] .uc-see-how--scrum { color: #198754; }
+    [data-testid="use-cases-page"] .uc-see-how--cc { color: #b45309; }
+    [data-testid="use-cases-page"] .uc-see-how--junior { color: #0aa2c0; }
+    [data-bs-theme="dark"] [data-testid="use-cases-page"] .uc-see-how--scrum { color: #75b798; }
+    [data-bs-theme="dark"] [data-testid="use-cases-page"] .uc-see-how--cc { color: #e6a15c; }
+    [data-bs-theme="dark"] [data-testid="use-cases-page"] .uc-see-how--junior { color: #6edff6; }
+    [data-testid="use-cases-page"] .uc-section-badge {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        border-radius: var(--bs-border-radius-sm);
+        padding: 0.4rem 0.75rem;
+        border: 1px solid transparent;
+    }
+    [data-testid="use-cases-page"] .uc-section-badge--lead {
+        background: rgba(var(--bs-primary-rgb), 0.12) !important;
+        color: var(--bs-primary) !important;
+        border-color: rgba(var(--bs-primary-rgb), 0.22);
+    }
+    [data-testid="use-cases-page"] .uc-section-badge--scrum {
+        background: rgba(25, 135, 84, 0.12) !important;
+        color: #198754 !important;
+        border-color: rgba(25, 135, 84, 0.22);
+    }
+    [data-testid="use-cases-page"] .uc-section-badge--cc {
+        background: rgba(180, 83, 9, 0.12) !important;
+        color: #b45309 !important;
+        border-color: rgba(180, 83, 9, 0.22);
+    }
+    [data-testid="use-cases-page"] .uc-section-badge--junior {
+        background: rgba(13, 202, 240, 0.14) !important;
+        color: #0aa2c0 !important;
+        border-color: rgba(13, 202, 240, 0.28);
+    }
+    [data-bs-theme="dark"] [data-testid="use-cases-page"] .uc-section-badge--scrum {
+        color: #75b798 !important;
+    }
+    [data-bs-theme="dark"] [data-testid="use-cases-page"] .uc-section-badge--cc {
+        color: #e6a15c !important;
+    }
+    [data-bs-theme="dark"] [data-testid="use-cases-page"] .uc-section-badge--junior {
+        color: #6edff6 !important;
+    }
+    [data-testid="use-cases-page"] .uc-section-badge i {
+        margin-right: 0.35rem;
+        opacity: 0.9;
+    }
+    [data-testid="use-cases-page"] .uc-lead {
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.55;
+        color: var(--bs-body-color);
+        max-width: 46rem;
+    }
+    [data-testid="use-cases-page"] .uc-tagline {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--bs-secondary-color);
+        max-width: 46rem;
+    }
+    [data-testid="use-cases-page"] .uc-section-label {
+        font-size: 0.6875rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--bs-secondary-color) !important;
+        margin-top: 1.75rem;
+        margin-bottom: 0.85rem;
+    }
+    [data-testid="use-cases-page"] .uc-job-card {
+        border: 1px solid var(--mimir-border);
+        background: var(--mimir-bg-surface);
+        box-shadow: none;
+    }
+    [data-testid="use-cases-page"] .uc-job-card h6 {
+        font-size: 0.9375rem;
+        letter-spacing: -0.015em;
+    }
+    [data-testid="use-cases-page"] .uc-command {
+        background: var(--mimir-terminal-bg) !important;
+        color: var(--mimir-terminal-fg) !important;
+        border: 1px solid var(--mimir-border);
+        border-radius: var(--bs-border-radius-sm);
+        padding: 0.85rem 2.75rem 0.85rem 0.9rem;
+        font-size: 0.8125rem;
+        line-height: 1.5;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        position: relative;
+    }
+    [data-testid="use-cases-page"] .uc-command .uc-prompt {
+        color: #3dd68c !important;
+        margin-right: 0.25rem;
+    }
+    [data-testid="use-cases-page"] .uc-command .copy-btn {
+        position: absolute;
+        top: 0.45rem;
+        right: 0.45rem;
+        border-color: rgba(255, 255, 255, 0.28);
+        color: rgba(255, 255, 255, 0.85);
+        padding: 0.15rem 0.4rem;
+        z-index: 1;
+    }
+    [data-testid="use-cases-page"] .uc-command .copy-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.45);
+    }
+    [data-testid="use-cases-page"] .uc-action {
+        background: var(--bs-tertiary-bg);
+        border: 1px solid var(--mimir-border);
+        border-radius: var(--bs-border-radius-sm);
+        padding: 0.85rem 1rem;
+        font-size: 0.8125rem;
+        color: var(--bs-body-color);
+    }
+    [data-testid="use-cases-page"] .uc-divider {
+        border: 0;
+        border-top: 1px solid var(--mimir-border);
+        opacity: 1;
+        margin: 2.5rem 0;
+    }
+    [data-testid="use-cases-page"] .uc-cta {
+        background: var(--bs-primary) !important;
+        border: none;
+        box-shadow: none;
+        --bs-card-bg: var(--bs-primary);
+        --bs-card-color: #fff;
+    }
+    [data-testid="use-cases-page"] .uc-cta,
+    [data-testid="use-cases-page"] .uc-cta .card-body,
+    [data-testid="use-cases-page"] .uc-cta h4,
+    [data-testid="use-cases-page"] .uc-cta p {
+        color: #fff !important;
+    }
+    [data-testid="use-cases-page"] .uc-cta p {
+        opacity: 0.9;
+        max-width: 32rem;
+        margin-left: auto;
+        margin-right: auto;
+        font-size: 0.9375rem;
+    }
+    [data-testid="use-cases-page"] .uc-cta .btn-light {
+        --bs-btn-color: #0f1419;
+        --bs-btn-bg: #fff;
+        --bs-btn-border-color: #fff;
+        --bs-btn-hover-bg: #f0f2f5;
+        --bs-btn-hover-border-color: #f0f2f5;
+        --bs-btn-hover-color: #0f1419;
+        font-weight: 600;
+    }
+    [data-testid="use-cases-page"] .uc-cta .btn-outline-light {
+        --bs-btn-color: #fff;
+        --bs-btn-border-color: rgba(255, 255, 255, 0.65);
+        --bs-btn-hover-color: #0f1419;
+        --bs-btn-hover-bg: #fff;
+        --bs-btn-hover-border-color: #fff;
+        font-weight: 600;
+    }
+    [data-testid="use-cases-page"] code {
+        font-size: 0.85em;
+        background: var(--mimir-code-bg);
+        padding: 0.1em 0.35em;
+        border-radius: 0.2rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4" data-testid="use-cases-page">
 
-    <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
@@ -14,93 +247,87 @@
         </ol>
     </nav>
 
-    <!-- Hero -->
-    <div class="mb-5">
+    <div class="mb-4">
         <h2 class="mb-1">What can Mimir do for you?</h2>
-        <p class="text-muted">Pick your role to see how Mimir maps to your day-to-day work.</p>
+        <p class="text-body-secondary mb-0">Pick your role to see how Mimir maps to your day-to-day work.</p>
     </div>
 
-    <!-- Role cards grid -->
-    <div class="row g-4 mb-5" data-testid="role-cards">
+    <div class="row g-3 mb-5" data-testid="role-cards">
 
-        <!-- Lead Engineer -->
         <div class="col-12 col-md-6 col-lg-3">
             <a href="#lead-engineer" class="text-decoration-none" data-testid="role-card-lead-engineer">
-                <div class="card h-100 border-0 shadow-sm role-card" style="cursor:pointer;">
-                    <div class="card-body p-4 d-flex flex-column">
+                <div class="card h-100 uc-role-card" style="cursor:pointer;">
+                    <div class="card-body p-3 d-flex flex-column">
                         <div class="mb-3">
-                            <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-2">
-                                <i class="fa-solid fa-code me-1"></i> Lead Engineer
+                            <span class="uc-role-badge uc-role-badge--lead">
+                                <i class="fa-solid fa-code" aria-hidden="true"></i> Lead Engineer
                             </span>
                         </div>
-                        <p class="mb-3 text-body fw-semibold flex-grow-1">
+                        <p class="mb-3 uc-role-blurb flex-grow-1">
                             Your standards, applied consistently — by every developer and every AI, every session.
                         </p>
                         <div class="text-end">
-                            <span class="text-primary small fw-semibold">See how <i class="fa-solid fa-arrow-down ms-1"></i></span>
+                            <span class="uc-see-how uc-see-how--lead">See how <i class="fa-solid fa-arrow-down ms-1" aria-hidden="true"></i></span>
                         </div>
                     </div>
                 </div>
             </a>
         </div>
 
-        <!-- Scrum Master -->
         <div class="col-12 col-md-6 col-lg-3">
             <a href="#scrum-master" class="text-decoration-none" data-testid="role-card-scrum-master">
-                <div class="card h-100 border-0 shadow-sm role-card" style="cursor:pointer;">
-                    <div class="card-body p-4 d-flex flex-column">
+                <div class="card h-100 uc-role-card" style="cursor:pointer;">
+                    <div class="card-body p-3 d-flex flex-column">
                         <div class="mb-3">
-                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3 py-2">
-                                <i class="fa-solid fa-list-check me-1"></i> Scrum Master
+                            <span class="uc-role-badge uc-role-badge--scrum">
+                                <i class="fa-solid fa-list-check" aria-hidden="true"></i> Scrum Master
                             </span>
                         </div>
-                        <p class="mb-3 text-body fw-semibold flex-grow-1">
+                        <p class="mb-3 uc-role-blurb flex-grow-1">
                             Plan the sprint with full visibility into every dependency, every role, every prerequisite.
                         </p>
                         <div class="text-end">
-                            <span class="text-success small fw-semibold">See how <i class="fa-solid fa-arrow-down ms-1"></i></span>
+                            <span class="uc-see-how uc-see-how--scrum">See how <i class="fa-solid fa-arrow-down ms-1" aria-hidden="true"></i></span>
                         </div>
                     </div>
                 </div>
             </a>
         </div>
 
-        <!-- Competency Center Head -->
         <div class="col-12 col-md-6 col-lg-3">
             <a href="#cc-head" class="text-decoration-none" data-testid="role-card-cc-head">
-                <div class="card h-100 border-0 shadow-sm role-card" style="cursor:pointer;">
-                    <div class="card-body p-4 d-flex flex-column">
+                <div class="card h-100 uc-role-card" style="cursor:pointer;">
+                    <div class="card-body p-3 d-flex flex-column">
                         <div class="mb-3">
-                            <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning px-3 py-2" style="--bs-text-opacity:1;color:#b45309!important;">
-                                <i class="fa-solid fa-building-columns me-1"></i> Competency Center Head
+                            <span class="uc-role-badge uc-role-badge--cc">
+                                <i class="fa-solid fa-building-columns" aria-hidden="true"></i> Competency Center Head
                             </span>
                         </div>
-                        <p class="mb-3 text-body fw-semibold flex-grow-1">
+                        <p class="mb-3 uc-role-blurb flex-grow-1">
                             Retain organizational knowledge. Know your experts. Turn your playbooks into RFP drafts.
                         </p>
                         <div class="text-end">
-                            <span class="fw-semibold small" style="color:#b45309;">See how <i class="fa-solid fa-arrow-down ms-1"></i></span>
+                            <span class="uc-see-how uc-see-how--cc">See how <i class="fa-solid fa-arrow-down ms-1" aria-hidden="true"></i></span>
                         </div>
                     </div>
                 </div>
             </a>
         </div>
 
-        <!-- Junior Engineer -->
         <div class="col-12 col-md-6 col-lg-3">
             <a href="#junior-engineer" class="text-decoration-none" data-testid="role-card-junior-engineer">
-                <div class="card h-100 border-0 shadow-sm role-card" style="cursor:pointer;">
-                    <div class="card-body p-4 d-flex flex-column">
+                <div class="card h-100 uc-role-card" style="cursor:pointer;">
+                    <div class="card-body p-3 d-flex flex-column">
                         <div class="mb-3">
-                            <span class="badge rounded-pill bg-info bg-opacity-10 text-info px-3 py-2">
-                                <i class="fa-solid fa-seedling me-1"></i> Junior Engineer
+                            <span class="uc-role-badge uc-role-badge--junior">
+                                <i class="fa-solid fa-seedling" aria-hidden="true"></i> Junior Engineer
                             </span>
                         </div>
-                        <p class="mb-3 text-body fw-semibold flex-grow-1">
+                        <p class="mb-3 uc-role-blurb flex-grow-1">
                             Stop guessing what "doing it right" looks like. The playbook shows you.
                         </p>
                         <div class="text-end">
-                            <span class="text-info small fw-semibold">See how <i class="fa-solid fa-arrow-down ms-1"></i></span>
+                            <span class="uc-see-how uc-see-how--junior">See how <i class="fa-solid fa-arrow-down ms-1" aria-hidden="true"></i></span>
                         </div>
                     </div>
                 </div>
@@ -109,43 +336,39 @@
 
     </div>
 
-    <!-- ================================================================ -->
-    <!-- ROLE SECTIONS                                                     -->
-    <!-- ================================================================ -->
-
     <!-- Lead Engineer -->
-    <section id="lead-engineer" class="mb-5 pt-2" data-testid="section-lead-engineer">
-        <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-2 fs-6">
-                <i class="fa-solid fa-code me-1"></i> Lead Engineer
+    <section id="lead-engineer" class="mb-4 pt-1" data-testid="section-lead-engineer">
+        <div class="mb-2">
+            <span class="uc-section-badge uc-section-badge--lead">
+                <i class="fa-solid fa-code" aria-hidden="true"></i> Lead Engineer
             </span>
         </div>
-        <p class="lead mt-3 mb-1">
+        <p class="uc-lead mt-3 mb-2">
             Your standards, applied consistently — by every developer and every AI, every session.
             Task definition that takes minutes, not an afternoon.
             Feedback anchored in shared craft, not personal opinion.
         </p>
-        <p class="fw-semibold">
+        <p class="uc-tagline mb-0">
             With every sprint and every feature built, your team and their AI get sharper — because the playbook they share keeps improving.
         </p>
 
-        <h5 class="mt-4 mb-3 text-muted text-uppercase small fw-semibold letter-spacing-1">What you can do with Mimir today</h5>
+        <h5 class="uc-section-label">What you can do with Mimir today</h5>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-lead-1">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-lead-1">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Encode your standards once — reuse everywhere</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     Build a playbook with your architecture rules, coding conventions, and agent personas.
                     AI reads it before every session. Every developer on the team gets the same context.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Cursor, say:</p>
-                <div class="bg-dark text-light rounded p-3 font-monospace small position-relative" data-testid="command-lead-1">
-                    <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn"
+                <p class="text-body-secondary small mb-2 fw-semibold">In Cursor, say:</p>
+                <div class="uc-command" data-testid="command-lead-1">
+                    <button type="button" class="btn btn-sm btn-outline-light copy-btn"
                             data-copy="Create a new playbook called 'Backend Standards', add a workflow 'Service Layer', and add an activity 'Design Service Interface' with the following guidance: [paste your rules and patterns here]."
                             data-bs-toggle="tooltip" title="Copy to clipboard">
-                        <i class="fa-regular fa-copy"></i>
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
                     </button>
-                    <span class="text-success">$</span>
+                    <span class="uc-prompt">$</span>
                     "Create a new playbook called 'Backend Standards', add a workflow 'Service Layer',
                     and add an activity 'Design Service Interface' with the following guidance:
                     [paste your rules and patterns here]."
@@ -153,41 +376,41 @@
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-lead-2">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-lead-2">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Read the right activity before writing code</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     Before starting a task, pull the relevant activity from the playbook.
                     AI gets the steps, rules, and agent persona — no chain-prompting required.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Cursor, say:</p>
-                <div class="bg-dark text-light rounded p-3 font-monospace small position-relative" data-testid="command-lead-2">
-                    <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn"
+                <p class="text-body-secondary small mb-2 fw-semibold">In Cursor, say:</p>
+                <div class="uc-command" data-testid="command-lead-2">
+                    <button type="button" class="btn btn-sm btn-outline-light copy-btn"
                             data-copy="Read the 'BPE-02: Implement Backend' activity from the Edda playbook and apply its guidance to this task."
                             data-bs-toggle="tooltip" title="Copy to clipboard">
-                        <i class="fa-regular fa-copy"></i>
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
                     </button>
-                    <span class="text-success">$</span>
+                    <span class="uc-prompt">$</span>
                     "Read the 'BPE-02: Implement Backend' activity from the Edda playbook
                     and apply its guidance to this task."
                 </div>
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-lead-3">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-lead-3">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Give feedback anchored in shared craft</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     Reference the playbook, not your opinion. Easier to write. Harder to ignore.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Cursor, say:</p>
-                <div class="bg-dark text-light rounded p-3 font-monospace small position-relative" data-testid="command-lead-3">
-                    <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn"
+                <p class="text-body-secondary small mb-2 fw-semibold">In Cursor, say:</p>
+                <div class="uc-command" data-testid="command-lead-3">
+                    <button type="button" class="btn btn-sm btn-outline-light copy-btn"
                             data-copy="Read the 'BPE-02: Implement Backend' activity from my playbook. Review this PR diff against that activity's guidance and rules — flag any deviations with a reference to the specific rule."
                             data-bs-toggle="tooltip" title="Copy to clipboard">
-                        <i class="fa-regular fa-copy"></i>
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
                     </button>
-                    <span class="text-success">$</span>
+                    <span class="uc-prompt">$</span>
                     "Read the 'BPE-02: Implement Backend' activity from my playbook.
                     Review this PR diff against that activity's guidance and rules —
                     flag any deviations with a reference to the specific rule."
@@ -195,52 +418,52 @@
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-lead-4">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-lead-4">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Push your workflow into your IDE automatically</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     Export any workflow as markdown files directly into your AI workspace.
                     Cursor reads them in every session — no manual copy-paste, no extra config.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Cursor, say:</p>
-                <div class="bg-dark text-light rounded p-3 font-monospace small position-relative" data-testid="command-lead-4">
-                    <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn"
+                <p class="text-body-secondary small mb-2 fw-semibold">In Cursor, say:</p>
+                <div class="uc-command" data-testid="command-lead-4">
+                    <button type="button" class="btn btn-sm btn-outline-light copy-btn"
                             data-copy="Export the BPE workflow from my Edda playbook to .cursor/playbooks/Edda/BPE so my IDE picks it up automatically."
                             data-bs-toggle="tooltip" title="Copy to clipboard">
-                        <i class="fa-regular fa-copy"></i>
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
                     </button>
-                    <span class="text-success">$</span>
+                    <span class="uc-prompt">$</span>
                     "Export the BPE workflow from my Edda playbook to
                     .cursor/playbooks/Edda/BPE so my IDE picks it up automatically."
                 </div>
-                <p class="text-muted small mt-2 mb-0">
+                <p class="text-body-secondary small mt-2 mb-0">
                     Uses <code>export_workflow_to_local</code> — dumps workflow activities as <code>.md</code> files into your target directory.
                 </p>
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-lead-5">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-lead-5">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Turn your personal craft into a portable Mimir Playbook</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     You've accumulated rules, workflows, and agent configs in
                     <code>.windsurf/</code> or <code>.cursor/</code> — they live on one machine,
                     in one repo. Encode them into a personal Mimir Playbook (<em>"My Craft"</em>)
                     and your entire methodology travels with you: every machine, every IDE, every AI session pulls from the same source.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Cursor, say:</p>
-                <div class="bg-dark text-light rounded p-3 font-monospace small position-relative" data-testid="command-lead-5">
-                    <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn"
+                <p class="text-body-secondary small mb-2 fw-semibold">In Cursor, say:</p>
+                <div class="uc-command" data-testid="command-lead-5">
+                    <button type="button" class="btn btn-sm btn-outline-light copy-btn"
                             data-copy="Look at my .windsurf/** folder — I want to encode my workflows and rules into a personal Mimir Playbook called 'My Craft' so I can share them across all my machines. Follow the 'Playbook for Playbooks' methodology."
                             data-bs-toggle="tooltip" title="Copy to clipboard">
-                        <i class="fa-regular fa-copy"></i>
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
                     </button>
-                    <span class="text-success">$</span>
+                    <span class="uc-prompt">$</span>
                     "Look at my .windsurf/** folder — I want to encode my workflows and rules
                     into a personal Mimir Playbook called 'My Craft' so I can share them
                     across all my machines. Follow the 'Playbook for Playbooks' methodology."
                 </div>
-                <p class="text-muted small mt-2 mb-0">
+                <p class="text-body-secondary small mt-2 mb-0">
                     AI reads your existing rules and workflow files, creates the playbook structure in Mimir,
                     and maps each file into the right workflow → activity. Once released, every new machine
                     gets your full craft via MCP — no copying folders around.
@@ -249,63 +472,63 @@
         </div>
     </section>
 
-    <hr class="my-5">
+    <hr class="uc-divider">
 
     <!-- Scrum Master -->
-    <section id="scrum-master" class="mb-5 pt-2" data-testid="section-scrum-master">
-        <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3 py-2 fs-6">
-                <i class="fa-solid fa-list-check me-1"></i> Scrum Master
+    <section id="scrum-master" class="mb-4 pt-1" data-testid="section-scrum-master">
+        <div class="mb-2">
+            <span class="uc-section-badge uc-section-badge--scrum">
+                <i class="fa-solid fa-list-check" aria-hidden="true"></i> Scrum Master
             </span>
         </div>
-        <p class="lead mt-3 mb-1">
+        <p class="uc-lead mt-3 mb-2">
             Plan the sprint without being the weakest person in the room.
             Issues that are consistent, complete, and comparable — every sprint, every team.
             Know the sprint is healthy or at risk before the team tells you it's too late.
         </p>
-        <p class="fw-semibold">
+        <p class="uc-tagline mb-0">
             With every sprint and every feature built, your team and their AI get sharper — because the playbook they share keeps improving.
         </p>
 
-        <h5 class="mt-4 mb-3 text-muted text-uppercase small fw-semibold">What you can do with Mimir today</h5>
+        <h5 class="uc-section-label">What you can do with Mimir today</h5>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-sm-1">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-sm-1">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Check sprint readiness before kickoff</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     Run a readiness assessment against the BPE playbook for your next milestone.
                     Mimir checks that all prerequisite issues exist, dependencies are resolved,
                     and the milestone is ready to start — before the first standup.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Cursor, say:</p>
-                <div class="bg-dark text-light rounded p-3 font-monospace small position-relative" data-testid="command-sm-1">
-                    <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn"
+                <p class="text-body-secondary small mb-2 fw-semibold">In Cursor, say:</p>
+                <div class="uc-command" data-testid="command-sm-1">
+                    <button type="button" class="btn btn-sm btn-outline-light copy-btn"
                             data-copy="Are we ready for BPE on milestone #5?"
                             data-bs-toggle="tooltip" title="Copy to clipboard">
-                        <i class="fa-regular fa-copy"></i>
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
                     </button>
-                    <span class="text-success">$</span>
+                    <span class="uc-prompt">$</span>
                     "Are we ready for BPE on milestone #5?"
                 </div>
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-sm-2">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-sm-2">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Generate sprint issues from the playbook</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     AI reads the BPE workflow and creates GitHub issues for your milestone —
                     each with context map, do-not-do list, and checkpoint command already written.
                     Consistent structure every time.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Cursor, say:</p>
-                <div class="bg-dark text-light rounded p-3 font-monospace small position-relative" data-testid="command-sm-2">
-                    <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn"
+                <p class="text-body-secondary small mb-2 fw-semibold">In Cursor, say:</p>
+                <div class="uc-command" data-testid="command-sm-2">
+                    <button type="button" class="btn btn-sm btn-outline-light copy-btn"
                             data-copy="Read the BPE workflow from the Edda playbook and create GitHub issues for milestone #7, following the iteration protocol."
                             data-bs-toggle="tooltip" title="Copy to clipboard">
-                        <i class="fa-regular fa-copy"></i>
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
                     </button>
-                    <span class="text-success">$</span>
+                    <span class="uc-prompt">$</span>
                     "Read the BPE workflow from the Edda playbook and create
                     GitHub issues for milestone #7, following the iteration protocol."
                 </div>
@@ -313,41 +536,41 @@
         </div>
     </section>
 
-    <hr class="my-5">
+    <hr class="uc-divider">
 
     <!-- Competency Center Head -->
-    <section id="cc-head" class="mb-5 pt-2" data-testid="section-cc-head">
-        <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="badge rounded-pill px-3 py-2 fs-6" style="background:rgba(180,83,9,0.1);color:#b45309;">
-                <i class="fa-solid fa-building-columns me-1"></i> Competency Center Head
+    <section id="cc-head" class="mb-4 pt-1" data-testid="section-cc-head">
+        <div class="mb-2">
+            <span class="uc-section-badge uc-section-badge--cc">
+                <i class="fa-solid fa-building-columns" aria-hidden="true"></i> Competency Center Head
             </span>
         </div>
-        <p class="lead mt-3 mb-1">
+        <p class="uc-lead mt-3 mb-2">
             Retain organizational knowledge and capability.
             Know your experts and measure their contribution.
             Turn your playbooks into RFP answer drafts in under an hour.
         </p>
-        <p class="fw-semibold">
+        <p class="uc-tagline mb-0">
             With every sprint and every feature built, your team and their AI get sharper — because the playbook they share keeps improving.
         </p>
 
-        <h5 class="mt-4 mb-3 text-muted text-uppercase small fw-semibold">What you can do with Mimir today</h5>
+        <h5 class="uc-section-label">What you can do with Mimir today</h5>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-cc-1">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-cc-1">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Capture your domain methodology as a structured playbook</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     Encode your team's hard-won patterns — workflows, activities, design decisions — in one place.
                     AI reads it. New hires read it. The knowledge stops leaving when people leave.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Cursor, say:</p>
-                <div class="bg-dark text-light rounded p-3 font-monospace small position-relative" data-testid="command-cc-1">
-                    <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn"
+                <p class="text-body-secondary small mb-2 fw-semibold">In Cursor, say:</p>
+                <div class="uc-command" data-testid="command-cc-1">
+                    <button type="button" class="btn btn-sm btn-outline-light copy-btn"
                             data-copy="Create a new playbook 'Data Engineering Practices', add a workflow 'Pipeline Design', and add activities for each step our team follows: ingestion, transformation, quality checks, and delivery."
                             data-bs-toggle="tooltip" title="Copy to clipboard">
-                        <i class="fa-regular fa-copy"></i>
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
                     </button>
-                    <span class="text-success">$</span>
+                    <span class="uc-prompt">$</span>
                     "Create a new playbook 'Data Engineering Practices', add a workflow
                     'Pipeline Design', and add activities for each step our team follows:
                     ingestion, transformation, quality checks, and delivery."
@@ -355,30 +578,30 @@
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-cc-2">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-cc-2">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Release it as the team's read-only standard</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     Release the playbook at v1.0. It becomes locked — AI can read it but cannot modify it.
                     Changes require a Playbook Improvement Proposal (PIP) — reviewed and versioned like a code change.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Mimir UI:</p>
-                <div class="bg-light rounded p-3 small border" data-testid="action-cc-2">
+                <p class="text-body-secondary small mb-2 fw-semibold">In Mimir UI:</p>
+                <div class="uc-action" data-testid="action-cc-2">
                     Playbook detail page → <strong>[Release]</strong>
                     — marks the playbook as v1.0. All further changes require a PIP.
                 </div>
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-cc-3">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-cc-3">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Share your methodology with another team</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     Export any workflow to JSON and hand it to another team.
                     They import it into their Mimir instance — same structure, same activities, same guidance.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Mimir UI:</p>
-                <div class="bg-light rounded p-3 small border" data-testid="action-cc-3">
+                <p class="text-body-secondary small mb-2 fw-semibold">In Mimir UI:</p>
+                <div class="uc-action" data-testid="action-cc-3">
                     Workflow detail page → <strong>Export JSON</strong>
                     — produces a portable JSON file. Recipient: Workflow list → <strong>Import</strong>.
                 </div>
@@ -386,40 +609,40 @@
         </div>
     </section>
 
-    <hr class="my-5">
+    <hr class="uc-divider">
 
     <!-- Junior Engineer -->
-    <section id="junior-engineer" class="mb-5 pt-2" data-testid="section-junior-engineer">
-        <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="badge rounded-pill bg-info bg-opacity-10 text-info px-3 py-2 fs-6">
-                <i class="fa-solid fa-seedling me-1"></i> Junior Engineer
+    <section id="junior-engineer" class="mb-4 pt-1" data-testid="section-junior-engineer">
+        <div class="mb-2">
+            <span class="uc-section-badge uc-section-badge--junior">
+                <i class="fa-solid fa-seedling" aria-hidden="true"></i> Junior Engineer
             </span>
         </div>
-        <p class="lead mt-3 mb-1">
+        <p class="uc-lead mt-3 mb-2">
             Stop guessing what "doing it right" looks like. The playbook shows you, step by step.
             Ask the AI anything — it won't judge you, and it's read the same playbook your lead has.
         </p>
-        <p class="fw-semibold">
+        <p class="uc-tagline mb-0">
             With every sprint and every feature built, your team and their AI get sharper — because the playbook they share keeps improving.
         </p>
 
-        <h5 class="mt-4 mb-3 text-muted text-uppercase small fw-semibold">What you can do with Mimir today</h5>
+        <h5 class="uc-section-label">What you can do with Mimir today</h5>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-jr-1">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-jr-1">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Get walked through the task before writing a line of code</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     Pull the relevant activity from the playbook. AI explains the steps, the rules,
                     and what a good outcome looks like — before you start.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Cursor, say:</p>
-                <div class="bg-dark text-light rounded p-3 font-monospace small position-relative" data-testid="command-jr-1">
-                    <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn"
+                <p class="text-body-secondary small mb-2 fw-semibold">In Cursor, say:</p>
+                <div class="uc-command" data-testid="command-jr-1">
+                    <button type="button" class="btn btn-sm btn-outline-light copy-btn"
                             data-copy="Before I write any code, read the activity that covers what I'm about to do from the Edda playbook and walk me through it step by step, explaining the why behind each step."
                             data-bs-toggle="tooltip" title="Copy to clipboard">
-                        <i class="fa-regular fa-copy"></i>
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
                     </button>
-                    <span class="text-success">$</span>
+                    <span class="uc-prompt">$</span>
                     "Before I write any code, read the activity that covers what I'm about
                     to do from the Edda playbook and walk me through it step by
                     step, explaining the why behind each step."
@@ -427,21 +650,21 @@
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-3" data-testid="job-jr-2">
-            <div class="card-body p-4">
+        <div class="card uc-job-card mb-3" data-testid="job-jr-2">
+            <div class="card-body p-3">
                 <h6 class="fw-semibold mb-1">Verify your work against the Definition of Done</h6>
-                <p class="text-muted small mb-3">
+                <p class="text-body-secondary small mb-3">
                     Before you open a PR, run the checklist. The playbook defines what "done" means —
                     AI reads it and tells you what's missing.
                 </p>
-                <p class="text-muted small mb-2 fw-semibold">In Cursor, say:</p>
-                <div class="bg-dark text-light rounded p-3 font-monospace small position-relative" data-testid="command-jr-2">
-                    <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn"
+                <p class="text-body-secondary small mb-2 fw-semibold">In Cursor, say:</p>
+                <div class="uc-command" data-testid="command-jr-2">
+                    <button type="button" class="btn btn-sm btn-outline-light copy-btn"
                             data-copy="Read the 'BPE-06: Check Definition of Done' activity from the Edda playbook and verify my current work against each item on the checklist."
                             data-bs-toggle="tooltip" title="Copy to clipboard">
-                        <i class="fa-regular fa-copy"></i>
+                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
                     </button>
-                    <span class="text-success">$</span>
+                    <span class="uc-prompt">$</span>
                     "Read the 'BPE-06: Check Definition of Done' activity from the
                     Edda playbook and verify my current work against each
                     item on the checklist."
@@ -450,48 +673,35 @@
         </div>
     </section>
 
-    <!-- CTA -->
-    <div class="card border-0 shadow-sm bg-primary text-white mb-5" data-testid="use-cases-cta">
-        <div class="card-body p-5 text-center">
+    <div class="card uc-cta mb-5 mt-4" data-testid="use-cases-cta">
+        <div class="card-body p-4 text-center">
             <h4 class="mb-2">Ready to try it?</h4>
-            <p class="mb-4 opacity-75">Register to get your API token, connect your IDE, and run your first command in under 5 minutes.</p>
-            <a href="{% url 'register' %}" class="btn btn-light btn-lg me-2" data-testid="cta-register">
-                <i class="fa-solid fa-user-plus me-1"></i> Get started
+            <p class="mb-3">Register to get your API token, connect your IDE, and run your first command in under 5 minutes.</p>
+            <a href="{% url 'register' %}" class="btn btn-light me-2" data-testid="cta-register">
+                <i class="fa-solid fa-user-plus me-1" aria-hidden="true"></i> Get started
             </a>
-            <a href="{% url 'index' %}" class="btn btn-outline-light btn-lg" data-testid="cta-home">
-                <i class="fa-solid fa-house me-1"></i> Back to home
+            <a href="{% url 'index' %}" class="btn btn-outline-light" data-testid="cta-home">
+                <i class="fa-solid fa-house me-1" aria-hidden="true"></i> Back to home
             </a>
         </div>
     </div>
 
 </div>
 
-<style>
-.role-card {
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.role-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
-}
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Copy-to-clipboard
     document.querySelectorAll('.copy-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             const text = btn.dataset.copy;
             navigator.clipboard.writeText(text).then(function () {
                 const original = btn.innerHTML;
-                btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                btn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i>';
                 setTimeout(function () { btn.innerHTML = original; }, 1500);
                 console.log('Copied command to clipboard:', text);
             });
         });
     });
 
-    // Smooth scroll for role card anchors
     document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
         anchor.addEventListener('click', function (e) {
             const target = document.querySelector(this.getAttribute('href'));

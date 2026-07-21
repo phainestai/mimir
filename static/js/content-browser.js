@@ -16,45 +16,6 @@
 
 const _ALL_TYPES = ['workflow', 'activity', 'skill', 'agent', 'artifact', 'rule', 'phase'];
 
-/**
- * Bootstrap 5.3 theme tokens for Cytoscape stylesheets.
- * Cytoscape cannot consume CSS var() strings — values mirror design-system.css.
- * Optional runtime read: getComputedStyle(document.documentElement).getPropertyValue('--bs-primary')
- */
-const _BOOTSTRAP_PALETTE = {
-  primary: '#0d6efd',
-  success: '#198754',
-  warning: '#ffc107',
-  danger: '#dc3545',
-  info: '#0dcaf0',
-  secondary: '#6c757d',
-  dark: '#343a40',
-  light: '#f8f9fa',
-  bodyColor: '#212529',
-  white: '#ffffff',
-  orange: '#fd7e14',
-  borderColor: '#dee2e6',
-  compoundWorkflowBg: '#eef2ff',
-  compoundActivityBg: '#d4edda',
-};
-
-/** Pastel node chrome — Bootstrap-tinted fills for enhanced graph mode (FOB-38). */
-const _PASTEL_NODE_PALETTE = {
-  playbook: { bg: '#e0cffc', border: '#9461fb', text: '#3d0a91' },
-  workflow: { bg: '#cfe2ff', border: '#9ec5fe', text: '#084298' },
-  activity: { bg: '#d1e7dd', border: '#a3cfbb', text: '#0a3622' },
-  artifact: { bg: '#fff3cd', border: '#ffda6a', text: '#664d03' },
-  skill:    { bg: '#ffe5d0', border: '#fecba1', text: '#6e1d0b' },
-  agent:    { bg: '#cff4fc', border: '#9eeaf9', text: '#055160' },
-  rule:     { bg: '#e2e3e5', border: '#c4c8cb', text: '#2b2d2f' },
-};
-
-const _PASTEL_NODE_DEFAULT = {
-  bg: _BOOTSTRAP_PALETTE.light,
-  border: _BOOTSTRAP_PALETTE.borderColor,
-  text: _BOOTSTRAP_PALETTE.bodyColor,
-};
-
 /** Playbook status → Bootstrap badge class (mirrors Playbook.get_status_badge_color). */
 const _PLAYBOOK_STATUS_BADGE = {
   active: 'success',
@@ -617,89 +578,6 @@ function _renderGraph(pk, graphData, filters) {
 }
 
 /**
- * Return the Cytoscape stylesheet array.
- * Node labels are set via 'content' property (plain text — no innerHTML).
- *
- * @returns {object[]}
- */
-function _cytoscapeStyle() {
-  const P = _BOOTSTRAP_PALETTE;
-  const _nodeBase = {
-    'label': 'data(label)',
-    'text-valign': 'center',
-    'text-halign': 'center',
-    'font-size': 11,
-    'text-wrap': 'wrap',
-    'text-max-width': 110,
-    'width': 120,
-    'height': 40,
-    'color': P.white,
-  };
-  return [
-    { selector: 'node[type = "workflow"]',
-      style: { ..._nodeBase,
-               'label': function(ele) {
-                 const abbr = ele.data('meta') && ele.data('meta').abbreviation;
-                 return abbr ? `${abbr}\n${ele.data('label')}` : ele.data('label');
-               },
-               'background-color': P.primary, 'shape': 'round-rectangle',
-               'width': 130, 'height': 50, 'font-size': 10 } },
-    { selector: 'node[type = "activity"]',
-      style: { ..._nodeBase,
-               'label': function(ele) {
-                 const code = ele.data('meta') && ele.data('meta').display_code;
-                 return code ? `${code}\n${ele.data('label')}` : ele.data('label');
-               },
-               'background-color': P.success, 'shape': 'round-rectangle',
-               'height': 50, 'font-size': 10, 'text-max-width': 110 } },
-    { selector: 'node[type = "artifact"]',
-      style: { ..._nodeBase, 'background-color': P.warning, 'shape': 'ellipse', 'color': P.bodyColor } },
-    { selector: 'node[type = "skill"]',
-      style: { ..._nodeBase, 'background-color': P.orange, 'shape': 'ellipse' } },
-    { selector: 'node[type = "agent"]',
-      style: { ..._nodeBase, 'background-color': P.info, 'shape': 'ellipse', 'color': P.bodyColor } },
-    { selector: 'node[type = "rule"]',
-      style: { ..._nodeBase, 'background-color': P.secondary, 'shape': 'ellipse' } },
-    { selector: 'node:selected',
-      style: { 'border-width': 3, 'border-color': P.danger } },
-    // Edges — taxi (right-angle) routing for clean hierarchical layout.
-    // 'contains' and 'predecessor' use downward/auto taxi; resource edges use
-    // a shorter turn so they branch off activities cleanly.
-    { selector: 'edge[relationship = "contains"]',
-      style: { 'line-color': P.primary, 'target-arrow-color': P.primary, 'target-arrow-shape': 'triangle',
-               'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '50%', 'width': 2 } },
-    { selector: 'edge[relationship = "predecessor"]',
-      style: { 'line-color': P.success, 'target-arrow-color': P.success, 'target-arrow-shape': 'triangle',
-               'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'auto', 'taxi-turn': '50%',
-               'width': 1, 'opacity': 0.7 } },
-    { selector: 'edge[relationship = "sequence"]',
-      style: { 'line-color': P.dark, 'target-arrow-color': P.dark, 'target-arrow-shape': 'triangle',
-               'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '50%',
-               'width': 2, 'opacity': 0.55 } },
-    { selector: 'edge[relationship = "produces"]',
-      style: { 'line-color': P.warning, 'target-arrow-color': P.warning, 'target-arrow-shape': 'triangle',
-               'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
-               'width': 1.5 } },
-    { selector: 'edge[relationship = "consumes"]',
-      style: { 'line-color': P.warning, 'target-arrow-color': P.warning, 'target-arrow-shape': 'triangle',
-               'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
-               'width': 1.5, 'opacity': 0.8 } },
-    { selector: 'edge[relationship = "uses_skill"]',
-      style: { 'line-color': P.orange, 'target-arrow-color': P.orange, 'target-arrow-shape': 'triangle',
-               'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
-               'width': 1.5 } },
-    { selector: 'edge[relationship = "assigned_agent"]',
-      style: { 'line-color': P.info, 'target-arrow-color': P.info, 'target-arrow-shape': 'triangle',
-               'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
-               'width': 1.5 } },
-    { selector: 'edge[relationship = "governed_by_rule"]',
-      style: { 'line-color': P.secondary, 'target-arrow-color': P.secondary, 'target-arrow-shape': 'triangle',
-               'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
-               'width': 1.5 } },
-  ];
-}
-
-/**
  * Apply filter state to the graph.
  * Stores state to _currentFilters and calls _refreshVisualState.
  * Also closes detail panel if the currently-selected node's type is now hidden.
@@ -923,7 +801,8 @@ function _renderStructureTree() {
   const wfNodes = window.cy.nodes('[type="workflow"]').sort((a, b) => a.data('entity_pk') - b.data('entity_pk'));
   if (wfNodes.length === 0) { container.innerHTML = ''; return; }
 
-  let html = '<div class="small fw-semibold text-muted text-uppercase mb-1 mt-2">Structure</div>';
+  // Section label stays compact; row labels inherit panel 0.875rem (no nested .small).
+  let html = '<div class="fw-semibold text-muted text-uppercase mb-1 mt-2" style="font-size:0.75rem;">Structure</div>';
   wfNodes.forEach(wfNode => {
     const wfId    = wfNode.id();
     const abbr    = (wfNode.data('meta') || {}).abbreviation || '';
@@ -951,9 +830,9 @@ function _renderStructureTree() {
       <div class="mb-1">
         <div class="d-flex align-items-center gap-1 px-1 py-1 rounded browser-tree-row"
              data-node-id="${wfId}" data-testid="browser-tree-row" style="cursor:pointer;">
-          <span class="browser-tree-toggle small text-muted" data-section="${sectionId}">▸</span>
-          ${abbr ? `<span class="small text-muted" style="min-width:2.2em;">${abbr}</span>` : ''}
-          <span class="small fw-semibold text-truncate" title="${wfLabel}">${wfLabel}</span>
+          <span class="browser-tree-toggle text-muted" data-section="${sectionId}">▸</span>
+          ${abbr ? `<span class="text-muted" style="min-width:2.2em;font-size:0.8em;">${abbr}</span>` : ''}
+          <span class="fw-semibold text-truncate" title="${wfLabel}">${wfLabel}</span>
         </div>
         <div id="${sectionId}" class="ps-3" style="display:none;">`;
 
@@ -972,8 +851,8 @@ function _renderStructureTree() {
       html += `
           <div class="d-flex align-items-center gap-1 px-1 py-1 rounded browser-tree-row"
                data-node-id="${actId}" data-testid="browser-tree-row" style="cursor:pointer;">
-            ${code ? `<span class="small text-muted" style="min-width:2.8em;">${code}</span>` : ''}
-            <span class="small text-truncate flex-grow-1" title="${actLabel}">${actLabel}</span>
+            ${code ? `<span class="text-muted" style="min-width:2.8em;font-size:0.8em;">${code}</span>` : ''}
+            <span class="text-truncate flex-grow-1" title="${actLabel}">${actLabel}</span>
             ${chip}
           </div>`;
     });
@@ -1180,15 +1059,15 @@ function _renderResourceTree(node) {
 
   const anyResources = _RESOURCE_ORDER.some(t => grouped[t].size > 0);
   if (!anyResources) {
-    container.innerHTML = '<span class="small text-muted">No resources linked.</span>';
+    container.innerHTML = '<span class="text-muted">No resources linked.</span>';
     return;
   }
 
-  let html = '<div class="small fw-semibold text-muted text-uppercase mb-1">Resources</div>';
+  let html = '<div class="fw-semibold text-muted text-uppercase mb-1" style="font-size:0.75rem;">Resources</div>';
   _RESOURCE_ORDER.forEach(rType => {
     if (grouped[rType].size === 0) return;
     const label = rType.charAt(0).toUpperCase() + rType.slice(1) + 's';
-    html += `<div class="small text-muted mt-1 mb-1">${label}</div>`;
+    html += `<div class="text-muted mt-1 mb-1" style="font-size:0.8em;">${label}</div>`;
     grouped[rType].forEach((rNode, _epk) => {
       const icon  = _RESOURCE_ICONS[rType] || '';
       const label = rNode.data('label') || '';
@@ -1198,7 +1077,7 @@ function _renderResourceTree(node) {
              data-node-id="${nId}" data-testid="browser-resource-row" style="cursor:pointer;"
              title="${label}">
           <span>${icon}</span>
-          <span class="small text-truncate">${label}</span>
+          <span class="text-truncate">${label}</span>
         </div>`;
     });
   });
@@ -1222,7 +1101,7 @@ function _renderResourceTree(node) {
  */
 function _clearResourceTree() {
   const container = document.querySelector('[data-testid="browser-resource-tree"]');
-  if (container) container.innerHTML = '<span class="small text-muted">Select a Workflow to see its resources.</span>';
+  if (container) container.innerHTML = '<span class="text-muted">Select a Workflow to see its resources.</span>';
 }
 
 /**
@@ -1244,7 +1123,7 @@ function _openDetailPanel(node) {
     const nodeIsVisible = node.style('visibility') !== 'hidden';
     if (nodeIsVisible) {
       window.cy.nodes().forEach(n => { n.style('border-width', 0); });
-      node.style({ 'border-width': 3, 'border-color': _BOOTSTRAP_PALETTE.danger });
+      node.style({ 'border-width': 3, 'border-color': _selectionBorderColor() });
     }
   }
   _currentPanelNode = node;
@@ -1397,8 +1276,12 @@ function _renderPickerItems(playbooks) {
     btn.setAttribute('data-testid', 'browser-picker-item');
     btn.setAttribute('data-pk', String(pb.id));
     btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center small py-2';
-    if (String(pb.id) === String(currentPk)) {
-      btn.classList.add('active');
+    const isCurrent = String(pb.id) === String(currentPk);
+    if (isCurrent) {
+      // Soft primary wash (same language as structure-tree selection) —
+      // Bootstrap's solid .active fills the whole row with --bs-primary and
+      // looks harsh against the professional cool-gray / dark panels.
+      btn.classList.add('bg-primary-subtle', 'text-primary', 'fw-bold');
     }
     const nameSpan = document.createElement('span');
     nameSpan.textContent = pb.name;
@@ -1408,9 +1291,9 @@ function _renderPickerItems(playbooks) {
     badge.className = 'badge bg-secondary';
     badge.textContent = pb.status;
     right.appendChild(badge);
-    if (String(pb.id) === String(currentPk)) {
+    if (isCurrent) {
       const check = document.createElement('i');
-      check.className = 'fa-solid fa-check text-white ms-1';
+      check.className = 'fa-solid fa-check text-primary ms-1';
       right.appendChild(check);
     }
     btn.appendChild(nameSpan);
@@ -1607,6 +1490,97 @@ function _initCustomLayoutToggle() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Read a CSS custom property from the document root.
+ *
+ * @param {string} name — e.g. '--mimir-graph-edge'
+ * @param {string} fallback
+ * @returns {string}
+ */
+function _cssVar(name, fallback) {
+  try {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+  } catch (err) {
+    console.log('content-browser: css var read failed', { name: name, err: String(err) });
+    return fallback;
+  }
+}
+
+/** @returns {string} Selection ring colour for the active theme */
+function _selectionBorderColor() {
+  return _cssVar('--mimir-graph-select', '#0d7ea8');
+}
+
+/** @returns {string} Uniform edge colour for the active theme */
+function _edgeColor() {
+  return _cssVar('--mimir-graph-edge', '#5a6575');
+}
+
+/**
+ * UI font stack from design tokens (IBM Plex Sans, with a system-font fallback).
+ * Appends Font Awesome so node icon glyphs still render in labels.
+ * Fallback string: keep in sync with --mimir-graph-font in design-system.css
+ * and GRAPHVIZ_FONTNAME in activity_graph_service.py.
+ *
+ * @returns {string}
+ */
+function _graphFontFamily() {
+  const base = _cssVar(
+    '--mimir-graph-font',
+    'IBM Plex Sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+  );
+  return `${base}, "Font Awesome 6 Free", "Font Awesome 6 Pro"`;
+}
+
+/**
+ * Compound / parent label font (no Font Awesome — text only).
+ *
+ * @returns {string}
+ */
+function _graphLabelFontFamily() {
+  return _cssVar(
+    '--mimir-graph-font',
+    'IBM Plex Sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+  );
+}
+
+/**
+ * Rebuild Cytoscape stylesheet from current theme tokens (light/dark toggle).
+ * Preserves selection border on the open detail panel node when present.
+ */
+function _reapplyCytoscapeTheme() {
+  if (!window.cy) return;
+  const theme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+  console.log('content-browser: reapplying cytoscape theme styles', { theme: theme });
+  const style = _compoundLevel !== 'none'
+    ? _cytoscapeStyleEnhanced().concat(_cytoscapeCompoundStyleForLevel(_compoundLevel))
+    : _cytoscapeStyleEnhanced();
+  window.cy.style(style);
+  if (_currentPanelNode && _currentPanelNode.length) {
+    _currentPanelNode.style({ 'border-width': 3, 'border-color': _selectionBorderColor() });
+  }
+}
+
+/**
+ * Watch data-bs-theme changes and restyle the graph when light/dark toggles.
+ * Called once from _init().
+ */
+function _initThemeSync() {
+  if (window._mimirBrowserThemeObserver) return;
+  const observer = new MutationObserver(mutations => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && m.attributeName === 'data-bs-theme') {
+        _reapplyCytoscapeTheme();
+        break;
+      }
+    }
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+  window._mimirBrowserThemeObserver = observer;
+  console.log('content-browser: theme sync observer attached');
+}
+
+/**
  * Build the Cytoscape stylesheet with enhanced node shapes and Mimir design-aligned
  * visual style (FOB-38).
  *
@@ -1619,7 +1593,10 @@ function _cytoscapeStyleEnhanced() {
     selector: `node[type = "${type}"]`,
     style: _buildEnhancedNodeStyle(type),
   }));
-  const selectedStyle = _cytoscapeStyle().filter(s => s.selector === 'node:selected');
+  const selectedStyle = [{
+    selector: 'node:selected',
+    style: { 'border-width': 3, 'border-color': _selectionBorderColor() },
+  }];
   return [...nodeStyles, ...edgeStyles, ...selectedStyle];
 }
 
@@ -1637,7 +1614,7 @@ function _buildEnhancedNodeStyle(type) {
     'label': ele => `${icon} ${ele.data('label') || ''}`,
     'text-valign': 'center',
     'text-halign': 'center',
-    'font-family': 'Montserrat, "Font Awesome 6 Free", "Font Awesome 6 Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'font-family': _graphFontFamily(),
     'font-weight': 600,
     'text-wrap': 'ellipsis',
     'border-width': 2,
@@ -1657,15 +1634,38 @@ function _buildEnhancedNodeStyle(type) {
 }
 
 /**
- * Return pastel Bootstrap 5.3 colour tokens for a given node type.
+ * Return colour tokens for a given node type, read from CSS theme variables.
  *
- * Expected palette: see _PASTEL_NODE_PALETTE at module top (_BOOTSTRAP_PALETTE for theme tokens).
+ * Colours come from --mimir-graph-<type>-{bg,border,text} on the active
+ * data-bs-theme, so nodes track light/dark automatically. Falls back to the
+ * cool cyan-family light palette when a variable is unavailable.
  *
  * @param {string} type — entity type string
  * @returns {{ bg: string, border: string, text: string }}
  */
 function _buildNodeColor(type) {
-  return _PASTEL_NODE_PALETTE[type] || _PASTEL_NODE_DEFAULT;
+  const keys = {
+    playbook: 'playbook',
+    workflow: 'workflow',
+    activity: 'activity',
+    artifact: 'artifact',
+    skill: 'skill',
+    agent: 'agent',
+    rule: 'rule',
+  };
+  const key = keys[type];
+  if (!key) {
+    return {
+      bg: _cssVar('--mimir-bg-surface', '#f8f9fa'),
+      border: _cssVar('--mimir-border', '#dee2e6'),
+      text: _cssVar('--bs-body-color', '#212529'),
+    };
+  }
+  return {
+    bg: _cssVar(`--mimir-graph-${key}-bg`, '#e8ecf1'),
+    border: _cssVar(`--mimir-graph-${key}-border`, '#a8b2c0'),
+    text: _cssVar(`--mimir-graph-${key}-text`, '#1c2430'),
+  };
 }
 
 /**
@@ -1704,16 +1704,8 @@ function _buildNodeIcon(type) {
 
 /**
  * Return edge stylesheet entries for the enhanced style.
- * All edges must use uniform black (_BOOTSTRAP_PALETTE.bodyColor) colour.
+ * All edges use a uniform theme-aware colour (--mimir-graph-edge via _edgeColor()).
  * Inherits curve-style from _currentRouting via _applyRouting().
- *
- * Expected output (when implemented):
- *   [
- *     { selector: 'edge', style: { 'line-color': _BOOTSTRAP_PALETTE.bodyColor, ...
- *         'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'width': 1.5 } },
- *     { selector: 'edge[relationship = "predecessor"]', style: { 'line-style': 'dashed', ... } },
- *     { selector: 'edge[relationship = "contains"]', style: { 'display': 'none' } },
- *   ]
  *
  * @returns {object[]} Cytoscape stylesheet entries for edges
  */
@@ -1734,13 +1726,13 @@ function _buildEdgeStyle() {
  * @returns {object[]} Cytoscape stylesheet entries for edges
  */
 function _buildEdgeStyleForMode(compoundOn) {
-  const P = _BOOTSTRAP_PALETTE;
+  const edge = _edgeColor();
   const base = [
     {
       selector: 'edge',
       style: {
-        'line-color': P.bodyColor,
-        'target-arrow-color': P.bodyColor,
+        'line-color': edge,
+        'target-arrow-color': edge,
         'target-arrow-shape': 'triangle',
         'curve-style': 'bezier',
         'width': 1.5,
@@ -2075,7 +2067,6 @@ function _addElkCompoundData(nodeData) {
  * @returns {object} Cytoscape style overrides for the :parent selector label
  */
 function _buildCompoundLabelStyle() {
-  const P = _BOOTSTRAP_PALETTE;
   return {
     'label': ele => ele.data('label') || '',
     'padding-top': '28px',
@@ -2084,37 +2075,35 @@ function _buildCompoundLabelStyle() {
     'text-margin-x': 0,
     'text-margin-y': 4,
     'font-size': 20,
-    'font-family': 'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'font-family': _graphLabelFontFamily(),
     'font-weight': 600,
     'text-transform': 'none',
     'text-max-width': 200,
     'text-wrap': 'ellipsis',
-    'text-background-color': P.white,
+    'text-background-color': _cssVar('--mimir-graph-compound-label-bg', '#ffffff'),
     'text-background-opacity': 0.85,
     'text-background-padding': '4px',
-    'color': _PASTEL_NODE_PALETTE.workflow.text,
+    'color': _cssVar('--mimir-graph-compound-label', '#0a4a63'),
   };
 }
 
 /**
  * Return the Cytoscape stylesheet additions for compound parent (workflow) nodes.
  * These entries augment the base stylesheet when compound view is active:
- *   - background-color: _BOOTSTRAP_PALETTE.compoundWorkflowBg
- *   - border: 2px solid _BOOTSTRAP_PALETTE.primary
+ *   - background-color / border from --mimir-graph-compound-wf-* theme tokens
  *   - border-radius: 8px (via shape: round-rectangle)
- *   - text-valign: top, text-halign: left
- *   - padding: 20px
+ *   - text-valign: top, text-halign: center
+ *   - padding via label style v2
  *
  * @returns {object[]} additional stylesheet entries for :parent selector
  */
 function _cytoscapeCompoundStyle() {
-  const P = _BOOTSTRAP_PALETTE;
   return [
     {
       selector: ':parent',
       style: {
         'background-color': _compoundBackgroundForType('workflow'),
-        'border-color': P.primary,
+        'border-color': _cssVar('--mimir-graph-compound-wf-border', '#0d7ea8'),
         'border-width': 2,
         'border-style': 'solid',
         'shape': 'round-rectangle',
@@ -2164,8 +2153,10 @@ function _buildFontRenderingGuards() {
  * @returns {string} CSS colour string
  */
 function _compoundBackgroundForType(nodeType) {
-  const P = _BOOTSTRAP_PALETTE;
-  return nodeType === 'activity' ? P.compoundActivityBg : P.compoundWorkflowBg;
+  if (nodeType === 'activity') {
+    return _cssVar('--mimir-graph-compound-act-bg', '#e2f3ec');
+  }
+  return _cssVar('--mimir-graph-compound-wf-bg', '#e4f2f7');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2278,7 +2269,7 @@ function _cytoscapeCompoundStyleForLevel(level) {
       selector: 'node[type = "activity"]:parent',
       style: {
         'background-color': _compoundBackgroundForType('activity'),
-        'border-color': _BOOTSTRAP_PALETTE.success,
+        'border-color': _cssVar('--mimir-graph-compound-act-border', '#2a9b78'),
         'border-width': 2,
         ..._buildCompoundLabelStyle(),
       },
@@ -2410,21 +2401,7 @@ function _createTooltipEl() {
     el = document.createElement('div');
     el.id = 'cy-node-tooltip';
     el.setAttribute('data-testid', 'cy-node-tooltip');
-    el.style.cssText = [
-      'position:fixed',
-      'background:rgba(33,37,41,0.92)',
-      'color:#fff',
-      'font-size:0.75rem',
-      'font-family:Montserrat,system-ui,sans-serif',
-      'padding:4px 10px',
-      'border-radius:4px',
-      'pointer-events:none',
-      'z-index:10000',
-      'max-width:320px',
-      'white-space:pre-wrap',
-      'line-height:1.5',
-      'display:none',
-    ].join(';');
+    // Appearance comes from #cy-node-tooltip in design-system.css (theme-aware).
     document.body.appendChild(el);
   }
   return el;
@@ -2498,6 +2475,7 @@ function _init() {
 
   _initPanelNavigation();
   _initCustomLayoutToggle();
+  _initThemeSync();
 
   const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
   if (toggleBtn) toggleBtn.addEventListener('click', _toggleLeftPanel);

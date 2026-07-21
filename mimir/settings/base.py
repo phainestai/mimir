@@ -149,7 +149,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-
 # Galdr AI review worker
 GALDR_MODEL = os.environ.get("GALDR_MODEL", "claude-sonnet-4-20250514")
 GALDR_USE_ANTHROPIC = bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())

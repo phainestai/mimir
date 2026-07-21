@@ -102,15 +102,15 @@ We extend Bootstrap's native CSS variables with Mimir-specific tokens. All token
 
 #### Typography Tokens
 
-**Bootstrap Font Stack** (use as-is):
+**Mimir Font Stack** (overrides Bootstrap's default `system-ui` stack — see `static/css/design-system.css` for the canonical values):
 ```css
---bs-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+--bs-font-sans-serif: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
 --bs-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-/* Font sizes - Bootstrap scale */
---bs-body-font-size: 1rem;        /* 16px */
+/* Font sizes — Mimir is denser than Bootstrap's default scale */
+--bs-body-font-size: 0.9375rem;   /* 15px */
 --bs-body-font-weight: 400;
---bs-body-line-height: 1.5;
+--bs-body-line-height: 1.45;
 
 /* Heading scale */
 --bs-h1-font-size: 2.5rem;        /* 40px */
@@ -134,11 +134,11 @@ We extend Bootstrap's native CSS variables with Mimir-specific tokens. All token
 
 #### Shadow Tokens
 
-**Bootstrap Shadows** (use as-is):
+**Mimir overrides Bootstrap's default shadows** — the admin chrome is flat by design; only elevated surfaces (dropdowns, modals) keep a shadow:
 ```css
---bs-box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
---bs-box-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
---bs-box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+--bs-box-shadow: none;
+--bs-box-shadow-sm: none;
+--bs-box-shadow-lg: 0 0.35rem 0.85rem rgba(0, 0, 0, 0.12);
 --bs-box-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.075);
 ```
 
@@ -154,14 +154,14 @@ We extend Bootstrap's native CSS variables with Mimir-specific tokens. All token
 
 #### Border Tokens
 
-**Bootstrap Borders** (use as-is):
+**Mimir Borders** (radius is slightly tighter than Bootstrap's default; border color is theme-dependent — see `design-system.css`):
 ```css
 --bs-border-width: 1px;
 --bs-border-style: solid;
---bs-border-color: #dee2e6;
---bs-border-radius: 0.375rem;       /* 6px */
+--bs-border-color: #d5dae2;         /* light theme; #2a3441 in dark */
+--bs-border-radius: 0.35rem;        /* Mimir default (Bootstrap default: 0.375rem) */
 --bs-border-radius-sm: 0.25rem;     /* 4px */
---bs-border-radius-lg: 0.5rem;      /* 8px */
+--bs-border-radius-lg: 0.45rem;     /* Mimir default (Bootstrap default: 0.5rem) */
 --bs-border-radius-xl: 1rem;        /* 16px */
 --bs-border-radius-2xl: 2rem;       /* 32px */
 --bs-border-radius-pill: 50rem;     /* Fully rounded */
@@ -205,69 +205,93 @@ We extend Bootstrap's native CSS variables with Mimir-specific tokens. All token
 
 ### 3. Theming Strategy
 
-#### Light Mode (Default)
+Mimir ships one design system — IBM Plex Sans, a cool-cyan primary, denser
+admin chrome — with a light and a dark palette. There is no "stock" look to
+opt out to; this **is** the default. Canonical token values live in
+`static/css/design-system.css` — treat the values below as illustrative and
+check that file when precision matters, rather than trusting this doc to
+stay byte-for-byte in sync.
 
-Based on the dashboard screenshot, light mode uses:
+#### Light Mode (Default)
 
 ```css
 [data-bs-theme="light"] {
   /* Background hierarchy */
-  --mimir-bg-body: #f5f5f5;           /* Page background (light gray) */
+  --mimir-bg-body: #f0f2f5;           /* Page background (cool gray) */
   --mimir-bg-surface: #ffffff;        /* Card/panel background */
   --mimir-bg-elevated: #ffffff;       /* Modal/dropdown background */
-  
+
+  /* Primary */
+  --bs-primary: #0d7ea8;              /* Cool cyan-blue */
+
   /* Text colors */
-  --mimir-text-primary: #212529;      /* Primary text */
-  --mimir-text-secondary: #6c757d;    /* Secondary/muted text */
-  --mimir-text-disabled: #adb5bd;     /* Disabled text */
-  
+  --bs-body-color: #1c2430;           /* Primary text */
+  --bs-secondary-color: #6c757d;      /* Secondary/muted text (Bootstrap default) */
+
   /* Border colors */
-  --mimir-border-color: #dee2e6;      /* Default borders */
-  --mimir-divider-color: #e9ecef;     /* Dividers/separators */
+  --mimir-border: #d5dae2;
 }
 ```
 
 #### Dark Mode
 
-Toggle via icon in top navigation. Uses Bootstrap's dark mode with Mimir adjustments:
+Toggle via icon in top navigation. Uses Bootstrap's `data-bs-theme` dark mode with a Mimir slate palette:
 
 ```css
 [data-bs-theme="dark"] {
   /* Background hierarchy */
-  --mimir-bg-body: #1a1a1a;
-  --mimir-bg-surface: #2d2d2d;
-  --mimir-bg-elevated: #3a3a3a;
-  
+  --mimir-bg-body: #0f1419;
+  --mimir-bg-surface: #1a222c;
+  --mimir-bg-elevated: #222b36;
+
+  /* Primary — brighter for contrast on dark surfaces */
+  --bs-primary: #1a8fb3;
+  --bs-link-color: #5ec8e8;
+
   /* Text colors */
-  --mimir-text-primary: #f8f9fa;
-  --mimir-text-secondary: #adb5bd;
-  --mimir-text-disabled: #6c757d;
-  
+  --bs-body-color: #e4e8ee;
+  --bs-emphasis-color: #f1f3f5;
+
   /* Border colors */
-  --mimir-border-color: #495057;
-  --mimir-divider-color: #343a40;
-  
-  /* Adjust stat card backgrounds for dark mode */
-  --mimir-purple: #7c7aec;
-  --mimir-blue: #64c3ff;
-  --mimir-orange: #ffb74d;
-  --mimir-red: #f77673;
+  --mimir-border: #2a3441;
 }
 ```
 
 #### Theme Switching
 
-- Toggle button in top-right navigation (moon/sun icon)
-- Preference saved to `localStorage`
-- Smooth transition: `transition: background-color 0.2s ease, color 0.2s ease;`
-- Use Bootstrap's `[data-bs-theme]` attribute on `<html>` or `<body>`
+- Toggle button in top-right navigation (moon/sun icon), always present — not brand-gated
+- Preference saved to `localStorage` (`mimir-theme` key)
+- Theme is applied before first paint (inline `<script>` in `base.html`) to avoid a flash of the wrong theme
+- Uses Bootstrap's `[data-bs-theme]` attribute on `<html>`
 
 #### Brand Variations
 
-Not currently implemented. Future consideration for:
-- Whitelabel deployments
-- Family-specific branding
-- Custom color schemes per user preference
+The IBM Plex Sans / cool-cyan look documented above is Mimir's only shipped
+look — there is currently no deploy-time brand switch.
+
+**If a deployment needs a different look** (whitelabel for a specific
+client, a high-contrast/accessibility variant, etc.), follow this pattern
+instead of hand-editing `design-system.css` in place:
+
+1. Add a new token sheet at `static/css/brands/<name>.css` that overrides
+   the `--bs-*` / `--mimir-*` custom properties defined in
+   `design-system.css` — font stack, primary/link colors, radii, shadows,
+   and the `--mimir-graph-*` tokens used by the content browser and
+   Graphviz output.
+2. In `templates/base.html`, load that sheet's `<link>` *after*
+   `design-system.css`, gated behind a setting — an env var read into
+   `settings.py` for a per-deployment switch, or a per-tenant/per-user
+   value if the audience is dynamic.
+3. Leave `design-system.css` itself unconditional — the default must never
+   depend on whether a brand setting is set.
+4. Update this section and the token tables above once the variation
+   ships, so this doc doesn't drift from what's actually deployed.
+
+A prior working implementation of this exact pattern (IBM Plex / cool-cyan
+as an opt-in `MIMIR_UI_BRAND=professional` brand pack, before it became the
+default) is in this repo's git history — search for
+`brands/professional.css` for a reference before building a new one from
+scratch.
 
 ---
 
@@ -1200,8 +1224,8 @@ From screenshot analysis:
 
 #### Color Palette
 
-**Primary Colors** (Bootstrap semantic):
-- **Primary**: `#0d6efd` - Links, primary actions, focus states
+**Primary Colors** (Bootstrap semantic, Mimir `--bs-primary` overridden; rest are Bootstrap defaults):
+- **Primary**: `#0d7ea8` light / `#1a8fb3` dark - Links, primary actions, focus states (cool cyan-blue)
 - **Success**: `#198754` - Confirmations, positive states
 - **Danger**: `#dc3545` - Errors, destructive actions, alerts
 - **Warning**: `#ffc107` - Warnings, caution states
@@ -1815,10 +1839,10 @@ body, p {
 **Border Radius Scale**:
 
 ```css
-/* Bootstrap defaults */
+/* Mimir defaults (slightly tighter than Bootstrap) */
 --bs-border-radius-sm: 0.25rem;    /* 4px - small elements */
---bs-border-radius: 0.375rem;      /* 6px - default */
---bs-border-radius-lg: 0.5rem;     /* 8px - cards, large elements */
+--bs-border-radius: 0.35rem;       /* default (Bootstrap default: 0.375rem) */
+--bs-border-radius-lg: 0.45rem;    /* cards, large elements (Bootstrap default: 0.5rem) */
 --bs-border-radius-xl: 1rem;       /* 16px - modals */
 --bs-border-radius-pill: 50rem;    /* Fully rounded - badges, pills */
 ```
@@ -3639,6 +3663,6 @@ The Content Browser (`templates/browser/browser_graph.html`) uses a full-viewpor
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: November 20, 2024
+**Document Version**: 1.1
+**Last Updated**: July 20, 2026
 **Maintained by**: Mimir UX Team

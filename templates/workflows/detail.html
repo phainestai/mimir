@@ -143,8 +143,9 @@
         overflow-x: auto;
         margin: 1rem 0;
         padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 4px;
+        background: var(--bs-tertiary-bg);
+        border: 1px solid var(--mimir-border);
+        border-radius: var(--bs-border-radius-sm);
     }
     
     .graph-container svg {
@@ -153,8 +154,8 @@
         display: block;
         margin: 0 auto;
     }
-    
-    /* Make SVG links clickable with pointer cursor */
+
+    /* Typography via --mimir-graph-font (design-system / brand pack) */
     .graph-container svg a {
         cursor: pointer;
     }

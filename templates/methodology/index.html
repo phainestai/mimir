@@ -34,7 +34,7 @@
 <div class="mm-landing-sections-wrap">
   <!-- Connect MCP section -->
   <section class="card border-0 shadow-sm rounded-3 mb-4" id="mcp-config" data-testid="landing-mcp-connect">
-    <div class="card-header bg-white border-bottom py-2 px-3 fw-semibold d-flex align-items-center">
+    <div class="card-header bg-body border-bottom py-2 px-3 fw-semibold d-flex align-items-center">
       <i class="fa-solid fa-plug me-2 text-primary" aria-hidden="true"></i>
       <span>Connect Your AI IDE to Mimir via MCP</span>
     </div>
@@ -81,7 +81,7 @@
       <div class="tab-content" id="mcpTabsContent">
         <div class="tab-pane fade show active" id="pane-windsurf" role="tabpanel">
           <p class="text-muted small mb-2">File: <code>~/.codeium/windsurf/mcp_config.json</code></p>
-          <pre class="bg-dark text-light rounded p-3 small"><code>{
+          <pre class="bg-dark text-light rounded p-3 small uc-landing-code"><code>{
   "mcpServers": {
     "mimir": {
       "command": "docker",
@@ -98,7 +98,7 @@
         </div>
         <div class="tab-pane fade" id="pane-claude" role="tabpanel">
           <p class="text-muted small mb-2">File: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
-          <pre class="bg-dark text-light rounded p-3 small"><code>{
+          <pre class="bg-dark text-light rounded p-3 small uc-landing-code"><code>{
   "mcpServers": {
     "mimir": {
       "command": "docker",
@@ -115,7 +115,7 @@
         </div>
         <div class="tab-pane fade" id="pane-cursor" role="tabpanel">
           <p class="text-muted small mb-2">File: <code>~/.cursor/mcp.json</code></p>
-          <pre class="bg-dark text-light rounded p-3 small"><code>{
+          <pre class="bg-dark text-light rounded p-3 small uc-landing-code"><code>{
   "mcpServers": {
     "mimir": {
       "command": "docker",
@@ -132,7 +132,7 @@
         </div>
         <div class="tab-pane fade" id="pane-source" role="tabpanel">
           <p class="text-muted small mb-2">Self-host Mimir using Docker Compose — web app + MCP facade in one command.</p>
-          <pre class="bg-dark text-light rounded p-3 small"><code>git clone https://github.com/phainestai/mimir.git
+          <pre class="bg-dark text-light rounded p-3 small uc-landing-code"><code>git clone https://github.com/phainestai/mimir.git
 cd mimir
 cp .env.example .env   # set MIMIR_USER and MIMIR_PASSWORD
 docker compose up -d

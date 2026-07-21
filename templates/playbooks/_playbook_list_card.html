@@ -3,7 +3,7 @@
 <div class="col-md-6 col-lg-4 mb-4">
     <div class="playbook-book-card h-100"
          data-testid="{% if playbook.author == request.user %}playbook-book-card{% else %}public-playbook-card{% endif %}-{{ playbook.pk }}">
-        <div class="card playbook-book-card-inner h-100 border-0 d-flex flex-column">
+        <div class="card playbook-book-card-inner h-100 d-flex flex-column">
             <div class="card-header playbook-book-card-header border-0 pb-0">
                 <div class="d-flex align-items-start gap-2">
                     <span class="text-primary flex-shrink-0 mt-1" aria-hidden="true">

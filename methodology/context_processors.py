@@ -38,9 +38,7 @@ def primary_nav_section(request):
     can be highlighted without each view setting it manually.
 
     :param request: Django HTTP request.
-    :returns: Dict with ``nav_section`` key: one of
-        ``"home"``, ``"playbooks"``, ``"workflows"``, ``"activities"``,
-        ``"pips"``, or ``None`` for unmatched paths.
+    :returns: Dict with ``nav_section`` key matching a navbar tab id, or ``None``.
     """
     path = request.path
     section = _resolve_nav_section(path)
@@ -50,25 +48,43 @@ def primary_nav_section(request):
 def _resolve_nav_section(path: str):
     """Return nav section string for ``path``, or ``None`` if no match.
 
-    Activity paths take priority over playbook/workflow paths so that
-    nested URLs like ``/playbooks/12/workflows/25/activities/129/``
-    highlight the Activities tab.
+    More specific entity paths win over playbook nesting so e.g.
+    ``/playbooks/12/workflows/25/activities/129/`` highlights Activities,
+    and ``/playbooks/12/phases/`` highlights Phases — not Playbooks.
+
+    Dashboard is checked before the generic ``/activities/`` substring so
+    ``/dashboard/activities/`` stays on Home.
 
     :param path: URL path string.
     :returns: Section identifier or ``None``.
     """
-    if "/activities/" in path:
-        return "activities"
-    if path.startswith("/browser/"):
-        return "browser"
     if path.startswith("/dashboard/"):
         return "home"
-    if path.startswith("/workflows/") or "/workflows/" in path:
-        return "workflows"
-    if path.startswith("/playbooks/"):
-        return "playbooks"
+    if path.startswith("/browser/"):
+        return "browser"
+    if path.startswith("/teams/"):
+        return "teams"
     if path.startswith("/pips/") or path.startswith("/pip/"):
         return "pips"
+
+    # Nested or global entity routes (before bare /playbooks/)
+    if "/activities/" in path or path.startswith("/activities/"):
+        return "activities"
+    if "/workflows/" in path or path.startswith("/workflows/"):
+        return "workflows"
+    if "/phases/" in path or path.startswith("/phases/"):
+        return "phases"
+    if "/artifacts/" in path or path.startswith("/artifacts/"):
+        return "artifacts"
+    if "/agents/" in path or path.startswith("/agents/"):
+        return "agents"
+    if "/skills/" in path or path.startswith("/skills/"):
+        return "skills"
+    if "/rules/" in path or path.startswith("/rules/"):
+        return "rules"
+
+    if path.startswith("/playbooks/"):
+        return "playbooks"
     return None
 
 

@@ -12,6 +12,12 @@ from methodology.models import Activity
 
 logger = logging.getLogger(__name__)
 
+# Keep in sync with --mimir-graph-font in static/css/design-system.css and the
+# fallback strings in static/js/content-browser.js's _graphFontFamily() /
+# _graphLabelFontFamily() — three languages, no shared source, so a font
+# change here must be mirrored in both.
+GRAPHVIZ_FONTNAME = 'IBM Plex Sans'
+
 
 class ActivityGraphService:
     """
@@ -64,11 +70,10 @@ class ActivityGraphService:
             return None
         
         try:
-            # Create directed graph
             dot = graphviz.Digraph(comment=f'{workflow.name} Activities')
-            dot.attr(rankdir='LR')  # Left to right layout
-            dot.attr('node', shape='box', style='filled,rounded', fontname='Arial')
-            dot.attr('edge', fontname='Arial')
+            dot.attr(rankdir='LR', fontname=GRAPHVIZ_FONTNAME)  # Left to right; graph/cluster labels
+            dot.attr('node', shape='box', style='filled,rounded', fontname=GRAPHVIZ_FONTNAME)
+            dot.attr('edge', fontname=GRAPHVIZ_FONTNAME)
             
             # Check if activities have phases
             has_phases = self._has_phases(activities)
@@ -81,7 +86,12 @@ class ActivityGraphService:
                 for phase_name, phase_activities in phase_groups.items():
                     cluster_name = f'cluster_{phase_name.lower().replace(" ", "_")}'
                     with dot.subgraph(name=cluster_name) as subg:
-                        subg.attr(label=phase_name, style='filled', color='lightgrey')
+                        subg.attr(
+                            label=phase_name,
+                            style='filled',
+                            color='lightgrey',
+                            fontname=GRAPHVIZ_FONTNAME,
+                        )
                         
                         # Add activity nodes within this phase
                         for activity in phase_activities:

@@ -134,6 +134,22 @@ class TestActivityGraphService:
         # All nodes should use uniform lightblue color
         assert svg is not None
         assert 'lightblue' in svg
+
+    def test_graph_typography_uses_ibm_plex_sans(self):
+        """SVG text uses IBM Plex Sans, Mimir's design-system font."""
+        Activity.objects.create(
+            workflow=self.workflow,
+            name='Typography Activity',
+            guidance='Test',
+            order=1,
+        )
+
+        svg = self.service.generate_activities_graph(self.workflow, self.playbook)
+
+        assert svg is not None
+        assert 'IBM Plex Sans' in svg
+        assert 'font-family="Arial"' not in svg
+        assert "font-family='Arial'" not in svg
     
     def test_clickable_nodes_have_href_attributes(self):
         """Test activity nodes have href attributes for clickability."""
