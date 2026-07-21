@@ -16,45 +16,6 @@
 
 const _ALL_TYPES = ['workflow', 'activity', 'skill', 'agent', 'artifact', 'rule', 'phase'];
 
-/**
- * Theme tokens for Cytoscape stylesheets (professional cool-cyan palette).
- * Cytoscape cannot consume CSS var() strings — values mirror design-system.css.
- * Optional runtime read: getComputedStyle(document.documentElement).getPropertyValue('--bs-primary')
- */
-const _BOOTSTRAP_PALETTE = {
-  primary: '#0d7ea8',
-  success: '#198754',
-  warning: '#ffc107',
-  danger: '#dc3545',
-  info: '#0dcaf0',
-  secondary: '#6c757d',
-  dark: '#343a40',
-  light: '#f8f9fa',
-  bodyColor: '#212529',
-  white: '#ffffff',
-  orange: '#fd7e14',
-  borderColor: '#dee2e6',
-  compoundWorkflowBg: '#e4f2f7',
-  compoundActivityBg: '#e2f3ec',
-};
-
-/** Pastel node chrome — Bootstrap-tinted fills for enhanced graph mode (FOB-38). */
-const _PASTEL_NODE_PALETTE = {
-  playbook: { bg: '#d4eef7', border: '#6bb5cc', text: '#0a4a63' },
-  workflow: { bg: '#cfe8f2', border: '#5aa8c2', text: '#0b5570' },
-  activity: { bg: '#d4efe8', border: '#6bbfa8', text: '#0d4f40' },
-  artifact: { bg: '#f5edd8', border: '#c9a96a', text: '#5c4a1a' },
-  skill:    { bg: '#f3e4d6', border: '#c99a78', text: '#5c3a1f' },
-  agent:    { bg: '#d6eef4', border: '#7abcc9', text: '#0d4f5c' },
-  rule:     { bg: '#e4e8ed', border: '#a8b2c0', text: '#2a3340' },
-};
-
-const _PASTEL_NODE_DEFAULT = {
-  bg: _BOOTSTRAP_PALETTE.light,
-  border: _BOOTSTRAP_PALETTE.borderColor,
-  text: _BOOTSTRAP_PALETTE.bodyColor,
-};
-
 /** Playbook status → Bootstrap badge class (mirrors Playbook.get_status_badge_color). */
 const _PLAYBOOK_STATUS_BADGE = {
   active: 'success',
@@ -73,28 +34,25 @@ const _PLAYBOOK_STATUS_LABEL = {
 
 /**
  * Position a JS-injected dropdown above its trigger (fixed coords avoid canvas clipping).
- * Visual styling uses Bootstrap dropdown-menu classes per IA guidelines.
+ * Visual styling uses theme-aware .browser-menu-* classes from design-system.css.
  *
  * @param {HTMLElement} panel
  * @param {DOMRect} btnRect
  * @param {string} [minWidth='180px']
  */
 function _positionBrowserDropdown(panel, btnRect, minWidth) {
-  panel.classList.add('dropdown-menu', 'show');
+  panel.classList.add('browser-menu-dropdown');
   panel.style.position = 'fixed';
   panel.style.bottom = `${window.innerHeight - btnRect.top + 4}px`;
   panel.style.right = `${window.innerWidth - btnRect.right}px`;
-  panel.style.zIndex = '1050';
   panel.style.minWidth = minWidth || '180px';
-  panel.style.maxHeight = '60vh';
-  panel.style.overflowY = 'auto';
 }
 
 /** @returns {HTMLDivElement} */
 function _createDropdownHeader(testId, text) {
   const header = document.createElement('div');
   header.setAttribute('data-testid', testId);
-  header.className = 'dropdown-header';
+  header.className = 'browser-menu-group';
   header.textContent = text;
   return header;
 }
@@ -104,7 +62,7 @@ function _createDropdownItem(testId, label, isActive, onSelect) {
   const item = document.createElement('button');
   item.setAttribute('data-testid', testId);
   item.type = 'button';
-  item.className = 'dropdown-item' + (isActive ? ' active' : '');
+  item.className = 'browser-menu-item' + (isActive ? ' is-active' : '');
   item.textContent = label + (isActive ? ' ✓' : '');
   item.addEventListener('click', onSelect);
   return item;
@@ -614,89 +572,6 @@ function _renderGraph(pk, graphData, filters) {
 
   // Apply phase/search dim (no type rebuild — cy was created with correct elements).
   _refreshVisualState();
-}
-
-/**
- * Return the Cytoscape stylesheet array.
- * Node labels are set via 'content' property (plain text — no innerHTML).
- *
- * @returns {object[]}
- */
-function _cytoscapeStyle() {
-  const P = _BOOTSTRAP_PALETTE;
-  const _nodeBase = {
-    'label': 'data(label)',
-    'text-valign': 'center',
-    'text-halign': 'center',
-    'font-size': 11,
-    'text-wrap': 'wrap',
-    'text-max-width': 110,
-    'width': 120,
-    'height': 40,
-    'color': P.white,
-  };
-  return [
-    { selector: 'node[type = "workflow"]',
-      style: { ..._nodeBase,
-               'label': function(ele) {
-                 const abbr = ele.data('meta') && ele.data('meta').abbreviation;
-                 return abbr ? `${abbr}\n${ele.data('label')}` : ele.data('label');
-               },
-               'background-color': P.primary, 'shape': 'round-rectangle',
-               'width': 130, 'height': 50, 'font-size': 10 } },
-    { selector: 'node[type = "activity"]',
-      style: { ..._nodeBase,
-               'label': function(ele) {
-                 const code = ele.data('meta') && ele.data('meta').display_code;
-                 return code ? `${code}\n${ele.data('label')}` : ele.data('label');
-               },
-               'background-color': P.success, 'shape': 'round-rectangle',
-               'height': 50, 'font-size': 10, 'text-max-width': 110 } },
-    { selector: 'node[type = "artifact"]',
-      style: { ..._nodeBase, 'background-color': P.warning, 'shape': 'ellipse', 'color': P.bodyColor } },
-    { selector: 'node[type = "skill"]',
-      style: { ..._nodeBase, 'background-color': P.orange, 'shape': 'ellipse' } },
-    { selector: 'node[type = "agent"]',
-      style: { ..._nodeBase, 'background-color': P.info, 'shape': 'ellipse', 'color': P.bodyColor } },
-    { selector: 'node[type = "rule"]',
-      style: { ..._nodeBase, 'background-color': P.secondary, 'shape': 'ellipse' } },
-    { selector: 'node:selected',
-      style: { 'border-width': 3, 'border-color': _selectionBorderColor() } },
-    // Edges — taxi (right-angle) routing for clean hierarchical layout.
-    // 'contains' and 'predecessor' use downward/auto taxi; resource edges use
-    // a shorter turn so they branch off activities cleanly.
-    { selector: 'edge[relationship = "contains"]',
-      style: { 'line-color': P.primary, 'target-arrow-color': P.primary, 'target-arrow-shape': 'triangle',
-               'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '50%', 'width': 2 } },
-    { selector: 'edge[relationship = "predecessor"]',
-      style: { 'line-color': P.success, 'target-arrow-color': P.success, 'target-arrow-shape': 'triangle',
-               'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'auto', 'taxi-turn': '50%',
-               'width': 1, 'opacity': 0.7 } },
-    { selector: 'edge[relationship = "sequence"]',
-      style: { 'line-color': P.dark, 'target-arrow-color': P.dark, 'target-arrow-shape': 'triangle',
-               'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '50%',
-               'width': 2, 'opacity': 0.55 } },
-    { selector: 'edge[relationship = "produces"]',
-      style: { 'line-color': P.warning, 'target-arrow-color': P.warning, 'target-arrow-shape': 'triangle',
-               'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
-               'width': 1.5 } },
-    { selector: 'edge[relationship = "consumes"]',
-      style: { 'line-color': P.warning, 'target-arrow-color': P.warning, 'target-arrow-shape': 'triangle',
-               'line-style': 'dashed', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
-               'width': 1.5, 'opacity': 0.8 } },
-    { selector: 'edge[relationship = "uses_skill"]',
-      style: { 'line-color': P.orange, 'target-arrow-color': P.orange, 'target-arrow-shape': 'triangle',
-               'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
-               'width': 1.5 } },
-    { selector: 'edge[relationship = "assigned_agent"]',
-      style: { 'line-color': P.info, 'target-arrow-color': P.info, 'target-arrow-shape': 'triangle',
-               'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
-               'width': 1.5 } },
-    { selector: 'edge[relationship = "governed_by_rule"]',
-      style: { 'line-color': P.secondary, 'target-arrow-color': P.secondary, 'target-arrow-shape': 'triangle',
-               'line-style': 'dotted', 'curve-style': 'taxi', 'taxi-direction': 'downward', 'taxi-turn': '30%',
-               'width': 1.5 } },
-  ];
 }
 
 /**
@@ -1711,7 +1586,10 @@ function _cytoscapeStyleEnhanced() {
     selector: `node[type = "${type}"]`,
     style: _buildEnhancedNodeStyle(type),
   }));
-  const selectedStyle = _cytoscapeStyle().filter(s => s.selector === 'node:selected');
+  const selectedStyle = [{
+    selector: 'node:selected',
+    style: { 'border-width': 3, 'border-color': _selectionBorderColor() },
+  }];
   return [...nodeStyles, ...edgeStyles, ...selectedStyle];
 }
 
