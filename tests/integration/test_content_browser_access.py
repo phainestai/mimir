@@ -2,15 +2,13 @@
 Integration tests for Content Browser access and navigation.
 
 Tests scenarios from docs/features/act-16-content-browser/01-access-and-nav.feature.
-Following TDD: tests FAIL until implementation is complete (NotImplementedError stubs).
 """
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
-from django.urls import reverse
 
-from methodology.models import Playbook
+from methodology.models import Playbook, Team, TeamMembership, TeamPlaybook
 
 User = get_user_model()
 
@@ -114,7 +112,9 @@ class TestContentBrowserServerSide:
         """Template contains data-playbook-pk={{ pk }} so JS can init the graph."""
         response = self.client.get(f"/browser/{self.public_playbook.pk}/")
         assert response.status_code == 200
-        assert f'data-playbook-pk="{self.public_playbook.pk}"' in response.content.decode()
+        assert (
+            f'data-playbook-pk="{self.public_playbook.pk}"' in response.content.decode()
+        )
 
     # FOB-CONTENT-BROWSER-03
     def test_browser_playbook_shows_playbook_name_in_left_panel(self):
@@ -157,10 +157,15 @@ class TestContentBrowserServerSide:
 
 @pytest.mark.django_db
 class TestPickerAccessControl:
-    """S2 — Picker access control.
+    """S2 — Picker access control via GET /api/playbooks/.
 
     Covers: FOB-CONTENT-BROWSER-03e
     """
+
+    def _picker_names(self):
+        response = self.client.get("/api/playbooks/")
+        assert response.status_code == 200
+        return [item["name"] for item in response.json()["results"]]
 
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -173,20 +178,32 @@ class TestPickerAccessControl:
         )
         # Playbooks with varied visibility/ownership
         self.marias_private = Playbook.objects.create(
-            name="Maria Private", description="", category="development",
-            author=self.maria, visibility="private",
+            name="Maria Private",
+            description="",
+            category="development",
+            author=self.maria,
+            visibility="private",
         )
         self.others_private = Playbook.objects.create(
-            name="Others Private", description="", category="development",
-            author=self.other, visibility="private",
+            name="Others Private",
+            description="",
+            category="development",
+            author=self.other,
+            visibility="private",
         )
         self.others_public_draft = Playbook.objects.create(
-            name="Others Public Draft", description="", category="development",
-            author=self.other, visibility="public",
+            name="Others Public Draft",
+            description="",
+            category="development",
+            author=self.other,
+            visibility="public",
         )
         self.others_public_released = Playbook.objects.create(
-            name="Others Public Released", description="", category="development",
-            author=self.other, visibility="public",
+            name="Others Public Released",
+            description="",
+            category="development",
+            author=self.other,
+            visibility="public",
         )
         # Mark released
         self.others_public_released.status = "released"
@@ -197,30 +214,25 @@ class TestPickerAccessControl:
     # FOB-CONTENT-BROWSER-03e
     def test_picker_includes_own_playbooks_of_any_status(self):
         """Picker includes playbooks owned by the user regardless of status."""
-        response = self.client.get("/browser/")
-        assert response.status_code == 200
-        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        names = self._picker_names()
         assert "Maria Private" in names
 
     # FOB-CONTENT-BROWSER-03e
     def test_picker_includes_public_non_draft_playbooks_from_others(self):
         """Picker includes public released/active/disabled playbooks from other users."""
-        response = self.client.get("/browser/")
-        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        names = self._picker_names()
         assert "Others Public Released" in names
 
     # FOB-CONTENT-BROWSER-03e
     def test_picker_excludes_private_playbooks_from_others(self):
         """Picker does NOT include private playbooks owned by other users."""
-        response = self.client.get("/browser/")
-        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        names = self._picker_names()
         assert "Others Private" not in names
 
     # FOB-CONTENT-BROWSER-03e
     def test_picker_excludes_public_draft_playbooks_from_others(self):
         """Picker does NOT include public draft playbooks owned by other users."""
-        response = self.client.get("/browser/")
-        names = [pb.name for pb in response.context["accessible_playbooks"]]
+        names = self._picker_names()
         assert "Others Public Draft" not in names
 
     # FOB-CONTENT-BROWSER-03e
@@ -228,3 +240,41 @@ class TestPickerAccessControl:
         """Maria can open /browser/<pk>/ for a public released playbook she does not own."""
         response = self.client.get(f"/browser/{self.others_public_released.pk}/")
         assert response.status_code == 200
+
+
+@pytest.mark.django_db
+class TestTeamPlaybookBrowserAccess:
+    """Act-16 Phase A1 — team member page access mirrors can_view()."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.client = Client()
+        self.owner = User.objects.create_user(
+            username="team_owner", email="owner@test.com", password="testpass123"
+        )
+        self.member = User.objects.create_user(
+            username="team_member", email="member@test.com", password="testpass123"
+        )
+        self.playbook = Playbook.objects.create(
+            name="Team Private Playbook",
+            description="Shared via team",
+            category="development",
+            author=self.owner,
+            status="released",
+            visibility="private",
+        )
+        team = Team.objects.create(
+            name="Browser Team",
+            visibility=Team.VISIBILITY_HIDDEN,
+            admin=self.owner,
+        )
+        TeamMembership.objects.create(team=team, user=self.owner, role="admin")
+        TeamMembership.objects.create(team=team, user=self.member, role="member")
+        TeamPlaybook.objects.create(team=team, playbook=self.playbook)
+        self.client.login(username="team_member", password="testpass123")
+
+    def test_team_member_can_open_browser_for_team_playbook(self):
+        """GET /browser/<pk>/ returns 200 for a team-shared private playbook."""
+        response = self.client.get(f"/browser/{self.playbook.pk}/")
+        assert response.status_code == 200
+        assert "Team Private Playbook" in response.content.decode()

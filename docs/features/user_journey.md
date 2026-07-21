@@ -509,6 +509,12 @@ PIP approved and merged      → v2.0  (new released version)
 - For released playbooks, MCP suggests creating PIP instead
 - MCP tools check playbook status before allowing mutations
 
+**MCP Version History** (`get_playbook` extended params):
+- `get_playbook(playbook_id, include_history=True)` → returns standard playbook fields **plus** a `versions` list; each entry has `version_number`, `source` (pip/author/release/admin), `pip_id`, `change_summary` (one-liner), `created_at`, `is_major`; ordered newest-first
+- `get_playbook(playbook_id, version="1.0")` → returns the `snapshot_data` JSON recorded at that version (full playbook structure at that point in time); raises an error if the version does not exist
+- Covers **FOB-MCP-VH-01** (history list), **FOB-MCP-VH-02** (point-in-time snapshot), **FOB-MCP-VH-03** (not-found guard)
+- Primary use case: incident investigation — "which PIP or edit wiped Activity X guidance?"
+
 Maria now understands that her new draft playbooks will auto-version as she works on them, and once released, they become controlled artifacts that require formal change proposals.
 
 ---

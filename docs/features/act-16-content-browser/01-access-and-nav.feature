@@ -48,17 +48,17 @@ Feature: FOB-CONTENT-BROWSER-ACCESS Content Browser Access and Navigation
     And the structural tree is populated
 
 
-  Scenario: FOB-CONTENT-BROWSER-03b URL is the source of truth for active playbook and filters
+  Scenario: FOB-CONTENT-BROWSER-03b URL is the source of truth for the active playbook
     Given Maria is viewing /browser/3/ (FeatureFactory)
     When she uses [Change Playbook] and selects "React Frontend Development" (id=7)
     Then the URL updates to /browser/7/
     And the browser back button returns her to /browser/3/ (FeatureFactory)
     And she can copy /browser/7/ and share it — the recipient opens directly to that playbook
-    And active filters are reflected in URL query params:
-      e.g. /browser/7/?types=workflow,activity&phases=2,5
-    And when ALL entity types are visible and NO phase filter is active, the URL is clean:
-      /browser/7/ (no query string — default state has no params)
-    And refreshing the page or sharing the URL restores the same filter state
+    Note: Entity-type and phase filter URL params were removed with the filter toolbar (FOB-11/11b).
+    Note: Layout/routing/compound URL params may appear after custom-layout changes (FOB-63); default mode resets on full page load.
+
+
+  # NOTE: FOB-CONTENT-BROWSER-03f (URL filter param normalisation) REMOVED — filter toolbar dropped.
 
 
   Scenario: FOB-CONTENT-BROWSER-03c Inaccessible or missing playbook returns 404
@@ -86,14 +86,6 @@ Feature: FOB-CONTENT-BROWSER-ACCESS Content Browser Access and Navigation
     And no edit actions are visible in the detail panel for playbooks she does not own
 
 
-  Scenario: FOB-CONTENT-BROWSER-03f URL filter params are normalised on load
-    Given Maria navigates to /browser/7/?types=&phases=999,abc
-    Then the client drops unknown types (empty types = all types shown)
-    And the client drops phase IDs not present in playbook 7's phase list (999, abc)
-    And the URL is rewritten to its canonical form (removing invalid params)
-    And the graph renders normally — invalid params do not hide content or cause errors
-
-
   Scenario: FOB-CONTENT-BROWSER-23b Selecting a playbook from the picker navigates via full page load
     Given the playbook picker is open
     When Maria clicks a playbook entry in the picker
@@ -101,5 +93,5 @@ Feature: FOB-CONTENT-BROWSER-ACCESS Content Browser Access and Navigation
       (i.e. window.location.href assignment, not an in-place AJAX/JS state update)
     So that the resulting loaded state is byte-for-byte identical to
       opening /browser/<selected_pk>/ directly in a new tab
-    And any previously active filters and layout params are reset to their URL defaults
+    And layout params from the previous playbook are not carried over (fresh default layout mode on load)
     And the back button navigates to the page where the picker was opened

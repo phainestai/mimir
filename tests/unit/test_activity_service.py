@@ -305,13 +305,28 @@ class TestCreateActivityAutoOrder:
 
         Simulates the MCP pattern where sync_to_async runs each call in a
         separate thread from the default executor.
+
+        SQLite serialises writers via its busy-timeout; each thread retries on
+        OperationalError (table/database locked) so the test stays deterministic.
         """
+        import time
         from concurrent.futures import ThreadPoolExecutor, as_completed
+        from django.db import OperationalError, connection
 
         names = ["One", "Two", "Three", "Four"]
 
         def create(name):
+            from django.db import connection as conn
+            for attempt in range(10):
+                try:
+                    return ActivityService.create_activity(workflow=self.workflow, name=name)
+                except OperationalError:
+                    conn.close()
+                    time.sleep(0.05 * (attempt + 1))
             return ActivityService.create_activity(workflow=self.workflow, name=name)
+
+        # Close main-thread connection so each worker thread starts with a fresh one.
+        connection.close()
 
         with ThreadPoolExecutor(max_workers=4) as pool:
             futures = [pool.submit(create, n) for n in names]

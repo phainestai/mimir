@@ -27,6 +27,11 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from fastmcp import FastMCP
 from asgiref.sync import sync_to_async
+from methodology.services.playbook_history_service import (
+    list_playbook_version_rows,
+    get_playbook_version_by_number,
+    playbook_versions_ordered,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -200,19 +205,57 @@ async def list_playbooks(status: Literal["draft", "released", "active", "all"] =
     return result
 
 
-async def get_playbook(playbook_id: int) -> dict:
-    """
-    Get playbook details with workflows.
-    
-    :param playbook_id: Playbook ID. Example: 1
-    :return: Playbook dict with nested workflows
-    :raises ValueError: if not found or not owned by user
-    """
-    logger.info(f'MCP Tool: get_playbook called - id={playbook_id}')
-    
-    user = await sync_to_async(get_current_user)()
+def _serialize_version_row(v) -> dict:
+    """Serialize a single PlaybookVersion ORM object to a lean MCP-safe dict."""
+    return {
+        'version_number': str(v.version_number),
+        'source': v.source,
+        'pip_id': v.pip_id,
+        'change_summary': v.change_summary.strip() if v.change_summary else '',
+        'created_at': v.created_at.isoformat() if v.created_at else None,
+        'is_major': v.is_major,
+    }
 
-    playbook = await _playbook_for_read(playbook_id, user, prefetch_workflows=True)
+
+def _serialize_version_snapshot(v) -> dict:
+    """Serialize a PlaybookVersion snapshot (includes snapshot_data) for MCP response."""
+    row = _serialize_version_row(v)
+    row['snapshot_data'] = v.snapshot_data
+    return row
+
+
+async def get_playbook(
+    playbook_id: int,
+    include_history: bool = False,
+    version: str | None = None,
+) -> dict:
+    """
+    Get playbook details with workflows and optional version history.
+
+    :param playbook_id: Playbook ID. Example: 1
+    :param include_history: When True, adds a ``versions`` list to the response.
+        Each entry has ``version_number``, ``source`` (pip/author/release/admin),
+        ``pip_id``, ``change_summary``, ``created_at`` (ISO-8601), ``is_major``.
+        Ordered newest-first. Ignored when ``version`` is also provided.
+        Example: True
+    :param version: When provided, returns the recorded snapshot at that version
+        instead of the current playbook state. Raises ValueError if not found.
+        Takes precedence over ``include_history``. Example: "1.0"
+    :return: Playbook dict with nested workflows; or snapshot dict when ``version``
+        is supplied (contains ``snapshot_data``, no top-level ``workflows`` key).
+    :raises ValueError: if playbook not found, not accessible, or requested
+        version does not exist.
+    """
+    logger.info(
+        'MCP Tool: get_playbook called - id=%s include_history=%s version=%s',
+        playbook_id, include_history, version,
+    )
+
+    user = await sync_to_async(get_current_user)()
+    playbook = await _playbook_for_read(playbook_id, user, prefetch_workflows=not bool(version))
+
+    if version is not None:
+        return await _get_version_snapshot(playbook, version)
 
     workflows = await sync_to_async(list)(playbook.workflows.all())
     result = {
@@ -224,16 +267,43 @@ async def get_playbook(playbook_id: int) -> dict:
         'version': str(playbook.version),
         'visibility': playbook.visibility,
         'workflows': [
-            {
-                'id': w.id,
-                'name': w.name,
-                'description': w.description,
-                'order': w.order,
-            }
+            {'id': w.id, 'name': w.name, 'description': w.description, 'order': w.order}
             for w in workflows
-        ]
+        ],
     }
-    logger.info(f'MCP Tool: Playbook has {len(result["workflows"])} workflows')
+    logger.info('MCP Tool: Playbook has %d workflows', len(result['workflows']))
+
+    if include_history:
+        result = await _attach_version_history(playbook, result)
+
+    return result
+
+
+async def _get_version_snapshot(playbook, version: str) -> dict:
+    """Resolve and return the PlaybookVersion snapshot for the requested version string."""
+    try:
+        version_decimal = Decimal(version)
+    except Exception:
+        raise ValueError(f"Invalid version format '{version}'. Expected e.g. '1.0'.")
+
+    pv = await sync_to_async(get_playbook_version_by_number)(playbook, version_decimal)
+    if pv is None:
+        raise ValueError(
+            f"Version {version} not found for playbook {playbook.id}. "
+            "Use include_history=True to see available versions."
+        )
+    logger.info('MCP Tool: Returning snapshot v%s for playbook %s', version, playbook.id)
+    return _serialize_version_snapshot(pv)
+
+
+async def _attach_version_history(playbook, result: dict) -> dict:
+    """Fetch ordered version rows and attach them to the result dict."""
+    raw_versions = await sync_to_async(list)(playbook_versions_ordered(playbook))
+    result['versions'] = [_serialize_version_row(v) for v in raw_versions]
+    logger.info(
+        'MCP Tool: Attached %d version history rows for playbook %s',
+        len(result['versions']), playbook.id,
+    )
     return result
 
 

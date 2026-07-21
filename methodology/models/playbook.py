@@ -84,33 +84,37 @@ class Playbook(models.Model):
     def can_view(self, user):
         """
         Check if user can view this playbook.
-        
+
         User can view if:
         1. They are the owner
         2. Playbook is shared with a team they belong to
-        3. Playbook is public and not draft
+        3. Playbook is shared with a Django Group they belong to
+        4. Playbook is public and not draft
         """
         # Owner can always view
         if self.author_id == getattr(user, "pk", None):
             return True
-        
-        # Check if playbook is shared with any team the user belongs to
+
         if user and user.is_authenticated:
             from methodology.models import TeamPlaybook, TeamMembership
-            
+
             # Check if user is member of any team that has this playbook
             user_team_ids = TeamMembership.objects.filter(
                 user=user
             ).values_list('team_id', flat=True)
-            
+
             is_shared_with_user_team = TeamPlaybook.objects.filter(
                 playbook=self,
                 team_id__in=user_team_ids
             ).exists()
-            
+
             if is_shared_with_user_team:
                 return True
-        
+
+            # Check if playbook is shared with any Django Group the user belongs to
+            if self.shared_with_groups.filter(id__in=user.groups.all()).exists():
+                return True
+
         # Public non-draft playbooks are viewable by anyone
         if self.visibility != "public":
             return False

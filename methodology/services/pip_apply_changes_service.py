@@ -36,6 +36,26 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_VALID_ARTIFACT_TYPES = {choice[0] for choice in Artifact.ARTIFACT_TYPES}
+
+
+def _normalize_artifact_type(raw: str | None) -> str:
+    """Return a valid Artifact.ARTIFACT_TYPES value, falling back to 'Other'.
+
+    Prevents PIP acceptance from failing when a change carries an artifact
+    type that is not in the current vocabulary (e.g. 'Reference Architecture'
+    before it was added to ARTIFACT_TYPES).
+    """
+    candidate = (raw or "").strip()
+    if not candidate:
+        return "Document"
+    if candidate in _VALID_ARTIFACT_TYPES:
+        return candidate
+    logger.warning(
+        "PIP apply: unrecognized artifact type %r — falling back to 'Other'", candidate
+    )
+    return "Other"
+
 
 class PipApplyChangesService:
     """Routes typed deltas to playbook mutations."""
@@ -325,7 +345,7 @@ class PipApplyChangesService:
                 produced_by=producer,
                 name=name[:200],
                 description=(change.content or "").strip(),
-                type=(change.artifact_type or "Document").strip() or "Document",
+                type=_normalize_artifact_type(change.artifact_type),
                 is_required=bool(change.artifact_is_required),
             )
             logger.info("PIP apply ADD Artifact pk=%s pip=%s producer=%s", art.pk, pip_pk, producer_id)
