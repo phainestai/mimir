@@ -2830,11 +2830,7 @@ Maria searches for non-existent team:
 
 **Goal**: Maria wants to comprehend an entire playbook's structure at a glance — all entities and their relationships rendered as an interactive node-based graph.
 
-**Entry Point**: "Content Browser" — second item in the top navigation bar (after Home) → `/browser/`
-
-**Empty State (`/browser/`)**:
-- Canvas prompts: "Select a playbook to explore" with a [Select Playbook] button
-- Left panel shows playbook picker on demand
+**Entry Point**: [Content Browser] button on the Playbook detail header action bar → `/browser/<pk>/`
 
 **Graph View (`/browser/<pk>/`)**:
 - Cytoscape.js canvas (CDN-loaded, data from `/api/playbooks/<pk>/graph/`)

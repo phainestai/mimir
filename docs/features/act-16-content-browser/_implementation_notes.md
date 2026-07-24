@@ -13,9 +13,8 @@
 │  (collapsible│    Cytoscape.js graph         │  (slide-in right)│
 │   ~280px)    │                              │                  │
 │              │                              │  fetch embed HTML│
-│ [Playbook]   │                              │  + Open new tab  │
-│ [Change]     │                              │  + Open full     │
-│              │                              │  + ×             │
+│ [Playbook]   │                              │  + Open full     │
+│ name+badge   │                              │  + ×             │
 │ Structure    │                              │                  │
 │  Workflow    │                              │                  │
 │   Activity   │                              │                  │
@@ -47,7 +46,7 @@
   - Response: `{nodes: [...], edges: [...], phases: [...]}`
 - **Left panel trees:** client-side derived from graph nodes (no `/tree/` endpoint)
 - **Detail panel:** `fetch(embed_url)` into `#browser-panel-content` — **not HTMX**; no iframe
-- **Playbook picker:** `GET /api/playbooks/` (client-side list; **no** server `accessible_playbooks` context)
+- **Entry:** Playbook detail header `[Content Browser]` → `/browser/<pk>/` only (no global nav link, no picker)
 - **Graph scripting:** `static/js/content-browser.js` — plain browser JS, Cytoscape imperative API
 
 ---
@@ -117,25 +116,25 @@ Entity embed URLs:
 ## URL structure
 
 ```
-/browser/                    → graph view, no playbook (empty state canvas)
-/browser/<pk>/               → graph view for playbook <pk> (canonical route)
+/browser/<pk>/               → graph view for playbook <pk> (canonical route; only route)
 /browser/<pk>/?layout=klay&routing=straight&compound=workflow-activity  → after custom changes
 /api/playbooks/<pk>/graph/   → JSON graph payload
-/api/playbooks/              → picker list (ACL-filtered)
 ```
+
+**Removed routes:** `/browser/` (no pk) returns 404.
 
 **Removed URL params:** `types`, `phases`, `seq` (filter toolbar and seq toggle removed).
 
-Both `/browser/` and `/browser/<pk>/` render `browser_graph.html`.
-`content-browser.js` reads `data-playbook-pk` on `#browser-root`.
+`/browser/<pk>/` renders `browser_graph.html`.
+`content-browser.js` reads `data-playbook-pk` on `#browser-root` (always set).
 
 ---
 
 ## Permission model
 
 - `/browser/<pk>/` → `playbook_readable_or_404(request, pk)` in `methodology/utils/playbook_access.py`
-- `/browser/` → shell only; picker uses `GET /api/playbooks/` (same ACL as API list)
-- `login_required` on both views; Django redirects to `/auth/user/login/?next=...`
+- `login_required` on browser view; Django redirects to `/auth/user/login/?next=...`
+- Playbook detail `[Content Browser]` button visible to any user who can view the playbook detail page
 
 ---
 
@@ -146,8 +145,7 @@ Both `/browser/` and `/browser/<pk>/` render `browser_graph.html`.
 3. `AbortController` — abort in-flight graph fetch on playbook switch or popstate
 4. Search: debounce 200ms, substring match, dim non-matching nodes (edges not dimmed)
 5. Expose `window.cy` for Playwright E2E
-6. Playbook switch via picker: full page navigation to `/browser/<pk>/` (FOB-23b)
-7. In-session playbook switch via `history.pushState` updates `/browser/<pk>/` only
+6. Playbook is fixed for the session — no in-browser playbook switching
 
 ---
 
@@ -155,13 +153,9 @@ Both `/browser/` and `/browser/<pk>/` render `browser_graph.html`.
 
 | attribute | element |
 |-----------|---------|
-| `data-testid="nav-browser"` | nav link |
-| `data-testid="browser-playbook-name"` | playbook name heading |
-| `data-testid="browser-change-playbook"` | [Change Playbook] |
-| `data-testid="browser-select-playbook"` | [Select Playbook] (empty state) |
-| `data-testid="browser-picker"` | picker container |
-| `data-testid="browser-picker-search"` | picker search input |
-| `data-testid="browser-picker-item"` | each playbook row |
+| `data-testid="playbook-content-browser"` | Playbook detail header entry button |
+| `data-testid="browser-playbook-title"` | playbook name heading (left panel) |
+| `data-testid="browser-back-to-playbook"` | [Back to playbook] link in canvas chrome |
 | `data-testid="browser-structure-tree"` | structural tree |
 | `data-testid="browser-resource-tree"` | resource tree |
 | `data-testid="browser-canvas"` | Cytoscape container |
@@ -176,7 +170,6 @@ Both `/browser/` and `/browser/<pk>/` render `browser_graph.html`.
 | `data-testid="browser-layout-btn"` | layout picker |
 | `data-testid="browser-routing-btn"` | edge routing picker |
 | `data-testid="browser-node-size-toggle"` | node size mode |
-| `data-testid="browser-empty-state"` | empty state card |
 | `data-testid="browser-controls-panel"` | canvas controls stack |
 
 ---

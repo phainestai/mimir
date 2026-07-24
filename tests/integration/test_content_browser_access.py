@@ -7,6 +7,7 @@ Tests scenarios from docs/features/act-16-content-browser/01-access-and-nav.feat
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
+from django.urls import reverse
 
 from methodology.models import Playbook, Team, TeamMembership, TeamPlaybook
 
@@ -15,7 +16,7 @@ User = get_user_model()
 
 @pytest.mark.django_db
 class TestContentBrowserServerSide:
-    """S1 — Server-side scaffold: nav, auth, views, template shell, 404.
+    """S1 — Server-side scaffold: playbook entry, auth, views, template shell, 404.
 
     Covers: FOB-CONTENT-BROWSER-01, 01b, 02, 03, 03c
     """
@@ -46,26 +47,17 @@ class TestContentBrowserServerSide:
         self.client.login(username="maria_test", password="testpass123")
 
     # FOB-CONTENT-BROWSER-01
-    def test_content_browser_link_in_nav(self):
-        """Content Browser nav link is present and positioned after Home."""
-        response = self.client.get("/browser/")
+    def test_content_browser_button_on_playbook_detail_not_in_nav(self):
+        """Playbook detail has Content Browser button; navbar does not."""
+        detail_url = reverse(
+            "playbook_detail", kwargs={"pk": self.public_playbook.pk}
+        )
+        response = self.client.get(detail_url)
         assert response.status_code == 200
         content = response.content.decode()
-        assert 'data-testid="nav-browser"' in content
-        dashboard_pos = content.index('data-testid="nav-dashboard"')
-        browser_pos = content.index('data-testid="nav-browser"')
-        playbooks_pos = content.index('data-testid="nav-playbooks"')
-        assert dashboard_pos < browser_pos < playbooks_pos
-
-    # FOB-CONTENT-BROWSER-01b
-    def test_unauthenticated_browser_root_redirects_to_login(self):
-        """GET /browser/ while logged out redirects to login with next= preserved."""
-        self.client.logout()
-        response = self.client.get("/browser/")
-        assert response.status_code == 302
-        location = response["Location"]
-        assert "login" in location
-        assert "next=" in location
+        assert 'data-testid="playbook-content-browser"' in content
+        assert f'href="/browser/{self.public_playbook.pk}/"' in content
+        assert 'data-testid="nav-browser"' not in content
 
     # FOB-CONTENT-BROWSER-01b
     def test_unauthenticated_browser_playbook_redirects_to_login(self):
@@ -78,28 +70,11 @@ class TestContentBrowserServerSide:
         assert "next=" in location
 
     # FOB-CONTENT-BROWSER-02
-    def test_browser_root_returns_200_with_three_panel_shell(self):
-        """GET /browser/ returns 200 with correct template and empty-state elements."""
+    def test_browser_root_returns_404(self):
+        """GET /browser/ without pk returns 404."""
         response = self.client.get("/browser/")
-        assert response.status_code == 200
-        content = response.content.decode()
-        assert 'data-testid="browser-left-panel"' in content
-        assert 'data-testid="browser-canvas"' in content
-        assert 'data-testid="browser-detail-panel"' in content
-
-    # FOB-CONTENT-BROWSER-02
-    def test_browser_root_shows_no_playbook_selected_heading(self):
-        """Left panel heading shows '(No playbook selected)' when no pk in URL."""
-        response = self.client.get("/browser/")
-        assert "(No playbook selected)" in response.content.decode()
-
-    # FOB-CONTENT-BROWSER-02
-    def test_browser_root_shows_select_playbook_button_not_change(self):
-        """Empty state shows [Select Playbook], not [Change Playbook]."""
-        response = self.client.get("/browser/")
-        content = response.content.decode()
-        assert 'data-testid="browser-select-playbook"' in content
-        assert 'data-testid="browser-change-playbook"' not in content
+        assert response.status_code == 404
+        assert 'data-testid="browser-canvas"' not in response.content.decode()
 
     # FOB-CONTENT-BROWSER-03
     def test_browser_playbook_returns_200_for_accessible_playbook(self):
@@ -122,6 +97,15 @@ class TestContentBrowserServerSide:
         response = self.client.get(f"/browser/{self.public_playbook.pk}/")
         assert response.status_code == 200
         assert "FeatureFactory" in response.content.decode()
+
+    # FOB-CONTENT-BROWSER-03
+    def test_browser_playbook_has_no_picker_controls(self):
+        """Playbook-scoped browser has no Change/Select playbook controls."""
+        response = self.client.get(f"/browser/{self.public_playbook.pk}/")
+        content = response.content.decode()
+        assert 'data-testid="browser-change-playbook"' not in content
+        assert 'data-testid="browser-select-playbook"' not in content
+        assert 'data-testid="browser-picker"' not in content
 
     # FOB-CONTENT-BROWSER-03c
     def test_browser_playbook_returns_404_for_nonexistent_pk(self):
@@ -146,99 +130,45 @@ class TestContentBrowserServerSide:
         assert response.status_code == 404
         assert 'data-testid="browser-canvas"' not in response.content.decode()
 
-    # FOB-CONTENT-BROWSER-01 (nav_section active state)
-    def test_browser_nav_section_is_active_on_browser_pages(self):
-        """nav_section == 'browser' is set in context for both /browser/ routes."""
-        response = self.client.get("/browser/")
-        assert response.context["nav_section"] == "browser"
-        response2 = self.client.get(f"/browser/{self.public_playbook.pk}/")
-        assert response2.context["nav_section"] == "browser"
-
-
-@pytest.mark.django_db
-class TestPickerAccessControl:
-    """S2 — Picker access control via GET /api/playbooks/.
-
-    Covers: FOB-CONTENT-BROWSER-03e
-    """
-
-    def _picker_names(self):
-        response = self.client.get("/api/playbooks/")
-        assert response.status_code == 200
-        return [item["name"] for item in response.json()["results"]]
-
-    @pytest.fixture(autouse=True)
-    def setup(self):
-        self.client = Client()
-        self.maria = User.objects.create_user(
-            username="maria_picker", email="maria_p@test.com", password="testpass123"
+    def test_non_owner_sees_content_browser_button_on_public_playbook(self):
+        """Non-owner viewer sees Content Browser on accessible public playbook detail."""
+        other = User.objects.create_user(
+            username="viewer_cb",
+            email="viewer_cb@test.com",
+            password="testpass123",
         )
-        self.other = User.objects.create_user(
-            username="other_user", email="other@test.com", password="testpass123"
-        )
-        # Playbooks with varied visibility/ownership
-        self.marias_private = Playbook.objects.create(
-            name="Maria Private",
-            description="",
+        released = Playbook.objects.create(
+            name="Public Released CB",
+            description="Readable",
             category="development",
             author=self.maria,
-            visibility="private",
-        )
-        self.others_private = Playbook.objects.create(
-            name="Others Private",
-            description="",
-            category="development",
-            author=self.other,
-            visibility="private",
-        )
-        self.others_public_draft = Playbook.objects.create(
-            name="Others Public Draft",
-            description="",
-            category="development",
-            author=self.other,
             visibility="public",
+            status="released",
         )
-        self.others_public_released = Playbook.objects.create(
+        self.client.login(username="viewer_cb", password="testpass123")
+        response = self.client.get(reverse("playbook_detail", kwargs={"pk": released.pk}))
+        assert response.status_code == 200
+        content = response.content.decode()
+        assert 'data-testid="playbook-content-browser"' in content
+        assert f'/browser/{released.pk}/' in content
+        assert 'data-testid="delete-button"' not in content
+
+    def test_browser_nav_section_highlights_playbooks(self):
+        """nav_section == 'playbooks' on /browser/<pk>/ pages."""
+        response = self.client.get(f"/browser/{self.public_playbook.pk}/")
+        assert response.context["nav_section"] == "playbooks"
+
+    def test_accessible_public_released_playbook_renders_in_browser(self):
+        """User can open /browser/<pk>/ for a public released playbook they do not own."""
+        released = Playbook.objects.create(
             name="Others Public Released",
             description="",
             category="development",
-            author=self.other,
+            author=self.bob,
             visibility="public",
+            status="released",
         )
-        # Mark released
-        self.others_public_released.status = "released"
-        self.others_public_released.save()
-
-        self.client.login(username="maria_picker", password="testpass123")
-
-    # FOB-CONTENT-BROWSER-03e
-    def test_picker_includes_own_playbooks_of_any_status(self):
-        """Picker includes playbooks owned by the user regardless of status."""
-        names = self._picker_names()
-        assert "Maria Private" in names
-
-    # FOB-CONTENT-BROWSER-03e
-    def test_picker_includes_public_non_draft_playbooks_from_others(self):
-        """Picker includes public released/active/disabled playbooks from other users."""
-        names = self._picker_names()
-        assert "Others Public Released" in names
-
-    # FOB-CONTENT-BROWSER-03e
-    def test_picker_excludes_private_playbooks_from_others(self):
-        """Picker does NOT include private playbooks owned by other users."""
-        names = self._picker_names()
-        assert "Others Private" not in names
-
-    # FOB-CONTENT-BROWSER-03e
-    def test_picker_excludes_public_draft_playbooks_from_others(self):
-        """Picker does NOT include public draft playbooks owned by other users."""
-        names = self._picker_names()
-        assert "Others Public Draft" not in names
-
-    # FOB-CONTENT-BROWSER-03e
-    def test_accessible_public_released_playbook_renders_in_browser(self):
-        """Maria can open /browser/<pk>/ for a public released playbook she does not own."""
-        response = self.client.get(f"/browser/{self.others_public_released.pk}/")
+        response = self.client.get(f"/browser/{released.pk}/")
         assert response.status_code == 200
 
 

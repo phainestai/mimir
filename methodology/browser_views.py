@@ -1,9 +1,7 @@
 """
 Content Browser views.
 
-Provides the full-page graph explorer for playbooks at /browser/ and /browser/<pk>/.
-Both views share a single template (browser/browser_graph.html) and differ only in
-whether a playbook pk is passed to the template context.
+Provides the full-page graph explorer for playbooks at /browser/<pk>/.
 """
 
 import json
@@ -16,33 +14,6 @@ from methodology.services.phase_service import PhaseService
 from methodology.utils.playbook_access import playbook_readable_or_404
 
 logger = logging.getLogger(__name__)
-
-
-@login_required
-def browser_root(request):
-    """Render the Content Browser with no playbook selected (empty canvas state).
-
-    Route:    GET /browser/
-    Template: browser/browser_graph.html
-    Context:  playbook=None, playbook_pk=None
-
-    The template renders the three-panel chrome with an empty-state canvas card.
-    No graph data is fetched server-side; JS reads data-playbook-pk from the DOM.
-    Playbook picker loads via GET /api/playbooks/ (client-side).
-
-    :param request: Django HTTP request.
-    :returns: HttpResponse — 200 with three-panel shell, data-playbook-pk absent.
-    """
-    logger.info("User %s accessed browser root", request.user.username)
-    return render(
-        request,
-        "browser/browser_graph.html",
-        {
-            "playbook": None,
-            "playbook_pk": None,
-            "phases_json": "[]",
-        },
-    )
 
 
 @login_required

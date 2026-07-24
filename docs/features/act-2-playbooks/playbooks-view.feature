@@ -69,7 +69,14 @@ Feature: FOB-PLAYBOOKS-VIEW_PLAYBOOK-1 View Playbook Details
     And she can read Overview, Workflows, and Activities tabs
     And [Edit] and [Delete] are not available to Maria (owner-only)
     And [Submit PIP] is not available to Maria (owner-only in MVP)
+    And she sees [Content Browser] linking to /browser/<pk>/ for that playbook
     # MVP: PIP submission is owner-only. Public viewers can view the playbook and its PIPs but cannot propose changes.
+
+  Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-04c Content Browser entry on playbook detail
+    Given Maria is on the playbook detail page for "React Frontend Development"
+    Then she sees [Content Browser] in the header action bar immediately before [Back]
+    And the button links to /browser/<pk>/ for that playbook
+    And "Content Browser" is not shown in the top navigation bar
 
   Scenario: FOB-PLAYBOOKS-VIEW_PLAYBOOK-05 View workflows list in Overview ✅ IMPLEMENTED
     Given Maria is on the Overview tab

@@ -1,6 +1,6 @@
 """
 E2E tests for Content Browser left panel: layout, collapse toggle,
-playbook header, and picker (FOB-20, 21, 22, 23).
+playbook header (FOB-20, 21).
 
 Run: DJANGO_SETTINGS_MODULE=mimir.settings uv run pytest tests/e2e/test_content_browser_left_panel.py -x
 """
@@ -61,22 +61,6 @@ def playbook_a(left_panel_user, transactional_db):
     return pb
 
 
-@pytest.fixture
-def playbook_b(left_panel_user, transactional_db):
-    pb = Playbook.objects.create(
-        name="BetaPlaybook",
-        description="Second",
-        category="design",
-        status="released",
-        version="1.0",
-        source="owned",
-        author=left_panel_user,
-        visibility="public",
-    )
-    Workflow.objects.create(name="BetaWorkflow", playbook=pb, order=1)
-    return pb
-
-
 # ---------------------------------------------------------------------------
 # FOB-20: Three-panel layout and collapse toggle
 # ---------------------------------------------------------------------------
@@ -107,7 +91,6 @@ class TestThreePanelLayout:
         page.wait_for_load_state("networkidle")
 
         page.locator('[data-testid="browser-toggle-left-panel"]').click()
-        # Content hidden — panel collapses to 0 width
         panel_content = page.locator("#browser-left-panel-content")
         expect(panel_content).to_be_hidden()
 
@@ -121,8 +104,7 @@ class TestThreePanelLayout:
 
         toggle = page.locator('[data-testid="browser-toggle-left-panel"]')
         toggle.click()
-        page.wait_for_timeout(300)  # wait for CSS transition
-        # Toggle stays visible at edge of 0-width panel (overflow:visible on panel)
+        page.wait_for_timeout(300)
         expect(toggle).to_be_visible()
         toggle.click()
         page.wait_for_timeout(300)
@@ -130,7 +112,7 @@ class TestThreePanelLayout:
 
 
 # ---------------------------------------------------------------------------
-# FOB-21: Playbook name + status badge
+# FOB-21: Playbook name + status badge (no picker controls)
 # ---------------------------------------------------------------------------
 
 
@@ -156,8 +138,19 @@ class TestPlaybookHeader:
 
         status_el = page.locator('[data-testid="browser-playbook-status"]')
         expect(status_el).to_be_visible()
-        # draft playbook → status text should be non-empty
         assert status_el.text_content().strip() != ""
+
+    def test_no_picker_buttons_in_left_panel(
+        self, page: Page, live_server, left_panel_user, playbook_a
+    ):
+        """Playbook-scoped browser has no Change/Select playbook controls (FOB-21)."""
+        _login(page, live_server.url, "lp_user", "testpass123")
+        page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
+        page.wait_for_load_state("networkidle")
+
+        expect(page.locator('[data-testid="browser-change-playbook"]')).to_have_count(0)
+        expect(page.locator('[data-testid="browser-select-playbook"]')).to_have_count(0)
+        expect(page.locator('[data-testid="browser-picker"]')).to_have_count(0)
 
     def test_status_badge_keeps_draft_warning_color_after_graph_load(
         self,
@@ -176,222 +169,3 @@ class TestPlaybookHeader:
         status_el = page.locator('[data-testid="browser-playbook-status"]')
         expect(status_el).to_have_class(re.compile(r"bg-warning"))
         expect(status_el).to_have_text("Draft")
-
-
-# ---------------------------------------------------------------------------
-# FOB-22: Picker opens from [Change Playbook] and [Select Playbook]
-# ---------------------------------------------------------------------------
-
-
-class TestPickerOpen:
-    def test_picker_opens_on_change_playbook(
-        self, page: Page, live_server, left_panel_user, playbook_a, playbook_b
-    ):
-        """[Change Playbook] opens picker (FOB-22)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
-        page.wait_for_load_state("networkidle")
-
-        page.locator('[data-testid="browser-change-playbook"]').click()
-        expect(page.locator('[data-testid="browser-picker"]')).to_be_visible()
-        expect(page.locator('[data-testid="browser-picker-search"]')).to_be_visible()
-
-    def test_picker_opens_on_select_playbook_empty_state(
-        self, page: Page, live_server, left_panel_user, playbook_a
-    ):
-        """[Select Playbook] in empty state opens picker (FOB-22)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/")
-        page.wait_for_load_state("networkidle")
-
-        page.locator('[data-testid="browser-select-playbook"]').first.click()
-        expect(page.locator('[data-testid="browser-picker"]')).to_be_visible()
-
-    def test_picker_lists_accessible_playbooks(
-        self, page: Page, live_server, left_panel_user, playbook_a, playbook_b
-    ):
-        """Picker shows both playbooks accessible to user (FOB-22)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
-        page.wait_for_load_state("networkidle")
-
-        page.locator('[data-testid="browser-change-playbook"]').click()
-        page.wait_for_timeout(500)  # wait for fetch
-        items = page.locator('[data-testid="browser-picker-item"]')
-        expect(items).to_have_count(2)
-
-    def test_picker_marks_active_playbook(
-        self, page: Page, live_server, left_panel_user, playbook_a, playbook_b
-    ):
-        """Current playbook row uses soft primary highlight + checkmark (FOB-22)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
-        page.wait_for_load_state("networkidle")
-
-        page.locator('[data-testid="browser-change-playbook"]').click()
-        page.wait_for_timeout(500)
-        active_item = page.locator(
-            '[data-testid="browser-picker-item"].bg-primary-subtle'
-        )
-        expect(active_item).to_have_count(1)
-        expect(active_item).to_contain_text("AlphaPlaybook")
-        expect(active_item.locator(".fa-check")).to_have_count(1)
-
-    def test_picker_search_filters_list(
-        self, page: Page, live_server, left_panel_user, playbook_a, playbook_b
-    ):
-        """Typing in picker search filters by name (FOB-22)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
-        page.wait_for_load_state("networkidle")
-
-        page.locator('[data-testid="browser-change-playbook"]').click()
-        page.wait_for_timeout(500)
-
-        page.locator('[data-testid="browser-picker-search"]').fill("Beta")
-        page.wait_for_timeout(200)  # wait for synchronous filter to re-render
-        items = page.locator('[data-testid="browser-picker-item"]')
-        expect(items).to_have_count(1)
-        expect(items.first).to_contain_text("BetaPlaybook")
-
-    def test_picker_auto_expands_collapsed_panel(
-        self, page: Page, live_server, left_panel_user, playbook_a, playbook_b
-    ):
-        """Picker auto-expands left panel if collapsed (FOB-22)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
-        page.wait_for_load_state("networkidle")
-
-        # Collapse panel, then trigger picker from empty-state [Select Playbook]
-        page.locator('[data-testid="browser-toggle-left-panel"]').click()
-        expect(page.locator("#browser-left-panel-content")).to_be_hidden()
-
-        # Use JS to open picker programmatically (panel is collapsed so button invisible)
-        page.evaluate("_openPicker()")
-        expect(page.locator("#browser-left-panel-content")).to_be_visible()
-        expect(page.locator('[data-testid="browser-picker"]')).to_be_visible()
-
-
-# ---------------------------------------------------------------------------
-# FOB-23: Selecting playbook from picker updates URL and heading
-# ---------------------------------------------------------------------------
-
-
-class TestSelectPlaybook:
-    def test_selecting_playbook_updates_url_and_heading(
-        self, page: Page, live_server, left_panel_user, playbook_a, playbook_b
-    ):
-        """Selecting a playbook performs full page nav to /browser/<pk>/ (FOB-23, FOB-23b)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/{playbook_a.pk}/")
-        page.wait_for_load_state("networkidle")
-
-        page.locator('[data-testid="browser-change-playbook"]').click()
-        page.wait_for_timeout(500)
-
-        # Click the BetaPlaybook row — triggers full page navigation
-        page.locator('[data-testid="browser-picker-item"]').filter(
-            has_text="BetaPlaybook"
-        ).click()
-        page.wait_for_load_state("networkidle")
-
-        # URL navigated to BetaPlaybook
-        assert f"/browser/{playbook_b.pk}/" in page.url
-        # Heading reflects new playbook (rendered server-side on reload)
-        expect(page.locator('[data-testid="browser-playbook-title"]')).to_contain_text(
-            "BetaPlaybook"
-        )
-
-
-# ---------------------------------------------------------------------------
-# FOB-21a: Header title shows "No playbook selected" and updates on selection
-# ---------------------------------------------------------------------------
-
-
-class TestPlaybookTitleTransition:
-    def test_title_shows_no_playbook_selected_on_empty_browser(
-        self,
-        page: Page,
-        live_server,
-        left_panel_user,
-    ):
-        """At /browser/ with no pk, header shows 'No playbook selected' (FOB-21a)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/")
-        page.wait_for_load_state("networkidle")
-
-        title = page.locator('[data-testid="browser-playbook-title"]')
-        expect(title).to_contain_text("No playbook selected")
-
-    def test_title_updates_to_playbook_name_after_selection(
-        self,
-        page: Page,
-        live_server,
-        left_panel_user,
-        playbook_a,
-    ):
-        """After selecting a playbook, full page nav loads /browser/<pk>/ and title shows name (FOB-21a, FOB-23b)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/")
-        page.wait_for_load_state("networkidle")
-
-        page.locator('[data-testid="browser-select-playbook"]').first.click()
-        page.wait_for_timeout(500)
-        page.locator('[data-testid="browser-picker-item"]').filter(
-            has_text="AlphaPlaybook"
-        ).click()
-        page.wait_for_load_state("networkidle")
-
-        assert f"/browser/{playbook_a.pk}/" in page.url
-        title = page.locator('[data-testid="browser-playbook-title"]')
-        expect(title).to_contain_text("AlphaPlaybook")
-
-    def test_button_label_switches_from_select_to_change(
-        self,
-        page: Page,
-        live_server,
-        left_panel_user,
-        playbook_a,
-    ):
-        """After full page nav to /browser/<pk>/, Change Playbook button is shown (FOB-21a, FOB-23b)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/")
-        page.wait_for_load_state("networkidle")
-
-        page.locator('[data-testid="browser-select-playbook"]').first.click()
-        page.wait_for_timeout(500)
-        page.locator('[data-testid="browser-picker-item"]').filter(
-            has_text="AlphaPlaybook"
-        ).click()
-        page.wait_for_load_state("networkidle")
-
-        # After navigation to /browser/<pk>/ a playbook is loaded — Change Playbook button visible
-        expect(page.locator('[data-testid="browser-change-playbook"]')).to_be_visible()
-        expect(page.locator('[data-testid="browser-empty-state"]')).to_be_hidden()
-
-
-# ---------------------------------------------------------------------------
-# S25: Canvas empty-state "Select Playbook" button opens picker
-# ---------------------------------------------------------------------------
-
-
-class TestCanvasSelectPlaybook:
-    def test_canvas_select_playbook_opens_picker(
-        self,
-        page: Page,
-        live_server,
-        left_panel_user,
-    ):
-        """Canvas empty-state 'Select Playbook' button opens the playbook picker (S25)."""
-        _login(page, live_server.url, "lp_user", "testpass123")
-        page.goto(f"{live_server.url}/browser/")
-        page.wait_for_load_state("networkidle")
-
-        # Find the canvas button specifically (inside browser-empty-state)
-        canvas_btn = page.locator(
-            '[data-testid="browser-empty-state"] [data-testid="browser-select-playbook"]'
-        )
-        expect(canvas_btn).to_be_visible()
-        canvas_btn.click()
-
-        expect(page.locator('[data-testid="browser-picker"]')).to_be_visible()

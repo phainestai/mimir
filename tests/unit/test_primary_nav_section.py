@@ -99,5 +99,4 @@ def test_teams():
 
 
 def test_browser():
-    assert _section("/browser/") == "browser"
-    assert _section("/browser/12/") == "browser"
+    assert _section("/browser/12/") == "playbooks"

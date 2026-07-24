@@ -252,7 +252,6 @@ function _toggleLayoutDropdown() {
 
 /**
  * Read the playbook PK from the #browser-root data attribute.
- * Returns null if no PK is set (empty state: /browser/).
  *
  * @returns {number|null}
  */
@@ -339,10 +338,10 @@ function _filtersToQueryString(_filters) {
 }
 
 /**
- * Update the browser URL when the active playbook changes (pushState).
+ * Update the browser URL for layout/routing params (pushState).
  *
- * @param {number} pk - New playbook PK
- * @param {{ types: string[], phases: number[] }} _filters — unused; kept for E2E compat
+ * @param {number} pk - Playbook PK
+ * @param {{ types: string[], phases: number[] }} _filters — unused; kept for call-site compat
  */
 function _pushPlaybookUrl(pk, _filters) {
   const filters = { types: _ALL_TYPES.slice(), phases: [] };
@@ -360,20 +359,19 @@ function _pushPlaybookUrl(pk, _filters) {
  */
 function _replaceCanonicalUrl(pk, filters) {
   const qs = _filtersToQueryString(filters);
-  const url = pk ? '/browser/' + pk + '/' + qs : '/browser/';
+  const url = '/browser/' + pk + '/' + qs;
   history.replaceState({ pk: pk, filters: filters }, '', url);
 }
 
 /**
  * Handle browser back/forward navigation (popstate event).
- * Reads the new URL state and re-fetches graph or shows empty state.
+ * Reads the new URL state and re-fetches graph for the playbook in the path.
  *
  * @param {PopStateEvent} event
  */
 function _onPopState(event) {
   const pk = _getPkFromPath();
   if (!pk) {
-    _showEmptyState();
     return;
   }
   const filters = _parseUrlParams();
@@ -390,25 +388,11 @@ function _getPkFromPath() {
 }
 
 /**
- * Show the empty state canvas card (no playbook selected).
- */
-function _showEmptyState() {
-  const empty = document.querySelector('[data-testid="browser-empty-state"]');
-  const loading = document.querySelector('[data-testid="browser-loading"]');
-  const error = document.querySelector('[data-testid="browser-error-state"]');
-  if (empty) empty.classList.remove('d-none');
-  if (loading) loading.classList.add('d-none');
-  if (error) error.classList.add('d-none');
-}
-
-/**
  * Show the loading spinner on the canvas.
  */
 function _showLoadingState() {
-  const empty = document.querySelector('[data-testid="browser-empty-state"]');
   const loading = document.querySelector('[data-testid="browser-loading"]');
   const error = document.querySelector('[data-testid="browser-error-state"]');
-  if (empty) empty.classList.add('d-none');
   if (loading) loading.classList.remove('d-none');
   if (error) error.classList.add('d-none');
 }
@@ -419,11 +403,9 @@ function _showLoadingState() {
  * @param {string} [message='Could not load graph data.']
  */
 function _showErrorState(message) {
-  const empty = document.querySelector('[data-testid="browser-empty-state"]');
   const loading = document.querySelector('[data-testid="browser-loading"]');
   const errorEl = document.querySelector('[data-testid="browser-error-state"]');
   const msgEl = errorEl ? errorEl.querySelector('p') : null;
-  if (empty) empty.classList.add('d-none');
   if (loading) loading.classList.add('d-none');
   if (errorEl) {
     errorEl.classList.remove('d-none');
@@ -547,11 +529,9 @@ function _renderGraph(pk, graphData, filters) {
 
   // Hide overlay states, make canvas visible.
   const loading = document.querySelector('[data-testid="browser-loading"]');
-  const empty = document.querySelector('[data-testid="browser-empty-state"]');
   const noContent = document.querySelector('[data-testid="browser-no-content-state"]');
   const error = document.querySelector('[data-testid="browser-error-state"]');
   if (loading) loading.classList.add('d-none');
-  if (empty) empty.classList.add('d-none');
   if (noContent) noContent.classList.add('d-none');
   if (error) error.classList.add('d-none');
 
@@ -772,11 +752,9 @@ function _applySearch(term) {
  */
 function _showNoContentState(pk) {
   const loading = document.querySelector('[data-testid="browser-loading"]');
-  const empty = document.querySelector('[data-testid="browser-empty-state"]');
   const noContent = document.querySelector('[data-testid="browser-no-content-state"]');
   const error = document.querySelector('[data-testid="browser-error-state"]');
   if (loading) loading.classList.add('d-none');
-  if (empty) empty.classList.add('d-none');
   if (error) error.classList.add('d-none');
   if (noContent) {
     // Update the "Go to Playbook" link with the current PK.
@@ -1197,142 +1175,6 @@ function _checkSessionExpiry(html) {
   }
 }
 
-// ─── Picker state ────────────────────────────────────────────────────────────
-let _allPlaybooks = [];   // cached from last GET /api/playbooks/
-let _pickerOpen  = false;
-
-/**
- * Open the playbook picker: fetch list, render, show.
- * Auto-expands left panel if it was collapsed.
- */
-async function _openPicker() {
-  const panel = document.getElementById('browser-left-panel');
-  if (panel && panel.classList.contains('browser-collapsed')) {
-    _toggleLeftPanel();
-  }
-  const picker = document.getElementById('browser-picker');
-  if (!picker) return;
-
-  if (!_pickerOpen) {
-    picker.classList.remove('d-none');
-    _pickerOpen = true;
-    const search = picker.querySelector('[data-testid="browser-picker-search"]');
-    if (search) { search.value = ''; search.focus(); }
-  }
-
-  try {
-    _allPlaybooks = await _fetchAllPlaybooks();
-    _renderPickerItems(_allPlaybooks);
-  } catch (_) {
-    _renderPickerError();
-  }
-}
-
-/**
- * Fetch every accessible playbook, following DRF's paginated `next` link
- * so accounts with more than one page of results aren't silently truncated.
- * @returns {Promise<Array>}
- */
-async function _fetchAllPlaybooks() {
-  const results = [];
-  let url = '/api/playbooks/';
-  while (url) {
-    const resp = await fetch(url, {
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    });
-    if (!resp.ok) throw new Error('Failed to fetch playbooks: ' + resp.status);
-    const data = await resp.json();
-    results.push(...(data.results || data));
-    url = data.next || null;
-  }
-  return results;
-}
-
-/**
- * Render an error row in the picker list when the playbooks fetch fails.
- */
-function _renderPickerError() {
-  const list = document.getElementById('browser-picker-list');
-  if (!list) return;
-  list.innerHTML = '<div class="list-group-item text-danger small">Could not load playbooks. Please try again.</div>';
-}
-
-/**
- * Render picker rows from a playbooks array.
- * @param {Array} playbooks
- */
-function _renderPickerItems(playbooks) {
-  const list = document.getElementById('browser-picker-list');
-  if (!list) return;
-  const currentPk = _getPlaybookPk();
-  list.innerHTML = '';
-  if (!playbooks.length) {
-    list.innerHTML = '<div class="list-group-item text-muted small">No playbooks found.</div>';
-    return;
-  }
-  playbooks.forEach(pb => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.setAttribute('data-testid', 'browser-picker-item');
-    btn.setAttribute('data-pk', String(pb.id));
-    btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center small py-2';
-    const isCurrent = String(pb.id) === String(currentPk);
-    if (isCurrent) {
-      // Soft primary wash (same language as structure-tree selection) —
-      // Bootstrap's solid .active fills the whole row with --bs-primary and
-      // looks harsh against the professional cool-gray / dark panels.
-      btn.classList.add('bg-primary-subtle', 'text-primary', 'fw-bold');
-    }
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = pb.name;
-    const right = document.createElement('span');
-    right.className = 'd-flex align-items-center gap-1';
-    const badge = document.createElement('span');
-    badge.className = 'badge bg-secondary';
-    badge.textContent = pb.status;
-    right.appendChild(badge);
-    if (isCurrent) {
-      const check = document.createElement('i');
-      check.className = 'fa-solid fa-check text-primary ms-1';
-      right.appendChild(check);
-    }
-    btn.appendChild(nameSpan);
-    btn.appendChild(right);
-    btn.addEventListener('click', () => _selectPlaybook(pb.id));
-    list.appendChild(btn);
-  });
-}
-
-/**
- * Filter picker items by substring on keyup.
- * @param {string} term
- */
-function _filterPickerItems(term) {
-  const lower = term.toLowerCase();
-  const filtered = lower
-    ? _allPlaybooks.filter(pb => pb.name.toLowerCase().includes(lower))
-    : _allPlaybooks;
-  _renderPickerItems(filtered);
-}
-
-/**
- * Close the picker.
- */
-function _closePicker() {
-  const picker = document.getElementById('browser-picker');
-  if (picker) picker.classList.add('d-none');
-  _pickerOpen = false;
-}
-
-/**
- * Select a playbook: close picker, update URL, update header, fetch graph.
- * @param {number|string} pk
- */
-function _selectPlaybook(pk) {
-  // FOB-23b: full page navigation so initialisation is identical to opening /browser/<pk>/ directly.
-  window.location.href = '/browser/' + pk + '/';
-}
-
 /**
  * Update playbook name and status badge in left panel header.
  * Called after graph data arrives.
@@ -1358,10 +1200,6 @@ function _updatePlaybookHeader(pk, name, status) {
     statusEl.textContent = _playbookStatusLabel(status);
     statusEl.className = _playbookStatusBadgeClass(status);
   }
-
-  // Ensure Change Playbook button is visible; swap Select → Change if needed.
-  const select = document.querySelector('[data-testid="browser-select-playbook"]');
-  if (select) { select.setAttribute('data-testid', 'browser-change-playbook'); select.textContent = 'Change Playbook'; select.className = 'btn btn-sm btn-outline-secondary mb-2'; }
 }
 
 /**
@@ -2480,19 +2318,11 @@ function _init() {
   const toggleBtn = document.querySelector('[data-testid="browser-toggle-left-panel"]');
   if (toggleBtn) toggleBtn.addEventListener('click', _toggleLeftPanel);
 
-  document.querySelectorAll('[data-testid="browser-change-playbook"], [data-testid="browser-select-playbook"]').forEach(btn => {
-    btn.addEventListener('click', _openPicker);
-  });
-
-  const pickerSearch = document.querySelector('[data-testid="browser-picker-search"]');
-  if (pickerSearch) pickerSearch.addEventListener('input', e => _filterPickerItems(e.target.value));
-
   const nodeSearch = document.querySelector('[data-testid="browser-search-input"]');
   if (nodeSearch) nodeSearch.addEventListener('input', e => _applySearch(e.target.value));
 
   if (!pk) {
-    _normaliseFilters(filters, phases);
-    _showEmptyState();
+    console.log('content-browser: missing data-playbook-pk on #browser-root');
     return;
   }
 

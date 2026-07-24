@@ -1,20 +1,17 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Content Browser{% if playbook %} — {{ playbook.name }}{% endif %}{% endblock %}
+{% block title %}Content Browser — {{ playbook.name }}{% endblock %}
 
 {% block body_class %}mm-content-browser{% endblock %}
 
 {% block content %}
-{# Three-panel layout shell — all panels rendered server-side; JS drives content #}
+{# Three-panel layout shell — playbook is always set via /browser/<pk>/ #}
 <div id="browser-root"
-     data-playbook-pk="{{ playbook_pk|default:'' }}"
+     data-playbook-pk="{{ playbook_pk }}"
      data-playbook-phases="{{ phases_json }}"
      class="d-flex align-items-stretch position-relative overflow-hidden">
 
-  <!-- Collapse/expand toggle — lives OUTSIDE the panel as a sibling so it is never
-       clipped by overflow:hidden or covered by the main container at 0-panel-width.
-       JS updates its `left` position on each toggle. -->
   <button data-testid="browser-toggle-left-panel"
           title="Toggle left panel"
           data-bs-toggle="tooltip"
@@ -29,45 +26,19 @@
        data-testid="browser-left-panel"
        class="mm-browser-left-panel border-end bg-body-secondary flex-shrink-0">
 
-    {# Scrollable content wrapper — owns overflow-y, not the panel itself #}
     <div id="browser-left-panel-content" class="mm-browser-left-panel-content">
     <div class="p-3">
-      {# Playbook name + status badge #}
       <div class="fw-bold mb-1" data-testid="browser-playbook-title">
-        {% if playbook %}{{ playbook.name }}{% else %}(No playbook selected){% endif %}
+        {{ playbook.name }}
       </div>
-      {% if playbook %}
       <div class="mb-2">
         <span data-testid="browser-playbook-status"
               class="badge bg-{{ playbook.get_status_badge_color|default:'secondary' }} small">
           {{ playbook.get_status_display }}
         </span>
       </div>
-      {% endif %}
-
-      {% if playbook %}
-        <button data-testid="browser-change-playbook" class="btn btn-sm btn-outline-secondary mb-2">
-          Change Playbook
-        </button>
-      {% else %}
-        <button data-testid="browser-select-playbook" class="btn btn-sm btn-primary mb-2">
-          Select Playbook
-        </button>
-      {% endif %}
-
-      {# Picker — hidden until opened #}
-      <div data-testid="browser-picker" id="browser-picker" class="d-none mb-3">
-        <input data-testid="browser-picker-search"
-               type="text"
-               class="form-control form-control-sm mb-2"
-               placeholder="Search playbooks…"
-               autocomplete="off">
-        <div id="browser-picker-list" class="mm-browser-picker-list list-group"></div>
-      </div>
 
       <div data-testid="browser-panel-compact" class="mm-browser-panel-compact">
-      {% if playbook %}
-        {# Search input — filters canvas nodes by name #}
         <div class="mt-2 mb-1">
           <input data-testid="browser-search-input"
                  type="text"
@@ -76,24 +47,30 @@
                  autocomplete="off">
         </div>
 
-        {# Structural tree — populated by JS #}
         <div data-testid="browser-structure-tree" class="mt-1"></div>
-      {% endif %}
-      </div>{# /browser-panel-compact font wrapper #}
+      </div>
 
-      {# Resource section #}
       <div data-testid="browser-resource-tree" class="mt-3 text-muted" style="font-size: 0.875rem;">
         <span class="text-muted">Select a Workflow to see its resources.</span>
       </div>
-    </div>{# /p-3 #}
-    </div>{# /browser-left-panel-content #}
+    </div>
+    </div>
   </div>
 
   {# ── Canvas ── #}
   <div id="browser-canvas-wrapper"
-       class="mm-browser-canvas-wrapper flex-grow-1 position-relative{% if not playbook %} mm-browser-canvas-wrapper--landing{% endif %}">
+       class="mm-browser-canvas-wrapper flex-grow-1 position-relative">
 
-    {# Loading state — full-canvas overlay while graph API fetch is in flight #}
+    <div class="mm-browser-canvas-header position-absolute top-0 start-0 mt-2 ms-2 z-3">
+      <a href="{% url 'playbook_detail' pk=playbook.pk %}"
+         class="btn btn-sm btn-outline-secondary"
+         data-testid="browser-back-to-playbook"
+         data-bs-toggle="tooltip"
+         title="Return to playbook detail">
+        <i class="fa-solid fa-arrow-left"></i> Back to playbook
+      </a>
+    </div>
+
     <div data-testid="browser-loading"
          class="mm-browser-overlay-state d-none">
       <div class="spinner-border text-primary" role="status">
@@ -101,22 +78,6 @@
       </div>
     </div>
 
-    {# Empty state — in-flow flex child (landing); centred in canvas column #}
-    {% if not playbook %}
-    <div data-testid="browser-empty-state"
-         class="mm-browser-empty-card text-center mx-auto">
-      <div class="mm-browser-empty-icon-wrap" aria-hidden="true">
-        <i class="fa-solid fa-diagram-project"></i>
-      </div>
-      <h5 class="mb-2">Select a playbook to explore</h5>
-      <p class="text-muted mb-3">Choose a playbook to see its full entity graph.</p>
-      <button data-testid="browser-select-playbook" class="btn btn-primary">
-        Select Playbook
-      </button>
-    </div>
-    {% endif %}
-
-    {# No-content state — shown by JS when the selected playbook has no entities #}
     <div data-testid="browser-no-content-state"
          class="mm-browser-overlay-state position-absolute d-none">
       <div class="mm-browser-empty-card text-center">
@@ -126,12 +87,11 @@
         <h5 class="mb-2">This playbook has no content yet.</h5>
         <p class="text-muted mb-3">Add workflows and activities to see the graph.</p>
         <a data-testid="browser-go-to-playbook"
-           href="{% if playbook %}/playbooks/{{ playbook.pk }}/{% else %}#{% endif %}"
+           href="{% url 'playbook_detail' pk=playbook.pk %}"
            class="btn btn-outline-primary">Go to Playbook</a>
       </div>
     </div>
 
-    {# Error state — shown by JS on fetch failure #}
     <div data-testid="browser-error-state"
          class="mm-browser-overlay-state position-absolute d-none">
       <div class="mm-browser-empty-card text-center">
@@ -140,17 +100,13 @@
       </div>
     </div>
 
-    {# Canvas controls — graph chrome (hidden on landing via empty-state layout) #}
-    {% if playbook %}
     <div class="mm-browser-canvas-controls position-absolute bottom-0 end-0 mb-3 me-3"
          data-testid="browser-canvas-controls">
 
-      {# Node count badge #}
       <div class="text-end mb-1">
         <span data-testid="browser-node-count" class="badge bg-secondary"></span>
       </div>
 
-      {# Row 0: Custom layout toggle — always visible #}
       <div class="d-flex justify-content-end mb-1">
         <label class="mm-browser-custom-layout-label d-flex align-items-center gap-1 text-secondary">
           <input type="checkbox"
@@ -159,7 +115,6 @@
         </label>
       </div>
 
-      {# Row 1: Layout + routing — hidden in default layout mode #}
       <div class="d-flex gap-1 mb-1 browser-custom-controls d-none">
         <button data-testid="browser-layout-btn"
                 class="mm-browser-btn-compact btn btn-outline-secondary"
@@ -173,7 +128,6 @@
                 data-bs-placement="left">Bezier ▾</button>
       </div>
 
-      {# Row 2: Grouping + node size — hidden in default layout mode #}
       <div class="d-flex gap-1 mb-1 browser-custom-controls d-none">
         <button data-testid="browser-compound-btn"
                 class="mm-browser-btn-compact btn btn-outline-secondary"
@@ -187,7 +141,6 @@
                 data-bs-placement="left">Fixed ✓</button>
       </div>
 
-      {# Row 3: Navigation — always visible #}
       <div class="d-flex gap-1">
         <button data-testid="browser-replot-btn"
                 class="mm-browser-btn-compact btn btn-outline-secondary"
@@ -211,13 +164,11 @@
                 data-bs-placement="left">⊡</button>
       </div>
     </div>
-    {% endif %}
 
-    {# Cytoscape canvas target — always in DOM; hidden on landing via CSS #}
     <div data-testid="browser-canvas" id="cy" class="mm-browser-canvas"></div>
   </div>
 
-  {# ── Detail panel — hidden until node click ── #}
+  {# ── Detail panel ── #}
   <div id="browser-detail-panel"
        data-testid="browser-detail-panel"
        class="mm-browser-detail-panel border-start bg-body d-none">
@@ -241,15 +192,12 @@
 {% endblock %}
 
 {% block extra_js %}
-{# dagre must load BEFORE cytoscape-dagre (it's a peer dependency, not bundled) #}
 <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
-{# Cytoscape.js and layout/navigation plugins from CDN — pinned versions #}
 <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/cytoscape-elk@2.2.0/dist/cytoscape-elk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-elk@2.2.0/cytoscape-elk.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-navigator@2.0.2/cytoscape-navigator.js"></script>
-{# Extended layout libraries — Cola, Klay, CiSE, Euler, AVSDF, CoSE-Bilkent, fCoSE #}
 <script src="https://cdn.jsdelivr.net/npm/webcola@3.4.0/WebCola/cola.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-cola@2.5.1/cytoscape-cola.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/klayjs@0.4.1/klay.js"></script>
@@ -261,7 +209,6 @@
 <script src="https://cdn.jsdelivr.net/npm/cose-base@2.2.0/cose-base.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-cose-bilkent@4.1.0/cytoscape-cose-bilkent.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
-{# CDN bootstrap guard — must come before content-browser.js #}
 <script>
   if (typeof window.cytoscape === 'undefined') {
     var cyEl = document.getElementById('cy');

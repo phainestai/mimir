@@ -96,6 +96,13 @@
                     </a>
                 {% endif %}
             {% endif %}
+            <a href="{% url 'browser_playbook' pk=playbook.pk %}"
+               class="btn btn-outline-secondary"
+               data-testid="playbook-content-browser"
+               data-bs-toggle="tooltip"
+               title="Explore this playbook as an interactive graph">
+                <i class="fa-solid fa-diagram-project"></i> Content Browser
+            </a>
             <a href="{% url 'playbook_list' %}"
                class="btn btn-outline-secondary"
                data-bs-toggle="tooltip"

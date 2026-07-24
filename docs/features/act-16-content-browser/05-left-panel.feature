@@ -23,19 +23,7 @@ Feature: FOB-CONTENT-BROWSER-LEFT-PANEL Content Browser Left Panel
     And collapsing or expanding the left panel causes the canvas to resize to fill the new available width
 
 
-  # ── Playbook selector ────────────────────────────────────────────────────────
-
-  Scenario: FOB-CONTENT-BROWSER-21a Left panel header shows "No playbook selected" when none is loaded
-    Given Maria navigates to /browser/ with no playbook pre-selected
-    Then the top of the left panel shows the text "No playbook selected"
-      (data-testid="browser-playbook-title")
-    And no status badge is shown
-    And a [Select Playbook] button is shown below the heading
-    When Maria selects a playbook from the picker
-    Then the heading text immediately updates to the selected playbook's name
-    And the status badge for that playbook appears
-    And the button label changes from [Select Playbook] to [Change Playbook]
-
+  # ── Playbook header (left panel) ─────────────────────────────────────────────
 
   Scenario: FOB-CONTENT-BROWSER-21 Left panel shows active playbook name at top
     Given Maria is viewing "FeatureFactory" in the graph view
@@ -43,43 +31,14 @@ Feature: FOB-CONTENT-BROWSER-LEFT-PANEL Content Browser Left Panel
       | element               | value                                                |
       | Playbook name heading | FeatureFactory                                       |
       | Status badge          | draft / released / active / disabled (badge colours) |
-      | [Change Playbook] btn | visible below the name                               |
-
-
-  Scenario: FOB-CONTENT-BROWSER-22 Change Playbook and Select Playbook open the same picker
-    Given Maria is on the Content Browser (with or without a playbook loaded)
-    When she clicks [Change Playbook] in the left panel header
-    Then the playbook picker opens (inline slide-down within the left panel)
-    When she clicks [Select Playbook] in the canvas empty-state card
-    Then the same playbook picker opens
-    And if the left panel was collapsed it auto-expands before the picker slides down
-    And the picker lists only playbooks accessible to Maria (see FOB-CONTENT-BROWSER-03e)
-    And each row shows: Playbook name, Status badge, Workflow count
-    And the currently active playbook (if any) is highlighted with a checkmark
-    And a search input at the top allows filtering the list by name
-
-
-  Scenario: FOB-CONTENT-BROWSER-23 Selecting a playbook from the picker loads it
-    Given the playbook picker is open
-    When Maria clicks a different playbook "React Frontend Development"
-    Then the picker closes
-    And the old graph is immediately cleared and a loading spinner appears
-    And the detail panel closes (if it was open)
-    And the structural tree clears
-    And the resource section resets to: "Select a Workflow to see its resources."
-    And the canvas reloads with the graph data for "React Frontend Development"
-    And the left panel heading updates to "React Frontend Development"
-    And the structural tree updates to reflect the new playbook's content
-    And the URL updates to /browser/<new_pk>/
-    And if the fetch fails, the canvas shows "Could not load graph data." [Retry]
-      and the previous graph is NOT restored (canvas stays empty with the error state)
+    And no [Change Playbook] or [Select Playbook] button is shown
 
 
   # ── Structural tree ──────────────────────────────────────────────────────────
 
   Scenario: FOB-CONTENT-BROWSER-24 Structural tree shows Workflow → Activity hierarchy
     Given Maria is on the graph view with the left panel expanded
-    Then below the playbook selector she sees the "Structure" tree
+    Then below the playbook header she sees the "Structure" tree
     And the tree contains only structural entities:
       | level | entity   | icon                   |
       | 1     | Workflow | diagram-project (blue) |

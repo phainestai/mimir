@@ -52,6 +52,7 @@ class TestPlaybookView:
         assert b'data-testid="playbook-header"' in response.content
         assert b'data-testid="version-badge"' in response.content
         assert b'data-testid="status-badge"' in response.content
+        assert b'data-testid="playbook-content-browser"' in response.content
     
     def test_pb_view_03_view_overview_tab_default(self):
         """PB-VIEW-03: Overview tab selected by default with quick stats."""
@@ -107,6 +108,8 @@ class TestPlaybookViewVisibility:
         assert 'data-testid="visibility-badge"' in content
         assert "Public" in content
         assert 'data-testid="delete-button"' not in content
+        assert 'data-testid="playbook-content-browser"' in content
+        assert f'/browser/{pb.pk}/' in content
 
     def test_non_owner_gets_404_for_draft_public_playbook(self):
         mike = User.objects.create_user(username="mike_draft_pub", password="x")

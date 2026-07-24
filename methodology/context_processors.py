@@ -61,7 +61,7 @@ def _resolve_nav_section(path: str):
     if path.startswith("/dashboard/"):
         return "home"
     if path.startswith("/browser/"):
-        return "browser"
+        return "playbooks"
     if path.startswith("/teams/"):
         return "teams"
     if path.startswith("/pips/") or path.startswith("/pip/"):

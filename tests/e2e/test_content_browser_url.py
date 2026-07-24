@@ -1,8 +1,7 @@
 """
 E2E tests for Content Browser URL management.
 
-Covers playbook switch via pushState (FOB-CONTENT-BROWSER-03b).
-Type/phase filter URL scenarios removed — filter toolbar UI was dropped (Phase B4 Option A).
+Covers layout query params on playbook-scoped browser entry (FOB-63).
 
 Run: pytest tests/e2e/test_content_browser_url.py -x
 """
@@ -17,20 +16,19 @@ from methodology.models import Activity, Playbook, Workflow
 
 User = get_user_model()
 
-# FOB-63 defaults persisted in URL via _filtersToQueryString after init.
 _FOB63_QS = "?layout=klay&routing=straight&compound=workflow-activity"
 
 
 @pytest.fixture
-def two_playbooks(transactional_db):
-    """Two accessible playbooks for playbook-switch URL tests."""
+def browser_playbook(transactional_db):
+    """Single playbook for URL param tests."""
     user = User.objects.create_user(
-        username="url_user_two",
-        email="url_two@test.com",
+        username="url_user",
+        email="url@test.com",
         password="testpass123",
     )
     mark_email_verified(user)
-    pb1 = Playbook.objects.create(
+    pb = Playbook.objects.create(
         name="Playbook Alpha",
         description="",
         category="development",
@@ -38,64 +36,46 @@ def two_playbooks(transactional_db):
         visibility="public",
         status="released",
     )
-    wf1 = Workflow.objects.create(playbook=pb1, name="Alpha WF", order=1)
-    Activity.objects.create(workflow=wf1, name="Alpha Act", order=1)
-    pb2 = Playbook.objects.create(
-        name="Playbook Beta",
-        description="",
-        category="development",
-        author=user,
-        visibility="public",
-        status="released",
-    )
-    wf2 = Workflow.objects.create(playbook=pb2, name="Beta WF", order=1)
-    Activity.objects.create(workflow=wf2, name="Beta Act", order=1)
+    wf = Workflow.objects.create(playbook=pb, name="Alpha WF", order=1)
+    Activity.objects.create(workflow=wf, name="Alpha Act", order=1)
     return {
-        "username": "url_user_two",
+        "username": "url_user",
         "password": "testpass123",
-        "pb1": pb1,
-        "pb2": pb2,
+        "pb": pb,
     }
 
 
 @pytest.mark.django_db(transaction=True)
 class TestURLManagement:
-    """S3 — Client-side URL management (pushState)."""
+    """Playbook-scoped browser persists layout params in URL after init."""
 
-    def test_playbook_switch_updates_url_via_push_state(
-        self, page: Page, live_server_url, two_playbooks
+    def test_browser_root_returns_404(
+        self, page: Page, live_server_url, browser_playbook
     ):
-        """Switching playbook updates URL to /browser/<new_pk>/ via pushState."""
+        """GET /browser/ without pk returns 404."""
         login(
-            page, live_server_url, two_playbooks["username"], two_playbooks["password"]
+            page,
+            live_server_url,
+            browser_playbook["username"],
+            browser_playbook["password"],
         )
-        pk1 = two_playbooks["pb1"].pk
-        pk2 = two_playbooks["pb2"].pk
-        page.goto(f"{live_server_url}/browser/{pk1}/")
-        page.wait_for_function(
-            "() => typeof _pushPlaybookUrl === 'function'", timeout=10_000
-        )
+        page.goto(f"{live_server_url}/browser/")
+        expect(page.locator("body")).to_contain_text("Not Found")
 
-        page.evaluate(f"_pushPlaybookUrl({pk2}, {{types: [], phases: []}})")
-
-        expect(page).to_have_url(f"{live_server_url}/browser/{pk2}/{_FOB63_QS}")
-
-    def test_back_button_returns_to_previous_playbook(
-        self, page: Page, live_server_url, two_playbooks
+    def test_playbook_browser_loads_with_default_layout_params(
+        self, page: Page, live_server_url, browser_playbook
     ):
-        """Browser back button after playbook switch returns to previous /browser/<pk>/."""
+        """Direct /browser/<pk>/ entry applies FOB-63 default query params."""
         login(
-            page, live_server_url, two_playbooks["username"], two_playbooks["password"]
+            page,
+            live_server_url,
+            browser_playbook["username"],
+            browser_playbook["password"],
         )
-        pk1 = two_playbooks["pb1"].pk
-        pk2 = two_playbooks["pb2"].pk
-        page.goto(f"{live_server_url}/browser/{pk1}/")
+        pk = browser_playbook["pb"].pk
+        page.goto(f"{live_server_url}/browser/{pk}/")
         page.wait_for_function(
-            "() => typeof _pushPlaybookUrl === 'function'", timeout=10_000
+            "() => typeof window.cy !== 'undefined' && window.cy.nodes().length >= 1",
+            timeout=15_000,
         )
-
-        page.evaluate(f"_pushPlaybookUrl({pk2}, {{types: [], phases: []}})")
-        expect(page).to_have_url(f"{live_server_url}/browser/{pk2}/{_FOB63_QS}")
-
-        page.go_back()
-        expect(page).to_have_url(f"{live_server_url}/browser/{pk1}/{_FOB63_QS}")
+        expect(page).to_have_url(f"{live_server_url}/browser/{pk}/{_FOB63_QS}")
