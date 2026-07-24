@@ -5,112 +5,119 @@
 {% block title %}Workflows - {{ playbook.name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Workflows</li>
-        </ol>
-    </nav>
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Workflows</li>
+    </ol>
+</nav>
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>
-            <i class="fa-solid fa-diagram-project"></i>
-            Workflows in {{ playbook.name }}
-            <span class="badge bg-secondary">{{ workflows|length }} workflows</span>
-        </h2>
+<div class="hg-page-header mb-3" data-testid="workflows-list-header">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                <i class="fa-solid fa-diagram-project hg-page-title-icon text-primary" aria-hidden="true"></i>
+                <span>Workflows in {{ playbook.name }}</span>
+            </h1>
+            <p class="text-muted small mb-0">{{ workflows|length }} workflow{{ workflows|length|pluralize }}</p>
+        </div>
         {% if can_edit %}
-        <a href="{% url 'workflow_create' playbook.pk %}" 
-           class="btn btn-primary"
-           data-bs-toggle="tooltip"
-           title="Create a new workflow in this playbook"
-           data-testid="create-workflow-button">
-            <i class="fa-solid fa-plus"></i> Create New Workflow
-        </a>
+        <div role="toolbar" aria-label="Workflow actions" class="d-flex flex-wrap gap-2 align-items-center">
+            <a href="{% url 'workflow_create' playbook.pk %}"
+               class="btn btn-primary"
+               data-bs-toggle="tooltip"
+               title="Create a new workflow in this playbook"
+               data-testid="create-workflow-button">
+                <i class="fa-solid fa-plus"></i> Create New Workflow
+            </a>
+        </div>
         {% endif %}
     </div>
+</div>
 
-    <!-- Context Banner -->
-    <div class="alert alert-info mb-4" data-testid="context-banner">
-        <div class="row">
-            <div class="col-md-4"><strong>Name:</strong> {{ playbook.name }}</div>
-            <div class="col-md-4"><strong>Version:</strong> v{{ playbook.version }}</div>
-            <div class="col-md-4"><strong>Author:</strong> {{ playbook.author.username }}</div>
+<!-- Context Banner -->
+<div class="alert alert-info mb-4" data-testid="context-banner">
+    <div class="row">
+        <div class="col-md-4"><strong>Name:</strong> {{ playbook.name }}</div>
+        <div class="col-md-4"><strong>Version:</strong> v{{ playbook.version }}</div>
+        <div class="col-md-4"><strong>Author:</strong> {{ playbook.author.username }}</div>
+    </div>
+</div>
+
+<!-- Workflows Table -->
+{% if workflows %}
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-0">
+        <div class="table-responsive" data-testid="workflows-table">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Order</th>
+                        <th scope="col">Abbrev.</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Activities</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for workflow in workflows %}
+                    <tr data-testid="workflow-row-{{ workflow.pk }}">
+                        <td>{{ workflow.order }}</td>
+                        <td data-testid="workflow-ref-{{ workflow.pk }}">
+                            {% if workflow.abbreviation %}
+                                <span class="badge bg-secondary font-monospace">{{ workflow.abbreviation }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'workflow_detail' playbook.pk workflow.pk %}" class="hg-list-name-link">
+                                {{ workflow.name }}
+                            </a>
+                        </td>
+                        <td>{{ workflow.description|markdown|striptags|truncatewords:10 }}</td>
+                        <td>{{ workflow.get_activity_count }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'workflow_detail' playbook.pk workflow.pk %}"
+                                   class="btn btn-outline-primary"
+                                   data-bs-toggle="tooltip"
+                                   title="View workflow details">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                                {% if can_edit %}
+                                <a href="{% url 'workflow_edit' playbook.pk workflow.pk %}"
+                                   class="btn btn-outline-secondary"
+                                   data-bs-toggle="tooltip"
+                                   title="Edit workflow">
+                                    <i class="fa-solid fa-edit"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-
-    <!-- Workflows Table -->
-    {% if workflows %}
-    <div class="table-responsive">
-        <table class="table table-hover" data-testid="workflows-table">
-            <thead>
-                <tr>
-                    <th>Order</th>
-                    <th>Abbrev.</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Activities</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for workflow in workflows %}
-                <tr data-testid="workflow-row-{{ workflow.pk }}">
-                    <td>{{ workflow.order }}</td>
-                    <td data-testid="workflow-ref-{{ workflow.pk }}">
-                        {% if workflow.abbreviation %}
-                            <span class="badge bg-secondary font-monospace">{{ workflow.abbreviation }}</span>
-                        {% else %}
-                            <span class="text-muted">—</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{% url 'workflow_detail' playbook.pk workflow.pk %}">
-                            {{ workflow.name }}
-                        </a>
-                    </td>
-                    <td>{{ workflow.description|markdown|striptags|truncatewords:10 }}</td>
-                    <td>{{ workflow.get_activity_count }}</td>
-                    <td>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <a href="{% url 'workflow_detail' playbook.pk workflow.pk %}" 
-                               class="btn btn-outline-primary"
-                               data-bs-toggle="tooltip"
-                               title="View workflow details">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                            {% if can_edit %}
-                            <a href="{% url 'workflow_edit' playbook.pk workflow.pk %}" 
-                               class="btn btn-outline-secondary"
-                               data-bs-toggle="tooltip"
-                               title="Edit workflow">
-                                <i class="fa-solid fa-edit"></i>
-                            </a>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <!-- Empty State -->
-    <div class="text-center py-5" data-testid="empty-state">
-        <i class="fa-solid fa-diagram-project fa-4x text-muted mb-3"></i>
-        <h4>No workflows yet</h4>
-        <p class="text-muted">Create your first workflow to organize activities</p>
-        {% if can_edit %}
-        <a href="{% url 'workflow_create' playbook.pk %}" class="btn btn-primary">
-            <i class="fa-solid fa-plus"></i> Create Workflow
-        </a>
-        {% endif %}
-    </div>
+</div>
+{% else %}
+<!-- Empty State -->
+<div class="text-center py-5" data-testid="empty-state">
+    <i class="fa-solid fa-diagram-project fa-4x text-muted mb-3"></i>
+    <h4>No workflows yet</h4>
+    <p class="text-muted">Create your first workflow to organize activities</p>
+    {% if can_edit %}
+    <a href="{% url 'workflow_create' playbook.pk %}" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Create Workflow
+    </a>
     {% endif %}
 </div>
+{% endif %}
 
 <script>
     // Initialize tooltips

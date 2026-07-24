@@ -5,7 +5,7 @@
 {% block title %}{{ team.name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="team-detail-page">
+<div data-testid="team-detail-page">
 
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
@@ -25,19 +25,23 @@
     {% endfor %}
 
     <!-- Header row: name + action buttons -->
-    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
-        <div>
-            <h2 class="mb-1">
-                <i class="fa-solid fa-users-rectangle text-primary me-2"></i>{{ team.name }}
-            </h2>
-            <span class="badge {% if team.visibility == 'Public' %}bg-success{% else %}bg-secondary{% endif %} me-1"
-                  data-bs-toggle="tooltip" title="Visibility">{{ team.visibility }}</span>
-            <span class="badge bg-light text-dark border"
-                  data-bs-toggle="tooltip" title="Category">{{ team.category }}</span>
-        </div>
+    <div class="hg-page-header mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="flex-grow-1 min-w-0">
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-users-rectangle hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>{{ team.name }}</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    <span class="badge {% if team.visibility == 'Public' %}bg-success{% else %}bg-secondary{% endif %} me-1"
+                          data-bs-toggle="tooltip" title="Visibility">{{ team.visibility }}</span>
+                    <span class="badge bg-light text-dark border"
+                          data-bs-toggle="tooltip" title="Category">{{ team.category }}</span>
+                </p>
+            </div>
 
-        <!-- Action area — exactly one state shown -->
-        <div class="d-flex gap-2 flex-wrap" role="group" aria-label="Team membership actions">
+            <!-- Action area — exactly one state shown -->
+            <div role="toolbar" aria-label="Team membership actions" class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0">
 
             {% if join_state == "join" %}
             <!-- Form hidden; button opens confirm modal; modal submits form -->
@@ -97,6 +101,7 @@
             </div>
             {% endif %}
 
+            </div>
         </div>
     </div>
 

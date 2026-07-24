@@ -4,7 +4,7 @@
 {% block title %}{{ rule.title }} - {{ playbook.name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="rule-detail">
+<div data-testid="rule-detail">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'playbook_list' %}">Playbooks</a></li>
@@ -14,23 +14,28 @@
         </ol>
     </nav>
 
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2 data-testid="rule-title"><i class="fa-solid fa-scale-balanced"></i> {{ rule.title }}</h2>
-            <p class="text-muted small"><code>{{ rule.slug }}</code> &middot; always_apply: {{ rule.always_apply|yesno:"yes,no" }}</p>
+    <div class="hg-page-header mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="flex-grow-1 min-w-0">
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-scale-balanced hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span data-testid="rule-title">{{ rule.title }}</span>
+                </h1>
+                <p class="text-muted small mb-0"><code>{{ rule.slug }}</code> &middot; always_apply: {{ rule.always_apply|yesno:"yes,no" }}</p>
+            </div>
+            {% if can_edit %}
+            <div role="toolbar" aria-label="Rule actions" class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0">
+                <a href="{% url 'rule_edit' playbook_pk=playbook.pk rule_pk=rule.pk %}" class="btn btn-primary" data-testid="edit-rule-btn">
+                    <i class="fa-solid fa-edit"></i> Edit
+                </a>
+                <button type="button" class="btn btn-outline-danger"
+                        hx-get="{% url 'rule_delete_confirm' playbook_pk=playbook.pk rule_pk=rule.pk %}"
+                        hx-target="#rule-delete-modal-container" hx-swap="innerHTML">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+            {% endif %}
         </div>
-        {% if can_edit %}
-        <div class="btn-group">
-            <a href="{% url 'rule_edit' playbook_pk=playbook.pk rule_pk=rule.pk %}" class="btn btn-primary" data-testid="edit-rule-btn">
-                <i class="fa-solid fa-edit"></i> Edit
-            </a>
-            <button type="button" class="btn btn-outline-danger"
-                    hx-get="{% url 'rule_delete_confirm' playbook_pk=playbook.pk rule_pk=rule.pk %}"
-                    hx-target="#rule-delete-modal-container" hx-swap="innerHTML">
-                <i class="fa-solid fa-trash"></i>
-            </button>
-        </div>
-        {% endif %}
     </div>
 
     <div class="card mb-4">

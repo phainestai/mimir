@@ -3,19 +3,19 @@
 
 {% block title %}Mimir — Your AI's Book of Spells{% endblock %}
 
-{% block body_class %}mm-landing{% endblock %}
+{% block body_class %}hg-landing{% endblock %}
 
 {% block content %}
 <div data-testid="landing-loaded" class="visually-hidden">Landing</div>
 
 <!-- Hero -->
-<section class="mm-landing-hero" data-testid="landing-hero">
-  <div class="mm-landing-overlay" aria-hidden="true"></div>
-  <div class="mm-landing-hero-inner">
-    <h1 class="mm-landing-title mb-4" data-testid="landing-title">
+<section class="hg-landing-hero" data-testid="landing-hero">
+  <div class="hg-landing-overlay" aria-hidden="true"></div>
+  <div class="hg-landing-hero-inner">
+    <h1 class="hg-landing-title mb-4" data-testid="landing-title">
       Your AI's book of spells.
     </h1>
-    <p class="mm-landing-tagline mb-5" data-testid="landing-tagline">
+    <p class="hg-landing-tagline mb-5" data-testid="landing-tagline">
       Mimir provides your AI with the codified wisdom of how great software gets built — and tools to learn from experience.
       With every sprint and every feature built, your team and their AI get sharper — because the playbook they share keeps improving.
     </p>
@@ -23,15 +23,15 @@
       <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-5" data-testid="landing-cta-signin">
         Sign In
       </a>
-      <a href="{% url 'use_cases' %}" class="mm-landing-link" data-testid="landing-cta-features">What Mimir Can Do</a>
-      <a href="#mcp-config" class="mm-landing-link" data-testid="landing-cta-connect">Connect MCP</a>
-      <a href="{% url 'register' %}" class="mm-landing-link" data-testid="landing-cta-register">Register</a>
+      <a href="{% url 'use_cases' %}" class="hg-landing-link" data-testid="landing-cta-features">What Mimir Can Do</a>
+      <a href="#mcp-config" class="hg-landing-link" data-testid="landing-cta-connect">Connect MCP</a>
+      <a href="{% url 'register' %}" class="hg-landing-link" data-testid="landing-cta-register">Register</a>
     </div>
   </div>
 </section>
 
 <!-- Connect MCP section -->
-<div class="mm-landing-sections-wrap">
+<div class="hg-landing-features-wrap">
   <!-- Connect MCP section -->
   <section class="card border-0 shadow-sm rounded-3 mb-4" id="mcp-config" data-testid="landing-mcp-connect">
     <div class="card-header bg-white border-bottom py-2 px-3 fw-semibold d-flex align-items-center">

@@ -1,0 +1,21 @@
+{# Shared page header — IA §3.4 / §3.5. Pass: title, icon (optional FA classes), subtitle (optional), toolbar_aria (optional). Use {% block %} in parent or capture toolbar HTML. #}
+<div class="hg-page-header mb-3{% if header_class %} {{ header_class }}{% endif %}"{% if header_testid %} data-testid="{{ header_testid }}"{% endif %}>
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div class="flex-grow-1 min-w-0">
+      <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+        {% if icon %}
+        <i class="{{ icon }} hg-page-title-icon text-primary" aria-hidden="true"></i>
+        {% endif %}
+        <span>{{ title }}</span>
+      </h1>
+      {% if subtitle %}
+      <p class="text-muted small mb-0">{{ subtitle }}</p>
+      {% endif %}
+    </div>
+    {% if toolbar %}
+    <div role="toolbar" aria-label="{{ toolbar_aria|default:'Page actions' }}" class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0">
+      {{ toolbar }}
+    </div>
+    {% endif %}
+  </div>
+</div>

@@ -5,7 +5,7 @@
 {% block title %}{{ activity.name }} - Activity{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="activity-detail">
+<div data-testid="activity-detail">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -19,34 +19,35 @@
     </nav>
 
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4" data-testid="activity-header">
-        <div>
-            <h1 class="display-6" data-testid="activity-title">
-                <i class="fa-solid fa-list-check"></i> 
-                {% if activity.reference_label %}
-                <span class="badge bg-secondary me-2 font-monospace" data-testid="activity-ref-badge">{{ activity.reference_label }}</span>
-                {% elif activity.reference_name %}
-                <span class="badge bg-secondary me-2 font-monospace" data-testid="activity-ref-badge">{{ activity.reference_name }}</span>
-                {% endif %}
-                {{ activity.name }}
-            </h1>
-            <p class="text-muted">
-                <span class="badge bg-secondary" data-testid="order-badge">Order: #{{ activity.order }}</span>
-                {% if activity.phase %}
-                <span class="badge bg-info" data-testid="phase-badge"><i class="fa-solid fa-bars-progress me-1" aria-hidden="true"></i>{{ activity.phase.name }}</span>
-                {% endif %}
-                {% if activity.predecessor or activity.successor %}
-                <span class="badge bg-info" data-testid="dependencies-badge">
-                    <i class="fa-solid fa-link"></i> Has Dependencies
-                </span>
-                {% endif %}
-            </p>
-            <p class="text-muted small">
-                <i class="fa-solid fa-clock"></i> Updated {{ activity.updated_at|timesince }} ago
-            </p>
-        </div>
-        <div class="btn-group flex-shrink-0" role="group" aria-label="Activity actions"
-             data-testid="activity-header-actions">
+    <div class="hg-page-header mb-3" data-testid="activity-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="flex-grow-1 min-w-0">
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1" data-testid="activity-title">
+                    <i class="fa-solid fa-list-check hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>{{ activity.name }}</span>
+                </h1>
+                <p class="text-muted small mb-1">
+                    {% if activity.reference_label %}
+                    <span class="badge bg-secondary me-1 font-monospace" data-testid="activity-ref-badge">{{ activity.reference_label }}</span>
+                    {% elif activity.reference_name %}
+                    <span class="badge bg-secondary me-1 font-monospace" data-testid="activity-ref-badge">{{ activity.reference_name }}</span>
+                    {% endif %}
+                    <span class="badge bg-secondary" data-testid="order-badge">Order: #{{ activity.order }}</span>
+                    {% if activity.phase %}
+                    <span class="badge bg-info" data-testid="phase-badge"><i class="fa-solid fa-bars-progress me-1" aria-hidden="true"></i>{{ activity.phase.name }}</span>
+                    {% endif %}
+                    {% if activity.predecessor or activity.successor %}
+                    <span class="badge bg-info" data-testid="dependencies-badge">
+                        <i class="fa-solid fa-link"></i> Has Dependencies
+                    </span>
+                    {% endif %}
+                </p>
+                <p class="text-muted small mb-0">
+                    <i class="fa-solid fa-clock"></i> Updated {{ activity.updated_at|timesince }} ago
+                </p>
+            </div>
+            <div role="toolbar" aria-label="Activity actions" class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0"
+                 data-testid="activity-header-actions">
             {% if can_edit %}
                 <a href="{% url 'activity_delete' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
                    class="btn btn-outline-danger"
@@ -78,6 +79,7 @@
                title="Back to activities list">
                 <i class="fa-solid fa-arrow-left"></i> Back to List
             </a>
+            </div>
         </div>
     </div>
 

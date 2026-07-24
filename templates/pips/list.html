@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}PIPs — Mimir{% endblock %}
 {% block content %}
-<div class="container mt-4" data-testid="pip-list-page">
+<div data-testid="pip-list-page">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
@@ -9,26 +9,32 @@
         </ol>
     </nav>
 
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2 class="h3" data-testid="pip-list-heading">
-                <i class="fas fa-lightbulb"></i> PIPs
-                <span class="badge bg-secondary ms-1" data-testid="pip-list-count">PIPs ({{ pip_count }})</span>
-            </h2>
-            <p class="text-muted mb-0">Playbook Improvement Proposals for Released playbooks.</p>
+    <div class="hg-page-header mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1" data-testid="pip-list-heading">
+                    <i class="fas fa-lightbulb hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>PIPs</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    <span data-testid="pip-list-count">PIPs ({{ pip_count }})</span> — Playbook Improvement Proposals for Released playbooks.
+                </p>
+            </div>
+            <div role="toolbar" aria-label="PIP actions" class="d-flex flex-wrap gap-2 align-items-center">
+                <a href="{% url 'pip_create' %}" class="btn btn-primary" data-testid="pip-new-btn">
+                    <i class="fas fa-plus"></i> New PIP
+                </a>
+            </div>
         </div>
-        <a href="{% url 'pip_create' %}" class="btn btn-primary" data-testid="pip-new-btn">
-            <i class="fas fa-plus"></i> New PIP
-        </a>
     </div>
 
-    <div class="card mb-4" data-testid="pip-filter-bar">
+    <div class="card mb-4 border-0 shadow-sm rounded-3" data-testid="pip-filter-bar">
         <div class="card-body">
             <form method="get" action="{% url 'pip_list' %}" id="pip-filter-form">
                 <input type="hidden" name="scope" value="{{ list_scope }}">
                 <div class="row g-3 align-items-end">
                     <div class="col-12 col-lg-5">
-                        <span class="form-label small fw-semibold d-block">Status</span>
+                        <span class="form-label hg-label-caps mb-1 d-block">Status</span>
                         <div class="d-flex flex-wrap gap-2" data-testid="filter-status-group">
                             {% for val, label in pip_status_choices %}
                             <label class="form-check form-check-inline small mb-0">
@@ -41,7 +47,7 @@
                         </div>
                     </div>
                     <div class="col-12 col-lg-4">
-                        <label class="form-label small fw-semibold" for="filter-playbook">Target playbook</label>
+                        <label class="form-label hg-label-caps mb-1" for="filter-playbook">Target playbook</label>
                         <select class="form-select form-select-sm" name="playbook" id="filter-playbook"
                                 data-testid="filter-playbook">
                             <option value="">All playbooks</option>
@@ -53,7 +59,7 @@
                         </select>
                     </div>
                     <div class="col-12 col-lg-3">
-                        <span class="form-label small fw-semibold d-lg-block d-none">&nbsp;</span>
+                        <span class="form-label hg-label-caps mb-1 d-lg-block d-none">&nbsp;</span>
                         <div class="d-flex justify-content-lg-end justify-content-start gap-2 flex-wrap">
                             <a href="{% url 'pip_list' %}?scope={{ list_scope }}" class="btn btn-outline-secondary btn-sm"
                                data-testid="filter-clear"><i class="fas fa-xmark me-1"></i>Clear filters</a>
@@ -84,7 +90,7 @@
         {% endif %}
     </ul>
 
-    <div class="card border-top-0 rounded-top-0">
+    <div class="card border-0 shadow-sm rounded-3 border-top-0 rounded-top-0">
         <div class="card-body p-0">
             {% if pip_count == 0 %}
             <div class="p-5 text-center text-muted" data-testid="pip-empty-state">
@@ -98,21 +104,21 @@
                 {% endif %}
             </div>
             {% else %}
-            <div class="table-responsive">
-                <table class="table table-hover mb-0" data-testid="pip-table">
+            <div class="table-responsive" data-testid="pip-table">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                     <tr>
                         {% if list_scope == 'all' %}
-                        <th>Submitted by</th>
+                        <th scope="col">Submitted by</th>
                         {% endif %}
-                        <th>PIP</th>
-                        <th>Title</th>
-                        <th>Target playbook</th>
-                        <th class="text-center">Changes</th>
-                        <th>Status</th>
-                        <th>Submitted</th>
-                        <th>Updated</th>
-                        <th class="text-end">Actions</th>
+                        <th scope="col">PIP</th>
+                        <th scope="col">Title</th>
+                        <th scope="col">Target playbook</th>
+                        <th scope="col" class="text-center">Changes</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Submitted</th>
+                        <th scope="col">Updated</th>
+                        <th scope="col" class="text-end">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -144,14 +150,14 @@
                         <td class="small text-muted">{{ pip.updated_at|date:"Y-m-d H:i" }}</td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm" role="group">
-                                <a href="{% url 'pip_detail' pip.pk %}" 
+                                <a href="{% url 'pip_detail' pip.pk %}"
                                    class="btn btn-outline-primary"
                                    data-bs-toggle="tooltip"
                                    title="View PIP details"
                                    data-testid="pip-action-view-{{ pip.pk }}">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>
-                                <a href="{% url 'pip_preview' pip.pk %}" 
+                                <a href="{% url 'pip_preview' pip.pk %}"
                                    class="btn btn-outline-secondary"
                                    data-bs-toggle="tooltip"
                                    title="Preview changes"
@@ -159,7 +165,7 @@
                                     <i class="fa-solid fa-file-lines"></i>
                                 </a>
                                 {% if pip.status == 'draft' and pip.created_by == request.user %}
-                                <a href="{% url 'pip_edit' pip.pk %}" 
+                                <a href="{% url 'pip_edit' pip.pk %}"
                                    class="btn btn-outline-secondary"
                                    data-bs-toggle="tooltip"
                                    title="Edit draft"

@@ -5,7 +5,7 @@
 {% block title %}{{ skill.title }} - {{ playbook.name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="skill-detail">
+<div data-testid="skill-detail">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -17,50 +17,53 @@
     </nav>
 
     <!-- Skill header -->
-    <div class="d-flex justify-content-between align-items-start mb-4" data-testid="skill-header">
-        <div>
-            <h2 data-testid="skill-title">
-                <i class="fa-solid fa-hand-holding-magic"></i> {{ skill.title }}
-            </h2>
-            <div class="mb-2">
-                {% if skill.capability_domain %}
-                <span class="badge bg-info text-dark me-1" data-testid="domain-badge">
-                    <i class="fa-solid fa-cubes"></i> {{ skill.capability_domain }}
-                </span>
-                {% endif %}
-                {% if skill.technology_stack %}
-                <span class="badge bg-success me-1" data-testid="stack-badge">
-                    <i class="fa-solid fa-layer-group"></i> {{ skill.technology_stack }}
-                </span>
-                {% endif %}
+    <div class="hg-page-header mb-3" data-testid="skill-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="flex-grow-1 min-w-0">
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-hand-holding-magic hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span data-testid="skill-title">{{ skill.title }}</span>
+                </h1>
+                <p class="text-muted small mb-1">
+                    {% if skill.capability_domain %}
+                    <span class="badge bg-info text-dark me-1" data-testid="domain-badge">
+                        <i class="fa-solid fa-cubes"></i> {{ skill.capability_domain }}
+                    </span>
+                    {% endif %}
+                    {% if skill.technology_stack %}
+                    <span class="badge bg-success me-1" data-testid="stack-badge">
+                        <i class="fa-solid fa-layer-group"></i> {{ skill.technology_stack }}
+                    </span>
+                    {% endif %}
+                </p>
+                <p class="text-muted small mb-0">
+                    <i class="fa-solid fa-book-sparkles"></i> {{ playbook.name }}
+                    &middot;
+                    <i class="fa-solid fa-clock"></i> Updated {{ skill.updated_at|timesince }} ago
+                </p>
             </div>
-            <p class="text-muted small">
-                <i class="fa-solid fa-book-sparkles"></i> {{ playbook.name }}
-                &middot;
-                <i class="fa-solid fa-clock"></i> Updated {{ skill.updated_at|timesince }} ago
-            </p>
+            {% if can_edit %}
+            <div role="toolbar" aria-label="Skill actions" class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0">
+                <a href="{% url 'skill_edit' playbook_pk=playbook.pk skill_pk=skill.pk %}"
+                   class="btn btn-primary"
+                   data-testid="edit-skill-btn"
+                   data-bs-toggle="tooltip"
+                   title="Edit this skill's title, metadata, and content">
+                    <i class="fa-solid fa-edit"></i> Edit Skill
+                </a>
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-testid="delete-skill-btn"
+                        data-bs-toggle="tooltip"
+                        title="Delete this skill permanently"
+                        hx-get="{% url 'skill_delete_confirm' playbook_pk=playbook.pk skill_pk=skill.pk %}"
+                        hx-target="#skill-delete-modal-container"
+                        hx-swap="innerHTML">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            </div>
+            {% endif %}
         </div>
-        {% if can_edit %}
-        <div class="btn-group">
-            <a href="{% url 'skill_edit' playbook_pk=playbook.pk skill_pk=skill.pk %}"
-               class="btn btn-primary"
-               data-testid="edit-skill-btn"
-               data-bs-toggle="tooltip"
-               title="Edit this skill's title, metadata, and content">
-                <i class="fa-solid fa-edit"></i> Edit Skill
-            </a>
-            <button type="button"
-                    class="btn btn-outline-danger"
-                    data-testid="delete-skill-btn"
-                    data-bs-toggle="tooltip"
-                    title="Delete this skill permanently"
-                    hx-get="{% url 'skill_delete_confirm' playbook_pk=playbook.pk skill_pk=skill.pk %}"
-                    hx-target="#skill-delete-modal-container"
-                    hx-swap="innerHTML">
-                <i class="fa-solid fa-trash"></i> Delete
-            </button>
-        </div>
-        {% endif %}
     </div>
 
     <!-- Skill content -->

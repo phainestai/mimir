@@ -5,22 +5,34 @@
 {% block title %}Agents{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="agents-list">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2><i class="fa-solid fa-brain-circuit me-2"></i>Agents</h2>
-            <p class="text-muted">AI assistants configured to perform activities within playbooks</p>
+<div data-testid="agents-list">
+    <div class="hg-page-header mb-3" data-testid="agents-list-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-brain-circuit hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>Agents</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    {% if agents %}
+                    {{ agents|length }} agent{{ agents|length|pluralize }} — AI assistants configured to perform activities within playbooks
+                    {% else %}
+                    AI assistants configured to perform activities within playbooks
+                    {% endif %}
+                </p>
+            </div>
         </div>
     </div>
 
     <!-- Search -->
-    <div class="card mb-4">
+    <div class="card mb-4 border-0 shadow-sm rounded-3">
         <div class="card-body">
             <form method="get" action="{% url 'agent_list' %}" role="search">
+                <label for="agent-search-input" class="form-label hg-label-caps mb-1">Search</label>
                 <div class="input-group">
                     <input type="text"
                            class="form-control"
+                           id="agent-search-input"
                            name="q"
                            value="{{ query }}"
                            placeholder="Search agents by name or description…"
@@ -40,47 +52,43 @@
 
     {% if agents %}
     <!-- Agents table -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fa-solid fa-list me-2"></i>Agents
-                <span class="badge bg-secondary ms-2">{{ agents|length }}</span>
-            </h5>
-        </div>
+    <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0" data-testid="agents-table">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 20%">Name</th>
-                        <th style="width: 55%">Description</th>
-                        <th style="width: 15%">Playbook</th>
-                        <th style="width: 10%">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for agent in agents %}
-                    <tr data-testid="agent-row-{{ agent.id }}">
-                        <td>
-                            <i class="fa-solid fa-brain-circuit text-primary me-2"></i>
-                            <strong>{{ agent.name }}</strong>
-                        </td>
-                        <td class="text-muted small">
-                            {{ agent.description|markdown|striptags|truncatewords:20 }}
-                        </td>
-                        <td class="text-muted small">{{ agent.playbook.name }}</td>
-                        <td>
-                            <a href="{% url 'agent_detail' pk=agent.id %}"
-                               class="btn btn-outline-primary btn-sm"
-                               data-testid="view-agent-{{ agent.id }}"
-                               data-bs-toggle="tooltip"
-                               title="View agent">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive" data-testid="agents-table">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" style="width: 20%">Name</th>
+                            <th scope="col" style="width: 55%">Description</th>
+                            <th scope="col" style="width: 15%">Playbook</th>
+                            <th scope="col" style="width: 10%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for agent in agents %}
+                        <tr data-testid="agent-row-{{ agent.id }}">
+                            <td>
+                                <i class="fa-solid fa-brain-circuit text-primary me-2"></i>
+                                <strong>{{ agent.name }}</strong>
+                            </td>
+                            <td class="text-muted small">
+                                {{ agent.description|markdown|striptags|truncatewords:20 }}
+                            </td>
+                            <td class="text-muted small">{{ agent.playbook.name }}</td>
+                            <td>
+                                <a href="{% url 'agent_detail' pk=agent.id %}"
+                                   class="btn btn-outline-primary btn-sm"
+                                   data-testid="view-agent-{{ agent.id }}"
+                                   data-bs-toggle="tooltip"
+                                   title="View agent">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
