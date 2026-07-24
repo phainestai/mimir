@@ -5,7 +5,7 @@
 {% block title %}{{ artifact.name }} - Artifact{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="artifact-detail">
+<div data-testid="artifact-detail">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -16,27 +16,30 @@
     </nav>
 
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2 data-testid="artifact-name">
-                <i class="fa-solid fa-gift"></i> {{ artifact.name }}
-                {% if artifact.is_required %}
-                    <span class="badge bg-danger ms-2">Required</span>
-                {% endif %}
-            </h2>
-            <p class="text-muted mb-0">
-                <span class="badge bg-secondary">{{ artifact.type }}</span>
-            </p>
+    <div class="hg-page-header mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="flex-grow-1 min-w-0">
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-gift hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span data-testid="artifact-name">{{ artifact.name }}</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    <span class="badge bg-secondary">{{ artifact.type }}</span>
+                    {% if artifact.is_required %}
+                    <span class="badge bg-danger ms-1">Required</span>
+                    {% endif %}
+                </p>
+            </div>
+            {% if can_edit %}
+            <div role="toolbar" aria-label="Artifact actions" class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0">
+                <a href="{% url 'artifact_edit' pk=artifact.pk %}"
+                   class="btn btn-outline-primary"
+                   data-testid="edit-btn">
+                    <i class="fa-solid fa-edit"></i> Edit
+                </a>
+            </div>
+            {% endif %}
         </div>
-        {% if can_edit %}
-        <div class="btn-group">
-            <a href="{% url 'artifact_edit' pk=artifact.pk %}" 
-               class="btn btn-outline-primary"
-               data-testid="edit-btn">
-                <i class="fa-solid fa-edit"></i> Edit
-            </a>
-        </div>
-        {% endif %}
     </div>
 
     <div class="row">

@@ -5,7 +5,7 @@
 {% block title %}{{ activity.name }} - Activity{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="activity-detail">
+<div data-testid="activity-detail">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -19,34 +19,35 @@
     </nav>
 
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4" data-testid="activity-header">
-        <div>
-            <h1 class="display-6" data-testid="activity-title">
-                <i class="fa-solid fa-list-check"></i> 
-                {% if activity.reference_label %}
-                <span class="badge bg-secondary me-2 font-monospace" data-testid="activity-ref-badge">{{ activity.reference_label }}</span>
-                {% elif activity.reference_name %}
-                <span class="badge bg-secondary me-2 font-monospace" data-testid="activity-ref-badge">{{ activity.reference_name }}</span>
-                {% endif %}
-                {{ activity.name }}
-            </h1>
-            <p class="text-muted">
-                <span class="badge bg-secondary" data-testid="order-badge">Order: #{{ activity.order }}</span>
-                {% if activity.phase %}
-                <span class="badge bg-info" data-testid="phase-badge"><i class="fa-solid fa-bars-progress me-1" aria-hidden="true"></i>{{ activity.phase.name }}</span>
-                {% endif %}
-                {% if activity.predecessor or activity.successor %}
-                <span class="badge bg-info" data-testid="dependencies-badge">
-                    <i class="fa-solid fa-link"></i> Has Dependencies
-                </span>
-                {% endif %}
-            </p>
-            <p class="text-muted small">
-                <i class="fa-solid fa-clock"></i> Updated {{ activity.updated_at|timesince }} ago
-            </p>
-        </div>
-        <div class="btn-group flex-shrink-0" role="group" aria-label="Activity actions"
-             data-testid="activity-header-actions">
+    <div class="hg-page-header mb-3" data-testid="activity-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="flex-grow-1 min-w-0">
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1" data-testid="activity-title">
+                    <i class="fa-solid fa-list-check hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>{{ activity.name }}</span>
+                </h1>
+                <p class="text-muted small mb-1">
+                    {% if activity.reference_label %}
+                    <span class="badge bg-secondary me-1 font-monospace" data-testid="activity-ref-badge">{{ activity.reference_label }}</span>
+                    {% elif activity.reference_name %}
+                    <span class="badge bg-secondary me-1 font-monospace" data-testid="activity-ref-badge">{{ activity.reference_name }}</span>
+                    {% endif %}
+                    <span class="badge bg-secondary" data-testid="order-badge">Order: #{{ activity.order }}</span>
+                    {% if activity.phase %}
+                    <span class="badge bg-info" data-testid="phase-badge"><i class="fa-solid fa-bars-progress me-1" aria-hidden="true"></i>{{ activity.phase.name }}</span>
+                    {% endif %}
+                    {% if activity.predecessor or activity.successor %}
+                    <span class="badge bg-info" data-testid="dependencies-badge">
+                        <i class="fa-solid fa-link"></i> Has Dependencies
+                    </span>
+                    {% endif %}
+                </p>
+                <p class="text-muted small mb-0">
+                    <i class="fa-solid fa-clock"></i> Updated {{ activity.updated_at|timesince }} ago
+                </p>
+            </div>
+            <div role="toolbar" aria-label="Activity actions" class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0"
+                 data-testid="activity-header-actions">
             {% if can_edit %}
                 <a href="{% url 'activity_delete' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
                    class="btn btn-outline-danger"
@@ -78,6 +79,7 @@
                title="Back to activities list">
                 <i class="fa-solid fa-arrow-left"></i> Back to List
             </a>
+            </div>
         </div>
     </div>
 
@@ -304,20 +306,61 @@
 <!-- Mermaid.js for diagram rendering -->
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
-    (function () {
-        var themeAttr = document.documentElement.getAttribute('data-bs-theme');
-        var mermaidTheme = themeAttr === 'dark' ? 'dark' : 'default';
-        mermaid.initialize({
-            startOnLoad: true,
-            theme: mermaidTheme,
-            securityLevel: 'loose'
-        });
-        console.log('activity detail: mermaid initialized', { theme: mermaidTheme });
-    })();
+    mermaid.initialize({ 
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose'
+    });
 </script>
 
 <style>
-    /* Structural only — colors from design-system.css */
+    /* Markdown content styling */
+    .markdown-content {
+        line-height: 1.6;
+    }
+    .markdown-content h1, .markdown-content h2, .markdown-content h3,
+    .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .markdown-content h1 { font-size: 1.75rem; }
+    .markdown-content h2 { font-size: 1.5rem; }
+    .markdown-content h3 { font-size: 1.25rem; }
+    .markdown-content pre {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        overflow-x: auto;
+    }
+    .markdown-content code {
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-size: 0.875em;
+    }
+    .markdown-content pre code {
+        background-color: transparent;
+        padding: 0;
+    }
+    .markdown-content img {
+        max-width: 100%;
+        height: auto;
+    }
+    .markdown-content table {
+        width: 100%;
+        margin-bottom: 1rem;
+        border-collapse: collapse;
+    }
+    .markdown-content table th,
+    .markdown-content table td {
+        padding: 0.75rem;
+        border: 1px solid #dee2e6;
+    }
+    .markdown-content table thead th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
     .mermaid {
         text-align: center;
         margin: 1rem 0;

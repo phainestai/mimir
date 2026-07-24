@@ -2,24 +2,40 @@
 {% block title %}Rules{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="rules-list-global">
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2><i class="fa-solid fa-scale-balanced"></i> Rules</h2>
-            <p class="text-muted">IDE-style rules across your playbooks</p>
-        </div>
-        <div>
-            <a href="{% url 'playbook_list' %}" class="btn btn-outline-secondary" data-testid="back-to-playbooks-btn">
-                <i class="fa-solid fa-arrow-left"></i> Playbooks
-            </a>
+<div data-testid="rules-list-global">
+    <div class="hg-page-header mb-3" data-testid="rules-list-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-scale-balanced hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>Rules</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    {% if rules %}
+                    {{ rules|length }} rule{{ rules|length|pluralize }} — IDE-style rules across your playbooks
+                    {% else %}
+                    IDE-style rules across your playbooks
+                    {% endif %}
+                </p>
+            </div>
+            <div role="toolbar" aria-label="Rules navigation" class="d-flex flex-wrap gap-2 align-items-center">
+                <a href="{% url 'playbook_list' %}" class="btn btn-outline-secondary" data-testid="back-to-playbooks-btn">
+                    <i class="fa-solid fa-arrow-left"></i> Playbooks
+                </a>
+            </div>
         </div>
     </div>
 
-    <div class="card mb-4">
+    <div class="card mb-4 border-0 shadow-sm rounded-3">
         <div class="card-body">
             <form method="get" action="{% url 'rule_list' %}">
+                <label for="rule-search-input" class="form-label hg-label-caps mb-1">Search</label>
                 <div class="input-group">
-                    <input type="text" class="form-control" name="q" value="{{ query }}"
+                    <input type="text"
+                           class="form-control"
+                           id="rule-search-input"
+                           name="q"
+                           value="{{ query }}"
                            placeholder="Search rules..."
                            data-testid="rule-search">
                     <button class="btn btn-outline-secondary" type="submit"><i class="fa-solid fa-search"></i> Search</button>
@@ -32,39 +48,40 @@
     </div>
 
     {% if rules %}
-    <div class="card">
-        <div class="card-header"><h5 class="mb-0"><i class="fa-solid fa-list"></i> Rules <span class="badge bg-secondary ms-2">{{ rules|length }}</span></h5></div>
+    <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0" data-testid="rules-table">
-                <thead class="table-light">
-                    <tr>
-                        <th>Title</th>
-                        <th>Slug</th>
-                        <th>Playbook</th>
-                        <th style="width:10%">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for rule in rules %}
-                    <tr data-testid="rule-row-{{ rule.id }}">
-                        <td>
-                            <i class="fa-solid fa-scale-balanced text-primary me-2"></i>
-                            <a href="{% url 'rule_detail' playbook_pk=rule.playbook.pk rule_pk=rule.pk %}">
-                                <strong>{{ rule.title }}</strong>
-                            </a>
-                        </td>
-                        <td><code>{{ rule.slug }}</code></td>
-                        <td class="text-muted small">{{ rule.playbook.name }}</td>
-                        <td>
-                            <a href="{% url 'rule_detail' playbook_pk=rule.playbook.pk rule_pk=rule.pk %}"
-                               class="btn btn-outline-primary btn-sm" data-testid="view-rule-{{ rule.id }}">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive" data-testid="rules-table-wrap">
+                <table class="table table-hover align-middle mb-0" data-testid="rules-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Title</th>
+                            <th scope="col">Slug</th>
+                            <th scope="col">Playbook</th>
+                            <th scope="col" style="width:10%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rule in rules %}
+                        <tr data-testid="rule-row-{{ rule.id }}">
+                            <td>
+                                <i class="fa-solid fa-scale-balanced text-primary me-2"></i>
+                                <a href="{% url 'rule_detail' playbook_pk=rule.playbook.pk rule_pk=rule.pk %}" class="hg-list-name-link">
+                                    <strong>{{ rule.title }}</strong>
+                                </a>
+                            </td>
+                            <td><code>{{ rule.slug }}</code></td>
+                            <td class="text-muted small">{{ rule.playbook.name }}</td>
+                            <td>
+                                <a href="{% url 'rule_detail' playbook_pk=rule.playbook.pk rule_pk=rule.pk %}"
+                                   class="btn btn-outline-primary btn-sm" data-testid="view-rule-{{ rule.id }}">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     {% else %}

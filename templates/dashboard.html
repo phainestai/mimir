@@ -3,15 +3,16 @@
 {% block title %}Dashboard - Mimir{% endblock %}
 
 {% block content %}
-<div class="container-fluid p-4">
-    <!-- Dashboard Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fas fa-gauge me-2" aria-hidden="true"></i>
-            Dashboard
-            <small class="text-muted ms-2">Welcome back, {{ user.username }}</small>
-        </h1>
-        <div class="d-flex gap-2">
+<div class="hg-page-header mb-3" data-testid="dashboard-header">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+        <i class="fas fa-gauge hg-page-title-icon text-primary" aria-hidden="true"></i>
+        <span>Dashboard</span>
+      </h1>
+      <p class="text-muted small mb-0">Welcome back, {{ user.username }}!</p>
+    </div>
+    <div role="toolbar" aria-label="Dashboard actions" class="d-flex flex-wrap gap-2 align-items-center">
             <!-- Quick Actions Multi-Button -->
             <div class="btn-group" role="group" aria-label="Quick Actions">
                 <a href="{% url 'playbook_create' %}" 
@@ -60,8 +61,9 @@
                 Settings
             </a>
             {% endif %}
-        </div>
     </div>
+  </div>
+</div>
 
     <!-- Error Message (if any) -->
     {% if error_message %}
@@ -84,7 +86,6 @@
         <!-- Recent Activity Section -->
         {% include 'methodology/partials/recent_activity_section.html' %}
     </div>
-</div>
 
 <!-- Test identifiers -->
 <div data-testid="dashboard-loaded" style="display: none;">FOB-DASHBOARD-1</div>

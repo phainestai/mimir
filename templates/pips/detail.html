@@ -2,7 +2,7 @@
 {% load markdown_filters %}
 {% block title %}PIP-{{ pip.pk }} — Mimir{% endblock %}
 {% block content %}
-<div class="container mt-4 pb-5" data-testid="pip-detail-page">
+<div data-testid="pip-detail-page">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'pip_list' %}">PIPs</a></li>
@@ -10,22 +10,23 @@
         </ol>
     </nav>
 
-    <div class="d-flex flex-wrap justify-content-between align-items-start mb-4" data-testid="pip-detail-header">
-        <div>
-            <h1 class="h3 mb-2" data-testid="pip-detail-title">
-                <i class="fa-solid fa-lightbulb me-2"></i>PIP-{{ pip.pk }}: {{ pip.title }}
-            </h1>
-            <p class="text-muted small mb-0">
-                <span class="badge rounded-pill {{ pip.status_bootstrap_class }}" data-testid="pip-status-badge">{{ pip.get_status_display }}</span>
-                &middot;
-                Target playbook: <strong>{{ pip.playbook.name }}</strong>
-                <span class="badge bg-body-secondary text-body border">v{{ pip.playbook.version }}</span>
-            </p>
-        </div>
-        <div class="d-flex flex-wrap gap-2 justify-content-end flex-shrink-0 align-items-center"
-             data-testid="pip-detail-actions"
-             role="group"
-             aria-label="PIP actions">
+    <div class="hg-page-header mb-3" data-testid="pip-detail-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="flex-grow-1 min-w-0">
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1" data-testid="pip-detail-title">
+                    <i class="fa-solid fa-lightbulb hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>PIP-{{ pip.pk }}: {{ pip.title }}</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    <span class="badge rounded-pill {{ pip.status_bootstrap_class }}" data-testid="pip-status-badge">{{ pip.get_status_display }}</span>
+                    &middot;
+                    Target playbook: <strong>{{ pip.playbook.name }}</strong>
+                    <span class="badge bg-light text-dark border">v{{ pip.playbook.version }}</span>
+                </p>
+            </div>
+            <div role="toolbar" aria-label="PIP actions"
+                 class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0"
+                 data-testid="pip-detail-actions">
             {% if can_withdraw %}
             <button type="button" class="btn btn-outline-danger"
                     data-bs-toggle="modal" data-bs-target="#withdrawPipModal"
@@ -67,6 +68,7 @@
                 </button>
             </form>
             {% endif %}
+            </div>
         </div>
     </div>
 

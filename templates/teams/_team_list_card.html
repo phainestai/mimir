@@ -1,0 +1,70 @@
+{# Team browse card — same book-style chrome as playbooks/_playbook_list_card.html #}
+{% load markdown_filters %}
+<div class="col-md-6 col-lg-4 mb-4">
+    <div class="playbook-book-card h-100" data-testid="team-card-{{ team.name|slugify }}">
+        <div class="card playbook-book-card-inner h-100 border-0 d-flex flex-column">
+            <div class="card-header playbook-book-card-header border-0 pb-0">
+                <div class="d-flex align-items-start justify-content-between gap-2">
+                    <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
+                        <span class="text-primary flex-shrink-0 mt-1" aria-hidden="true">
+                            <i class="fa-solid fa-users fa-lg"></i>
+                        </span>
+                        <h5 class="card-title playbook-book-card-title mb-0 text-truncate">
+                            {{ team.name }}
+                        </h5>
+                    </div>
+                    <small class="text-muted playbook-book-card-author text-end flex-shrink-0 ms-2"
+                           style="max-width: 42%;"
+                           data-testid="team-card-admin-{{ team.pk }}"
+                           data-bs-toggle="tooltip"
+                           title="{% if team.admin == request.user %}You administer this team{% else %}Team admin: {{ team.admin.username }}{% endif %}">
+                        {% if team.admin == request.user %}
+                            <i class="fa-solid fa-crown text-warning me-1" aria-hidden="true"></i>Admin: you
+                        {% else %}
+                            Admin: {{ team.admin.username }}
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+            <div class="card-body pt-3 pb-0 d-flex flex-column flex-grow-1">
+                {% if team.description %}
+                    <p class="card-text text-muted small playbook-book-card-description mb-0">
+                        {{ team.description|markdown|striptags|truncatewords:42 }}
+                    </p>
+                {% else %}
+                    <p class="card-text text-muted small playbook-book-card-description mb-0 fst-italic">
+                        No description yet.
+                    </p>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-transparent border-0 pt-0 mt-auto">
+                <div class="playbook-book-card-meta d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <span class="badge {% if team.visibility == 'Public' %}bg-success{% else %}bg-secondary{% endif %}"
+                          data-bs-toggle="tooltip"
+                          title="Visibility: {{ team.visibility }}">
+                        {{ team.visibility }}
+                    </span>
+                    <small class="text-muted">{{ team.category }}</small>
+                </div>
+                <div class="playbook-book-card-actions d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <small class="text-muted mb-0">
+                        <span data-bs-toggle="tooltip" title="Members">
+                            <i class="fa-solid fa-user-group me-1"></i>{{ team.memberships.count }}
+                        </span>
+                        <span class="mx-1">·</span>
+                        <span data-bs-toggle="tooltip" title="Shared playbooks">
+                            <i class="fa-solid fa-book-sparkles me-1"></i>{{ team.team_playbooks.count }}
+                        </span>
+                    </small>
+                    <a href="{% url 'teams:teams_detail' pk=team.pk %}"
+                       class="btn btn-primary btn-sm ms-auto"
+                       data-testid="view-team-{{ team.pk }}"
+                       data-bs-toggle="tooltip"
+                       title="View team details">
+                        <i class="fa-solid fa-eye me-1"></i>View
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

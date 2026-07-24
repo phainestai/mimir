@@ -1,155 +1,26 @@
 {% load static %}
 <!doctype html>
-<html lang="en" data-bs-theme="light">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Mimir - Methodology Management{% endblock %}</title>
 
-    <!-- Apply saved light/dark theme before paint to avoid FOUC -->
-    <script>
-        (function () {
-            try {
-                var key = 'mimir-theme';
-                var saved = localStorage.getItem(key);
-                var theme = saved;
-                if (theme !== 'light' && theme !== 'dark') {
-                    theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
-                        ? 'dark' : 'light';
-                }
-                document.documentElement.setAttribute('data-bs-theme', theme);
-                console.log('theme: applied on load', { theme: theme, fromStorage: saved });
-            } catch (err) {
-                console.log('theme: FOUC script failed, defaulting to light', err);
-                document.documentElement.setAttribute('data-bs-theme', 'light');
-            }
-        })();
-    </script>
-
-    <!-- IBM Plex Sans (UI typography) -->
+    <!-- Montserrat (primary UI font) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
           rel="stylesheet">
-
+    
     <!-- Bootstrap 5.3.8 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-          rel="stylesheet"
-          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" 
+          rel="stylesheet" 
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" 
           crossorigin="anonymous">
 
-    <!-- Design system overrides (after Bootstrap) -->
+    <!-- Design system (Huginn hg-* tokens) + Mimir app overrides -->
     <link href="{% static 'css/design-system.css' %}" rel="stylesheet">
-    <style>
-        /* Primary nav: many sections + search share one row on desktop */
-        [data-testid="main-navbar"] .navbar-nav.me-auto .nav-link {
-            font-size: 0.875rem;
-        }
-        /* Dark-navbar search input */
-        #global-search-input {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.25);
-            color: #fff;
-        }
-        #global-search-input::placeholder {
-            color: rgba(255, 255, 255, 0.55);
-        }
-        #global-search-input:focus {
-            background-color: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.45);
-            color: #fff;
-            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.1);
-        }
-        /* Feedback tab: vertical strip on the right (writing-mode; no rotate — keeps pin math stable). */
-        .feedback-edge-tab {
-            position: fixed;
-            right: 0;
-            left: auto;
-            top: 50vh;
-            top: 50dvh;
-            z-index: 1040;
-            margin: 0;
-            /* No flex — let vertical writing-mode flow icon then text top-to-bottom naturally */
-            display: inline-block;
-            padding: 0.9rem 0.35rem;
-            font-size: 0.72rem;
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            white-space: nowrap;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            border-radius: 0.35rem 0 0 0.35rem;
-            box-shadow: -1px 1px 6px rgba(0, 0, 0, 0.12);
-            transform: translateY(-50%) translateX(var(--feedback-nudge-x, 0px));
-            cursor: pointer;
-            font-family: inherit;
-            line-height: 1.4;
-            text-align: center;
-            /* Muted slate (not primary blue) */
-            color: #f1f3f5;
-            background-color: #6d7b88;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-        }
-        .feedback-edge-tab:hover {
-            color: #fff;
-            background-color: #5a6670;
-        }
-        .feedback-edge-tab:focus-visible {
-            outline: 2px solid rgba(255, 255, 255, 0.5);
-            outline-offset: 2px;
-        }
-        /* Keep the icon upright in vertical writing-mode */
-        .feedback-edge-tab i {
-            display: inline-block;
-            writing-mode: horizontal-tb;
-            font-size: 0.82rem;
-            opacity: 0.95;
-            margin-bottom: 0.25em;
-        }
-        /* Offcanvas: grow description so submit sits at panel bottom */
-        #feedbackOffcanvas .feedback-offcanvas-body {
-            display: flex;
-            flex-direction: column;
-            min-height: calc(100dvh - 4rem);
-            min-height: calc(100vh - 4rem);
-        }
-        #feedback-form {
-            display: flex;
-            flex-direction: column;
-            flex: 1 1 auto;
-            min-height: 0;
-        }
-        #feedback-form .feedback-description-field {
-            flex: 1 1 auto;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            margin-bottom: 0.75rem;
-        }
-        #feedback-description {
-            flex: 1 1 auto;
-            min-height: 16rem;
-            resize: vertical;
-        }
-        #feedback-form .feedback-submit-row {
-            margin-top: auto;
-            flex-shrink: 0;
-        }
-        /* Notification dropdown: allow vertical scroll, prevent horizontal overflow */
-        #notification-dropdown-container {
-            max-width: min(400px, calc(100vw - 1rem));
-            overflow-x: hidden;
-        }
-        #notification-dropdown-container .notification-list {
-            max-height: 400px;
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-        #notification-dropdown-container .dropdown-item {
-            white-space: normal;
-            overflow-wrap: anywhere;
-        }
-    </style>
+    <link href="{% static 'css/mimir-app.css' %}" rel="stylesheet">
     
     <!-- Font Awesome Pro -->
     <script src="https://kit.fontawesome.com/600fa45ed9.js" crossorigin="anonymous"></script>
@@ -177,12 +48,12 @@
     {% endif %}
 
     <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark" data-testid="main-navbar">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/" data-testid="navbar-brand"
+    <nav class="navbar navbar-expand-lg navbar-dark hg-navbar" data-testid="main-navbar">
+        <div class="container-fluid px-3">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/" data-testid="navbar-brand"
                data-bs-toggle="tooltip" data-bs-placement="bottom" 
                title="Go to Mimir home page">
-                <img src="{% static 'images/mimir-logo.png' %}" alt="Mimir" height="48" style="filter: brightness(0) invert(1); margin-right: 8px;"> Mimir
+                <img src="{% static 'images/mimir-logo.png' %}" alt="" width="28" height="28" class="rounded-1 bg-white p-1"> Mimir
             </a>
             <button class="navbar-toggler" 
                     type="button" 
@@ -194,8 +65,8 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
+                {% if user.is_authenticated %}
                 <!-- Single active tab: methodology.context_processors.primary_nav_section -->
-                <!-- Add aria-current="page" for accessibility when active -->
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {% if nav_section == 'home' %}active{% endif %}" 
@@ -309,18 +180,8 @@
                         </a>
                     </li>
                 </ul>
+                {% endif %}
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item d-flex align-items-center me-2">
-                        <button type="button"
-                                class="mimir-theme-toggle"
-                                id="mimir-theme-toggle"
-                                data-testid="theme-toggle"
-                                aria-label="Toggle light or dark theme"
-                                title="Toggle light / dark theme">
-                            <i class="fa-solid fa-moon theme-icon-light" aria-hidden="true"></i>
-                            <i class="fa-solid fa-sun theme-icon-dark" aria-hidden="true"></i>
-                        </button>
-                    </li>
                     {% if user.is_authenticated %}
                     <li class="nav-item d-flex align-items-center me-3 position-relative">
                         <form class="d-flex" method="get" action="{% url 'global_search' %}"
@@ -437,14 +298,14 @@
     {% endif %}
 
     <!-- Main Content -->
-    <main class="container-fluid mt-3 pb-4 flex-grow-1">
+    <main class="hg-main flex-grow-1">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="footer py-2 bg-body-tertiary" data-testid="page-footer">
+    <footer class="footer py-3" data-testid="page-footer">
         <div class="container text-center">
-            <span class="text-body-secondary">
+            <span class="text-muted">
                 <i class="fas fa-book-sparkles"></i> Mimir - Your Ever-Evolving Engineering Playbook
             </span>
         </div>
@@ -503,57 +364,15 @@
             integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" 
             crossorigin="anonymous"></script>
     
-    <!-- Theme toggle + Bootstrap tooltips -->
+    <!-- Initialize Bootstrap Tooltips -->
     <script>
-        (function () {
-            var STORAGE_KEY = 'mimir-theme';
-
-            function currentTheme() {
-                var t = document.documentElement.getAttribute('data-bs-theme');
-                return t === 'dark' ? 'dark' : 'light';
-            }
-
-            function syncToggleButtonLabel(theme) {
-                var btn = document.getElementById('mimir-theme-toggle');
-                if (!btn) return;
-                var label = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
-                btn.setAttribute('aria-label', label);
-                btn.setAttribute('title', label);
-            }
-
-            function applyTheme(theme) {
-                var next = theme === 'dark' ? 'dark' : 'light';
-                document.documentElement.setAttribute('data-bs-theme', next);
-                try {
-                    localStorage.setItem(STORAGE_KEY, next);
-                } catch (err) {
-                    console.log('theme: could not persist preference', err);
-                }
-                syncToggleButtonLabel(next);
-                console.log('theme: applied', { theme: next });
-            }
-
-            function toggleTheme() {
-                var next = currentTheme() === 'dark' ? 'light' : 'dark';
-                console.log('theme: toggle clicked', { from: currentTheme(), to: next });
-                applyTheme(next);
-            }
-
-            document.addEventListener('DOMContentLoaded', function () {
-                // Theme itself was already set pre-paint by the head FOUC script;
-                // just sync the toggle button's label to it (button didn't exist yet then).
-                syncToggleButtonLabel(currentTheme());
-                var btn = document.getElementById('mimir-theme-toggle');
-                if (btn) {
-                    btn.addEventListener('click', toggleTheme);
-                    console.log('theme: toggle bound');
-                }
-                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                tooltipTriggerList.map(function (tooltipTriggerEl) {
-                    return new bootstrap.Tooltip(tooltipTriggerEl);
-                });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
             });
-        })();
+        });
     </script>
 
     {% if user.is_authenticated %}

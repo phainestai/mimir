@@ -4,29 +4,41 @@
 {% block title %}Skills{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="skills-list">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2><i class="fa-solid fa-hand-holding-magic"></i> Skills</h2>
-            <p class="text-muted">Reusable tech-specific guidance across all your playbooks</p>
-        </div>
-        <div>
-            <a href="{% url 'playbook_list' %}"
-               class="btn btn-outline-secondary"
-               data-testid="back-to-playbooks-btn">
-                <i class="fa-solid fa-arrow-left"></i> Playbooks
-            </a>
+<div data-testid="skills-list">
+    <div class="hg-page-header mb-3" data-testid="skills-list-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-hand-holding-magic hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>Skills</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    {% if skills %}
+                    {{ skills|length }} skill{{ skills|length|pluralize }} — Reusable tech-specific guidance across all your playbooks
+                    {% else %}
+                    Reusable tech-specific guidance across all your playbooks
+                    {% endif %}
+                </p>
+            </div>
+            <div role="toolbar" aria-label="Skills navigation" class="d-flex flex-wrap gap-2 align-items-center">
+                <a href="{% url 'playbook_list' %}"
+                   class="btn btn-outline-secondary"
+                   data-testid="back-to-playbooks-btn">
+                    <i class="fa-solid fa-arrow-left"></i> Playbooks
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Search -->
-    <div class="card mb-4">
+    <div class="card mb-4 border-0 shadow-sm rounded-3">
         <div class="card-body">
             <form method="get" action="{% url 'skill_list' %}">
+                <label for="skill-search-input" class="form-label hg-label-caps mb-1">Search</label>
                 <div class="input-group">
                     <input type="text"
                            class="form-control"
+                           id="skill-search-input"
                            name="q"
                            value="{{ query }}"
                            placeholder="Search skills by title, domain, stack, or content..."
@@ -46,61 +58,56 @@
 
     {% if skills %}
     <!-- Skills table -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fa-solid fa-list"></i>
-                Skills
-                <span class="badge bg-secondary ms-2">{{ skills|length }}</span>
-            </h5>
-        </div>
+    <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0" data-testid="skills-table">
-                <thead class="table-light">
-                    <tr>
-                        <th>Title</th>
-                        <th>Capability Domain</th>
-                        <th>Technology Stack</th>
-                        <th>Playbook</th>
-                        <th style="width: 10%">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for skill in skills %}
-                    <tr data-testid="skill-row-{{ skill.id }}">
-                        <td>
-                            <a href="{% url 'skill_detail' playbook_pk=skill.playbook.pk skill_pk=skill.pk %}">
-                                <i class="fa-solid fa-hand-holding-magic text-primary"></i>
-                                <strong>{{ skill.title }}</strong>
-                            </a>
-                        </td>
-                        <td>
-                            {% if skill.capability_domain %}
-                            <span class="badge bg-info text-dark">{{ skill.capability_domain }}</span>
-                            {% else %}
-                            <span class="text-muted small">—</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if skill.technology_stack %}
-                            <span class="badge bg-success">{{ skill.technology_stack }}</span>
-                            {% else %}
-                            <span class="text-muted small">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-muted small">{{ skill.playbook.name }}</td>
-                        <td>
-                            <a href="{% url 'skill_detail' playbook_pk=skill.playbook.pk skill_pk=skill.pk %}"
-                               class="btn btn-outline-primary btn-sm"
-                               data-testid="view-skill-{{ skill.id }}"
-                               data-bs-toggle="tooltip" title="View skill details">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive" data-testid="skills-table-wrap">
+                <table class="table table-hover align-middle mb-0" data-testid="skills-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Title</th>
+                            <th scope="col">Capability Domain</th>
+                            <th scope="col">Technology Stack</th>
+                            <th scope="col">Playbook</th>
+                            <th scope="col" style="width: 10%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for skill in skills %}
+                        <tr data-testid="skill-row-{{ skill.id }}">
+                            <td>
+                                <a href="{% url 'skill_detail' playbook_pk=skill.playbook.pk skill_pk=skill.pk %}" class="hg-list-name-link">
+                                    <i class="fa-solid fa-hand-holding-magic text-primary"></i>
+                                    <strong>{{ skill.title }}</strong>
+                                </a>
+                            </td>
+                            <td>
+                                {% if skill.capability_domain %}
+                                <span class="badge bg-info text-dark">{{ skill.capability_domain }}</span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if skill.technology_stack %}
+                                <span class="badge bg-success">{{ skill.technology_stack }}</span>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ skill.playbook.name }}</td>
+                            <td>
+                                <a href="{% url 'skill_detail' playbook_pk=skill.playbook.pk skill_pk=skill.pk %}"
+                                   class="btn btn-outline-primary btn-sm"
+                                   data-testid="view-skill-{{ skill.id }}"
+                                   data-bs-toggle="tooltip" title="View skill details">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

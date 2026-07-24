@@ -1,0 +1,12 @@
+{# LIST+FIND table shell — IA §5.2. Wrap table markup inside this include via block or pass table_html. #}
+<div class="card border-0 shadow-sm rounded-3{% if shell_class %} {{ shell_class }}{% endif %}">
+  <div class="card-body p-0">
+    {% if table_wrap_testid %}
+    <div class="table-responsive" data-testid="{{ table_wrap_testid }}">
+    {% else %}
+    <div class="table-responsive">
+    {% endif %}
+      {{ table_content }}
+    </div>
+  </div>
+</div>

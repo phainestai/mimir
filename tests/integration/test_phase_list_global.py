@@ -314,15 +314,15 @@ class TestPhaseListGlobal:
         assert response.status_code == 200
         assert b'Clear' in response.content
 
-    def test_total_count_badge(self):
-        """Badge shows total count of phases."""
+    def test_total_count_in_header(self):
+        """Page header subtitle shows total count of phases."""
         Phase.objects.create(playbook=self.playbook, name='Phase 1', order=1)
         Phase.objects.create(playbook=self.playbook, name='Phase 2', order=2)
         Phase.objects.create(playbook=self.playbook, name='Phase 3', order=3)
-        
+
         url = reverse('phase_list_global')
         response = self.client.get(url)
 
         assert response.status_code == 200
-        # Badge should show count
-        assert b'badge bg-secondary' in response.content
+        assert b'3 phases' in response.content
+        assert b'data-testid="phases-list-header"' in response.content

@@ -4,32 +4,48 @@
 {% block title %}Artifacts{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="artifacts-list-global">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2><i class="fa-solid fa-gift me-2"></i>Artifacts</h2>
-            <p class="text-muted">Deliverables and outputs produced by activities across all playbooks</p>
+<div data-testid="artifacts-list-global">
+    <div class="hg-page-header mb-3" data-testid="artifacts-list-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-gift hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>Artifacts</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    {% if artifacts %}
+                    {{ artifacts|length }} artifact{{ artifacts|length|pluralize }} — deliverables across all your playbooks
+                    {% else %}
+                    Deliverables and outputs produced by activities across all playbooks
+                    {% endif %}
+                </p>
+            </div>
+            <div role="toolbar" aria-label="Artifacts navigation" class="d-flex flex-wrap gap-2 align-items-center">
+                <a href="{% url 'playbook_list' %}" class="btn btn-outline-secondary" data-testid="back-to-playbooks-btn">
+                    <i class="fa-solid fa-arrow-left"></i> Playbooks
+                </a>
+            </div>
         </div>
     </div>
 
-    <!-- Search -->
-    <div class="card mb-4">
+    <div class="card mb-4 border-0 shadow-sm rounded-3">
         <div class="card-body">
             <form method="get" action="{% url 'artifact_list_global' %}" role="search">
+                <label for="artifact-search-input" class="form-label hg-label-caps mb-1">Search</label>
                 <div class="input-group">
                     <input type="text"
                            class="form-control"
+                           id="artifact-search-input"
                            name="q"
                            value="{{ query }}"
                            placeholder="Search artifacts by name or description…"
                            data-testid="artifact-search">
                     <button class="btn btn-outline-secondary" type="submit">
-                        <i class="fa-solid fa-magnifying-glass me-2"></i>Search
+                        <i class="fa-solid fa-search"></i> Search
                     </button>
                     {% if query %}
                     <a href="{% url 'artifact_list_global' %}" class="btn btn-outline-danger">
-                        <i class="fa-solid fa-times me-2"></i>Clear
+                        <i class="fa-solid fa-times"></i> Clear
                     </a>
                     {% endif %}
                 </div>
@@ -38,75 +54,68 @@
     </div>
 
     {% if artifacts %}
-    <!-- Artifacts table -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fa-solid fa-list me-2"></i>Artifacts
-                <span class="badge bg-secondary ms-2">{{ artifacts|length }}</span>
-            </h5>
-        </div>
+    <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0" data-testid="artifacts-table">
-                <thead class="table-light">
-                    <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Playbook</th>
-                        <th>Producer</th>
-                        <th style="width: 10%">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for artifact in artifacts %}
-                    <tr data-testid="artifact-row-{{ artifact.id }}">
-                        <td>
-                            <i class="fa-solid fa-gift text-primary me-2"></i>
-                            <strong>{{ artifact.name }}</strong>
-                            {% if artifact.is_required %}
-                            <span class="badge bg-danger ms-2">Required</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-muted small">{{ artifact.type }}</td>
-                        <td>
-                            <a href="{% url 'playbook_detail' pk=artifact.playbook.id %}">
-                                {{ artifact.playbook.name }}
-                            </a>
-                        </td>
-                        <td class="text-muted small">{{ artifact.produced_by.name }}</td>
-                        <td>
-                            <a href="{% url 'artifact_detail' pk=artifact.id %}"
-                               class="btn btn-outline-primary btn-sm"
-                               data-testid="view-artifact-{{ artifact.id }}"
-                               data-bs-toggle="tooltip"
-                               title="View artifact details">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive" data-testid="artifacts-table-wrap">
+                <table class="table table-hover align-middle mb-0" data-testid="artifacts-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Playbook</th>
+                            <th scope="col">Producer</th>
+                            <th scope="col" style="width:10%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for artifact in artifacts %}
+                        <tr data-testid="artifact-row-{{ artifact.id }}">
+                            <td>
+                                <i class="fa-solid fa-gift text-primary me-2"></i>
+                                <a href="{% url 'artifact_detail' pk=artifact.id %}" class="hg-list-name-link">
+                                    <strong>{{ artifact.name }}</strong>
+                                </a>
+                                {% if artifact.is_required %}
+                                <span class="badge bg-danger ms-2">Required</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ artifact.type }}</td>
+                            <td class="text-muted small">
+                                <a href="{% url 'playbook_detail' pk=artifact.playbook.id %}">{{ artifact.playbook.name }}</a>
+                            </td>
+                            <td class="text-muted small">{{ artifact.produced_by.name }}</td>
+                            <td>
+                                <a href="{% url 'artifact_detail' pk=artifact.id %}"
+                                   class="btn btn-outline-primary btn-sm"
+                                   data-testid="view-artifact-{{ artifact.id }}"
+                                   data-bs-toggle="tooltip"
+                                   title="View artifact details">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-
     {% else %}
-    <!-- Empty state -->
-    <div class="card border-0 shadow-sm" data-testid="empty-state">
+    <div class="card border-0 shadow-sm rounded-3" data-testid="empty-state">
         <div class="card-body text-center py-5">
             <i class="fa-solid fa-gift fa-4x text-muted mb-3"></i>
             <h4 class="text-muted">No artifacts yet</h4>
             {% if query %}
-            <p class="text-muted">No artifacts match "<strong>{{ query }}</strong>".</p>
-            <a href="{% url 'artifact_list_global' %}" class="btn btn-outline-secondary mt-2">
-                <i class="fa-solid fa-times me-2"></i>Clear search
+            <p class="text-muted mb-0">No artifacts match your search.</p>
+            <a href="{% url 'artifact_list_global' %}" class="btn btn-outline-secondary mt-3">
+                <i class="fa-solid fa-times me-1"></i> Clear search
             </a>
             {% else %}
-            <p class="text-muted">Artifacts are created from playbook detail pages.</p>
+            <p class="text-muted mb-0">Artifacts are created from playbook detail pages.</p>
             <a href="{% url 'playbook_list' %}"
                class="btn btn-primary mt-3"
                data-testid="go-to-playbooks-btn">
-                <i class="fa-solid fa-book-sparkles me-2"></i>Go to Playbooks
+                <i class="fa-solid fa-book-sparkles me-1"></i> Go to Playbooks
             </a>
             {% endif %}
         </div>

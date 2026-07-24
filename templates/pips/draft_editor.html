@@ -29,7 +29,8 @@
     </form>
 
     <h2 class="h5">Changes</h2>
-    <table class="table table-sm">
+    <div class="table-responsive mb-3" data-testid="pip-draft-changes-table-wrap">
+    <table class="table table-sm align-middle mb-0" data-testid="pip-draft-changes-table">
         <thead><tr><th>#</th><th>Type</th><th>Entity / Link</th><th>Summary</th><th></th></tr></thead>
         <tbody>
         {% for ch in pip.changes.all %}
@@ -59,6 +60,7 @@
         {% endfor %}
         </tbody>
     </table>
+    </div>
 
     <div class="card mb-4">
         <div class="card-header">Add change</div>

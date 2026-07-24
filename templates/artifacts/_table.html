@@ -1,18 +1,18 @@
 {% load static %}
 
 {% if artifacts %}
-<div class="card">
+<div class="card border-0 shadow-sm rounded-3">
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead>
+        <div class="table-responsive" data-testid="artifacts-table-wrap">
+            <table class="table table-hover align-middle mb-0" data-testid="artifacts-table">
+                <thead class="table-light">
                     <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Produced by</th>
-                        <th>Required</th>
-                        <th>Consumers</th>
-                        <th>Actions</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Produced by</th>
+                        <th scope="col">Required</th>
+                        <th scope="col">Consumers</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -20,8 +20,8 @@
                     <tr>
                         <!-- Name -->
                         <td>
-                            <a href="{% url 'artifact_detail' pk=artifact.pk %}" 
-                               class="text-decoration-none">
+                            <a href="{% url 'artifact_detail' pk=artifact.pk %}"
+                               class="hg-list-name-link">
                                 <i class="fa-solid fa-gift"></i> {{ artifact.name }}
                             </a>
                         </td>
@@ -33,7 +33,7 @@
 
                         <!-- Produced by -->
                         <td>
-                            <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=artifact.produced_by.workflow.pk activity_pk=artifact.produced_by.pk %}" 
+                            <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=artifact.produced_by.workflow.pk activity_pk=artifact.produced_by.pk %}"
                                class="text-decoration-none small">
                                 {{ artifact.produced_by.name }}
                             </a>
@@ -66,19 +66,19 @@
                         <!-- Actions -->
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
-                                <a href="{% url 'artifact_detail' pk=artifact.pk %}" 
+                                <a href="{% url 'artifact_detail' pk=artifact.pk %}"
                                    class="btn btn-outline-primary"
                                    data-bs-toggle="tooltip"
                                    title="View artifact">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>
-                                <a href="{% url 'artifact_edit' pk=artifact.pk %}" 
+                                <a href="{% url 'artifact_edit' pk=artifact.pk %}"
                                    class="btn btn-outline-secondary"
                                    data-bs-toggle="tooltip"
                                    title="Edit artifact">
                                     <i class="fa-solid fa-edit"></i>
                                 </a>
-                                <button type="button" 
+                                <button type="button"
                                         class="btn btn-outline-danger"
                                         data-bs-toggle="tooltip"
                                         title="Delete artifact"
@@ -98,7 +98,7 @@
 </div>
 {% else %}
 <!-- Empty State -->
-<div class="card">
+<div class="card border-0 shadow-sm rounded-3">
     <div class="card-body text-center py-5">
         <div class="mb-4">
             <i class="fa-solid fa-gift fa-4x text-muted"></i>
@@ -112,7 +112,7 @@
             {% endif %}
         </p>
         {% if not search_query and not type_filter and required_filter is None and not activity_filter %}
-        <a href="{% url 'artifact_create' playbook_pk=playbook.pk %}" 
+        <a href="{% url 'artifact_create' playbook_pk=playbook.pk %}"
            class="btn btn-primary">
             <i class="fa-solid fa-plus"></i> Create First Artifact
         </a>

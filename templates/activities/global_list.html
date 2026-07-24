@@ -4,32 +4,48 @@
 {% block title %}Activities{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="activities-global-list">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2><i class="fa-solid fa-list-check me-2"></i>Activities</h2>
-            <p class="text-muted">Activities across all your playbooks and workflows</p>
+<div data-testid="activities-global-list">
+    <div class="hg-page-header mb-3" data-testid="activities-list-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-list-check hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>Activities</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    {% if activities %}
+                    {{ activities|length }} activit{{ activities|length|pluralize:"y,ies" }} — across all your playbooks and workflows
+                    {% else %}
+                    Activities across all your playbooks and workflows
+                    {% endif %}
+                </p>
+            </div>
+            <div role="toolbar" aria-label="Activities navigation" class="d-flex flex-wrap gap-2 align-items-center">
+                <a href="{% url 'playbook_list' %}" class="btn btn-outline-secondary" data-testid="back-to-playbooks-btn">
+                    <i class="fa-solid fa-arrow-left"></i> Playbooks
+                </a>
+            </div>
         </div>
     </div>
 
-    <!-- Search -->
-    <div class="card mb-4">
+    <div class="card mb-4 border-0 shadow-sm rounded-3">
         <div class="card-body">
             <form method="get" action="{% url 'activity_global_list' %}" role="search">
+                <label for="activity-search-input" class="form-label hg-label-caps mb-1">Search</label>
                 <div class="input-group">
                     <input type="text"
                            class="form-control"
+                           id="activity-search-input"
                            name="q"
                            value="{{ query }}"
                            placeholder="Search activities by name or guidance…"
                            data-testid="activity-search">
                     <button class="btn btn-outline-secondary" type="submit">
-                        <i class="fa-solid fa-magnifying-glass me-2"></i>Search
+                        <i class="fa-solid fa-search"></i> Search
                     </button>
                     {% if query %}
                     <a href="{% url 'activity_global_list' %}" class="btn btn-outline-danger">
-                        <i class="fa-solid fa-times me-2"></i>Clear
+                        <i class="fa-solid fa-times"></i> Clear
                     </a>
                     {% endif %}
                 </div>
@@ -38,89 +54,86 @@
     </div>
 
     {% if activities %}
-    <!-- Activities table -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fa-solid fa-list me-2"></i>Activities
-                <span class="badge bg-secondary ms-2">{{ activities|length }}</span>
-            </h5>
-        </div>
+    <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0" data-testid="activities-table">
-                <thead class="table-light">
-                    <tr>
-                        <th>Name</th>
-                        <th>Abbrev.</th>
-                        <th>Workflow</th>
-                        <th>Playbook</th>
-                        <th>Phase</th>
-                        <th style="width: 10%">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for activity in activities %}
-                    <tr data-testid="activity-row-{{ activity.id }}">
-                        <td>
-                            <i class="fa-solid fa-list-check text-primary me-2"></i>
-                            <strong>{{ activity.name }}</strong>
-                        </td>
-                        <td data-testid="activity-ref-{{ activity.id }}">
-                            {% if activity.reference_label %}
-                                <span class="badge bg-secondary font-monospace">{{ activity.reference_label }}</span>
-                            {% else %}
-                                <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{% url 'workflow_detail' playbook_pk=activity.workflow.playbook.pk pk=activity.workflow.pk %}">
-                                {{ activity.workflow.name }}
-                            </a>
-                        </td>
-                        <td>
-                            <a href="{% url 'playbook_detail' pk=activity.workflow.playbook.pk %}">
-                                {{ activity.workflow.playbook.name }}
-                            </a>
-                        </td>
-                        <td class="text-muted small">
-                            {% if activity.phase %}
-                                {{ activity.phase }}
-                            {% else %}
-                                <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{% url 'activity_detail' playbook_pk=activity.workflow.playbook.pk workflow_pk=activity.workflow.pk activity_pk=activity.pk %}"
-                               class="btn btn-outline-primary btn-sm"
-                               data-testid="view-activity-{{ activity.id }}"
-                               data-bs-toggle="tooltip"
-                               title="View activity details">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive" data-testid="activities-table-wrap">
+                <table class="table table-hover align-middle mb-0" data-testid="activities-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Abbrev.</th>
+                            <th scope="col">Workflow</th>
+                            <th scope="col">Playbook</th>
+                            <th scope="col">Phase</th>
+                            <th scope="col" style="width:10%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in activities %}
+                        <tr data-testid="activity-row-{{ activity.id }}">
+                            <td>
+                                <i class="fa-solid fa-list-check text-primary me-2"></i>
+                                <a href="{% url 'activity_detail' playbook_pk=activity.workflow.playbook.pk workflow_pk=activity.workflow.pk activity_pk=activity.pk %}"
+                                   class="hg-list-name-link">
+                                    <strong>{{ activity.name }}</strong>
+                                </a>
+                            </td>
+                            <td data-testid="activity-ref-{{ activity.id }}">
+                                {% if activity.reference_label %}
+                                    <span class="badge bg-secondary font-monospace">{{ activity.reference_label }}</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">
+                                <a href="{% url 'workflow_detail' playbook_pk=activity.workflow.playbook.pk pk=activity.workflow.pk %}">
+                                    {{ activity.workflow.name }}
+                                </a>
+                            </td>
+                            <td class="text-muted small">
+                                <a href="{% url 'playbook_detail' pk=activity.workflow.playbook.pk %}">
+                                    {{ activity.workflow.playbook.name }}
+                                </a>
+                            </td>
+                            <td class="text-muted small">
+                                {% if activity.phase %}
+                                    {{ activity.phase }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'activity_detail' playbook_pk=activity.workflow.playbook.pk workflow_pk=activity.workflow.pk activity_pk=activity.pk %}"
+                                   class="btn btn-outline-primary btn-sm"
+                                   data-testid="view-activity-{{ activity.id }}"
+                                   data-bs-toggle="tooltip"
+                                   title="View activity details">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     {% else %}
-    <!-- Empty state -->
-    <div class="card border-0 shadow-sm" data-testid="empty-state">
+    <div class="card border-0 shadow-sm rounded-3" data-testid="empty-state">
         <div class="card-body text-center py-5">
             <i class="fa-solid fa-list-check fa-4x text-muted mb-3"></i>
             <h4 class="text-muted">No activities yet</h4>
             {% if query %}
-            <p class="text-muted">No activities match "<strong>{{ query }}</strong>".</p>
-            <a href="{% url 'activity_global_list' %}" class="btn btn-outline-secondary mt-2">
-                <i class="fa-solid fa-times me-2"></i>Clear search
+            <p class="text-muted mb-0">No activities match your search.</p>
+            <a href="{% url 'activity_global_list' %}" class="btn btn-outline-secondary mt-3">
+                <i class="fa-solid fa-times me-1"></i> Clear search
             </a>
             {% else %}
-            <p class="text-muted">Activities are created from workflow detail pages.</p>
+            <p class="text-muted mb-0">Activities are created from workflow detail pages.</p>
             <a href="{% url 'playbook_list' %}"
                class="btn btn-primary mt-3"
                data-testid="go-to-playbooks-btn">
-                <i class="fa-solid fa-book-sparkles me-2"></i>Go to Playbooks
+                <i class="fa-solid fa-book-sparkles me-1"></i> Go to Playbooks
             </a>
             {% endif %}
         </div>

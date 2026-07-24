@@ -5,7 +5,7 @@
 {% block title %}{{ workflow.name }} - {{ playbook.name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="workflow-detail-page">
+<div data-testid="workflow-detail-page">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -22,24 +22,25 @@
     </nav>
 
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2 data-testid="workflow-name">
-                <i class="fa-solid fa-diagram-project"></i>
-                {% if workflow.abbreviation %}
-                <span class="badge bg-secondary font-monospace align-middle me-1"
-                      data-testid="workflow-code">{{ workflow.abbreviation }}</span>
-                {% endif %}
-                {{ workflow.name }}
-                <span class="badge bg-secondary" data-testid="workflow-order">#{{ workflow.order }}</span>
-            </h2>
-            <p class="text-muted">
-                <a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a>
-            </p>
-        </div>
+    <div class="hg-page-header mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="flex-grow-1 min-w-0">
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-diagram-project hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span data-testid="workflow-name">{{ workflow.name }}</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    {% if workflow.abbreviation %}
+                    <span class="badge bg-secondary font-monospace me-1"
+                          data-testid="workflow-code">{{ workflow.abbreviation }}</span>
+                    {% endif %}
+                    <span class="badge bg-secondary me-1" data-testid="workflow-order">#{{ workflow.order }}</span>
+                    <a href="{% url 'playbook_detail' playbook.pk %}">{{ playbook.name }}</a>
+                </p>
+            </div>
 
-        <div class="btn-group flex-shrink-0" role="group" aria-label="Workflow actions"
-             data-testid="workflow-header-actions">
+            <div role="toolbar" aria-label="Workflow actions" class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0"
+                 data-testid="workflow-header-actions">
             {% if can_edit %}
             <a href="{% url 'workflow_delete' playbook.pk workflow.pk %}"
                class="btn btn-outline-danger"
@@ -71,6 +72,7 @@
                title="Back to workflows for this playbook">
                 <i class="fa-solid fa-arrow-left"></i> Back
             </a>
+            </div>
         </div>
     </div>
 
@@ -143,9 +145,8 @@
         overflow-x: auto;
         margin: 1rem 0;
         padding: 1rem;
-        background: var(--bs-tertiary-bg);
-        border: 1px solid var(--mimir-border);
-        border-radius: var(--bs-border-radius-sm);
+        background: #f8f9fa;
+        border-radius: 4px;
     }
     
     .graph-container svg {
@@ -154,8 +155,8 @@
         display: block;
         margin: 0 auto;
     }
-
-    /* Typography via --mimir-graph-font (design-system / brand pack) */
+    
+    /* Make SVG links clickable with pointer cursor */
     .graph-container svg a {
         cursor: pointer;
     }

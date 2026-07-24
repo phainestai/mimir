@@ -5,7 +5,7 @@
 {% block title %}Activities - {{ workflow.name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="activities-list">
+<div data-testid="activities-list">
     <!-- Breadcrumbs -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -17,46 +17,44 @@
         </ol>
     </nav>
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4" data-testid="activities-header">
-        <div>
-            <h2>
-                <i class="fa-solid fa-list-check"></i> Activities in {{ workflow.name }}
-            </h2>
-            <p class="text-muted">
-                <span class="badge bg-primary">{{ total_activities }} {{ total_activities|pluralize:"Activity,Activities" }}</span>
-                {% if has_phases %}
-                <span class="badge bg-info">{{ activities_by_phase|length }} {{ activities_by_phase|length|pluralize:"Phase,Phases" }}</span>
-                {% endif %}
-            </p>
-        </div>
-        <div class="btn-group">
-            {% if can_edit %}
-                <a href="{% url 'activity_create' playbook_pk=playbook.pk workflow_pk=workflow.pk %}" 
+    <div class="hg-page-header mb-3" data-testid="activities-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-list-check hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>Activities in {{ workflow.name }}</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    {{ total_activities }} {{ total_activities|pluralize:"activity,activities" }}{% if has_phases %} · {{ activities_by_phase|length }} {{ activities_by_phase|length|pluralize:"phase,phases" }}{% endif %}
+                </p>
+            </div>
+            <div role="toolbar" aria-label="Activity actions" class="d-flex flex-wrap gap-2 align-items-center">
+                {% if can_edit %}
+                <a href="{% url 'activity_create' playbook_pk=playbook.pk workflow_pk=workflow.pk %}"
                    class="btn btn-success"
                    data-testid="create-activity-btn"
                    data-bs-toggle="tooltip"
                    title="Create a new activity in this workflow">
                     <i class="fa-solid fa-plus"></i> Create Activity
                 </a>
-            {% endif %}
-            <a href="{% url 'workflow_detail' playbook_pk=playbook.pk pk=workflow.pk %}" 
-               class="btn btn-outline-secondary"
-               data-bs-toggle="tooltip"
-               title="Back to workflow details">
-                <i class="fa-solid fa-arrow-left"></i> Back to Workflow
-            </a>
+                {% endif %}
+                <a href="{% url 'workflow_detail' playbook_pk=playbook.pk pk=workflow.pk %}"
+                   class="btn btn-outline-secondary"
+                   data-bs-toggle="tooltip"
+                   title="Back to workflow details">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Workflow
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Activities Content -->
     {% if total_activities > 0 %}
-        <!-- Activities Table/List -->
         {% if has_phases %}
             <!-- Grouped by Phase -->
             {% for phase_name, activities in activities_by_phase.items %}
-                <div class="card mb-4" data-testid="phase-group-{{ phase_name|slugify }}">
-                    <div class="card-header bg-body-secondary">
+                <div class="card border-0 shadow-sm rounded-3 mb-4" data-testid="phase-group-{{ phase_name|slugify }}">
+                    <div class="card-header bg-light border-0">
                         <h5 class="mb-0">
                             <i class="fa-solid fa-bars-progress text-info"></i>
                             {{ phase_name }}
@@ -64,153 +62,157 @@
                         </h5>
                     </div>
                     <div class="card-body p-0">
-                        <table class="table table-hover mb-0" data-testid="activities-table-{{ phase_name|slugify }}">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 5%">#</th>
-                                    <th style="width: 22%">Name</th>
-                                    <th style="width: 10%">Abbrev.</th>
-                                    <th style="width: 38%">Guidance</th>
-                                    <th style="width: 10%">Dependencies</th>
-                                    <th style="width: 15%">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for activity in activities %}
-                                <tr data-testid="activity-row-{{ activity.id }}">
-                                    <td class="text-muted">{{ activity.order }}</td>
-                                    <td>
-                                        <strong>{{ activity.name }}</strong>
-                                    </td>
-                                    <td data-testid="activity-ref-{{ activity.id }}">
-                                        {% if activity.reference_label %}
-                                            <span class="badge bg-secondary font-monospace">{{ activity.reference_label }}</span>
-                                        {% else %}
-                                            <span class="text-muted small">—</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">{{ activity.guidance|markdown|striptags|truncatewords:15 }}</small>
-                                    </td>
-                                    <td class="text-center">
-                                        {% if activity.predecessor or activity.successor %}
-                                            <i class="fa-solid fa-link text-warning" 
-                                               data-bs-toggle="tooltip"
-                                               title="Has dependencies"></i>
-                                        {% else %}
-                                            <i class="fa-solid fa-minus text-muted"></i>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
-                                               class="btn btn-outline-primary btn-sm"
-                                               data-testid="view-btn-{{ activity.id }}"
-                                               data-bs-toggle="tooltip"
-                                               title="View activity details">
-                                                <i class="fa-solid fa-eye"></i>
-                                            </a>
-                                            {% if can_edit %}
-                                            <a href="{% url 'activity_edit' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
-                                               class="btn btn-outline-secondary btn-sm"
-                                               data-testid="edit-btn-{{ activity.id }}"
-                                               data-bs-toggle="tooltip"
-                                               title="Edit this activity">
-                                                <i class="fa-solid fa-edit"></i>
-                                            </a>
-                                            <button type="button"
-                                                    class="btn btn-outline-danger btn-sm"
-                                                    data-testid="delete-btn-{{ activity.id }}"
-                                                    data-bs-toggle="tooltip"
-                                                    title="Delete this activity"
-                                                    onclick="window.location.href='{% url 'activity_delete' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}'">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
+                        <div class="table-responsive" data-testid="activities-table-{{ phase_name|slugify }}-wrap">
+                            <table class="table table-hover align-middle mb-0" data-testid="activities-table-{{ phase_name|slugify }}">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col" style="width: 5%">#</th>
+                                        <th scope="col" style="width: 22%">Name</th>
+                                        <th scope="col" style="width: 10%">Abbrev.</th>
+                                        <th scope="col" style="width: 38%">Guidance</th>
+                                        <th scope="col" style="width: 10%">Dependencies</th>
+                                        <th scope="col" style="width: 15%">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for activity in activities %}
+                                    <tr data-testid="activity-row-{{ activity.id }}">
+                                        <td class="text-muted">{{ activity.order }}</td>
+                                        <td>
+                                            <strong>{{ activity.name }}</strong>
+                                        </td>
+                                        <td data-testid="activity-ref-{{ activity.id }}">
+                                            {% if activity.reference_label %}
+                                                <span class="badge bg-secondary font-monospace">{{ activity.reference_label }}</span>
+                                            {% else %}
+                                                <span class="text-muted small">—</span>
                                             {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ activity.guidance|markdown|striptags|truncatewords:15 }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if activity.predecessor or activity.successor %}
+                                                <i class="fa-solid fa-link text-warning"
+                                                   data-bs-toggle="tooltip"
+                                                   title="Has dependencies"></i>
+                                            {% else %}
+                                                <i class="fa-solid fa-minus text-muted"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                                                   class="btn btn-outline-primary btn-sm"
+                                                   data-testid="view-btn-{{ activity.id }}"
+                                                   data-bs-toggle="tooltip"
+                                                   title="View activity details">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </a>
+                                                {% if can_edit %}
+                                                <a href="{% url 'activity_edit' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                                                   class="btn btn-outline-secondary btn-sm"
+                                                   data-testid="edit-btn-{{ activity.id }}"
+                                                   data-bs-toggle="tooltip"
+                                                   title="Edit this activity">
+                                                    <i class="fa-solid fa-edit"></i>
+                                                </a>
+                                                <button type="button"
+                                                        class="btn btn-outline-danger btn-sm"
+                                                        data-testid="delete-btn-{{ activity.id }}"
+                                                        data-bs-toggle="tooltip"
+                                                        title="Delete this activity"
+                                                        onclick="window.location.href='{% url 'activity_delete' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}'">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             {% endfor %}
         {% else %}
             <!-- Flat List (No Phases) -->
-            <div class="card" data-testid="activities-flat-list">
+            <div class="card border-0 shadow-sm rounded-3" data-testid="activities-flat-list">
                 <div class="card-body p-0">
-                    <table class="table table-hover mb-0" data-testid="activities-table">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 5%">#</th>
-                                <th style="width: 22%">Name</th>
-                                <th style="width: 10%">Abbrev.</th>
-                                <th style="width: 38%">Guidance</th>
-                                <th style="width: 10%">Dependencies</th>
-                                <th style="width: 15%">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for phase_name, activities in activities_by_phase.items %}
-                                {% for activity in activities %}
-                                <tr data-testid="activity-row-{{ activity.id }}">
-                                    <td class="text-muted">{{ activity.order }}</td>
-                                    <td>
-                                        <strong>{{ activity.name }}</strong>
-                                    </td>
-                                    <td data-testid="activity-ref-{{ activity.id }}">
-                                        {% if activity.reference_label %}
-                                            <span class="badge bg-secondary font-monospace">{{ activity.reference_label }}</span>
-                                        {% else %}
-                                            <span class="text-muted small">—</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">{{ activity.guidance|markdown|striptags|truncatewords:15 }}</small>
-                                    </td>
-                                    <td class="text-center">
-                                        {% if activity.predecessor or activity.successor %}
-                                            <i class="fa-solid fa-link text-warning" 
-                                               data-bs-toggle="tooltip"
-                                               title="Has dependencies"></i>
-                                        {% else %}
-                                            <i class="fa-solid fa-minus text-muted"></i>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
-                                               class="btn btn-outline-primary btn-sm"
-                                               data-testid="view-btn-{{ activity.id }}"
-                                               data-bs-toggle="tooltip"
-                                               title="View activity details">
-                                                <i class="fa-solid fa-eye"></i>
-                                            </a>
-                                            {% if can_edit %}
-                                            <a href="{% url 'activity_edit' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
-                                               class="btn btn-outline-secondary btn-sm"
-                                               data-testid="edit-btn-{{ activity.id }}"
-                                               data-bs-toggle="tooltip"
-                                               title="Edit this activity">
-                                                <i class="fa-solid fa-edit"></i>
-                                            </a>
-                                            <button type="button"
-                                                    class="btn btn-outline-danger btn-sm"
-                                                    data-testid="delete-btn-{{ activity.id }}"
-                                                    data-bs-toggle="tooltip"
-                                                    title="Delete this activity"
-                                                    onclick="window.location.href='{% url 'activity_delete' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}'">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                            {% endif %}
-                                        </div>
-                                    </td>
+                    <div class="table-responsive" data-testid="activities-table-wrap">
+                        <table class="table table-hover align-middle mb-0" data-testid="activities-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" style="width: 5%">#</th>
+                                    <th scope="col" style="width: 22%">Name</th>
+                                    <th scope="col" style="width: 10%">Abbrev.</th>
+                                    <th scope="col" style="width: 38%">Guidance</th>
+                                    <th scope="col" style="width: 10%">Dependencies</th>
+                                    <th scope="col" style="width: 15%">Actions</th>
                                 </tr>
+                            </thead>
+                            <tbody>
+                                {% for phase_name, activities in activities_by_phase.items %}
+                                    {% for activity in activities %}
+                                    <tr data-testid="activity-row-{{ activity.id }}">
+                                        <td class="text-muted">{{ activity.order }}</td>
+                                        <td>
+                                            <strong>{{ activity.name }}</strong>
+                                        </td>
+                                        <td data-testid="activity-ref-{{ activity.id }}">
+                                            {% if activity.reference_label %}
+                                                <span class="badge bg-secondary font-monospace">{{ activity.reference_label }}</span>
+                                            {% else %}
+                                                <span class="text-muted small">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ activity.guidance|markdown|striptags|truncatewords:15 }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if activity.predecessor or activity.successor %}
+                                                <i class="fa-solid fa-link text-warning"
+                                                   data-bs-toggle="tooltip"
+                                                   title="Has dependencies"></i>
+                                            {% else %}
+                                                <i class="fa-solid fa-minus text-muted"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{% url 'activity_detail' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                                                   class="btn btn-outline-primary btn-sm"
+                                                   data-testid="view-btn-{{ activity.id }}"
+                                                   data-bs-toggle="tooltip"
+                                                   title="View activity details">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </a>
+                                                {% if can_edit %}
+                                                <a href="{% url 'activity_edit' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}"
+                                                   class="btn btn-outline-secondary btn-sm"
+                                                   data-testid="edit-btn-{{ activity.id }}"
+                                                   data-bs-toggle="tooltip"
+                                                   title="Edit this activity">
+                                                    <i class="fa-solid fa-edit"></i>
+                                                </a>
+                                                <button type="button"
+                                                        class="btn btn-outline-danger btn-sm"
+                                                        data-testid="delete-btn-{{ activity.id }}"
+                                                        data-bs-toggle="tooltip"
+                                                        title="Delete this activity"
+                                                        onclick="window.location.href='{% url 'activity_delete' playbook_pk=playbook.pk workflow_pk=workflow.pk activity_pk=activity.pk %}'">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
                                 {% endfor %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         {% endif %}
@@ -222,7 +224,7 @@
                 <h4 class="text-muted">No activities yet</h4>
                 <p class="text-muted">Get started by creating your first activity for this workflow.</p>
                 {% if can_edit %}
-                    <a href="{% url 'activity_create' playbook_pk=playbook.pk workflow_pk=workflow.pk %}" 
+                    <a href="{% url 'activity_create' playbook_pk=playbook.pk workflow_pk=workflow.pk %}"
                        class="btn btn-primary mt-3"
                        data-testid="create-first-activity-btn">
                         <i class="fa-solid fa-plus"></i> Create First Activity
