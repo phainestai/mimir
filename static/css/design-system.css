@@ -1,549 +1,11 @@
-/* Mimir design tokens — IBM Plex Sans, cool-cyan palette, light/dark themes.
-   Shared density rules apply in both themes; palettes differ by data-bs-theme.
-*/
-
-/* ============================================================
-   Shared: typography + density (both themes)
-   ============================================================ */
+/* Mimir design tokens — typography (Bootstrap 5.3 variables). */
 
 :root,
 [data-bs-theme="light"],
 [data-bs-theme="dark"] {
-    --bs-font-sans-serif: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto,
+    --bs-font-sans-serif: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto,
         "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
     --bs-body-font-family: var(--bs-font-sans-serif);
-    /* Keep in sync with GRAPHVIZ_FONTNAME in activity_graph_service.py and the
-       fallback strings in content-browser.js's _graphFontFamily() / _graphLabelFontFamily() */
-    --mimir-graph-font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --bs-body-font-size: 0.9375rem;
-    --bs-body-line-height: 1.45;
-    --bs-border-radius: 0.35rem;
-    --bs-border-radius-sm: 0.25rem;
-    --bs-border-radius-lg: 0.45rem;
-    --bs-box-shadow: none;
-    --bs-box-shadow-sm: none;
-    --bs-box-shadow-lg: 0 0.35rem 0.85rem rgba(0, 0, 0, 0.12);
-
-    /* Primary is cool cyan-blue; use --bs-primary/--bs-primary-rgb below (per-theme) */
-    --mimir-card-padding: 0.9rem 1rem;
-    --mimir-section-gap: 1.25rem;
-    --mimir-heading-letter-spacing: -0.02em;
-}
-
-/* ============================================================
-   Light palette — cool gray admin
-   ============================================================ */
-
-[data-bs-theme="light"] {
-    --bs-primary: #0d7ea8;
-    --bs-primary-rgb: 13, 126, 168;
-    --bs-link-color: #0b6f94;
-    --bs-link-hover-color: #085a78;
-    --bs-body-bg: #f0f2f5;
-    --bs-body-color: #1c2430;
-    --bs-secondary-bg: #e6e9ee;
-    --bs-tertiary-bg: #f7f8fa;
-    --bs-border-color: #d5dae2;
-    --bs-emphasis-color: #0f1419;
-
-    --mimir-bg-body: #f0f2f5;
-    --mimir-bg-surface: #ffffff;
-    --mimir-bg-elevated: #ffffff;
-    --mimir-border: #d5dae2;
-    --mimir-code-bg: #e8ecf1;
-    --mimir-navbar-bg: #1a222c;
-    --mimir-navbar-border: rgba(255, 255, 255, 0.08);
-    --mimir-terminal-bg: #1a222c;
-    --mimir-terminal-fg: #e8ecf1;
-}
-
-/* ============================================================
-   Dark palette — slate admin
-   ============================================================ */
-
-[data-bs-theme="dark"] {
-    /* Mid cyan — solid enough for white text on buttons/banners;
-       links use a brighter tone below for readability on dark surfaces */
-    --bs-primary: #1a8fb3;
-    --bs-primary-rgb: 26, 143, 179;
-    --bs-link-color: #5ec8e8;
-    --bs-link-hover-color: #8ad8f0;
-    --bs-body-bg: #0f1419;
-    --bs-body-color: #e4e8ee;
-    --bs-secondary-bg: #1a222c;
-    --bs-tertiary-bg: #151b22;
-    --bs-border-color: #2a3441;
-    --bs-emphasis-color: #f1f3f5;
-
-    --mimir-bg-body: #0f1419;
-    --mimir-bg-surface: #1a222c;
-    --mimir-bg-elevated: #222b36;
-    --mimir-border: #2a3441;
-    --mimir-code-bg: #151b22;
-    --mimir-navbar-bg: #0a0e12;
-    --mimir-navbar-border: rgba(255, 255, 255, 0.06);
-    --mimir-terminal-bg: #0c1016;
-    --mimir-terminal-fg: #e8ecf1;
-}
-
-/* ============================================================
-   Density: cards, buttons, tables, forms
-   ============================================================ */
-
-body {
-    background-color: var(--bs-body-bg);
-    color: var(--bs-body-color);
-}
-
-.card {
-    --bs-card-bg: var(--mimir-bg-surface);
-    --bs-card-border-color: var(--mimir-border);
-    --bs-card-spacer-y: 0.85rem;
-    --bs-card-spacer-x: 1rem;
-    box-shadow: none;
-}
-
-.card-header,
-.card-footer {
-    background-color: var(--bs-tertiary-bg);
-    border-color: var(--mimir-border);
-    padding: 0.65rem 1rem;
-}
-
-.btn {
-    --bs-btn-padding-y: 0.35rem;
-    --bs-btn-padding-x: 0.75rem;
-    --bs-btn-font-size: 0.875rem;
-    --bs-btn-border-radius: var(--bs-border-radius-sm);
-}
-
-.btn-sm {
-    --bs-btn-padding-y: 0.2rem;
-    --bs-btn-padding-x: 0.55rem;
-    --bs-btn-font-size: 0.8125rem;
-}
-
-.btn-lg {
-    --bs-btn-padding-y: 0.5rem;
-    --bs-btn-padding-x: 1rem;
-}
-
-/* CDN Bootstrap hardcodes btn-primary; rebind to theme primary */
-.btn-primary {
-    --bs-btn-color: #fff;
-    --bs-btn-bg: var(--bs-primary);
-    --bs-btn-border-color: var(--bs-primary);
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-primary) 88%, #000);
-    --bs-btn-hover-border-color: color-mix(in srgb, var(--bs-primary) 88%, #000);
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: color-mix(in srgb, var(--bs-primary) 80%, #000);
-    --bs-btn-active-border-color: color-mix(in srgb, var(--bs-primary) 80%, #000);
-    --bs-btn-disabled-color: #fff;
-    --bs-btn-disabled-bg: var(--bs-primary);
-    --bs-btn-disabled-border-color: var(--bs-primary);
-}
-
-.btn-outline-primary {
-    --bs-btn-color: var(--bs-primary);
-    --bs-btn-border-color: var(--bs-primary);
-    --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: var(--bs-primary);
-    --bs-btn-hover-border-color: var(--bs-primary);
-    --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: var(--bs-primary);
-    --bs-btn-active-border-color: var(--bs-primary);
-}
-
-.badge.bg-primary {
-    background-color: var(--bs-primary) !important;
-}
-
-/* Primary CTA banners — keep white text readable on solid primary */
-.card.bg-primary,
-.card.bg-primary .card-body,
-.card.bg-primary h1,
-.card.bg-primary h2,
-.card.bg-primary h3,
-.card.bg-primary h4,
-.card.bg-primary h5,
-.card.bg-primary h6,
-.card.bg-primary p {
-    color: #fff !important;
-    --bs-card-bg: var(--bs-primary);
-    --bs-card-color: #fff;
-}
-
-.card.bg-primary {
-    background-color: var(--bs-primary) !important;
-}
-
-/* Use-case / prompt terminal blocks — don't flip with Bootstrap color modes */
-.bg-dark.text-light,
-[data-testid^="command-"] {
-    background-color: var(--mimir-terminal-bg) !important;
-    color: var(--mimir-terminal-fg) !important;
-}
-
-.bg-dark.text-light .text-success,
-[data-testid^="command-"] .text-success {
-    color: #3dd68c !important;
-}
-
-/* Soften leftover hard light utilities in dark mode (keep light badge chips) */
-[data-bs-theme="dark"] .bg-light:not(.badge) {
-    background-color: var(--bs-tertiary-bg) !important;
-    color: var(--bs-body-color);
-}
-
-[data-bs-theme="dark"] .bg-white:not(.badge) {
-    background-color: var(--mimir-bg-surface) !important;
-}
-
-[data-bs-theme="dark"] .card.bg-light,
-[data-bs-theme="dark"] .card-header.bg-white,
-[data-bs-theme="dark"] .card-header.bg-light {
-    background-color: var(--bs-tertiary-bg) !important;
-    color: var(--bs-body-color);
-}
-
-/* Unread notification rows */
-[data-bs-theme="dark"] .dropdown-item.bg-light {
-    background-color: var(--bs-tertiary-bg) !important;
-}
-
-.table {
-    --bs-table-border-color: var(--mimir-border);
-    --bs-table-color: var(--bs-body-color);
-    --bs-table-bg: transparent;
-    font-size: 0.875rem;
-}
-
-.table > :not(caption) > * > * {
-    padding: 0.45rem 0.65rem;
-}
-
-/* Phase detail — workflow group rows inside the shared activities table */
-.phase-activities-table .phase-activities-workflow-row td {
-    padding-top: 0.55rem;
-    padding-bottom: 0.55rem;
-}
-
-/* Column headers — muted grey on both plain thead and Bootstrap table-light */
-.table thead th,
-.table > thead.table-light th,
-.table thead.table-light > tr > th {
-    background-color: var(--bs-tertiary-bg) !important;
-    color: var(--bs-secondary-color) !important;
-    font-weight: 600;
-    font-size: 0.8125rem;
-    text-transform: none;
-    letter-spacing: 0.01em;
-    border-bottom-color: var(--mimir-border);
-}
-
-/* Neutralize Bootstrap table-light hardcoded black-on-white */
-.table-light {
-    --bs-table-color: var(--bs-secondary-color);
-    --bs-table-bg: var(--bs-tertiary-bg);
-    --bs-table-border-color: var(--mimir-border);
-    --bs-table-striped-bg: var(--bs-tertiary-bg);
-    --bs-table-striped-color: var(--bs-secondary-color);
-    --bs-table-active-bg: var(--bs-secondary-bg);
-    --bs-table-active-color: var(--bs-body-color);
-    --bs-table-hover-bg: var(--bs-secondary-bg);
-    --bs-table-hover-color: var(--bs-body-color);
-    color: var(--bs-secondary-color);
-    border-color: var(--mimir-border);
-}
-
-.form-control,
-.form-select {
-    font-size: 0.875rem;
-    padding: 0.4rem 0.65rem;
-    border-color: var(--mimir-border);
-    background-color: var(--mimir-bg-surface);
-    color: var(--bs-body-color);
-}
-
-.form-control:focus,
-.form-select:focus {
-    border-color: var(--bs-primary);
-    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.2);
-}
-
-.form-label {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-}
-
-h1, .h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    letter-spacing: var(--mimir-heading-letter-spacing);
-    line-height: 1.25;
-}
-h2, .h2 {
-    font-size: 1.35rem;
-    font-weight: 600;
-    letter-spacing: var(--mimir-heading-letter-spacing);
-    line-height: 1.3;
-}
-h3, .h3 {
-    font-size: 1.15rem;
-    font-weight: 600;
-    letter-spacing: var(--mimir-heading-letter-spacing);
-    line-height: 1.35;
-}
-h4, .h4 {
-    font-size: 1.05rem;
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    line-height: 1.35;
-}
-h5, .h5 {
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    line-height: 1.35;
-}
-h6, .h6 {
-    font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    line-height: 1.4;
-}
-
-/* Page / section titles: quieter decorative icons, cleaner hierarchy */
-main h1 > i[class*="fa"],
-main h2 > i[class*="fa"],
-main h3 > i[class*="fa"],
-main h4 > i[class*="fa"],
-main .h1 > i[class*="fa"],
-main .h2 > i[class*="fa"],
-main .h3 > i[class*="fa"],
-main .h4 > i[class*="fa"],
-.card-header i[class*="fa"],
-.card-header h5 > i[class*="fa"],
-.card-header h4 > i[class*="fa"],
-.card-header h6 > i[class*="fa"],
-.card-header .h5 > i[class*="fa"],
-.modal-title > i[class*="fa"],
-.alert-heading > i[class*="fa"] {
-    color: var(--bs-secondary-color) !important;
-    font-size: 0.85em;
-    opacity: 0.85;
-    margin-right: 0.4rem !important;
-    width: 1.1em;
-    text-align: center;
-}
-
-/* Keep danger/warning icons readable in destructive contexts */
-.card-header.bg-danger i[class*="fa"],
-.card-header.bg-primary i[class*="fa"],
-.card-header.bg-warning i[class*="fa"],
-.card-header.text-white i[class*="fa"],
-.modal-title i.text-danger,
-.modal-title i.text-warning,
-.alert-heading i[class*="fa"] {
-    color: inherit !important;
-    opacity: 1;
-}
-
-main h1 > small,
-main h2 > small,
-main .h3 > small,
-main .h1 > small {
-    font-size: 0.8125rem;
-    font-weight: 400;
-    letter-spacing: 0;
-    color: var(--bs-secondary-color) !important;
-}
-
-/* Card section headers — Recent Activity, My Playbooks, Quick Actions, etc. */
-.card-header {
-    font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    color: var(--bs-emphasis-color);
-}
-
-.card-header h5,
-.card-header h4,
-.card-header h6,
-.card-header .h5,
-.card-header .h4,
-.card-header .h6 {
-    font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    color: inherit;
-}
-
-.card-header small,
-.card-header .text-muted {
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    text-transform: none;
-}
-
-/* Section labels (About, etc.) */
-.text-uppercase.small.fw-semibold,
-h6.text-uppercase.small {
-    font-size: 0.6875rem !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.06em;
-    color: var(--bs-secondary-color) !important;
-}
-
-/* Tone down oversized delete / wizard display titles */
-main .display-6 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    letter-spacing: var(--mimir-heading-letter-spacing);
-}
-
-.modal-title {
-    font-size: 1.05rem;
-    font-weight: 600;
-    letter-spacing: -0.015em;
-}
-
-.navbar-brand {
-    font-family: var(--bs-font-sans-serif);
-    letter-spacing: -0.02em;
-}
-
-/* Dashboard quick-action tiles — denser, less “big icon kit” */
-[data-testid="quick-actions-section"] .btn.btn-lg {
-    --bs-btn-padding-y: 1rem;
-    --bs-btn-padding-x: 0.75rem;
-    --bs-btn-font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    min-height: 5.5rem;
-}
-
-[data-testid="quick-actions-section"] .btn .fa-2x,
-[data-testid="quick-actions-section"] .btn i[class*="fa-2x"] {
-    font-size: 1.25rem !important;
-    margin-bottom: 0.5rem !important;
-    opacity: 0.9;
-}
-
-/* Activity feed + empty states */
-.activity-feed .activity-item {
-    font-size: 0.875rem;
-}
-
-.activity-feed .activity-item .fw-medium {
-    font-weight: 500;
-    letter-spacing: -0.01em;
-}
-
-.activity-feed .activity-item > .me-2 i {
-    font-size: 0.875rem;
-    opacity: 0.75;
-}
-
-/* Empty / zero states — less giant icon, clearer copy */
-main .fa-3x,
-main .fa-4x {
-    font-size: 1.75rem !important;
-    opacity: 0.55;
-}
-
-main .alert.text-center h4,
-main .text-center h6.text-muted {
-    font-weight: 600;
-    letter-spacing: -0.015em;
-}
-
-/* ============================================================
-   Navbar chrome
-   ============================================================ */
-
-.navbar[data-testid="main-navbar"] {
-    background-color: var(--mimir-navbar-bg) !important;
-    border-bottom: 1px solid var(--mimir-navbar-border);
-    padding-top: 0.35rem;
-    padding-bottom: 0.35rem;
-}
-
-.navbar[data-testid="main-navbar"] .navbar-brand {
-    font-size: 1.05rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-}
-
-.navbar[data-testid="main-navbar"] .navbar-brand img {
-    height: 36px !important;
-    margin-right: 0.4rem !important;
-}
-
-.navbar[data-testid="main-navbar"] .nav-link {
-    padding-top: 0.4rem;
-    padding-bottom: 0.4rem;
-    border-bottom: 2px solid transparent;
-}
-
-.navbar[data-testid="main-navbar"] .nav-link.active,
-.navbar[data-testid="main-navbar"] .nav-link[aria-current="page"] {
-    color: #fff !important;
-    border-bottom-color: var(--bs-primary);
-    font-weight: 600;
-}
-
-/* Theme toggle */
-[data-testid="main-navbar"] .navbar-nav.me-auto .nav-link {
-    font-size: 0.8125rem;
-}
-
-.mimir-theme-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    padding: 0;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    border-radius: var(--bs-border-radius-sm);
-    background: transparent;
-    color: rgba(255, 255, 255, 0.9);
-    line-height: 1;
-}
-
-.mimir-theme-toggle:hover,
-.mimir-theme-toggle:focus-visible {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.45);
-}
-
-.mimir-theme-toggle .theme-icon-dark {
-    display: none;
-}
-
-[data-bs-theme="dark"] .mimir-theme-toggle .theme-icon-light {
-    display: none;
-}
-
-[data-bs-theme="dark"] .mimir-theme-toggle .theme-icon-dark {
-    display: inline-block;
-}
-
-/* Main / footer density */
-main.container-fluid {
-    margin-top: 1rem !important;
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
-}
-
-.footer[data-testid="page-footer"] {
-    border-top: 1px solid var(--mimir-border);
-    background-color: var(--bs-tertiary-bg) !important;
 }
 
 /* Act 9 — PIP status badges (Reviewed = purple) */
@@ -556,6 +18,7 @@ main.container-fluid {
    Marketing landing — full-viewport hero + sections below
    ============================================================ */
 
+/* Navbar floats transparently over the hero image. */
 body.mm-landing .navbar[data-testid="main-navbar"] {
     position: absolute;
     top: 0;
@@ -567,15 +30,18 @@ body.mm-landing .navbar[data-testid="main-navbar"] {
     box-shadow: none;
 }
 
+/* Main loses its top padding/margin so the hero fills from the very top. */
 body.mm-landing main.container-fluid {
     margin-top: 0 !important;
     padding: 0 !important;
 }
 
+/* Hide the footer on landing to keep full-page feel. */
 body.mm-landing footer {
     display: none;
 }
 
+/* Full-viewport hero. */
 .mm-landing-hero {
     position: relative;
     width: 100%;
@@ -591,6 +57,7 @@ body.mm-landing footer {
     text-align: center;
 }
 
+/* Dark overlay so white text is always legible. */
 .mm-landing-overlay {
     position: absolute;
     inset: 0;
@@ -608,8 +75,7 @@ body.mm-landing footer {
 
 .mm-landing-title {
     font-size: 3.25rem;
-    font-weight: 600;
-    letter-spacing: -0.03em;
+    font-weight: 700;
     line-height: 1.15;
     color: #ffffff;
     margin: 0;
@@ -625,6 +91,7 @@ body.mm-landing footer {
     font-weight: 400;
 }
 
+/* Ghost link buttons — white, no underline, no background. */
 .mm-landing-link {
     color: #ffffff;
     font-size: 1.05rem;
@@ -647,24 +114,24 @@ body.mm-landing footer {
     pointer-events: none;
 }
 
+/* Sections below the hero */
 .mm-landing-sections-wrap {
     padding: 2rem 1.5rem;
-    background-color: var(--bs-body-bg);
 }
 
 .mm-landing-feature {
-    background: var(--mimir-bg-surface);
-    border: 1px solid var(--mimir-border);
-    border-radius: var(--bs-border-radius);
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
     padding: 1rem 1.1rem;
     height: 100%;
 }
 
 .mm-landing-feature-icon {
     align-items: center;
-    background: rgba(var(--bs-primary-rgb), 0.12);
-    border-radius: var(--bs-border-radius);
-    color: var(--bs-primary);
+    background: #e7f0ff;
+    border-radius: 0.5rem;
+    color: #0d6efd;
     display: inline-flex;
     font-size: 1.1rem;
     height: 2.25rem;
@@ -673,12 +140,9 @@ body.mm-landing footer {
     width: 2.25rem;
 }
 
-/* ============================================================
-   Markdown — theme-aware surfaces
-   ============================================================ */
-
+/* Markdown-rendered content (descriptions, guidance, etc.) */
 .markdown-content {
-    line-height: 1.55;
+    line-height: 1.6;
 }
 
 .markdown-content h1,
@@ -687,26 +151,26 @@ body.mm-landing footer {
 .markdown-content h4,
 .markdown-content h5,
 .markdown-content h6 {
-    margin-top: 1.25rem;
-    margin-bottom: 0.6rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
 }
 
-.markdown-content h1 { font-size: 1.65rem; }
-.markdown-content h2 { font-size: 1.4rem; }
-.markdown-content h3 { font-size: 1.2rem; }
+.markdown-content h1 { font-size: 1.75rem; }
+.markdown-content h2 { font-size: 1.5rem; }
+.markdown-content h3 { font-size: 1.25rem; }
 
 .markdown-content pre {
-    background-color: var(--mimir-code-bg);
-    border: 1px solid var(--mimir-border);
-    border-radius: var(--bs-border-radius-sm);
-    padding: 0.85rem;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
     overflow-x: auto;
 }
 
 .markdown-content code {
-    background-color: var(--mimir-code-bg);
-    padding: 0.15rem 0.35rem;
-    border-radius: var(--bs-border-radius-sm);
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
     font-size: 0.875em;
 }
 
@@ -728,12 +192,12 @@ body.mm-landing footer {
 
 .markdown-content table th,
 .markdown-content table td {
-    padding: 0.55rem 0.65rem;
-    border: 1px solid var(--mimir-border);
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
 }
 
 .markdown-content table thead th {
-    background-color: var(--bs-tertiary-bg);
+    background-color: #f8f9fa;
     font-weight: 600;
 }
 
@@ -911,172 +375,4 @@ body.mm-content-browser #browser-root {
 .mm-embed .markdown-content pre code {
     background: none;
     padding: 0;
-}
-
-/* ============================================================
-   Content Browser — Cytoscape theme tokens + legacy chrome
-   ============================================================ */
-
-[data-bs-theme="light"] {
-    --mimir-graph-canvas: #e8ecf1;
-    --mimir-graph-edge: #5a6575;
-    --mimir-graph-select: #0d7ea8;
-    --mimir-graph-compound-wf-bg: #e4f2f7;
-    --mimir-graph-compound-wf-border: #0d7ea8;
-    --mimir-graph-compound-act-bg: #e2f3ec;
-    --mimir-graph-compound-act-border: #2a9b78;
-    --mimir-graph-compound-label: #0a4a63;
-    --mimir-graph-compound-label-bg: #ffffff;
-    --mimir-graph-playbook-bg: #d4eef7;
-    --mimir-graph-playbook-border: #6bb5cc;
-    --mimir-graph-playbook-text: #0a4a63;
-    --mimir-graph-workflow-bg: #cfe8f2;
-    --mimir-graph-workflow-border: #5aa8c2;
-    --mimir-graph-workflow-text: #0b5570;
-    --mimir-graph-activity-bg: #d4efe8;
-    --mimir-graph-activity-border: #6bbfa8;
-    --mimir-graph-activity-text: #0d4f40;
-    --mimir-graph-artifact-bg: #f5edd8;
-    --mimir-graph-artifact-border: #c9a96a;
-    --mimir-graph-artifact-text: #5c4a1a;
-    --mimir-graph-skill-bg: #f3e4d6;
-    --mimir-graph-skill-border: #c99a78;
-    --mimir-graph-skill-text: #5c3a1f;
-    --mimir-graph-agent-bg: #d6eef4;
-    --mimir-graph-agent-border: #7abcc9;
-    --mimir-graph-agent-text: #0d4f5c;
-    --mimir-graph-rule-bg: #e4e8ed;
-    --mimir-graph-rule-border: #a8b2c0;
-    --mimir-graph-rule-text: #2a3340;
-}
-
-[data-bs-theme="dark"] {
-    --mimir-graph-canvas: #121820;
-    --mimir-graph-edge: #8a95a5;
-    --mimir-graph-select: #5ec8e8;
-    --mimir-graph-compound-wf-bg: #152830;
-    --mimir-graph-compound-wf-border: #3d9bb8;
-    --mimir-graph-compound-act-bg: #152e28;
-    --mimir-graph-compound-act-border: #4a9e88;
-    --mimir-graph-compound-label: #9dd4ea;
-    --mimir-graph-compound-label-bg: #1a222c;
-    --mimir-graph-playbook-bg: #1a3a48;
-    --mimir-graph-playbook-border: #3d8fad;
-    --mimir-graph-playbook-text: #a8daf0;
-    --mimir-graph-workflow-bg: #1a3545;
-    --mimir-graph-workflow-border: #4a9bb8;
-    --mimir-graph-workflow-text: #9dd4ea;
-    --mimir-graph-activity-bg: #1a3d35;
-    --mimir-graph-activity-border: #4a9e88;
-    --mimir-graph-activity-text: #9dd9c4;
-    --mimir-graph-artifact-bg: #3d3520;
-    --mimir-graph-artifact-border: #b89a4a;
-    --mimir-graph-artifact-text: #edd9a0;
-    --mimir-graph-skill-bg: #3d2e22;
-    --mimir-graph-skill-border: #b88860;
-    --mimir-graph-skill-text: #edc9a8;
-    --mimir-graph-agent-bg: #1a3540;
-    --mimir-graph-agent-border: #4a9aaa;
-    --mimir-graph-agent-text: #9dd4e0;
-    --mimir-graph-rule-bg: #2a323c;
-    --mimir-graph-rule-border: #6a7585;
-    --mimir-graph-rule-text: #c4cad4;
-}
-
-#browser-root {
-    background-color: var(--mimir-bg-body);
-}
-
-#browser-left-panel {
-    background-color: var(--mimir-bg-surface) !important;
-    border-color: var(--mimir-border) !important;
-}
-
-#browser-detail-panel {
-    background-color: var(--mimir-bg-surface) !important;
-    border-color: var(--mimir-border) !important;
-}
-
-#browser-canvas-wrapper,
-#cy {
-    background-color: var(--mimir-graph-canvas);
-}
-
-#browser-detail-panel .border-bottom {
-    border-color: var(--mimir-border) !important;
-}
-
-.browser-tree-row:hover,
-.browser-resource-row:hover {
-    background-color: rgba(var(--bs-primary-rgb), 0.08);
-}
-
-.browser-tree-row.bg-primary-subtle {
-    background-color: rgba(var(--bs-primary-rgb), 0.14) !important;
-}
-
-#browser-picker-list .list-group-item.bg-primary-subtle {
-    background-color: rgba(var(--bs-primary-rgb), 0.14) !important;
-    border-color: var(--mimir-border);
-    color: var(--bs-primary);
-}
-
-#browser-picker-list .list-group-item-action:hover {
-    background-color: rgba(var(--bs-primary-rgb), 0.08);
-    color: var(--bs-body-color);
-}
-
-[data-testid="browser-panel-compact"] {
-    font-size: 0.875rem;
-    line-height: 1.4;
-}
-
-[data-testid="browser-structure-tree"] .browser-tree-row,
-[data-testid="browser-resource-tree"] .browser-resource-row {
-    font-size: 0.875rem;
-}
-
-[data-testid="browser-canvas-controls"] .btn-outline-secondary {
-    background-color: var(--mimir-bg-surface);
-    border-color: var(--mimir-border);
-    color: var(--bs-body-color);
-}
-
-[data-testid="browser-canvas-controls"] .btn-outline-secondary:hover,
-[data-testid="browser-canvas-controls"] .btn-outline-secondary.active {
-    background-color: rgba(var(--bs-primary-rgb), 0.12);
-    border-color: var(--bs-primary);
-    color: var(--bs-primary);
-}
-
-[data-testid="browser-canvas-controls"] label.text-secondary {
-    color: var(--bs-secondary-color, var(--bs-body-color)) !important;
-    background-color: var(--mimir-bg-surface);
-    border: 1px solid var(--mimir-border);
-    border-radius: var(--bs-border-radius-sm);
-    padding: 2px 6px;
-}
-
-#cy-node-tooltip {
-    position: fixed;
-    background: var(--mimir-navbar-bg);
-    color: var(--mimir-terminal-fg);
-    font-size: 0.75rem;
-    font-family: var(--bs-font-sans-serif);
-    padding: 4px 10px;
-    border-radius: var(--bs-border-radius-sm);
-    border: 1px solid var(--mimir-border);
-    pointer-events: none;
-    z-index: 10000;
-    max-width: 320px;
-    white-space: pre-wrap;
-    line-height: 1.5;
-    display: none;
-}
-
-/* Workflow Graphviz SVG — use the graph font (font-family already set at generation
-   time via ActivityGraphService; this covers cached SVGs / browser font fallback). */
-.graph-container svg text,
-.graph-container svg tspan {
-    font-family: var(--mimir-graph-font) !important;
 }

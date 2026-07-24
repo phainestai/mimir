@@ -1,18 +1,58 @@
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
-    (function () {
-        var themeAttr = document.documentElement.getAttribute('data-bs-theme');
-        var mermaidTheme = themeAttr === 'dark' ? 'dark' : 'default';
-        mermaid.initialize({
-            startOnLoad: true,
-            theme: mermaidTheme,
-            securityLevel: 'loose'
-        });
-        console.log('markdown: mermaid initialized', { theme: mermaidTheme });
-    })();
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose'
+    });
 </script>
 <style>
-    /* Structural helpers only — colors come from design-system.css */
+    .markdown-content {
+        line-height: 1.6;
+    }
+    .markdown-content h1, .markdown-content h2, .markdown-content h3,
+    .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .markdown-content h1 { font-size: 1.75rem; }
+    .markdown-content h2 { font-size: 1.5rem; }
+    .markdown-content h3 { font-size: 1.25rem; }
+    .markdown-content pre {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        overflow-x: auto;
+    }
+    .markdown-content code {
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-size: 0.875em;
+    }
+    .markdown-content pre code {
+        background-color: transparent;
+        padding: 0;
+    }
+    .markdown-content img {
+        max-width: 100%;
+        height: auto;
+    }
+    .markdown-content table {
+        width: 100%;
+        margin-bottom: 1rem;
+        border-collapse: collapse;
+    }
+    .markdown-content table th,
+    .markdown-content table td {
+        padding: 0.75rem;
+        border: 1px solid #dee2e6;
+    }
+    .markdown-content table thead th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
     .mermaid {
         text-align: center;
         margin: 1rem 0;
