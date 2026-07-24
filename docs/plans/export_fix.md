@@ -182,3 +182,4 @@ Add new scenario `FOB-WORKFLOWS-EXPORT_IMPORT-01c Hosted server returns file con
 - `mcp_integration/tools.py` — ORM version keeps calling `export_workflow_to_markdown()` directly; writes locally as before
 - `import_workflow_from_local` — symmetric hosted-write problem exists but is out of scope
 
+**Phase 2 (implemented):** Docker facade validates `MIMIR_DEV_ROOT` bind mount before export/import filesystem I/O; fails with MCP config instructions when missing (bug #163). See `mcp_integration/facade/workspace_mount.py` and `docs/DOCKER_QUICK_START.md`.

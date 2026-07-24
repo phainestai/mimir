@@ -974,6 +974,8 @@ Maria confirms and the workflow is removed from the playbook.
 
 **Purpose**: Export a workflow and its activities as markdown files to `.windsurf/workflows/` or `.cursor/workflows/` for local editing.
 
+**Docker MCP facade:** set `MIMIR_DEV_ROOT` to your dev folder and bind-mount it in the IDE MCP config (`-v` same path). Relative `target_directory` values resolve against `MIMIR_DEV_ROOT`. Without a mount, the tool returns an error (no silent success). See [`docs/DOCKER_QUICK_START.md`](../DOCKER_QUICK_START.md#filesystem-tools-export--import). Alternative: use `mimir-local` (`manage.py mcp_server`).
+
 **MCP Call**:
 ```python
 # AI assistant calls this via MCP

@@ -239,7 +239,7 @@ python manage.py create_demo_fdd
 
 Both processes share the same SQLite DB with a 20-second timeout for concurrent access.
 
-**Docker MCP (IDE / CI):** The public MCP facade image is **`featurefactory/mimir-mcp:latest`** on Docker Hub. End-user setup: README “Quick Start with Docker” and [`docs/DOCKER_QUICK_START.md`](docs/DOCKER_QUICK_START.md). CI publishes it from `.github/workflows/build-and-deploy.yml` using repository secrets **`DOCKERHUB_USERNAME`** and **`DOCKERHUB_TOKEN`**.
+**Docker MCP (IDE / CI):** The public MCP facade image is **`featurefactory/mimir-mcp:latest`** on Docker Hub. End-user setup: README “Quick Start with Docker” and [`docs/DOCKER_QUICK_START.md`](docs/DOCKER_QUICK_START.md). CI publishes it from `.github/workflows/build-and-deploy.yml` using repository secrets **`DOCKERHUB_USERNAME`** and **`DOCKERHUB_TOKEN`**. Filesystem tools (`export_workflow_to_local`, import/protocol) require **`MIMIR_DEV_ROOT`** and a matching bind mount in the IDE MCP config — see DOCKER_QUICK_START.
 
 **Bug reports (production):** Configure **`GITHUB_TOKEN`** (Issues: write) and optional **`GITHUB_BUG_REPO`** on the **FOB** host (Elastic Beanstalk environment properties or `docker-compose` web service). See [`docs/architecture/SAO.md`](docs/architecture/SAO.md) § *Bug reports — GitHub Issues*. The MCP facade does not need this token.
 

@@ -108,6 +108,8 @@ The MCP facade is published as a **public Docker Hub image** (`featurefactory/mi
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
+        "-e", "MIMIR_DEV_ROOT=/Users/you/GitHub",
+        "-v", "/Users/you/GitHub:/Users/you/GitHub",
         "-e", "MIMIR_SERVER_URL=http://localhost:8000",
         "-e", "MIMIR_TOKEN=<your-token>",
         "-e", "MCP_TRANSPORT=stdio",
@@ -119,6 +121,8 @@ The MCP facade is published as a **public Docker Hub image** (`featurefactory/mi
 ```
 
 Replace `<your-token>` with the token from Step 2. Restart your IDE after saving.
+
+> **Export/import:** filesystem MCP tools require `MIMIR_DEV_ROOT` and a matching Docker volume mount — see [docs/DOCKER_QUICK_START.md](docs/DOCKER_QUICK_START.md#filesystem-tools-export--import).
 
 > **Multi-platform**: amd64 + arm64 · **Data safety**: SQLite in mounted volume · **Hosted FOB**: change `MIMIR_SERVER_URL` to `https://mimir.featurefactory.io`
 
@@ -285,6 +289,8 @@ Register at [mimir.featurefactory.io](https://mimir.featurefactory.io/auth/regis
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
+        "-e", "MIMIR_DEV_ROOT=/Users/you/GitHub",
+        "-v", "/Users/you/GitHub:/Users/you/GitHub",
         "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
         "-e", "MIMIR_TOKEN=<your-token>",
         "-e", "MCP_TRANSPORT=stdio",
@@ -296,6 +302,8 @@ Register at [mimir.featurefactory.io](https://mimir.featurefactory.io/auth/regis
 ```
 
 For a local FOB, set `MIMIR_SERVER_URL=http://localhost:8000`. Restart your IDE after saving.
+
+Export/import filesystem tools require `MIMIR_DEV_ROOT` and a matching `-v` bind mount — see [docs/DOCKER_QUICK_START.md](docs/DOCKER_QUICK_START.md#filesystem-tools-export--import).
 
 ### 3. Use MCP Tools in Your IDE
 

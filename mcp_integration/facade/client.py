@@ -48,6 +48,18 @@ def get_client() -> httpx.Client:
     return _http_client
 
 
+def get_server_url() -> str:
+    """
+    Return the configured Mimir REST API base URL.
+
+    :return: Server URL string
+    :raises RuntimeError: if configure() has not been called
+    """
+    if not _server_url:
+        raise RuntimeError("HTTP client not configured. Call configure() first.")
+    return _server_url
+
+
 def check_response(response: httpx.Response, tool_name: str) -> dict:
     """
     Validate HTTP response and return parsed JSON.

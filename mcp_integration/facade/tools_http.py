@@ -12,7 +12,12 @@ import os
 from pathlib import Path
 from typing import Literal, Optional
 
-from mcp_integration.facade.client import get_client, check_response
+from mcp_integration.facade.client import get_client, check_response, get_server_url
+from mcp_integration.facade.workspace_mount import (
+    ensure_import_supported_on_server,
+    ensure_readable_workspace_path,
+    ensure_writable_workspace_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -335,6 +340,10 @@ def export_workflow_to_local(
     """
     Export workflow to local AI workspace as markdown files.
 
+    When running in Docker, set MIMIR_DEV_ROOT and bind-mount that folder in
+    the MCP container config. Relative target_directory values resolve against
+    MIMIR_DEV_ROOT.
+
     :param workflow_id: Workflow ID. Example: 42
     :param target_directory: Target directory. Example: ".windsurf/workflows"
     :param folder_name: Folder name. Example: "FFE" (defaults to workflow slug)
@@ -352,7 +361,11 @@ def export_workflow_to_local(
     r = get_client().post(f"/api/workflows/{workflow_id}/export/", json=payload)
     data = check_response(r, "export_workflow_to_local")
 
-    wf_dir = Path(target_directory) / data["folder_name"]
+    resolved_target = ensure_writable_workspace_path(
+        target_directory,
+        purpose="export",
+    )
+    wf_dir = resolved_target / data["folder_name"]
     wf_dir.mkdir(parents=True, exist_ok=True)
     for file_entry in data["workflow_files"]:
         (wf_dir / file_entry["filename"]).write_text(
@@ -366,7 +379,7 @@ def export_workflow_to_local(
 
     rule_files_written = []
     if data.get("rule_files"):
-        rules_dir = Path(target_directory).resolve().parent / "rules"
+        rules_dir = resolved_target.parent / "rules"
         rules_dir.mkdir(parents=True, exist_ok=True)
         for file_entry in data["rule_files"]:
             (rules_dir / file_entry["filename"]).write_text(
@@ -401,14 +414,23 @@ def import_workflow_from_local(
     """
     Import workflow from local markdown files with change detection.
 
+    When running in Docker, set MIMIR_DEV_ROOT and bind-mount that folder.
+    Import against a hosted FOB requires mimir-local or a local FOB URL.
+
     :param workflow_id: Workflow ID. Example: 42
     :param source_directory: Source directory. Example: ".windsurf/workflows/FFE"
     :param auto_apply: Auto-apply for draft playbooks. Example: False
     :return: Change detection result with protocol path
     """
     logger.info(f'HTTP Tool: import_workflow_from_local workflow={workflow_id}')
+    ensure_import_supported_on_server(get_server_url(), purpose="import")
+    resolved_source = ensure_readable_workspace_path(
+        source_directory,
+        purpose="import",
+    )
     r = get_client().post(f"/api/workflows/{workflow_id}/import_workflow/", json={
-        "source_directory": source_directory, "auto_apply": auto_apply
+        "source_directory": str(resolved_source),
+        "auto_apply": auto_apply,
     })
     return check_response(r, "import_workflow_from_local")
 
@@ -417,12 +439,20 @@ def apply_upload_protocol(protocol_file: str) -> dict:
     """
     Apply upload protocol to draft playbook.
 
+    When running in Docker, set MIMIR_DEV_ROOT and bind-mount that folder.
+    Protocol apply against a hosted FOB requires mimir-local or a local FOB URL.
+
     :param protocol_file: Path to _Upload_Protocol.md
     :return: Application result with change counts
     """
     logger.info(f'HTTP Tool: apply_upload_protocol protocol_file={protocol_file}')
+    ensure_import_supported_on_server(get_server_url(), purpose="apply_upload_protocol")
+    resolved_protocol = ensure_readable_workspace_path(
+        protocol_file,
+        purpose="apply_upload_protocol",
+    )
     r = get_client().post("/api/workflows/0/apply-protocol/", json={
-        "protocol_file": protocol_file
+        "protocol_file": str(resolved_protocol),
     })
     return check_response(r, "apply_upload_protocol")
 
@@ -431,13 +461,22 @@ def create_pip_from_protocol(protocol_file: str, pip_title: str) -> dict:
     """
     Create PIP from upload protocol for released playbook.
 
+    When running in Docker, set MIMIR_DEV_ROOT and bind-mount that folder.
+    PIP creation against a hosted FOB requires mimir-local or a local FOB URL.
+
     :param protocol_file: Path to _Upload_Protocol.md
     :param pip_title: PIP title. Example: "Improve workflow"
     :return: Created PIP dict with ID and status
     """
     logger.info(f'HTTP Tool: create_pip_from_protocol title="{pip_title}"')
+    ensure_import_supported_on_server(get_server_url(), purpose="create_pip_from_protocol")
+    resolved_protocol = ensure_readable_workspace_path(
+        protocol_file,
+        purpose="create_pip_from_protocol",
+    )
     r = get_client().post("/api/workflows/0/create-pip/", json={
-        "protocol_file": protocol_file, "pip_title": pip_title
+        "protocol_file": str(resolved_protocol),
+        "pip_title": pip_title,
     })
     return check_response(r, "create_pip_from_protocol")
 

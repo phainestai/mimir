@@ -79,6 +79,8 @@ The MCP facade (`featurefactory/mimir-mcp:latest`) is a public Docker Hub image 
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
+        "-e", "MIMIR_DEV_ROOT=/Users/you/GitHub",
+        "-v", "/Users/you/GitHub:/Users/you/GitHub",
         "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
         "-e", "MIMIR_TOKEN=<your-token>",
         "-e", "MCP_TRANSPORT=stdio",
@@ -98,6 +100,8 @@ The MCP facade (`featurefactory/mimir-mcp:latest`) is a public Docker Hub image 
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
+        "-e", "MIMIR_DEV_ROOT=/Users/you/GitHub",
+        "-v", "/Users/you/GitHub:/Users/you/GitHub",
         "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
         "-e", "MIMIR_TOKEN=<your-token>",
         "-e", "MCP_TRANSPORT=stdio",
@@ -117,6 +121,8 @@ The MCP facade (`featurefactory/mimir-mcp:latest`) is a public Docker Hub image 
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
+        "-e", "MIMIR_DEV_ROOT=/Users/you/GitHub",
+        "-v", "/Users/you/GitHub:/Users/you/GitHub",
         "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
         "-e", "MIMIR_TOKEN=<your-token>",
         "-e", "MCP_TRANSPORT=stdio",
@@ -128,8 +134,45 @@ The MCP facade (`featurefactory/mimir-mcp:latest`) is a public Docker Hub image 
 ```
 
 Replace `<your-token>` with your token from Step 2.
-For a local FOB, change `MIMIR_SERVER_URL` to `http://localhost:8000`.
+Replace `/Users/you/GitHub` with the folder where your repositories live (use the same path in `MIMIR_DEV_ROOT` and the `-v` mount).
+For a local FOB, change `MIMIR_SERVER_URL` to `http://localhost:8000` (or `http://host.docker.internal:8000` from Docker Desktop on macOS/Windows).
 Restart your IDE after saving.
+
+---
+
+## Filesystem tools (export / import)
+
+Most MCP tools (list, get, create, update) talk to the hosted API only — **no volume mount required**.
+
+These tools read or write markdown on **your machine**:
+
+| Tool | Needs mount |
+|------|-------------|
+| `export_workflow_to_local` | Yes |
+| `import_workflow_from_local` | Yes (plus local FOB or `mimir-local`; see below) |
+| `apply_upload_protocol` | Yes (plus local FOB or `mimir-local`) |
+| `create_pip_from_protocol` | Yes (plus local FOB or `mimir-local`) |
+
+The Docker facade runs inside an isolated container. Without a bind mount, export would write to ephemeral container storage and disappear when the container exits.
+
+**Required setup:**
+
+1. Set `MIMIR_DEV_ROOT` to your development folder (parent of your repos).
+2. Bind-mount the same folder: `-v "<host-path>:<host-path>"`.
+3. Use paths under that root (absolute or relative — relative paths resolve against `MIMIR_DEV_ROOT`).
+
+**Examples:**
+
+| OS | `MIMIR_DEV_ROOT` | Volume mount |
+|----|------------------|--------------|
+| macOS / Linux | `/Users/you/GitHub` | `-v /Users/you/GitHub:/Users/you/GitHub` |
+| Windows (Docker Desktop) | `C:/Users/you/GitHub` | `-v C:/Users/you/GitHub:C:/Users/you/GitHub` |
+
+> **Note:** `$HOME`, `$PWD`, and `%USERPROFILE%` are **not** expanded in IDE MCP JSON — use explicit paths.
+
+**Alternative:** run `manage.py mcp_server` (`mimir-local`) for filesystem tools without Docker mounts. CRUD against hosted FOB can still use the Docker facade.
+
+**Import against hosted FOB:** the server cannot read files on your laptop. Use `mimir-local`, or point Docker MCP at a local FOB (`http://host.docker.internal:8000`) with the volume mount above.
 
 ---
 
@@ -153,6 +196,7 @@ Restart your IDE after saving.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIMIR_SERVER_URL` | `http://web:8000` | FOB URL (local or hosted) |
+| `MIMIR_DEV_ROOT` | — | Host dev folder for export/import; must match `-v` bind mount |
 | `MIMIR_TOKEN` | — | FOB auth token |
 | `MIMIR_USER` | `admin` | Used to auto-fetch token if MIMIR_TOKEN is blank |
 | `MIMIR_PASSWORD` | `changeme` | Used to auto-fetch token if MIMIR_TOKEN is blank |
@@ -178,6 +222,12 @@ docker pull featurefactory/mimir-mcp:latest
 ```
 
 ## Troubleshooting
+
+### Export reports success but no files on disk
+
+The MCP container is missing a workspace bind mount. Add `MIMIR_DEV_ROOT` and a matching `-v` to your IDE MCP config (see [Filesystem tools](#filesystem-tools-export--import)). The tool now returns an error instead of silent failure when the mount is missing.
+
+Do not use `$HOME:$HOME` — IDE JSON args are not shell-expanded, and Windows paths differ. Use an explicit dev-folder path.
 
 ### FOB won't start
 ```bash

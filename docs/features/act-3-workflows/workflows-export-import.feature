@@ -28,6 +28,13 @@ Feature: FOB-WORKFLOWS-EXPORT_IMPORT-1 MCP Workflow Synchronization
     And the facade computes the local export path under ".windsurf/workflows/FFE/"
     And the tool return value includes that local "export_path" and "files_created" list
 
+  Scenario: FOB-WORKFLOWS-EXPORT_IMPORT-01d Docker facade rejects export without bind mount
+    Given the HTTP MCP facade runs inside a Docker container
+    And MIMIR_DEV_ROOT is not configured or not bind-mounted
+    When AI calls mcp.export_workflow_to_local(workflow_id=42, target_directory=".windsurf/workflows", folder_name="FFE")
+    Then the tool returns an error explaining how to add "-e" MIMIR_DEV_ROOT and "-v" to MCP config
+    And no success status is returned
+
   Scenario: FOB-WORKFLOWS-EXPORT_IMPORT-01b Export writes rules to sibling rules folder
     Given activities in the workflow link playbook rules "pytest" and "ruff"
     When AI exports the workflow to ".windsurf/workflows/FFE/"
