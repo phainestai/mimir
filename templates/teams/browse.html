@@ -1,45 +1,51 @@
 {% extends "base.html" %}
 {% load static %}
-{% load markdown_filters %}
 
 {% block title %}Teams{% endblock %}
 
 {% block content %}
-<div class="container mt-4" data-testid="teams-browse-page">
+<div data-testid="teams-browse-page">
 
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
             <li class="breadcrumb-item active" aria-current="page">Teams</li>
         </ol>
     </nav>
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <h2>
-                <i class="fa-solid fa-users"></i> Teams
-                <span class="badge bg-secondary ms-1">{{ team_count }}</span>
-            </h2>
-            <p class="text-muted">Discover and join collaborative communities to share playbooks with the right people.</p>
+    <div class="hg-page-header mb-3" data-testid="teams-browse-header">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="hg-page-title d-flex align-items-center gap-2 mb-1">
+                    <i class="fa-solid fa-users hg-page-title-icon text-primary" aria-hidden="true"></i>
+                    <span>Teams</span>
+                </h1>
+                <p class="text-muted small mb-0">
+                    {% if team_count %}
+                    {{ team_count }} team{{ team_count|pluralize }} — discover and join collaborative communities
+                    {% else %}
+                    Discover and join collaborative communities to share playbooks with the right people
+                    {% endif %}
+                </p>
+            </div>
+            <div role="toolbar" aria-label="Team actions" class="d-flex flex-wrap gap-2 align-items-center">
+                <a href="{% url 'teams:teams_create' %}"
+                   class="btn btn-primary"
+                   data-testid="create-team-btn"
+                   data-bs-toggle="tooltip"
+                   title="Create a new team">
+                    <i class="fa-solid fa-plus me-1"></i> Create Team
+                </a>
+            </div>
         </div>
-        <a href="/teams/create/"
-           class="btn btn-primary"
-           data-testid="create-team-btn"
-           data-bs-toggle="tooltip"
-           title="Create a new team">
-            <i class="fa-solid fa-plus me-1"></i> Create Team
-        </a>
     </div>
 
-    <!-- Search + Filter bar -->
-    <div class="card mb-4" data-testid="teams-filter-bar">
+    <div class="card mb-4 border-0 shadow-sm rounded-3" data-testid="teams-filter-bar">
         <div class="card-body">
             <form method="get" action="." role="search">
-                <div class="row g-2 align-items-end">
+                <div class="row g-3 mb-0">
                     <div class="col-12 col-md">
-                        <label class="form-label small fw-semibold" for="teams-search-input">Search</label>
+                        <label class="form-label hg-label-caps mb-1" for="teams-search-input">Search</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
                             <input type="search"
@@ -52,10 +58,10 @@
                                    aria-label="Search teams">
                         </div>
                     </div>
-                    <div class="col-12 col-md-3">
-                        <label class="form-label small fw-semibold" for="teams-category-filter">Category</label>
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <label class="form-label hg-label-caps mb-1" for="teams-category-filter">Category</label>
                         <select id="teams-category-filter"
-                                class="form-select"
+                                class="form-select form-select-sm bg-body-secondary border-0 rounded-2"
                                 name="category"
                                 data-testid="teams-category-filter"
                                 aria-label="Filter by category">
@@ -65,20 +71,18 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-12 col-md-auto ms-md-auto">
-                        <label class="form-label small fw-semibold d-md-block d-none">&nbsp;</label>
-                        <div class="d-flex gap-2">
-                            <a href="/teams/"
-                               class="btn btn-outline-secondary"
-                               data-testid="filter-clear"
-                               data-bs-toggle="tooltip" title="Clear filters">
-                                <i class="fa-solid fa-xmark me-1"></i> Clear
-                            </a>
-                            <button class="btn btn-outline-primary" type="submit"
-                                    data-bs-toggle="tooltip" title="Apply filters">
-                                <i class="fa-solid fa-filter me-1"></i> Filter
-                            </button>
-                        </div>
+                    <div class="col-12 col-md-auto d-flex align-items-end gap-2">
+                        <a href="{% url 'teams:teams_browse' %}"
+                           class="btn btn-outline-secondary btn-sm"
+                           data-testid="filter-clear"
+                           data-bs-toggle="tooltip"
+                           title="Clear filters">
+                            <i class="fa-solid fa-xmark me-1"></i> Clear
+                        </a>
+                        <button class="btn btn-outline-primary btn-sm" type="submit"
+                                data-bs-toggle="tooltip" title="Apply filters">
+                            <i class="fa-solid fa-filter me-1"></i> Filter
+                        </button>
                     </div>
                 </div>
             </form>
@@ -86,13 +90,12 @@
     </div>
 
     {% if search_query or active_category %}
-    <!-- Active filter chips -->
     <div class="mb-3 d-flex gap-2 flex-wrap" data-testid="active-filters">
         {% if active_category %}
         <span class="badge rounded-pill border text-body d-flex align-items-center gap-1 px-3 py-2"
               data-testid="filter-chip-category">
             Category: {{ active_category }}
-            <a href="/teams/{% if search_query %}?q={{ search_query }}{% endif %}"
+            <a href="{% url 'teams:teams_browse' %}{% if search_query %}?q={{ search_query|urlencode }}{% endif %}"
                class="btn-close btn-close-sm ms-1" aria-label="Remove category filter"
                style="font-size:0.6rem;"></a>
         </span>
@@ -101,7 +104,7 @@
         <span class="badge rounded-pill border text-body d-flex align-items-center gap-1 px-3 py-2"
               data-testid="filter-chip-search">
             Search: {{ search_query }}
-            <a href="/teams/{% if active_category %}?category={{ active_category }}{% endif %}"
+            <a href="{% url 'teams:teams_browse' %}{% if active_category %}?category={{ active_category|urlencode }}{% endif %}"
                class="btn-close btn-close-sm ms-1" aria-label="Remove search filter"
                style="font-size:0.6rem;"></a>
         </span>
@@ -109,81 +112,33 @@
     </div>
     {% endif %}
 
-    <!-- Teams grid -->
     {% if teams %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" data-testid="teams-grid">
+    <div class="row" data-testid="teams-grid">
         {% for team in teams %}
-        <div class="col">
-            <div class="card h-100" data-testid="team-card-{{ team.name|slugify }}">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h5 class="card-title mb-0">
-                            <i class="fa-solid fa-users-rectangle text-primary me-1"></i>
-                            {{ team.name }}
-                        </h5>
-                        <span class="badge {% if team.visibility == 'Public' %}bg-success{% else %}bg-secondary{% endif %} ms-2 flex-shrink-0"
-                              data-bs-toggle="tooltip"
-                              title="Visibility: {{ team.visibility }}">
-                            {{ team.visibility }}
-                        </span>
-                    </div>
-                    <p class="card-text text-muted small mb-3">{{ team.description|markdown|striptags|truncatewords:25 }}</p>
-                    <div class="d-flex gap-3 text-muted small mb-3">
-                        <span data-bs-toggle="tooltip" title="Members">
-                            <i class="fa-solid fa-user-group me-1"></i>
-                            {{ team.memberships.count }} member{% if team.memberships.count != 1 %}s{% endif %}
-                        </span>
-                        <span data-bs-toggle="tooltip" title="Shared playbooks">
-                            <i class="fa-solid fa-book me-1"></i>
-                            {{ team.team_playbooks.count }} playbook{% if team.team_playbooks.count != 1 %}s{% endif %}
-                        </span>
-                        <span data-bs-toggle="tooltip" title="Category">
-                            <i class="fa-solid fa-tag me-1"></i>
-                            {{ team.category }}
-                        </span>
-                    </div>
-                    {% if team.admin == request.user %}
-                    <span class="badge bg-warning text-dark"
-                          data-bs-toggle="tooltip" title="You are the admin of this team">
-                        <i class="fa-solid fa-crown me-1"></i> Your Team
-                    </span>
-                    {% elif team.memberships.filter %}
-                    {% comment %}Member badge shown in WP-4 with role lookup{% endcomment %}
-                    {% endif %}
-                </div>
-                <div class="card-footer bg-transparent d-flex justify-content-end">
-                    <a href="/teams/{{ team.pk }}/"
-                       class="btn btn-outline-primary btn-sm"
-                       data-testid="view-team-{{ team.pk }}"
-                       data-bs-toggle="tooltip" title="View team details">
-                        <i class="fa-solid fa-eye me-1"></i> View
-                    </a>
-                </div>
-            </div>
-        </div>
+            {% include "teams/_team_list_card.html" %}
         {% endfor %}
     </div>
-
     {% else %}
-    <!-- Empty state -->
-    <div class="text-center py-5" data-testid="teams-empty-state">
-        <i class="fa-solid fa-users-slash fa-4x text-muted mb-3"></i>
-        {% if search_query or active_category %}
-        <h4 class="text-muted">No teams found matching your filters.</h4>
-        <p class="text-muted">Try a different search term or browse all teams.</p>
-        {% else %}
-        <h4 class="text-muted">No teams yet.</h4>
-        <p class="text-muted">Be the first to create a team and start collaborating.</p>
-        {% endif %}
-        <div class="d-flex justify-content-center gap-2 mt-3">
-            <a href="/teams/" class="btn btn-outline-secondary"
-               data-testid="clear-search-btn">
-                <i class="fa-solid fa-xmark me-1"></i> Clear Filters
-            </a>
-            <a href="/teams/create/" class="btn btn-primary"
-               data-testid="create-new-team-btn">
-                <i class="fa-solid fa-plus me-1"></i> Create New Team
-            </a>
+    <div class="card border-0 shadow-sm rounded-3 text-center py-5" data-testid="teams-empty-state">
+        <div class="card-body">
+            <i class="fa-solid fa-users-slash fa-4x text-muted mb-3"></i>
+            {% if search_query or active_category %}
+            <h4 class="text-muted">No teams found matching your filters.</h4>
+            <p class="text-muted mb-0">Try a different search term or browse all teams.</p>
+            {% else %}
+            <h4 class="text-muted">No teams yet.</h4>
+            <p class="text-muted mb-0">Be the first to create a team and start collaborating.</p>
+            {% endif %}
+            <div class="d-flex justify-content-center gap-2 flex-wrap mt-4">
+                <a href="{% url 'teams:teams_browse' %}" class="btn btn-outline-secondary"
+                   data-testid="clear-search-btn">
+                    <i class="fa-solid fa-xmark me-1"></i> Clear Filters
+                </a>
+                <a href="{% url 'teams:teams_create' %}" class="btn btn-primary"
+                   data-testid="create-new-team-btn">
+                    <i class="fa-solid fa-plus me-1"></i> Create New Team
+                </a>
+            </div>
         </div>
     </div>
     {% endif %}

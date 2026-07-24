@@ -62,8 +62,8 @@
                         </h5>
                     </div>
                     <div class="card-body p-0">
-                        <div class="table-responsive" data-testid="activities-table-{{ phase_name|slugify }}">
-                            <table class="table table-hover align-middle mb-0">
+                        <div class="table-responsive" data-testid="activities-table-{{ phase_name|slugify }}-wrap">
+                            <table class="table table-hover align-middle mb-0" data-testid="activities-table-{{ phase_name|slugify }}">
                                 <thead class="table-light">
                                     <tr>
                                         <th scope="col" style="width: 5%">#</th>
@@ -140,8 +140,8 @@
             <!-- Flat List (No Phases) -->
             <div class="card border-0 shadow-sm rounded-3" data-testid="activities-flat-list">
                 <div class="card-body p-0">
-                    <div class="table-responsive" data-testid="activities-table">
-                        <table class="table table-hover align-middle mb-0">
+                    <div class="table-responsive" data-testid="activities-table-wrap">
+                        <table class="table table-hover align-middle mb-0" data-testid="activities-table">
                             <thead class="table-light">
                                 <tr>
                                     <th scope="col" style="width: 5%">#</th>

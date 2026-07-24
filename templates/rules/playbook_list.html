@@ -48,7 +48,8 @@
     <div class="card">
         <div class="card-header"><h5 class="mb-0">Rules <span class="badge bg-secondary ms-2">{{ rules|length }}</span></h5></div>
         <div class="card-body p-0">
-            <table class="table table-hover mb-0">
+            <div class="table-responsive" data-testid="rules-playbook-table-wrap">
+            <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr><th>Title</th><th>Slug</th><th>Activities</th><th></th></tr>
                 </thead>
@@ -66,6 +67,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
     {% else %}

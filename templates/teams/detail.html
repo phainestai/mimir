@@ -203,7 +203,8 @@
             {% if playbooks %}
             <div class="card border-top-0 rounded-top-0">
                 <div class="card-body p-0">
-                    <table class="table table-hover mb-0" data-testid="team-playbooks-table">
+                    <div class="table-responsive" data-testid="team-playbooks-table-wrap">
+                    <table class="table table-hover align-middle mb-0" data-testid="team-playbooks-table">
                         <thead class="table-light">
                             <tr>
                                 <th>Playbook</th>
@@ -243,6 +244,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
             {% else %}
@@ -261,7 +263,8 @@
             {% if members %}
             <div class="card border-top-0 rounded-top-0">
                 <div class="card-body p-0">
-                    <table class="table table-hover mb-0" data-testid="team-members-table">
+                    <div class="table-responsive" data-testid="team-members-table-wrap">
+                    <table class="table table-hover align-middle mb-0" data-testid="team-members-table">
                         <thead class="table-light">
                             <tr>
                                 <th>Name</th>
@@ -292,6 +295,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    </div>
                     {% if member_count > 25 %}
                     <div class="card-footer text-center text-muted small py-2">
                         Showing 25 of {{ member_count }} members.

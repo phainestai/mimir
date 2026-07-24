@@ -54,6 +54,11 @@
         The config below pulls the latest Mimir MCP container from Docker Hub (<code>featurefactory/mimir-mcp</code>) and runs it with your token.
         No local install needed — Docker handles everything.
       </p>
+      <p class="text-muted small mb-3">
+        <strong>Export / import:</strong> set <code>MIMIR_DEV_ROOT</code> to your dev folder (e.g. <code>/Users/you/GitHub</code>)
+        and bind-mount the same path with <code>-v</code>. Most other MCP tools work without a mount.
+        See <a href="https://github.com/phainestai/mimir/blob/main/docs/DOCKER_QUICK_START.md#filesystem-tools-export--import" target="_blank" rel="noopener">DOCKER_QUICK_START</a>.
+      </p>
 
       <ul class="nav nav-tabs mb-3" id="mcpTabs" role="tablist">
         <li class="nav-item" role="presentation">
@@ -87,6 +92,8 @@
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
+        "-e", "MIMIR_DEV_ROOT=/Users/you/GitHub",
+        "-v", "/Users/you/GitHub:/Users/you/GitHub",
         "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
         "-e", "MIMIR_TOKEN=&lt;your-token&gt;",
         "-e", "MCP_TRANSPORT=stdio",
@@ -104,6 +111,8 @@
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
+        "-e", "MIMIR_DEV_ROOT=/Users/you/GitHub",
+        "-v", "/Users/you/GitHub:/Users/you/GitHub",
         "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
         "-e", "MIMIR_TOKEN=&lt;your-token&gt;",
         "-e", "MCP_TRANSPORT=stdio",
@@ -121,6 +130,8 @@
       "command": "docker",
       "args": [
         "run", "--rm", "-i",
+        "-e", "MIMIR_DEV_ROOT=/Users/you/GitHub",
+        "-v", "/Users/you/GitHub:/Users/you/GitHub",
         "-e", "MIMIR_SERVER_URL=https://mimir.featurefactory.io",
         "-e", "MIMIR_TOKEN=&lt;your-token&gt;",
         "-e", "MCP_TRANSPORT=stdio",
@@ -148,7 +159,9 @@ docker compose up -d
 
       <div class="alert alert-warning mt-3 mb-0 py-2">
         <i class="fas fa-triangle-exclamation"></i>
-        Replace <code>&lt;your-token&gt;</code> with the token from your registration confirmation. Restart your IDE after saving.
+        Replace <code>&lt;your-token&gt;</code> with the token from your registration confirmation.
+        Replace <code>/Users/you/GitHub</code> with your dev folder (same path in <code>MIMIR_DEV_ROOT</code> and <code>-v</code>).
+        Restart your IDE after saving.
       </div>
     </div>
   </section>

@@ -40,7 +40,8 @@
             </h5>
         </div>
         <div class="card-body p-0">
-            <table class="table table-hover mb-0" data-testid="agents-playbook-table">
+            <div class="table-responsive" data-testid="agents-playbook-table-wrap">
+            <table class="table table-hover align-middle mb-0" data-testid="agents-playbook-table">
                 <thead class="table-light">
                     <tr>
                         <th style="width: 25%">Name</th>
@@ -71,6 +72,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
     {% else %}

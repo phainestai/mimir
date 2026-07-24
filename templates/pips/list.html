@@ -104,8 +104,8 @@
                 {% endif %}
             </div>
             {% else %}
-            <div class="table-responsive" data-testid="pip-table">
-                <table class="table table-hover align-middle mb-0">
+            <div class="table-responsive" data-testid="pip-table-wrap">
+                <table class="table table-hover align-middle mb-0" data-testid="pip-table">
                     <thead class="table-light">
                     <tr>
                         {% if list_scope == 'all' %}
